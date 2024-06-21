@@ -1,0 +1,7 @@
+temp/
+built/
+dist/
+node_modules/
+sandbox/
+.vscode/
+*lock.json

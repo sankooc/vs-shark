@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>debuger</title>
+  <style>
+  body {display: flex;}
+  .ctl {
+    flex-basis: 200px;
+    flex-grow: 0;
+  }
+  .ctl input {
+    width: 150px;
+  }
+  iframe{
+    flex-grow: 1;
+  }
+  </style>
+</head>
+
+<body>
+    <div class="ctl">
+        <input type="file" id="files" name="avatar"/>
+    </div>
+    <iframe
+    id="iframe"
+    title="Inline Frame Example"
+    width="1000"
+    height="800"
+    src="frame.html"></iframe>
+    <script src="./main.js"></script>
+</body>
+
+</html>

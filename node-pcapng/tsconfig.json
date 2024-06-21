@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "outDir": "./built",
+    "module": "NodeNext",
+    // "target":"ESNext",
+    // "module": "CommonJS",
+    "target": "ES5",
+    "baseUrl": ".",
+    "allowJs": true,
+    "sourceMap": true,
+    "rootDir": "./"
+  },
+  "exclude": [
+     "./built",
+     "node_modules",
+  ]
+}
