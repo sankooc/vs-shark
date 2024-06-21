@@ -45,7 +45,7 @@ class PcapDocument extends Disposable implements vscode.CustomDocument {
 }
 
 
-export class PcapViewerProvider implements vscode.CustomEditorProvider<PcapDocument> {
+export class PcapViewerProvider implements vscode.CustomReadonlyEditorProvider<PcapDocument> {
 
 	private static newPawDrawFileId = 1;
 
@@ -107,9 +107,9 @@ export class PcapViewerProvider implements vscode.CustomEditorProvider<PcapDocum
 		});
 	}
 
-	private readonly _onDidChangeCustomDocument = new vscode.EventEmitter<vscode.CustomDocumentEditEvent<PcapDocument>>();
+	// private readonly _onDidChangeCustomDocument = new vscode.EventEmitter<vscode.CustomDocumentEditEvent<PcapDocument>>();
 
-	public readonly onDidChangeCustomDocument = this._onDidChangeCustomDocument.event;
+	// public readonly onDidChangeCustomDocument = this._onDidChangeCustomDocument.event;
 
 	private getHtmlForWebview(webview: vscode.Webview): string {
 		const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(this._context.extensionUri, 'media', 'bundle.js'));
