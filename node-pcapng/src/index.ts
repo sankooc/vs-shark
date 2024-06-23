@@ -6,15 +6,13 @@ import { IPv4, IPv6, ARP } from './networkLayer';
 import { UDP, TCP, ICMP, IGMP } from './transportLayer';
 import { NBNS, DNS, DHCP } from './application';
 
-export const readBuffers = (arr: Uint8Array, batchSize: number = 10): RootVisitor => {
+export const readBuffers = (arr: Uint8Array, batchSize: number = 600, archer: (packet: IPPacket[]) => void): RootVisitor => {
   const creator = new AbstractReaderCreator();
-  const visitor = new RootVisitor();
+  const visitor = new RootVisitor(archer);
   visitor.batchSize = batchSize;
   const ele = new BasicElement('root', creator, arr.length, arr);
-  setTimeout(() => {
-    visitor.visit(ele);
-  }, 0);
+  visitor.visit(ele);
   return visitor;
 }
-export { Option, AbstractVisitor, Visitor, Packet, Protocol, IPPacket, Resolver, PVisitor, BasicElement, AbstractRootVisitor };
+export { Option, AbstractVisitor, Visitor, Packet, Protocol, IPPacket, Resolver, PVisitor, BasicElement, AbstractRootVisitor, RootVisitor };
 export { DataPacket, IPv4, IPv6, ARP, UDP, TCP, ICMP, IGMP, NBNS, DNS, DHCP };

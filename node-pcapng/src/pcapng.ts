@@ -4,6 +4,7 @@ import { DataLaylerVisitor } from './dataLinkLayer';
 import {TCP, UDP} from './transportLayer';
 // import { EventEmitter } from 'events';
 //https://www.ietf.org/archive/id/draft-tuexen-opsawg-pcapng-05.html
+//https://www.ietf.org/archive/id/draft-tuexen-opsawg-pcapng-03.html
 
 const opt_endofopt = 0
 const OPTION_CODE = {
@@ -111,7 +112,8 @@ class EnhancedPacketVisitor extends BasicVisitor {
         const interfaceId = reader.read32();
         const highTS = reader.read32();
         const lowTS = reader.read32();
-        ele.log('interface', interfaceId, highTS, lowTS)
+        const num = `0x${highTS.toString(16)}${lowTS.toString(16).padStart(8, '0')}`;
+        const n = BigInt(num).toString();
         const capturedPacketLength = reader.read32();
         const originalPacketLength = reader.read32();
         ele.log('packet size', capturedPacketLength, originalPacketLength)
@@ -122,8 +124,9 @@ class EnhancedPacketVisitor extends BasicVisitor {
         }
         const subPacket = new IPPacket(null, packet, Protocol.ETHER);
         subPacket.index = this.index;
+        subPacket.interface = interfaceId;
+        subPacket.ts = parseInt(n.substring(0, n.length - 3));
         this.index += 1;
-
         return subPacket.createSubElement(prefix, ele).accept(this.visitor);
     }
 }
@@ -147,16 +150,19 @@ export class RootVisitor implements Visitor {
     enhancedPacketVisitor: EnhancedPacketVisitor = new EnhancedPacketVisitor('00000006');
     resolver: Resolver = new Resolver();
     packets: IPPacket[] = []
-    eventTable: EventTarget = new EventTarget();
-    batchSize: number = 10;
+    batchSize: number = 600;
+    archer: (packet: IPPacket[]) => void;
+    constructor(archer: (packet: IPPacket[]) => void){
+        this.archer = archer;
+    }
     emitPacket(packet: IPPacket[]): void {
-        const evt: CustomEvent<IPPacket[]> = new CustomEvent("frame", {detail: packet})
-        this.eventTable.dispatchEvent(evt);
+        if(this.archer) {
+            try {
+                this.archer(packet);
+            }catch(e){}
+        }
     }
-    addEventListener(type:string, cb: (evt: CustomEvent<any>) => void){
-        this.eventTable.addEventListener(type, cb);
-    }
-    createElement(name: string, readerCreator: AbstractReaderCreator, content: Uint8Array): BasicElement{
+    createElement(name: string, readerCreator: AbstractReaderCreator, content: Uint8Array): BasicElement {
         const ele = new BasicElement(name, readerCreator, content.length, content);
         ele.resolver = this.resolver;
         return ele
@@ -166,7 +172,6 @@ export class RootVisitor implements Visitor {
         const reader = readerCreator.createReader(content, 'root', false);
         const start = Date.now();
         let count = 0;
-        this.eventTable.dispatchEvent(new CustomEvent<any>("init"));
 
         let templateArray = [];
         const readBlock = () => {
@@ -221,7 +226,6 @@ export class RootVisitor implements Visitor {
             templateArray = [];
         }
         this.resolver.flush(null);
-        this.eventTable.dispatchEvent(new CustomEvent<any>("finish"));
         console.log('finish')
         return null;
     }

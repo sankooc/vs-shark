@@ -6,8 +6,7 @@
 			"ES2022"
 		],
 		"sourceMap": true,
-		"rootDir": "src",
+		// "rootDir": "src",
 		"strict": true
-	},
-	"exclude": ["front/**.ts"]
+	}
 }

@@ -4,33 +4,73 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>debuger</title>
+  <title>PCAP Viewer</title>
   <style>
-  body {display: flex;}
-  .ctl {
-    flex-basis: 200px;
-    flex-grow: 0;
-  }
-  .ctl input {
-    width: 150px;
-  }
-  iframe{
-    flex-grow: 1;
-  }
+    .flex {
+      display: flex;
+    }
+    .flex-row {
+      flex-direction: row;
+    }
+    
+    .flex-column {
+      flex-direction: column;
+    }
+    .f-g-0 {
+      flex-grow: 0;
+    }
+    .f-g-1 {
+      flex-grow: 1;
+    }
+    .f-s-0 {
+      flex-shrink: 0;
+    }
+    .f-s-1 {
+      flex-shrink: 1;
+    }
+    .ctl {
+      flex-basis: 200px;
+      flex-grow: 0;
+    }
+
+    .ctl input {
+      width: 150px;
+    }
+
+    iframe {
+      border: 0;
+      margin: 2px;
+    }
+    #iframe {
+      flex-grow: 1;
+      width: 100%;
+      height: 450px;
+    }
+    #tree{
+      height: 450px;
+      width: 40%;
+    }
+    #hex{
+      height: 450px;
+      width: 40%;
+    }
   </style>
 </head>
 
-<body>
-    <div class="ctl">
-        <input type="file" id="files" name="avatar"/>
+<body class="flex flex-row">
+  <div class="ctl">
+    <input type="file" id="files" name="avatar" />
+  </div>
+  <div class="f-g-1 flex flex-column">
+    <div>
+      <iframe id="iframe" src="frame.html"></iframe>
     </div>
-    <iframe
-    id="iframe"
-    title="Inline Frame Example"
-    width="1000"
-    height="800"
-    src="frame.html"></iframe>
-    <script src="./main.js"></script>
+    <div class="flex flex-row">
+      <iframe id="tree" src="tree.html"></iframe>
+      <iframe id="hex" src="hex.html"></iframe>
+    </div>
+  </div>
+  <script src="./main.js"></script>
 </body>
 
 </html>

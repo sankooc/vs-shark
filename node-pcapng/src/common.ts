@@ -28,6 +28,8 @@ export class Packet {
 }
 export class IPPacket extends Packet {
     index: number;
+    interface: number;
+    ts: number;
     protocol: Protocol;
     parent: IPPacket;
     constructor(parent: IPPacket, packet: Uint8Array, protocol: Protocol) {
@@ -47,12 +49,6 @@ export class IPPacket extends Packet {
         }
         return this.index;
     }
-    // getPacket(): Uint8Array {
-    //     return this.parent.getPacket();
-    // }
-    // getProtocal(): Protocol {
-    //     return this.protocol;
-    // }
     getProtocal(name: Protocol): IPPacket {
         if (this.protocol === name) {
             return this;
@@ -159,6 +155,9 @@ export class BasicElement implements PElement {
         this.len = len;
         this.content = content;
     }
+    // constructor(name: string, readerCreator: AbstractReaderCreator, content: Uint8Array) {
+    //     super(name, readerCreator, content.length, content);
+    // }
     accept(visitor: PVisitor): IPPacket {
         return visitor.visit(this)
     }

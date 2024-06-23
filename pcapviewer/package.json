@@ -12,6 +12,38 @@
 	"activationEvents": [],
 	"main": "./dist/extension.js",
 	"contributes": {
+		"viewsContainers": {
+			"activitybar": [
+				{
+					"id": "package-explorer",
+					"title": "Protocol",
+					"icon": "media/dep.svg"
+				}
+			]
+		},
+		"views": {
+			"package-explorer": [
+				{
+					"id": "pcap.tree",
+					"name": "protocol stack",
+					"visibility": "visible",
+					"contextualTitle": "protocol"
+				},
+				{
+					"id": "pcap.detail",
+					"name": "detail info",
+					"visibility": "visible",
+					"type": "webview",
+					"contextualTitle": "binary title"
+				}
+			]
+		},
+		"commands": [
+			{
+				"command": "nodeDependencies.refreshEntry",
+				"title": "Refresh"
+			}
+		],
 		"customEditors": [
 			{
 				"viewType": "proto.pcapng",
@@ -50,7 +82,6 @@
 		"webpack-cli": "^5.1.4"
 	},
 	"dependencies": {
-		"@types/jquery": "^3.5.30",
-		"jquery": "^3.7.1"
+		"protocols": "file:../node-pcapng/"
 	}
 }

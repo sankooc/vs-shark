@@ -1,5 +1,4 @@
 import React from "react";
-import './loading.less';
 
 function Loading() {
   return (<div id="loader-wrapper">

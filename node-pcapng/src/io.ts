@@ -1,15 +1,20 @@
 // import fs from 'node:fs'fs
 // import path from 'path'
 
-const read32 = (arr: Uint8Array, offset: number, littleEndian = true) => {
+
+const read64 = (arr: Uint8Array, offset: number, littleEndian = true): bigint => {
+    const dataView = new DataView(arr.buffer, offset, 8);
+    return dataView.getBigUint64(0, littleEndian);
+}
+const read32 = (arr: Uint8Array, offset: number, littleEndian = true): number => {
     const dataView = new DataView(arr.buffer, offset, 4);
     return dataView.getUint32(0, littleEndian);
 }
-const read16 = (arr: Uint8Array, offset: number, littleEndian = true) => {
+const read16 = (arr: Uint8Array, offset: number, littleEndian = true): number => {
     const dataView = new DataView(arr.buffer, offset, 2);
     return dataView.getUint16(0, littleEndian);
 }
-const read8 = (arr: Uint8Array, offset: number) => {
+const read8 = (arr: Uint8Array, offset: number): number => {
     const dataView = new DataView(arr.buffer, offset, 1);
     return dataView.getUint8(0)
 }
@@ -37,6 +42,11 @@ export class Uint8ArrayReader {
     read32(littleEndian = true): number {
         const v = read32(this.arr, this.cursor, littleEndian);
         this.cursor += 4;
+        return v;
+    }
+    readBig64(littleEndian = true): bigint {
+        const v = read64(this.arr, this.cursor, littleEndian);
+        this.cursor += 8;
         return v;
     }
     read32Hex(): string {

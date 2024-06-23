@@ -1,6 +1,53 @@
 import * as vscode from 'vscode';
 import { Disposable, disposeAll } from './dispose';
+import { Client } from './client';
+import { Panel, ComMessage, ComLog, CTreeItem, HexV } from './common';
+import { FrameProvider } from './treeProvider';
 
+
+class DetailProvider implements vscode.WebviewViewProvider {
+	// public static instance: DetailProvider = new DetailProvider();
+	context: vscode.ExtensionContext;
+	webview!: vscode.WebviewView;
+	_extensionUri: vscode.Uri;
+	constructor(context: vscode.ExtensionContext){
+		this.context = context;
+		this._extensionUri = context.extensionUri
+	}
+	resolveWebviewView(webviewView: vscode.WebviewView, context: vscode.WebviewViewResolveContext<unknown>, token: vscode.CancellationToken): void | Thenable<void> {
+		this.webview = webviewView;
+		webviewView.webview.options = {
+			enableScripts: true,
+			localResourceRoots: [
+				this._extensionUri
+			]
+		};
+		webviewView.webview.html = this.render(webviewView.webview);
+	}
+	load(data: Uint8Array, hightlight: [number, number]): void{
+		if(!this.webview) return;
+		const it = new HexV(data);
+		it.index = hightlight;
+		this.webview.webview.postMessage(new ComMessage('hex-data', it));
+	}
+	render(webview: vscode.Webview): string {
+		const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(this.context.extensionUri, 'media', 'hex.js'));
+		const nonce = getNonce();
+		const result = `<!DOCTYPE html>
+			<html lang="en">
+			  <head>
+				<meta charset="utf-8" />
+				<meta name="viewport" content="width=device-width, initial-scale=1" />
+			  </head>
+			  <body>
+				<div id="app"></div>
+				<script nonce="${nonce}" src="${scriptUri}"></script>
+			  </body>
+			</html>
+			`;
+		return result;
+	}
+}
 /**
  * Define the document (the data model) used for paw draw files.
  */
@@ -45,11 +92,57 @@ class PcapDocument extends Disposable implements vscode.CustomDocument {
 }
 
 
+export class PCAPClient extends Client {
+	selectFrame(no: number): void {
+		const items = this.buildFrameTree(no);
+		vscode.commands.executeCommand('pcaptree.load', no, items);
+		const data = this.getPacket(no);
+		vscode.commands.executeCommand('detail.load', data);
+	}
+	webviewPanel: vscode.WebviewPanel;
+	output: vscode.LogOutputChannel;
+	treeProvider: FrameProvider;
+	constructor(doc: Uint8Array, webviewPanel: vscode.WebviewPanel,output: vscode.LogOutputChannel, treeProvider: FrameProvider) {
+		super();
+		this.data = doc;
+		this.webviewPanel = webviewPanel;
+		this.output = output;
+		this.treeProvider = treeProvider;
+	}
+	emitMessage(panel: Panel, msg: ComMessage<any>): void {
+		this.webviewPanel.webview.postMessage(msg);
+	}
+	printLog(log: ComLog): void {
+		this.output.info(log.msg.toString())
+		console.log(log.msg);
+	}
+	init(): void {
+		super.init();
+	}
+	
+}
+
 export class PcapViewerProvider implements vscode.CustomReadonlyEditorProvider<PcapDocument> {
 
 	private static newPawDrawFileId = 1;
+	private static output: vscode.LogOutputChannel = vscode.window.createOutputChannel('pcap console', {log: true});
+	private static pcapProvider: FrameProvider = new FrameProvider();
+
+	public get output(): vscode.LogOutputChannel { return this.output };
 
 	public static register(context: vscode.ExtensionContext): vscode.Disposable {
+		vscode.window.registerTreeDataProvider('pcap.tree', PcapViewerProvider.pcapProvider);
+		vscode.commands.registerCommand('pcaptree.load', (no: number, items: CTreeItem[]) => {PcapViewerProvider.pcapProvider.refresh(items)});
+		const detailProvider = new DetailProvider(context);
+		vscode.commands.registerCommand('detail.load', (data: Uint8Array) => {
+			detailProvider.load(data, [0,0]);
+		});
+
+		vscode.window.registerWebviewViewProvider("pcap.detail", detailProvider, {
+			webviewOptions: {
+				retainContextWhenHidden: true,
+			},
+		});
 		return vscode.window.registerCustomEditorProvider(
 			PcapViewerProvider.viewType,
 			new PcapViewerProvider(context),
@@ -94,35 +187,29 @@ export class PcapViewerProvider implements vscode.CustomReadonlyEditorProvider<P
 
 		this.webviews.add(document.uri, webviewPanel);
 
-		// Setup initial content for the webview
 		webviewPanel.webview.options = {
 			enableScripts: true,
 		};
 		webviewPanel.webview.html = this.getHtmlForWebview(webviewPanel.webview);
 
-		webviewPanel.webview.onDidReceiveMessage(e => {
-			if (e.type === 'ready') {
-				this.postMessage(webviewPanel, 'init', document.documentData);
-			}
-		});
+		const client = new PCAPClient(document.documentData, webviewPanel,PcapViewerProvider.output, PcapViewerProvider.pcapProvider);
+		webviewPanel.webview.onDidReceiveMessage(client.handle.bind(client));
 	}
 
-	// private readonly _onDidChangeCustomDocument = new vscode.EventEmitter<vscode.CustomDocumentEditEvent<PcapDocument>>();
-
-	// public readonly onDidChangeCustomDocument = this._onDidChangeCustomDocument.event;
-
 	private getHtmlForWebview(webview: vscode.Webview): string {
-		const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(this._context.extensionUri, 'media', 'bundle.js'));
+		const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(this._context.extensionUri, 'media', 'app.js'));
+		const cssUri = webview.asWebviewUri(vscode.Uri.joinPath(this._context.extensionUri, 'media', 'app.css'));
+		const nonce = getNonce();
 		const result = `<!DOCTYPE html>
 			<html lang="en">
 			  <head>
 				<meta charset="utf-8" />
 				<meta name="viewport" content="width=device-width, initial-scale=1" />
-				<title>React App</title>
+				<link href="${cssUri}" rel="stylesheet">
 			  </head>
 			  <body>
 				<div id="root"></div>
-				<script src="${scriptUri}"></script>
+				<script nonce="${nonce}" src="${scriptUri}"></script>
 			  </body>
 			</html>
 			`;
@@ -145,7 +232,6 @@ export class PcapViewerProvider implements vscode.CustomReadonlyEditorProvider<P
 
 	private onMessage(document: PcapDocument, message: any) {
 		switch (message.type) {
-
 			case 'response':
 				{
 					const callback = this._callbacks.get(message.requestId);
@@ -186,4 +272,14 @@ class WebviewCollection {
 			this._webviews.delete(entry);
 		});
 	}
+}
+
+
+function getNonce() {
+	let text = '';
+	const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+	for (let i = 0; i < 32; i++) {
+		text += possible.charAt(Math.floor(Math.random() * possible.length));
+	}
+	return text;
 }
