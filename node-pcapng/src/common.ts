@@ -238,9 +238,11 @@ export class BasicEmptyVisitor extends AbstractVisitor {
 export class Option {
     code: number;
     value: any;
-    constructor(code, value) {
+    len: number;
+    constructor(code: number, value: any, len: number) {
         this.code = code;
         this.value = value;
+        this.len = len;
     }
 }
 

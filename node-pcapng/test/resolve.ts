@@ -10,8 +10,9 @@ if (process.argv.length > 2) {
   readLoc(filepath, (arr: Uint8Array) => {
     console.log('start---');
     const root = readBuffers(arr, 500, (packet: IPPacket[]) => {
-      console.log('--', packet.length);
     });
+    const headInfo = root.head.toString();
+    console.log('head '+ headInfo);
     console.log('finish--');
     // root.addEventListener('init', () => {
     //   console.log('start---');

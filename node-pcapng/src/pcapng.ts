@@ -1,12 +1,14 @@
 import { Option, AbstractVisitor, Visitor, Packet, Protocol, IPPacket, Resolver, PVisitor, BasicElement, AbstractRootVisitor } from "./common";
 import { Uint8ArrayReader, AbstractReaderCreator } from './io';
 import { DataLaylerVisitor } from './dataLinkLayer';
-import {TCP, UDP} from './transportLayer';
+import { TCP, UDP } from './transportLayer';
+import { linktypeMap } from './constant';
 // import { EventEmitter } from 'events';
 //https://www.ietf.org/archive/id/draft-tuexen-opsawg-pcapng-05.html
 //https://www.ietf.org/archive/id/draft-tuexen-opsawg-pcapng-03.html
 
 const opt_endofopt = 0
+
 const OPTION_CODE = {
     2: 'if_name',
     3: 'if_description',
@@ -15,7 +17,7 @@ const OPTION_CODE = {
     6: '',
 }
 
-const readOption = (opt: BasicElement, reader: Uint8ArrayReader): Option => {
+const readOption = (opt: BasicElement, reader: Uint8ArrayReader, isRaw: boolean = false): Option => {
     const optionCode = reader.read16();
     const optionLen = reader.read16();
     if (optionLen === opt_endofopt) { return }
@@ -26,9 +28,12 @@ const readOption = (opt: BasicElement, reader: Uint8ArrayReader): Option => {
         reader.skip((4 - mod))
     }
     opt.log("option:" + optionLen)
+    if (isRaw) {
+        return new Option(optionCode, optionValue, optionLen)
+    }
     const textDecoder = new TextDecoder('utf-8');
     const text = textDecoder.decode(optionValue);
-    return new Option(optionCode, text)
+    return new Option(optionCode, text, optionLen)
 }
 
 //https://www.ietf.org/staging/draft-tuexen-opsawg-pcapng-02.html#name-enhanced-packet-block
@@ -55,10 +60,28 @@ class BasicVisitor implements Visitor {
 }
 
 class SectionHeaderPacket extends Packet {
-    options: Option[] = [];
     major: number;
     minor: number;
     orderMagic: string;
+    hardware!: string;
+    os!: string;
+    userapp!: string;
+    toString(): string {
+        let str = `version: ${this.major}.${this.minor}`;
+        if(this.hardware) {
+            str += ` hw: ${this.hardware}`
+        }
+        if(this.os) {
+            str += ` os: ${this.os}`
+        }
+        if(this.userapp) {
+            str += ` client: ${this.userapp}`
+        }
+        return str;
+    }
+}
+class InterfaceDescriptionPacket extends Packet {
+    if!: InterfaceInfo;
 }
 class SectionHeaderVisitor extends BasicVisitor {
     visit(ele: BasicElement): SectionHeaderPacket {
@@ -68,8 +91,6 @@ class SectionHeaderVisitor extends BasicVisitor {
         const major = reader.read16();
         const minor = reader.read16();
         reader.skip(8)
-        ele.log('parseSectionHeader', orderMagic, major, minor);
-        ele.info('section option');
         const data = new SectionHeaderPacket(null);
         data.orderMagic = orderMagic;
         data.major = major;
@@ -79,21 +100,82 @@ class SectionHeaderVisitor extends BasicVisitor {
             if (!option) {
                 break;
             }
-            data.options.push(option)
-            ele.info(option.code, option.value)
+            switch (option.code) {
+                case 2:
+                    data.hardware = option.value;
+                    break;
+                case 3:
+                    data.os = option.value;
+                    break;
+                case 4:
+                    data.userapp = option.value;
+                    break;
+
+            }
         }
         return data;
     }
 }
+class InterfaceInfo {
+    type: string;
+    name!: string;
+    description!: string;
+    ip4addr: string[] = [];
+    ip6addr: string[] = [];
+    macaddr!: string;
+    tsresol!: string;
+    speed!: string;
+    os!: string;
+    hardwire!: string;
+    txspeed!: string;
+    rxspeed!: string;
+
+}
 class InterfaceDescription extends BasicVisitor {
-    visit(ele: BasicElement): Packet {
+    visit(ele: BasicElement): InterfaceDescriptionPacket {
         const { name, readerCreator, content } = ele;
         const reader = readerCreator.createReader(content, name + ':interface', false);
         const linktype = reader.read16();
         const reserved = reader.read16();
         const snapLen = reader.read32();
-        ele.info('interface', linktype, reserved, snapLen)
-        return null;
+        const type = linktypeMap[linktype];
+        const data = new InterfaceDescriptionPacket(content);
+        data.if = new InterfaceInfo();
+        data.if.type = type;
+        while (true) {
+            const option = readOption(ele, reader);
+            if (!option) {
+                break;
+            }
+            switch (option.code) {
+                case 2:
+                    data.if.name = option.value;
+                    break;
+                case 3:
+                    data.if.description = option.value;
+                    break
+                case 4:
+                    data.if.ip4addr.push(option.value)
+                    break
+                case 5:
+                    data.if.ip6addr.push(option.value)
+                    break
+                case 6:
+                    data.if.macaddr = option.value;
+                    break
+                case 8:
+                    data.if.speed = option.value;
+                    break
+                case 9:
+                    data.if.tsresol = option.value;
+                    break
+                case 12:
+                    data.if.os = option.value;
+                    break
+                //TODO 
+            }
+        }
+        return data;
     }
 
 }
@@ -101,7 +183,7 @@ class InterfaceDescription extends BasicVisitor {
 class EnhancedPacketVisitor extends BasicVisitor {
     visitor: DataLaylerVisitor;
     index: number = 1;
-    constructor(type: string){
+    constructor(type: string) {
         super(type);
         this.visitor = new DataLaylerVisitor();
     }
@@ -131,19 +213,60 @@ class EnhancedPacketVisitor extends BasicVisitor {
     }
 }
 
+class StaticsInfo extends Packet {
+    isb_starttime!: Uint8Array; //2
+    isb_endtime!: Uint8Array;//3
+    isb_ifrecv!: Uint8Array;//4
+    isb_ifdrop!: Uint8Array;//5
+    isb_filteraccept!: Uint8Array;//6
+    isb_osdrop!: Uint8Array;//7
+    isb_usrdeliv!: Uint8Array;//8
+}
 class InterfaceStatistic extends BasicVisitor {
-    visit(ele: BasicElement): Packet {
+    visit(ele: BasicElement): StaticsInfo {
         const { name, readerCreator, content } = ele;
         const reader = readerCreator.createReader(content, name + ':statistic', false);
         const interfaceId = reader.read32();
         const highTS = reader.read32();
         const lowTS = reader.read32();
         ele.log('statistic', interfaceId, highTS, lowTS)
+        const data = new StaticsInfo(content);
+        while (true) {
+            const option = readOption(ele, reader, true);
+            if (!option) {
+                break;
+            }
+            switch (option.code) {
+                case 2:
+                    data.isb_starttime = option.value;
+                    break;
+                case 3:
+                    data.isb_endtime = option.value;
+                    break;
+                case 4:
+                    data.isb_ifrecv = option.value;
+                    break;
+                case 5:
+                    data.isb_ifdrop = option.value;
+                    break;
+                case 6:
+                    data.isb_filteraccept = option.value;
+                    break;
+                case 7:
+                    data.isb_osdrop = option.value;
+                    break;
+                case 8:
+                    data.isb_usrdeliv = option.value;
+                    break;
+            }
+        }
         return null;
     }
 }
 export class RootVisitor implements Visitor {
-    head: SectionHeaderPacket;
+    public head!: SectionHeaderPacket;
+    public interface!: InterfaceInfo;
+    public staticInfo!: StaticsInfo;
     sectionHeaderVisitor: SectionHeaderVisitor = new SectionHeaderVisitor('0a0d0d0a');
     interfaceDescription: InterfaceDescription = new InterfaceDescription('00000001');
     interfaceStatistic: InterfaceStatistic = new InterfaceStatistic('00000005');
@@ -152,15 +275,15 @@ export class RootVisitor implements Visitor {
     packets: IPPacket[] = []
     batchSize: number = 600;
     archer: (packet: IPPacket[]) => void;
-    constructor(archer: (packet: IPPacket[]) => void){
+    constructor(archer: (packet: IPPacket[]) => void) {
         this.archer = archer;
     }
     emitPacket(packet: IPPacket[]): void {
-        if(this.archer) {
-            try {
-                this.archer(packet);
-            }catch(e){}
-        }
+        // if(this.archer) {
+        //     try {
+        //         this.archer(packet);
+        //     }catch(e){}
+        // }
     }
     createElement(name: string, readerCreator: AbstractReaderCreator, content: Uint8Array): BasicElement {
         const ele = new BasicElement(name, readerCreator, content.length, content);
@@ -187,21 +310,21 @@ export class RootVisitor implements Visitor {
                         this.head = this.sectionHeaderVisitor.visit(ele);
                         break;
                     case "00000001":
-                        this.interfaceDescription.visit(ele);
+                        this.interface = this.interfaceDescription.visit(ele)?.if;
                         break;
                     case '00000005':
-                        this.interfaceStatistic.visit(ele);
+                        this.staticInfo = this.interfaceStatistic.visit(ele);
                         break;
                     case "00000006":
                         try {
                             const packet: IPPacket = this.enhancedPacketVisitor.visit(ele);
                             this.packets.push(packet);
                             templateArray.push(packet);
-                            if((templateArray.length % this.batchSize) === 0){
+                            if ((templateArray.length % this.batchSize) === 0) {
                                 this.emitPacket(templateArray)
                                 templateArray = [];
                             }
-                        } catch(e) {
+                        } catch (e) {
                             console.error(e)
                         }
                         break;
@@ -221,12 +344,11 @@ export class RootVisitor implements Visitor {
         do {
             readBlock()
         } while (reader.eof())
-        if(templateArray.length){
+        if (templateArray.length) {
             this.emitPacket(templateArray);
             templateArray = [];
         }
         this.resolver.flush(null);
-        console.log('finish')
         return null;
     }
 }
