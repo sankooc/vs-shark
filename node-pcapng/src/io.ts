@@ -79,6 +79,21 @@ export class Uint8ArrayReader {
         }while(_size)
         return list.join('.')
     }
+    readDNSAnswer(len: number): [string, number]{
+        let _len = len;
+        let _size = 0;
+        const list = [];
+        do{
+            _size = this.read8();
+            _len -= 1;
+            if(_size > 0) {
+                const str = this.readString(_size)
+                _len -= _size;
+                list.push(str)
+            }
+        }while(_size && _len > 2)
+        return [list.join('.'), this.read16(false)]
+    }
     left(): number{
         return this.size - this.cursor
     }

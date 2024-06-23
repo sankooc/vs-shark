@@ -1,24 +1,54 @@
 import { PVisitor, BasicElement, IPPacket,Protocol } from './common';
+import { ipProtocolMap } from './constant';
 import {TCPVisitor, UDPVisitor, ICMPVisitor, IGMPVisitor} from './transportLayer';
 
-
-export class IPv4 extends IPPacket {
+export class IPPack extends IPPacket {
     extra: any;
     source: string;
     target: string;
+
+}
+export class IPv4 extends IPPack {
+    version: number;
+    totalLen: number;
+    identification: number;
+    ttl: number;
+    ipprotocol: string;
+    toString(): string {
+        return `Internet Protocol Version : ${this.version} length: ${this.totalLen}`;
+    }
 }
 
-export class IPv6 extends IPv4 {
-
+export class IPv6 extends IPPack {
+    nextHeader: number;
+    hop: number;
+    toString(): string {
+        return `Internet Protocol Version : 6 src: ${this.source} dst: ${this.target}`;
+    }
 }
 
 export class ARP extends IPPacket{
-    oper: number;
+    oper: number;//1 request 2 reply
     senderMac: string;
     senderIp: string;
     targetMac: string;
     targetIp: string;
-    extra: any;
+    hardwareType:number;
+    protocolType: number;
+    hardwareSize: number;
+    protocolSize: number;
+    toString(): string {
+        if(this.oper === 1){
+            if(this.senderIp === this.targetIp){
+                return `ARP Announcement for ${this.senderIp}`;
+            }
+            if(this.senderIp === '0.0.0.0'){
+                return `who has ${this.targetIp}? (ARP probe)`;
+            }
+            return `who has ${this.targetIp}? tell ${this.senderIp}`;
+        }
+        return 'ARP';
+    }
 }
 // https://en.wikipedia.org/wiki/Internet_Protocol_version_4
 export class IPv4Visitor implements PVisitor {
@@ -56,7 +86,12 @@ export class IPv4Visitor implements PVisitor {
         const data = new IPv4(ele.packet, packet, Protocol.IPV4);
         data.source = source;
         data.target = target;
-        data.extra = {cv, version,headLenth,tos,totalLen,identification,flag,ttl,protocol,headCRC }
+        data.version = version;
+        data.totalLen = totalLen;
+        data.identification = identification;
+        data.ttl = ttl;
+        data.ipprotocol = ipProtocolMap[protocol];
+        data.extra = {cv,headLenth,tos,flag,headCRC }
 
         const nextVisitor = this.mapper.get(protocol);
         if(nextVisitor) {
@@ -81,19 +116,21 @@ export class ARPVisitor implements PVisitor {
         //Length (in octets) of internetwork addresses. The internetwork protocol is specified in PTYPE. Example: IPv4 address length is 4.
         const plen = reader.read8();
         //Specifies the operation that the sender is performing: 1 for request, 2 for reply.
-        const oper = reader.read16();
-
+        const oper = reader.read16(false);
         const senderMac = reader.readHex(6, ':');
         const senderIp = reader.readIp()
         const targetMac = reader.readHex(6, ':');
         const targetIp = reader.readIp()
         const data = new ARP(ele.packet, null, Protocol.ARP);
+        data.hardwareType = htype;
+        data.hardwareSize = hlen;
+        data.protocolType = ptype;
+        data.protocolSize = plen;
         data.oper = oper;
         data.senderMac = senderMac;
         data.senderIp = senderIp;
         data.targetMac = targetMac;
         data.targetIp = targetIp;
-        data.extra = {htype, ptype, hlen, plen}
         return data;
     }
 }
@@ -114,13 +151,13 @@ export class IPv6Visitor implements PVisitor {
         ele.log('ipv6', plen, header, hopLimit)
 
         Object.assign(this, {plen, header, hopLimit,sourceip ,targetip})
-        // ele.log('ip', sourceip, targetip)
 
         const arr = reader.extra();
-        const data = new IPv4(ele.packet, arr, Protocol.IPV6);
+        const data = new IPv6(ele.packet, arr, Protocol.IPV6);
         data.source = sourceip;
         data.target = targetip;
-        data.extra = {header, hopLimit}
+        data.nextHeader = header;
+        data.hop = hopLimit;
         return data;
     }
 }

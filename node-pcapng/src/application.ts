@@ -1,5 +1,5 @@
-import { AbstractVisitor, BasicElement, BasicEmptyVisitor, IPPacket, PVisitor, Protocol } from './common';
-import { Uint8ArrayReader } from './io';
+import { BasicElement, IPPacket, PVisitor, Protocol } from './common';
+import { UDP } from './transportLayer';
 
 export class NBNS extends IPPacket {
     transactionId: string;
@@ -8,11 +8,38 @@ export class NBNS extends IPPacket {
     answer: number;
     authority: number;
     addtional: number;
+    payload: Uint8Array;
+    toString(): string {
+        return `NBNS transaction id: ${this.transactionId}`;
+    }
 }
 
+export class Query {
+    name: string;
+    type: number;
+    cls: number;
+    constructor(name: string, type: number,cls: number){
+        this.name = name;
+        this.type = type;
+        this.cls = cls;
+    }
+}
+export class Answer {
+    name: number;
+    type: number;
+    cls: number;
+    ttl: number;
+    len: number;
+    host: string;
+}
 export class DNS extends NBNS {
     domain: string;
     type: number;
+    isAnswer: boolean;
+    queries: Query[] = [];
+    toString(): string {
+        return `DNS transaction id: ${this.transactionId}`;
+    }
 }
 
 export class DHCP extends IPPacket {
@@ -22,6 +49,9 @@ export class DHCP extends IPPacket {
     nextServerAddress: string;
     relayAddress: string;
     macAddress: string;
+    toString(): string {
+        return `DHCP transaction id: ${this.transactionId}`;
+    }
 }
 
 export class DNSVisitor implements PVisitor {
@@ -42,6 +72,31 @@ export class DNSVisitor implements PVisitor {
         data.answer = answer;
         data.authority = authority;
         data.addtional = addtional;
+        const udp: UDP = ele.packet.getProtocal(Protocol.UDP) as UDP;
+        data.isAnswer = udp.targetPort === 53;
+        for(let i = 0; i < data.question; i += 1) {
+            const domain = reader.readDNSQuery();
+            const type = reader.read16(false);
+            const cls = reader.read16(false);
+            data.queries.push(new Query(domain, type, cls));
+        }
+        for(let i = 0; i < data.answer; i += 1){
+            const ans = new Answer();
+            ans.name = reader.read16(false);
+            ans.type = reader.read16(false);
+            ans.cls = reader.read16(false);
+            ans.ttl = reader.read32(false);
+            ans.len = reader.read16(false);
+            if(ans.type === 5) {
+                const [domain, id] = reader.readDNSAnswer(ans.len);
+                ans.host = domain;
+            } else {
+                ans.host = reader.readIp();
+            }
+        }
+        // if(data.answer > 0){
+        //     process.exit(0);
+        // }
         // if (this.destPort === 53) {
         //     const domain = reader.readDNSQuery();
         //     const type = reader.read16(false)
@@ -72,101 +127,10 @@ export class NBNSVisitor implements PVisitor {
         data.answer = answer;
         data.authority = authority;
         data.addtional = addtional;
+        data.payload = reader.extra();
         return data;
     }
-    // next(ele: BasicElement, reader: Uint8ArrayReader): void {
-    //     const transactionId = reader.readHex(2)
-    //     const flag = reader.read16(false);
-    //     const question = reader.read16(false);
-    //     const answer = reader.read16(false);
-    //     const authority = reader.read16(false);
-    //     const addtional = reader.read16(false);
-    //     Object.assign(this, {transactionId, flag, question, answer, authority, addtional});
-
-    // }
 }
-
-// class PayloadVisitor extends BasicVisitor {
-//     items: [];
-//     // constructor(sub: AbstractVisitor, name: string,sourcePort: number, destPort: number){
-//     //     super(sub,name, sourcePort, destPort)
-//     // }
-//     visit(ele: BasicElement): void {
-//         const { name, readerCreator, content } = ele;
-//         const prefix = name + '/' + this.name;
-//         const type = content[0];
-//         let _type = '';
-//         let version = content[1] +':' + content[2];
-//         const len = content[3] * 16 * 16 + content[4];
-//         switch(type){
-//             case 20:
-//                 _type ='ChangeCipherSpec';
-//                 break
-//             case 21:
-//                 _type ='Aler';
-//                 break;
-//             case 22:
-//                 _type ='Handshake';
-//                 break;
-//             case 23:
-//                 _type ='Application';
-//                 break;
-//             case 24:
-//                 _type ='Heartbeat';
-//                 break;
-//             default:
-//                 return this.raw(ele);
-//         }
-//         switch(version){
-//             case '3:1':
-//                 version = 'tls1.0';
-//                 break;
-//             case '3:2':
-//                 version = 'tls1.1';
-//                 break;
-//             case '3:3':
-//                 version = 'tls1.2';
-//                 break;
-//             case '3:4':
-//                 version = 'tls1.3';
-//                 break;
-//             case '3:0':
-//                 version = 'ssl3.0';
-//                 break;
-//             default:
-//                 return this.raw(ele);
-//         }
-
-//         if((content.length - 4) > len){
-//             const reader = readerCreator.createReader(content, prefix, false);
-//             const _type = reader.read8();
-//             const _version = reader.read16(false);
-//             const _len = reader.read16(false);
-//             console.log('sub', _type, _version, _len);
-//             return this.tls(ele)
-//         } else {
-//             console.log('-------------', content[0].toString(16), version)
-//             console.log('-------------', content.length, len)
-//             console.log('-------------', this.sourcePort, this.destPort)
-//             readerCreator.createReader(content, prefix, true);
-//             process.exit(0)
-//         }
-//         Object.assign(this, {type, _type, version, len});
-
-//     }
-//     tls(ele: BasicElement): void {
-//         const { name, readerCreator, content } = ele;
-//         const prefix = name + '/' + this.name;
-
-//         const reader = readerCreator.createReader(content, prefix, true);
-//     }
-//     raw(ele: BasicElement): void {
-
-//     }
-//     next(ele: BasicElement, reader: Uint8ArrayReader): void {
-
-//     }
-// }
 
 export class DHCPVisitor implements PVisitor {
     // https://en.wikipedia.org/wiki/Dynamic_Host_Configuration_Protocol

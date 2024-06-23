@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "reset": "rm -rf node_modules/protocols && pnpm install",
     "watch": "npx webpack -c webpack.dev.config.js",
     "serve": "npx webpack serve -c webpack.dev.config.js",
     "build": "npx webpack"

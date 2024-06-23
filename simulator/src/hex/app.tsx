@@ -1,4 +1,4 @@
-import React,{ useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { onMessage } from '../connect';
 import { HexV } from "../common";
 
@@ -17,20 +17,25 @@ function HexView() {
   const indexes = [];
   const codes = [];
   let text = '';
-  if(data){
+  if (data) {
     const lent = data.data.length;
-    for(let i = 0 ; i < lent; i += 16){
+    for (let i = 0; i < lent; i += 16) {
       const inx = `0x${i.toString(16).padStart(8, '0')}`;
       indexes.push(inx);
     }
-    for(let i=0;i<lent;i += 1){
+    for (let i = 0; i < lent; i += 1) {
       codes.push(data.data[i].toString(16).padStart(2, '0'));
     }
     try {
-      for(let i=0;i<lent;i += 1){
-        text += String.fromCharCode(data.data[i])
+      for (let i = 0; i < lent; i += 1) {
+        const code = data.data[i];
+        if (code > 33 && code !== 129 && code !== 141 && code !== 143 && code !== 144 && code !== 157) {
+          text += String.fromCharCode(code)
+        } else {
+          text += '?'
+        }
       }
-    }catch(e){}
+    } catch (e) { }
   }
   return (<>
     <div className="index">
@@ -42,7 +47,7 @@ function HexView() {
     <div className="text">
       <pre>{text}</pre>
     </div>
-    </>
+  </>
   );
 }
 

@@ -75,7 +75,7 @@ function FrameList(props: FrameListProps) {
           setStore({ ...store, current: current - 1 });
         }}>&lt;</a></li>
         <li className="page-item"><a className={store.current < maxPage ? 'page-link' : 'page-link disabled'} href="#" onClick={() => {
-          setStore({ ...store, current: maxPage });
+          setStore({ ...store, current: store.current + 1 });
         }}>&gt;</a></li>
 
         {/* {pg.map( n => <li className="page-item"><a className={n === store.current ? "page-link active" :"page-link"} href="#" onClick={() => {

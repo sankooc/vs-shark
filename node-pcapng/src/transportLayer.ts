@@ -1,4 +1,4 @@
-import { PVisitor, BasicElement, IPPacket, Protocol,TCPStack,TCPConnect } from './common';
+import { PVisitor, BasicElement, IPPacket, Protocol, TCPStack, TCPConnect } from './common';
 
 import { DNSVisitor, NBNSVisitor, DHCPVisitor } from './application';
 import { IPv4, IPv6 } from './networkLayer';
@@ -8,7 +8,7 @@ export class UDP extends IPPacket {
     payload: Uint8Array
     sourcePort: number;
     targetPort: number;
-    toString(): string{
+    toString(): string {
         return `[UDP] ${this.sourcePort} -> ${this.targetPort}`;
     }
 }
@@ -26,24 +26,24 @@ export class TCP extends UDP {
         let sourceIp;
         let targetIp;
         let rs = this.getProtocal(Protocol.IPV4);
-        if(rs && rs instanceof IPv4){
+        if (rs && rs instanceof IPv4) {
             sourceIp = (rs as IPv4).source;
             targetIp = (rs as IPv4).target;
         }
         rs = this.getProtocal(Protocol.IPV6);
-        if(rs instanceof IPv6){
+        if (rs instanceof IPv6) {
             sourceIp = (rs as IPv6).source;
             targetIp = (rs as IPv6).target;
         }
         // sourceIp = `${sourceIp}:${this.sourcePort}`
         // targetIp = `${targetIp}:${this.targetPort}`
         const arch = `${sourceIp}:${this.sourcePort}` > `${targetIp}:${this.targetPort}`;
-        if(arch){
-            return [arch, sourceIp, this.sourcePort, targetIp,this.targetPort]
+        if (arch) {
+            return [arch, sourceIp, this.sourcePort, targetIp, this.targetPort]
         }
-        return [arch, targetIp,this.targetPort,sourceIp, this.sourcePort];
+        return [arch, targetIp, this.targetPort, sourceIp, this.sourcePort];
     }
-    toString(): string{
+    toString(): string {
         return `[TCP] ${this.sourcePort} -> ${this.targetPort}`;
     }
     createSubElement(name: string, parent: BasicElement): BasicElement {
@@ -52,8 +52,8 @@ export class TCP extends UDP {
         const [arch, ip1, port1, ip2, port2] = this.mess();
         const key = `${ip1}${port1}-${ip2}${port2}`;
         let connect = parent.resolver.tcpCache.get(key);
-        if(!connect) {
-            if(noContent) return; // 
+        if (!connect) {
+            if (noContent) return; // 
             connect = new TCPConnect(ip1, port1, ip2, port2);
             parent.resolver.tcpCache.set(key, connect);
         }
@@ -65,20 +65,16 @@ export class TCP extends UDP {
         connect.count += 1;
         connect.total += this.getProtocal(Protocol.ETHER).packet.length;
         connect.tcpSize += this.packet.length;
-        if(dump) {
-            // console.log('dump:', this.getIndex())
+        if (dump) {
             return null;
         }
         connect.tcpUse += this.packet.length;
         connect.countUse += 1;
-        // if(this.getIndex() == 72){
-        //     console.log('--', this.packet.length)
-        // }
         stack.sequence = sequence;
         stack.next = nextSequence;
         const stackRec = connect.getStack(!arch);
         stackRec.ack = this.acknowledge;
-      
+
 
         // if(arch) {
         //     const stack = connect.getStack(arch);
@@ -93,15 +89,15 @@ export class TCP extends UDP {
         //     connect.sequence2 = this.sequence;
         //     connect.ack2 = this.sequence + this.packet;
         // }
-        if(this.ack){
+        if (this.ack) {
 
         }
-        if(this.ack && !this.psh){
-            if(this.packet.length > 10){
+        if (this.ack && !this.psh) {
+            if (this.packet.length > 10) {
                 const len = this.getProtocal(Protocol.ETHER).packet.length;
             }
         }
-        if(this.psh){
+        if (this.psh) {
             // if(arch){
             //     connect
             // }
@@ -181,7 +177,7 @@ export class TCPVisitor implements PVisitor {
         data.extra = { window, cwr, ece, urg, urgent };
 
         data.createSubElement(prefix, ele)
-        
+
         // let visitor = null;
         // if (payload[0] == 23) {
         //     if (payload[1] == 3 && minorVersion[payload[2]]) {
@@ -209,6 +205,9 @@ export class TCPVisitor implements PVisitor {
 }
 
 export class UDPVisitor implements PVisitor {
+    dNSVisitor: DNSVisitor = new DNSVisitor();
+    nBNSVisitor: NBNSVisitor = new NBNSVisitor();
+    dHCPVisitor: DHCPVisitor = new DHCPVisitor();
     visit(ele: BasicElement): IPPacket {
         const { name, readerCreator, content } = ele;
         const prefix = name + '/udp';
@@ -223,6 +222,30 @@ export class UDPVisitor implements PVisitor {
         data.sourcePort = sourcePort;
         data.targetPort = targetPort;
         data.payload = payload;
+        let visitor = null;
+        switch (targetPort) {
+            case 53:
+                visitor = this.dNSVisitor;
+                break;
+            case 137:
+                visitor = this.nBNSVisitor;
+                break;
+            case 67:
+            case 68:
+                visitor = this.dHCPVisitor;
+                break;
+        }
+        switch (sourcePort) {
+            case 53:
+                visitor = this.dNSVisitor;
+                break;
+            case 137:
+                visitor = this.nBNSVisitor;
+                break;
+        }
+        if (visitor) {
+            return data.createSubElement(prefix, ele).accept(visitor);
+        }
         return data;
     }
 }

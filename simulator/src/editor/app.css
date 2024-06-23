@@ -1,7 +1,9 @@
 html {
   height: 100%;
+  font-size: 16px;
 }
 body {
+  font-size: 16px;
   height: 100%;
   padding: 0;
   margin: 0;
@@ -21,24 +23,40 @@ main {
   font-size: 0.56rem;
 }
 #frame-page {
-  font-size: 0.6em;
+  font-size: 0.6rem;
   flex-direction: column;
   height: 100%;
-  padding: 5px;
+  padding: 3px 5px;
 }
 #frame-page .filter {
-  height: 40px;
+  margin: 0;
+  flex-basis: 2rem;
+}
+#frame-page .filter span {
+  padding: 0 0.4rem;
+}
+#frame-page .filter input {
+  padding: 0 0.4rem;
 }
 #frame-page .main-content {
   flex-grow: 0;
   flex-shrink: 1;
   overflow-y: auto;
+  margin-top: 3px;
 }
 #frame-page .main-pagination {
   flex-grow: 0;
   flex-shrink: 0;
-  flex-basis: 50px;
-  margin-top: 5px;
+  flex-basis: 2rem;
+  margin: 0;
+}
+#frame-page .main-pagination ul.pagination {
+  margin: 0;
+  position: absolute;
+  bottom: 5px;
+}
+#frame-page .main-pagination ul.pagination a.page-link {
+  padding: 0 0.4rem;
 }
 #frame-page th {
   color: #eed;
@@ -69,8 +87,8 @@ main {
   width: 12vw;
 }
 #frame-page td.time {
-  max-width: 7vw;
-  width: 7vw;
+  max-width: 4vw;
+  width: 4vw;
 }
 #frame-page td.info {
   max-width: 30vw;

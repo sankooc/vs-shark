@@ -54,7 +54,7 @@ export abstract class PCAPClient {
                     this.selectFrame(body.index as number);
                     break;
                 default:
-                    console.error('unknown type', msg.type);
+                    console.log('unknown type', msg.type);
             }
         }catch(e){
             console.error(e);
@@ -65,7 +65,7 @@ export abstract class PCAPClient {
 
 export class Frame {
     no!: number;
-    time: string = '';
+    time: number;
     source: string = 'n/a';
     dest: string = 'n/a';
     protocol!: string;

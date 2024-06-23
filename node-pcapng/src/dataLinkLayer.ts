@@ -5,6 +5,9 @@ export class DataPacket extends IPPacket {
     target: string;
     source: string;
     type: string;
+    toString(): string {
+        return `src: () ${this.source} Dst: () ${this.target}`;
+    }
 }
 export class DataLaylerVisitor implements PVisitor {
     mapper: Map<string, PVisitor> = new Map();

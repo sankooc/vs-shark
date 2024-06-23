@@ -2,7 +2,7 @@ module.exports = {
     entry: { 
         app: "./src/editor/index.tsx",
         main: './src/nav/index.tsx',
-        // tree: './src/tree/index.tsx',
+        tree: './src/tree/index.tsx',
         hex: './src/hex/index.tsx',
     },
     output: {
