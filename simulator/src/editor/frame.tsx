@@ -10,6 +10,12 @@ import { ComMessage, Frame } from "../common";
 class FrameListProps {
   items: Frame[];
 }
+const getStyle = (item: Frame,sel: number): string => {
+  if(item.no === sel){
+      return 'active';
+  }
+  return item.style;
+}
 
 function FrameList(props: FrameListProps) {
   const getData = (): Frame[] => {
@@ -52,7 +58,8 @@ function FrameList(props: FrameListProps) {
           </tr>
         </thead>
         <tbody>
-          {cols.map(item => <tr className={select === item.no ? 'active' : ''} onClick={() => {
+          {cols.map(item => 
+          (<tr className={getStyle(item, select)} onClick={() => {
             setSelect(item.no);
             emitMessage(new ComMessage('frame-select', { index: item.no }));
             trace('select ' + item.no);
@@ -63,7 +70,7 @@ function FrameList(props: FrameListProps) {
             <td className="ipadd">{item.dest}</td>
             <td className="time">{item.protocol}</td>
             <td className="time">{item.len}</td>
-            <td className="info">{item.info}</td></tr>)}
+            <td className="info">{item.info}</td></tr>))}
         </tbody>
       </Table>
 

@@ -19,6 +19,7 @@ const read8 = (arr: Uint8Array, offset: number): number => {
     return dataView.getUint8(0)
 }
 
+const textDecoder = new TextDecoder('utf-8');
 export class Uint8ArrayReader {
     arr: Uint8Array;
     cursor: number;
@@ -33,6 +34,25 @@ export class Uint8ArrayReader {
         const v = read8(this.arr, this.cursor);
         this.cursor += 1;
         return v;
+    }
+    readSpace(max: number = 10): string {
+        for(let i = 0; i < max; i += 1){
+            if(this.arr[this.cursor + i] == 32) {
+                const data = this.arr.slice(this.cursor, this.cursor + i);
+                return textDecoder.decode(data);
+            }
+        }
+        return null;
+    }
+    readEnter(): string {
+        for(let i = 0; i < this.left(); i += 1){
+            if(this.arr[this.cursor + i] == 13 && this.arr[this.cursor + i + 1] == 10) {
+                const data = this.arr.slice(this.cursor, this.cursor + i);
+                this.skip(i + 2);
+                return textDecoder.decode(data);
+            }
+        }
+        return null;
     }
     read16(littleEndian = true): number {
         const v = read16(this.arr, this.cursor, littleEndian);

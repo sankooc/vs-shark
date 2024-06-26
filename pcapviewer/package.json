@@ -51,6 +51,9 @@
 				"selector": [
 					{
 						"filenamePattern": "*.pcapng"
+					},
+					{
+						"filenamePattern": "*.pcap"
 					}
 				]
 			}
@@ -65,6 +68,7 @@
 		"watch-tests": "tsc -p . -w --outDir out",
 		"pretest": "pnpm run compile-tests && pnpm run compile && pnpm run lint",
 		"lint": "eslint src --ext ts",
+		"reset": "rm -rf node_modules/protocols && pnpm install",
 		"test": "vscode-test"
 	},
 	"devDependencies": {

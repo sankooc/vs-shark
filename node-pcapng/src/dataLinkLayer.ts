@@ -6,7 +6,7 @@ export class DataPacket extends IPPacket {
     source: string;
     type: string;
     toString(): string {
-        return `src: () ${this.source} Dst: () ${this.target}`;
+        return `Ethernet II, src: () ${this.source} Dst: () ${this.target}`;
     }
 }
 export class DataLaylerVisitor implements PVisitor {

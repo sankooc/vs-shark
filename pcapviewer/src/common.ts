@@ -63,7 +63,69 @@ export abstract class PCAPClient {
     
 }
 
-export class Frame {
+export interface ColumnItem {
+    getIndex(): number;
+    getStyle(inx: number): string;
+}
+
+export class TCPCol implements ColumnItem {
+    no: number;
+    ep1: string;
+    ep2: string;
+    total: number;
+    tcp: number;
+    tcpUse: number;
+    count: number;
+    countUse: number;
+    getIndex(): number {
+        return 0;
+    }
+    getStyle(inx: number): string {
+        return '';
+    }
+}
+
+
+export class Category {
+    name: string;
+    index: number = 0;
+    constructor(name: string){
+        this.name = name;
+    }
+}
+export class GrapNode {
+    private static index:number = 0;
+    public static create(name: string, category: number): GrapNode{
+        const instance = new GrapNode(name);
+        instance.category = category;
+        instance.id = GrapNode.index;
+        GrapNode.index += 1;
+        return instance;
+    }
+    id!: number;
+    category!: number;
+    name: string;
+    extra!: string;
+    constructor(name: string){
+        this.name = name;
+    }
+}
+export class GrapLink {
+    readonly source: number;
+    readonly target: number;
+    constructor(source: number, target: number){
+        this.source = source;
+        this.target = target;
+    }
+}
+
+export class Grap {
+    categories: Category[] = [];
+    nodes: GrapNode[] = [];
+    links: GrapLink[] = [];
+}
+
+export class Frame implements ColumnItem {
     no!: number;
     time: number;
     source: string = 'n/a';
@@ -71,7 +133,18 @@ export class Frame {
     protocol!: string;
     iRtt: number = 0;
     len: number = 0;
+    style: string='';
     info!: string;
+    getIndex(): number {
+        return this.no;
+    }
+    getStyle(inx: number): string {
+        if(this.no === inx){
+            return 'active';
+        }
+        return this.style;
+    }
+
 }
 
 
@@ -95,4 +168,18 @@ export class HexV {
     constructor(data: Uint8Array){
         this.data = data;
     }
+}
+
+export class OverviewSource {
+    legends!: string[];
+    labels!: number[];
+    counts!: number[];
+    valMap: any;
+}
+export class MainProps {
+    status: string;
+    items: Frame[];
+    tcps: TCPCol[];
+    arpGraph!: Grap;
+    overview: OverviewSource;
 }

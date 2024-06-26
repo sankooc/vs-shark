@@ -10,5 +10,7 @@ test: clear
 debug: clean-ts
 	npx tsc -p ./tsconfig.dev.json
 	NODE_ENV=DEBUG node built/test/debug.js
+compile: clean-ts
+	npx tsc -p ./tsconfig.dev.json --declaration
 eslint:
 	pnpm eslint src

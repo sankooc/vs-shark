@@ -1,6 +1,6 @@
 import { PVisitor, BasicElement, IPPacket, Protocol, TCPStack, TCPConnect } from './common';
 
-import { DNSVisitor, NBNSVisitor, DHCPVisitor } from './application';
+import { DNSVisitor, NBNSVisitor, DHCPVisitor, HTTPVisitor } from './application';
 import { IPv4, IPv6 } from './networkLayer';
 
 export class UDP extends IPPacket {
@@ -17,7 +17,7 @@ export class TCP extends UDP {
     acknowledge: number;
     ack: boolean;
     psh: boolean;
-    rsp: boolean;
+    rst: boolean;
     syn: boolean;
     fin: boolean;
     unseen: boolean;
@@ -35,8 +35,6 @@ export class TCP extends UDP {
             sourceIp = (rs as IPv6).source;
             targetIp = (rs as IPv6).target;
         }
-        // sourceIp = `${sourceIp}:${this.sourcePort}`
-        // targetIp = `${targetIp}:${this.targetPort}`
         const arch = `${sourceIp}:${this.sourcePort}` > `${targetIp}:${this.targetPort}`;
         if (arch) {
             return [arch, sourceIp, this.sourcePort, targetIp, this.targetPort]
@@ -44,76 +42,40 @@ export class TCP extends UDP {
         return [arch, targetIp, this.targetPort, sourceIp, this.sourcePort];
     }
     toString(): string {
-        return `[TCP] ${this.sourcePort} -> ${this.targetPort}`;
+        if (this.isDump) {
+            return `[TCP Retransmission] ${this.sourcePort} -> ${this.targetPort}, ${this.getFlag()}`
+        }
+        return `[TCP] ${this.sourcePort} -> ${this.targetPort}, ${this.getFlag()}`
     }
-    createSubElement(name: string, parent: BasicElement): BasicElement {
-
-        const noContent = this.ack && !this.psh && this.packet.length < 10;
-        const [arch, ip1, port1, ip2, port2] = this.mess();
-        const key = `${ip1}${port1}-${ip2}${port2}`;
-        let connect = parent.resolver.tcpCache.get(key);
-        if (!connect) {
-            if (noContent) return; // 
-            connect = new TCPConnect(ip1, port1, ip2, port2);
-            parent.resolver.tcpCache.set(key, connect);
-        }
-        const sequence = this.sequence;
-        const nextSequence = this.sequence + this.packet.length;
-        const stack = connect.getStack(arch);
-        const dump = stack.checkDump(sequence, nextSequence);
-        this.isDump = dump;
-        connect.count += 1;
-        connect.total += this.getProtocal(Protocol.ETHER).packet.length;
-        connect.tcpSize += this.packet.length;
-        if (dump) {
-            return null;
-        }
-        connect.tcpUse += this.packet.length;
-        connect.countUse += 1;
-        stack.sequence = sequence;
-        stack.next = nextSequence;
-        const stackRec = connect.getStack(!arch);
-        stackRec.ack = this.acknowledge;
-
-
-        // if(arch) {
-        //     const stack = connect.getStack(arch);
-        //     stack.sequence = sequence;
-        //     stack.ack = nextSequence;
-        //     if(connect.sequence1 == sequence && connect.ack1 == nextSequence){
-
-        //     }
-        //     connect.sequence1 = this.sequence;
-        //     connect.ack1 = this.sequence + this.packet;
-        // } else {
-        //     connect.sequence2 = this.sequence;
-        //     connect.ack2 = this.sequence + this.packet;
-        // }
-        if (this.ack) {
-
-        }
-        if (this.ack && !this.psh) {
-            if (this.packet.length > 10) {
-                const len = this.getProtocal(Protocol.ETHER).packet.length;
-            }
-        }
-        if (this.psh) {
-            // if(arch){
-            //     connect
-            // }
-        }
-        return super.createSubElement(name, parent);
+    detail(): string {
+        return `Transmission Control Protocol, Src Port: ${this.sourcePort}, Dst Prot: ${this.targetPort}, Len: ${this.packet.length}`;
+    }
+    public getFlag(): string {
+        const its = [];
+        this.ack && its.push('ACK');
+        this.psh && its.push('PUSH');
+        this.rst && its.push('RESET');
+        this.syn && its.push('SYN');
+        this.fin && its.push('FINISH');
+        return '[' + its.join(',') + ']';
     }
 }
 
 export class ICMP extends IPPacket {
     type: number;
     code: number;
+    toString(): string {
+        return 'ICMP';
+    }
 }
 export class IGMP extends IPPacket {
     type: number;
     resp: number;
     address: string;
+}
+
+export class ICMPV6 extends ICMP {
+
 }
 const lann = (mask: number) => {
     const arr = [7, 6, 5, 4, 3, 2, 1, 0];
@@ -139,6 +101,7 @@ export class TCPVisitor implements PVisitor {
     dNSVisitor: DNSVisitor = new DNSVisitor();
     nBNSVisitor: NBNSVisitor = new NBNSVisitor();
     dHCPVisitor: DHCPVisitor = new DHCPVisitor();
+    httpVisitor: HTTPVisitor = new HTTPVisitor();
     visit(ele: BasicElement): IPPacket {
         const { name, readerCreator, content } = ele;
         const prefix = name + '/tcp'
@@ -149,14 +112,13 @@ export class TCPVisitor implements PVisitor {
         const acknowledge = reader.read32(false);
         const h1 = reader.read16(false);
         const len = (h1 >>> 12) & 0x08;
-        const [cwr, ece, urg, ack, psh, rsp, syn, fin] = lann(h1);
+        const [cwr, ece, urg, ack, psh, rst, syn, fin] = lann(h1);
         const window = reader.read16(false);
         const checksum = reader.read16(false);
         const urgent = reader.read16(false);
         ele.log('port', sourcePort, targetPort);
         ele.log('sequence', sequence, acknowledge);
         ele.log('extra', len, window, checksum);
-        ele.log('flag', cwr, ece, urg, ack, psh, rsp, syn, fin);
         if (len > 5) {
             const optionLen = (len - 5) * 4;
             const optionBytes = reader.slice(optionLen);
@@ -170,36 +132,36 @@ export class TCPVisitor implements PVisitor {
         data.acknowledge = acknowledge;
         data.ack = ack;
         data.psh = psh;
-        data.rsp = rsp;
+        data.rst = rst;
         data.syn = syn;
         data.fin = fin;
         data.payload = payload;
         data.extra = { window, cwr, ece, urg, urgent };
+        ele.context.resolveTCP(data);
+        let nextVisitor;
+        const method = reader.readSpace(10);
+        if (method) {
+            switch (method) {
+                case 'GET':
+                case 'POST':
+                case 'PUT':
+                case 'DELETE':
+                case 'HEAD':
+                case 'CONNECT':
+                case 'OPTIONS':
+                case 'TRACE':
+                case 'PATCH':
+                case 'NOTIFY':
+                case 'HTTP/1.1':{
+                    nextVisitor = this.httpVisitor;
+                }
+                break;
+            }
+        }
 
-        data.createSubElement(prefix, ele)
-
-        // let visitor = null;
-        // if (payload[0] == 23) {
-        //     if (payload[1] == 3 && minorVersion[payload[2]]) {
-        //         console.log('tls', data.getIndex())
-        //     }
-        // }
-
-        // switch (targetPort) {
-        //     case 53:
-        //         visitor = this.dNSVisitor;
-        //         break;
-        //     case 137:
-        //         visitor = this.nBNSVisitor;
-        //         break;
-        //     case 67:
-        //     case 68:
-        //         visitor = this.dHCPVisitor;
-        //         break;
-        // }
-        // if (visitor) {
-        //     return data.createSubElement(prefix, ele).accept(visitor);
-        // }
+        if(nextVisitor) {
+            return data.createSubElement(prefix, ele).accept(nextVisitor);
+        }
         return data;
     }
 }
@@ -253,7 +215,7 @@ export class UDPVisitor implements PVisitor {
 export class ICMPVisitor implements PVisitor {
     visit(ele: BasicElement): IPPacket {
         const { name, readerCreator, content } = ele;
-        const prefix = name + '/icmp';
+        const prefix = name + '/ICMP';
         const reader = readerCreator.createReader(content, prefix, false);
         const type = reader.read8()
         const code = reader.read8()
@@ -281,23 +243,21 @@ export class IGMPVisitor implements PVisitor {
         return data;
     }
 }
-// export default {
-//     createVisitor(parent: AbstractVisitor, protocol: number): AbstractVisitor {
-//         //https://en.wikipedia.org/wiki/List_of_IP_protocol_numbers
-//         switch (protocol) {
-//             case 6://TCP
-//                 return new TCPVisitor(parent, 'tcp', protocol);
-//             case 17://UDP
-//                 return new UDPVisitor(parent, 'udp', protocol);
-//             case 1://ICMP
-//                 return new ICMPVisitor(parent, 'icmp', protocol)
-//             case 2: // IGMP
-//                 return new IGMPVisitor(parent, 'igmp', protocol)
-//             case 41: // ENCAP
-//             case 89: // OSPF
-//             case 132:// SCTP
-//         }
 
-//         return new BasicVisitor(parent, 'default', protocol);
-//     }
-// }
+export class ICMPV6Visitor implements PVisitor {
+    visit(ele: BasicElement): IPPacket {
+        const { name, readerCreator, content } = ele;
+        const prefix = name + '/ICMP6';
+        const reader = readerCreator.createReader(content, prefix, false);
+        const type = reader.read8();
+        const code = reader.read8();
+        const data = new ICMPV6(ele.packet, null, Protocol.ICMP);
+        data.type = type;
+        data.code = code;
+        // reader.read16(); //crc
+        // reader.skip(4); //flag
+        // const target = reader.readHex(16, ':')
+        return data;
+    }
+
+}

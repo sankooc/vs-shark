@@ -1,12 +1,22 @@
 import { PVisitor, BasicElement, IPPacket,Protocol } from './common';
 import { ipProtocolMap } from './constant';
-import {TCPVisitor, UDPVisitor, ICMPVisitor, IGMPVisitor} from './transportLayer';
+import {TCPVisitor, UDPVisitor, ICMPVisitor, IGMPVisitor, ICMPV6Visitor} from './transportLayer';
 
 export class IPPack extends IPPacket {
-    extra: any;
-    source: string;
-    target: string;
-
+    protected _source: string;
+    protected _target: string;
+    set source (s: string) {
+        this._source = s;
+    }
+    get source (): string {
+        return this._source;
+    }
+    set target (s: string) {
+        this._target = s;
+    }
+    get target (): string  {
+        return this._target;
+    }
 }
 export class IPv4 extends IPPack {
     version: number;
@@ -14,6 +24,7 @@ export class IPv4 extends IPPack {
     identification: number;
     ttl: number;
     ipprotocol: string;
+    extra: any;
     toString(): string {
         return `Internet Protocol Version : ${this.version} length: ${this.totalLen}`;
     }
@@ -27,7 +38,8 @@ export class IPv6 extends IPPack {
     }
 }
 
-export class ARP extends IPPacket{
+export class ARP extends IPPack{
+    //https://en.wikipedia.org/wiki/Address_Resolution_Protocol
     oper: number;//1 request 2 reply
     senderMac: string;
     senderIp: string;
@@ -37,6 +49,12 @@ export class ARP extends IPPacket{
     protocolType: number;
     hardwareSize: number;
     protocolSize: number;
+    get source (): string {
+        return this.senderIp;
+    }
+    get target(): string {
+        return this.targetIp;
+    }
     toString(): string {
         if(this.oper === 1){
             if(this.senderIp === this.targetIp){
@@ -47,7 +65,7 @@ export class ARP extends IPPacket{
             }
             return `who has ${this.targetIp}? tell ${this.senderIp}`;
         }
-        return 'ARP';
+        return `${this.senderIp} at ${this.senderMac}`;
     }
 }
 // https://en.wikipedia.org/wiki/Internet_Protocol_version_4
@@ -131,11 +149,19 @@ export class ARPVisitor implements PVisitor {
         data.senderIp = senderIp;
         data.targetMac = targetMac;
         data.targetIp = targetIp;
+        ele.context.resolve(data);
         return data;
     }
 }
 
 export class IPv6Visitor implements PVisitor {
+    mapper: Map<number, PVisitor> = new Map();
+    constructor(){
+        this.mapper.set(6, new TCPVisitor())
+        this.mapper.set(17, new UDPVisitor())
+        this.mapper.set(58, new ICMPV6Visitor())
+        //https://en.wikipedia.org/wiki/List_of_IP_protocol_numbers
+    }
     visit(ele: BasicElement): IPPacket {
         const { name, readerCreator, content } = ele;
         const prefix = name + '/ipv6';
@@ -158,6 +184,10 @@ export class IPv6Visitor implements PVisitor {
         data.target = targetip;
         data.nextHeader = header;
         data.hop = hopLimit;
+        const nextVisitor = this.mapper.get(data.nextHeader);
+        if(nextVisitor) {
+            return data.createSubElement(prefix, ele).accept(nextVisitor)
+        }
         return data;
     }
 }

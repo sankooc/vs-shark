@@ -1,21 +1,19 @@
 import React,{ ReactElement, useEffect, useState }  from "react";
 import ProgressBar from 'react-bootstrap/ProgressBar';
+import Overview from './overview';
 import FrameList from './frame';
+import ConnectList from './tcpConnection';
+import ARPReplies from './arp';
 import FakeProgress from "fake-progress";
 import "bootstrap/dist/css/bootstrap.css"
-import { Frame } from "../common";
-
-class MainProps {
-    status: string;
-    items: Frame[];
-}
+import { Frame, Grap, TCPCol, MainProps } from "../common";
 
 let interval;
 let p: FakeProgress;
 const timeConstant = 3000;
 const inTime = 400;
 function Main(props: MainProps) {
-  const [ store, setStore ] = useState<any>({loaded: false, page: 'frame'});
+  const [ store, setStore ] = useState<any>({loaded: false, page: 'overview'});
   const [progress, setProgress] = useState<number>(0);
   useEffect(() => {
     switch(props.status){
@@ -40,26 +38,39 @@ function Main(props: MainProps) {
         break;
       
     }
-    // const root = readBuffers(props.data, 20);
-    // root.addEventListener('init', () => {
-    //   setStore({...store, loaded: false});
-    // })
-    // root.addEventListener('finish', () => {
-    //   setStore({...store, loaded: true});
-    // })
-    // root.addEventListener('frame', (evt: CustomEvent<IPPacket[]>) => {
-    //   const items: IPPacket[] = evt.detail;
-    //   frames.push(...items);
-    //   setFrame([...root.packets]);
-    // });
   }, [props.status]);
   const buildNav = (key: string, txt: string): ReactElement => {
     if(store.page === key) {
-      return (<li><a href="#" className="nav-link text-white active">{txt}</a></li>);
+      return (<li key={key}><a href="#" className="nav-link text-white active">{txt}</a></li>);
     }
-    return (<li><a href="#" className="nav-link text-white" onClick={() => {
+    return (<li key={key}><a href="#" className="nav-link text-white" onClick={() => {
       setStore({...store, page: key});
     }}>{txt}</a></li>);
+  }
+  const getTable = (): ReactElement => {
+    switch(store.page){
+      case 'overview':
+        return <Overview data={props.overview}/>
+      case 'tcp':
+        return <ConnectList items={props.tcps} />
+      case 'arp':
+        return <ARPReplies graph={props.arpGraph} legends={['sender', 'target']}/>
+    }
+    return <FrameList items={props.items}></FrameList>;
+  }
+  const getNav = ():ReactElement[] => {
+    const navs = [];
+    navs.push(buildNav('overview', 'Overview'));
+    if(props.items?.length){
+      navs.push(buildNav('frame', 'Frame'));
+    }
+    if(props.tcps?.length){
+      navs.push(buildNav('tcp', 'TCP'));
+    }
+    if(props.arpGraph?.nodes.length){
+      navs.push(buildNav('arp', 'ARP'));
+    }
+    return navs
   }
   return (
     <>
@@ -67,13 +78,11 @@ function Main(props: MainProps) {
     <main className="d-flex flex-nowrap">
     <div className="d-flex flex-column flex-shrink-0 text-bg-dark navigation">
         <ul id="navc" className="nav nav-pills flex-column mb-auto">
-            {buildNav('frame', 'Frame')}
-            {buildNav('tcp', 'TCP')}
-            {buildNav('dns', 'DNS')}
+            {getNav()}
         </ul>
     </div>
     <div className="flex-grow-1" id="content">
-      <FrameList items={props.items}></FrameList>
+      {getTable()}
     </div>
     </main>
     </>

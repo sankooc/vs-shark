@@ -8,6 +8,7 @@
   },
   "author": "sankooc",
   "license": "ISC",
+  "ci-build": "npx tsc",
   "devDependencies": {
     "@types/node": "^20.11.20",
     "eslint": "^9.4.0",

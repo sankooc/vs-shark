@@ -6,11 +6,15 @@
     "reset": "rm -rf node_modules/protocols && pnpm install",
     "watch": "npx webpack -c webpack.dev.config.js",
     "serve": "npx webpack serve -c webpack.dev.config.js",
-    "build": "npx webpack"
+    "css": "npx sass src --no-source-map",
+    "css-watch": "npx sass src --no-source-map --watch",
+    "build": "npx webpack "
   },
   "dependencies": {
     "antd": "^5.18.3",
     "bootstrap": "^5.3.3",
+    "echarts": "^5.5.0",
+    "echarts-for-react": "^3.0.2",
     "fake-progress": "^1.0.4",
     "protocols": "file:../node-pcapng/",
     "react": "^18.3.0",

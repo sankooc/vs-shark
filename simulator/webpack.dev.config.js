@@ -24,5 +24,9 @@ module.exports = {
   devtool: 'source-map',
   watchOptions: {
     ignored: /node_modules/,
-  }
+  },
+  externals: {
+      "echarts": "echarts",
+      "bootstrap": "bootstrap",
+  },
 };

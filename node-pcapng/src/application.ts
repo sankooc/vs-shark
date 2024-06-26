@@ -18,7 +18,7 @@ export class Query {
     name: string;
     type: number;
     cls: number;
-    constructor(name: string, type: number,cls: number){
+    constructor(name: string, type: number, cls: number) {
         this.name = name;
         this.type = type;
         this.cls = cls;
@@ -74,20 +74,20 @@ export class DNSVisitor implements PVisitor {
         data.addtional = addtional;
         const udp: UDP = ele.packet.getProtocal(Protocol.UDP) as UDP;
         data.isAnswer = udp.targetPort === 53;
-        for(let i = 0; i < data.question; i += 1) {
+        for (let i = 0; i < data.question; i += 1) {
             const domain = reader.readDNSQuery();
             const type = reader.read16(false);
             const cls = reader.read16(false);
             data.queries.push(new Query(domain, type, cls));
         }
-        for(let i = 0; i < data.answer; i += 1){
+        for (let i = 0; i < data.answer; i += 1) {
             const ans = new Answer();
             ans.name = reader.read16(false);
             ans.type = reader.read16(false);
             ans.cls = reader.read16(false);
             ans.ttl = reader.read32(false);
             ans.len = reader.read16(false);
-            if(ans.type === 5) {
+            if (ans.type === 5) {
                 const [domain, id] = reader.readDNSAnswer(ans.len);
                 ans.host = domain;
             } else {
@@ -166,20 +166,78 @@ export class DHCPVisitor implements PVisitor {
     }
 }
 
-// export default {
-//     createVisitor(sub: AbstractVisitor, sourcePort: number, destPort: number): AbstractVisitor {
-//         //https://en.wikipedia.org/wiki/List_of_IP_protocol_numbers
-//         switch (destPort) {
-//             case 53://DNS
-//                 return new DNSVisitor(sub, 'dns',sourcePort, destPort);
-//             case 137://NBNS
-//                 return new NBNSVisitor(sub, 'nbns', sourcePort, destPort)
-//             case 67://DHCP
-//             case 68://DHCP
-//                 return new DHCPVisitor(sub, 'dhcp', sourcePort, destPort);
-//             // // case 80:
-//             default:
-//                 return new PayloadVisitor(sub, 'payload', sourcePort, destPort);
-//         }
-//     }
-// }
+
+
+export class HttpPT extends IPPacket {
+    method!: string;
+    path!: string;
+    status!: string;
+    code!: string;
+    type!: string;
+    version!: string;
+    headers!: Set<string>;
+    payload!: Uint8Array;
+    toString(): string {
+        if (this.type === 'request') {
+            return `${this.method} ${this.path} ${this.version}`;
+        }
+        return `${this.version} ${this.code} ${this.status}`;
+    }
+    summary(): string {
+        return `Hypertext Transfer Protocol (${this.type})`
+    }
+    getHeader(key: string): string{
+        for(const v of this.headers){
+            const [k , val] = v.split(': ');
+            if(k.toUpperCase() == key.toUpperCase()){
+                return val;
+            }
+        }
+        return null;
+    }
+}
+
+
+export class HTTPVisitor implements PVisitor {
+    visit(ele: BasicElement): IPPacket {
+        const { name, readerCreator, content } = ele;
+        const prefix = name + '/http';
+        const reader = readerCreator.createReader(content, prefix, false);
+
+        const method = reader.readSpace(10);
+        const type = method === 'HTTP/1.1' ? 'response' : 'request';
+        let ext, path, version, status, code;
+        if (type === 'request') {
+            const line = reader.readEnter();
+            [ext, path, version] = line.split(' ');
+        } else {
+            const line = reader.readEnter();
+            [version, code, status] = line.split(' ');
+        }
+        let flag = true;
+        const m: Set<string> = new Set()
+        do {
+            const line = reader.readEnter();
+            m.add(line);
+            if (!line) break;
+        } while (flag);
+        reader.skip(2);
+        const payload = reader.extra();
+        const data = new HttpPT(ele.packet, payload, Protocol.HTTP);
+        data.type = type;
+        data.version = version;
+        if (type === 'request') {
+            data.method = method;
+            data.path = path;
+        } else {
+            data.code = code;
+            data.status = status;
+        }
+        data.headers = m;
+        data.payload = payload;
+        // console.log('data', type);
+        // console.log('data', type, data.version, data.toString());
+        return data;
+    }
+
+}

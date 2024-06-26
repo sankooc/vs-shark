@@ -1,10 +1,7 @@
-import { Option, AbstractVisitor, Visitor, Packet, Protocol, IPPacket, Resolver, PVisitor, BasicElement, AbstractRootVisitor } from "./common";
+import { Option, AbstractVisitor, Visitor, Packet, Protocol, FileInfo,IPPacket, EtherPacket, Resolver, PVisitor, BasicElement, AbstractRootVisitor } from "./common";
 import { Uint8ArrayReader, AbstractReaderCreator } from './io';
 import { DataLaylerVisitor } from './dataLinkLayer';
-import { TCP, UDP } from './transportLayer';
 import { linktypeMap } from './constant';
-// import { EventEmitter } from 'events';
-//https://www.ietf.org/archive/id/draft-tuexen-opsawg-pcapng-05.html
 //https://www.ietf.org/archive/id/draft-tuexen-opsawg-pcapng-03.html
 
 const opt_endofopt = 0
@@ -117,7 +114,7 @@ class SectionHeaderVisitor extends BasicVisitor {
     }
 }
 class InterfaceInfo {
-    type: string;
+    type: number;
     name!: string;
     description!: string;
     ip4addr: string[] = [];
@@ -138,10 +135,10 @@ class InterfaceDescription extends BasicVisitor {
         const linktype = reader.read16();
         const reserved = reader.read16();
         const snapLen = reader.read32();
-        const type = linktypeMap[linktype];
+        // const type = linktypeMap[linktype];
         const data = new InterfaceDescriptionPacket(content);
         data.if = new InterfaceInfo();
-        data.if.type = type;
+        data.if.type = linktype;
         while (true) {
             const option = readOption(ele, reader);
             if (!option) {
@@ -182,7 +179,6 @@ class InterfaceDescription extends BasicVisitor {
 
 class EnhancedPacketVisitor extends BasicVisitor {
     visitor: DataLaylerVisitor;
-    index: number = 1;
     constructor(type: string) {
         super(type);
         this.visitor = new DataLaylerVisitor();
@@ -204,11 +200,12 @@ class EnhancedPacketVisitor extends BasicVisitor {
         if (mod > 0) {
             reader.skip((4 - mod))
         }
-        const subPacket = new IPPacket(null, packet, Protocol.ETHER);
-        subPacket.index = this.index;
+        const subPacket = new EtherPacket(packet);
         subPacket.interface = interfaceId;
+        subPacket.captured = capturedPacketLength;
+        subPacket.origin = originalPacketLength;
         subPacket.ts = parseInt(n.substring(0, n.length - 3));
-        this.index += 1;
+        subPacket.nano = parseInt(n);
         return subPacket.createSubElement(prefix, ele).accept(this.visitor);
     }
 }
@@ -263,40 +260,39 @@ class InterfaceStatistic extends BasicVisitor {
         return null;
     }
 }
-export class RootVisitor implements Visitor {
+export class PCAPNGVisitor extends AbstractRootVisitor {
     public head!: SectionHeaderPacket;
     public interface!: InterfaceInfo;
     public staticInfo!: StaticsInfo;
-    sectionHeaderVisitor: SectionHeaderVisitor = new SectionHeaderVisitor('0a0d0d0a');
-    interfaceDescription: InterfaceDescription = new InterfaceDescription('00000001');
-    interfaceStatistic: InterfaceStatistic = new InterfaceStatistic('00000005');
-    enhancedPacketVisitor: EnhancedPacketVisitor = new EnhancedPacketVisitor('00000006');
-    resolver: Resolver = new Resolver();
-    packets: IPPacket[] = []
-    batchSize: number = 600;
-    archer: (packet: IPPacket[]) => void;
-    constructor(archer: (packet: IPPacket[]) => void) {
-        this.archer = archer;
+    private sectionHeaderVisitor: SectionHeaderVisitor = new SectionHeaderVisitor('0a0d0d0a');
+    private interfaceDescription: InterfaceDescription = new InterfaceDescription('00000001');
+    private interfaceStatistic: InterfaceStatistic = new InterfaceStatistic('00000005');
+    private enhancedPacketVisitor: EnhancedPacketVisitor = new EnhancedPacketVisitor('00000006');
+
+    getFileInfo(): FileInfo {
+        const info = new FileInfo();
+        if(this.head){
+            info.os = this.head.os;
+            info.client = this.head.userapp;
+            info.hardware = this.head.hardware;
+            info.majorVersion = this.head.major;
+            info.minorVersion = this.head.minor;
+        }
+        if(this.interface){
+            info.linkType = this.interface.type;
+            info.interfaceName = this.interface.name;
+            info.interfaceDesc = this.interface.description;
+        }
+        return info;
     }
-    emitPacket(packet: IPPacket[]): void {
-        // if(this.archer) {
-        //     try {
-        //         this.archer(packet);
-        //     }catch(e){}
-        // }
-    }
-    createElement(name: string, readerCreator: AbstractReaderCreator, content: Uint8Array): BasicElement {
-        const ele = new BasicElement(name, readerCreator, content.length, content);
-        ele.resolver = this.resolver;
+    protected createElement(name: string, readerCreator: AbstractReaderCreator, content: Uint8Array): BasicElement {
+        const ele = new BasicElement(name, readerCreator, content.length, content, this);
         return ele
     }
-    visit(ele: BasicElement): Packet {
+    _visit(ele: BasicElement): void {
         const { readerCreator, content } = ele;
         const reader = readerCreator.createReader(content, 'root', false);
-        const start = Date.now();
-        let count = 0;
-
-        let templateArray = [];
+        let count = 1;
         const readBlock = () => {
             //https://www.ietf.org/staging/draft-tuexen-opsawg-pcapng-02.html
             const blockType = reader.read32Hex();
@@ -318,21 +314,11 @@ export class RootVisitor implements Visitor {
                     case "00000006":
                         try {
                             const packet: IPPacket = this.enhancedPacketVisitor.visit(ele);
-                            this.packets.push(packet);
-                            templateArray.push(packet);
-                            if ((templateArray.length % this.batchSize) === 0) {
-                                this.emitPacket(templateArray)
-                                templateArray = [];
-                            }
+                            this.addPacket(packet);
                         } catch (e) {
                             console.error(e)
                         }
                         break;
-                    // case '00000003':
-                    // simplePacket(opt)
-                    // case '00000004':
-                    // nameResolution(opt)
-                    // case "00000009":
                     default:
                         console.log('unknown type', blockType);
                 }
@@ -344,11 +330,5 @@ export class RootVisitor implements Visitor {
         do {
             readBlock()
         } while (reader.eof())
-        if (templateArray.length) {
-            this.emitPacket(templateArray);
-            templateArray = [];
-        }
-        this.resolver.flush(null);
-        return null;
     }
 }
