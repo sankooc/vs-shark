@@ -35,7 +35,6 @@ export default function (){
     emitMessage(new ComMessage('ready', 'demo'));
   }, []);
   if(mProps){
-    console.log(mProps);
     return (<Main {...mProps}/>)
   }
   return (<Loading/>)

@@ -144,7 +144,7 @@ export abstract class Client extends PCAPClient {
       const graph = this.convertARPReplies(arpreplies);
 
 
-      const scale = 10;
+      const scale = 24;
       const start = getNanoDate(frames[0]);
       const end = getNanoDate(frames[frames.length - 1]);
       const duration = end - start;

@@ -1,4 +1,4 @@
-import { Option, AbstractVisitor, Visitor, Packet, Protocol, IPPacket, Resolver, PVisitor, EtherPacket, BasicElement, AbstractRootVisitor, FileType, TCPStack, TCPConnect, CNode, ARPReply } from "./common";
+import { Context, Option, AbstractVisitor, Visitor, Packet, Protocol, IPPacket, Resolver, PVisitor, EtherPacket, BasicElement, AbstractRootVisitor, FileType, TCPStack, TCPConnect, CNode, ARPReply } from "./common";
 import { AbstractReaderCreator } from './io';
 import { PCAPNGVisitor } from './pcapng';
 import { DataPacket } from './dataLinkLayer';
@@ -39,7 +39,7 @@ export const readBuffers = (arr: Uint8Array): AbstractRootVisitor => {
   visitor.visit(ele);
   return visitor;
 }
-export { Option, AbstractVisitor, Visitor, Packet, Protocol, IPPacket, Resolver, PVisitor, BasicElement, AbstractRootVisitor, FileType, TCPStack, TCPConnect, CNode, ARPReply };
+export { Context,Option, AbstractVisitor, Visitor, Packet, Protocol, IPPacket, Resolver, PVisitor, BasicElement, AbstractRootVisitor, FileType, TCPStack, TCPConnect, CNode, ARPReply };
 
 export { EtherPacket, DataPacket, IPv4, IPv6, ARP, UDP, TCP, ICMP, IGMP, NBNS, DNS, DHCP, IPPack,HttpPT };
 

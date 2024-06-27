@@ -1,6 +1,7 @@
 import { AbstractReaderCreator, Uint8ArrayReader } from './io';
 import { ARP } from './networkLayer';
 import { TCP } from './transportLayer';
+import { DNS,NBNS} from './application';
 import { DataPacket } from './dataLinkLayer';
 export enum Protocol {
     ETHER,
@@ -27,7 +28,7 @@ export enum FileType {
   }
 export class Packet {
     packet: Uint8Array;
-    constructor(packet: Uint8Array) {
+    constructor(packet: Uint8ArrayReader) {
         this.packet = packet;
     }
     getPacket(): Uint8Array {
@@ -224,6 +225,7 @@ export interface Context {
     getARPReplies(): ARPReply[];
     resolveTCP(p: TCP): PVisitor;
     getTCPConnections(): TCPConnect[];
+    resolveDNS(p: DNS | NBNS): void ;
     // resolve( n: string):void;
     // resolve(p: Packet):void;
 }
@@ -249,6 +251,9 @@ export abstract class AbstractRootVisitor implements Visitor, Context {
     };
     public getContext(): Context {
         return this;
+    }
+    resolveDNS(p: DNS | NBNS): void {
+        
     }
     resolve(p: ARP):void {
         const { oper } = p;

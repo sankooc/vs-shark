@@ -1,5 +1,5 @@
 import { PCAPClient, ComMessage, ComLog, Panel, Frame, CTreeItem, TCPCol, Grap, Category, GrapNode, GrapLink, MainProps, OverviewSource } from "./common";
-import { DataPacket, IPPacket, IPv6, AbstractRootVisitor, TCP, readBuffers, IPPack, ARP, linktypeMap, HttpPT, UDP, TCPConnect, EtherPacket, TCPStack, ARPReply } from 'protocols';
+import { DataPacket, IPPacket, IPv6, AbstractRootVisitor, TCP, readBuffers, IPPack, ARP, linktypeMap, HttpPT, UDP, TCPConnect, EtherPacket, TCPStack, ARPReply, DNS } from 'protocols';
 import { ARP_OPER_TYPE_MAP, ARP_HARDWARE_TYPE_MAP, etypeMap } from 'protocols/built/src/constant';
 import { Protocol, IPv4 } from "protocols"
 
@@ -144,7 +144,7 @@ export abstract class Client extends PCAPClient {
       const graph = this.convertARPReplies(arpreplies);
 
 
-      const scale = 10;
+      const scale = 24;
       const start = getNanoDate(frames[0]);
       const end = getNanoDate(frames[frames.length - 1]);
       const duration = end - start;
@@ -253,6 +253,11 @@ const _stack = (root: AbstractRootVisitor, packet: IPPacket, items: CTreeItem[])
   }
   const item = new CTreeItem(packet.toString());
   switch (packet.protocol) {
+    case Protocol.DNS:{
+      const p: DNS = packet as DNS;
+      // item.label = p.sum
+    }
+    break;
     case Protocol.HTTP: {
       const p = packet as HttpPT;
       item.label = p.summary();

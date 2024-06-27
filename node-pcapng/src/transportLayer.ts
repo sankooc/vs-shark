@@ -185,6 +185,7 @@ export class UDPVisitor implements PVisitor {
         data.targetPort = targetPort;
         data.payload = payload;
         let visitor = null;
+        // 137 NBNS  138 NBND 139 NBSS
         switch (targetPort) {
             case 53:
                 visitor = this.dNSVisitor;

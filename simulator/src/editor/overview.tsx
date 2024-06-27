@@ -8,17 +8,17 @@ const bytesFormater = (v) => {
   let pt = 'kB';
   const mod = 1024;
   const cop = (num: number): [number, number] => {
-    return [Math.floor(v / mod), v % mod]
+    return [Math.floor(num / mod), num % mod]
   }
   [h, l] = cop(v);
   if(h < mod){
     return `${h}.${l}kB`
   }
-  [h, l] = cop(v);
+  [h, l] = cop(h);
   if(h < mod){
     return `${h}.${l}mB`
   }
-  [h, l] = cop(v);
+  [h, l] = cop(h);
   return `${h}.${l}gB`
 };
 
@@ -26,7 +26,7 @@ class OverviewProps {
   data: OverviewSource
 }
 function Overview(props: OverviewProps) {
-  const title = 'Network Traffic by Protocol Over Time';
+  const title = 'Network Traffic';
 
   const {legends, labels, counts, valMap} = props.data;
 
@@ -57,7 +57,6 @@ function Overview(props: OverviewProps) {
     if(key === 'total'){
       rs.areaStyle = {};
     }
-    console.log(rs);
     return rs;
   });
   const option = {
@@ -65,11 +64,13 @@ function Overview(props: OverviewProps) {
       text: title
     },
     legend: {
+      right: 50,
       data: legends
+      
     },
     tooltip: {
       trigger: 'axis',
-      // valueFormatter : bytesFormater,
+      valueFormatter : bytesFormater,
       axisPointer: {
         type: 'cross',
         label: {
@@ -89,7 +90,7 @@ function Overview(props: OverviewProps) {
       containLabel: true
     },
     animation: true,
-    animationDuration: 3000,
+    animationDuration: 1400,
     xAxis: [
       {
         type: 'category',
@@ -127,21 +128,20 @@ function Overview(props: OverviewProps) {
       }
     ],
     series: [
-      {
-        yAxisIndex: 0,
-        type: 'line',
-        smooth: true,
-        data: counts,
-        label: {
-          show: true,
-          position: 'top'
-        },
-      },
+      // {
+      //   yAxisIndex: 0,
+      //   type: 'line',
+      //   smooth: true,
+      //   data: counts,
+      //   label: {
+      //     show: true,
+      //     position: 'top'
+      //   },
+      // },
       ...datas
     ]
   };
-  const style = { height: '400px', width: '100%', padding: '10px', border: '1px solid #222' };
-  return <ReactECharts option={option} style={style} />;
+  return <ReactECharts option={option} className="overview" />;
 }
 
 export default Overview;

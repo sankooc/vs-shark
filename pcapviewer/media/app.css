@@ -151,8 +151,9 @@ main {
 }
 
 .navigation {
-  width: 8%;
-  font-size: 0.56rem;
+  width: 10%;
+  font-size: 0.7rem;
+  font-weight: bold;
 }
 
 #frame-page {
@@ -243,4 +244,14 @@ main {
 #frame-page td.info {
   max-width: 30vw;
   width: 30vw;
+}
+
+.overview {
+  height: 73vh !important;
+  min-height: 300px;
+  width: 80%;
+  padding: 13px;
+  margin: 12vh auto;
+  border: 1px solid #ddd;
+  box-shadow: rgba(0, 0, 0, 0.15) 0px 2px 8px;
 }

@@ -18,15 +18,18 @@ main {
   padding: 0;
   margin: 0;
 }
-
+#content {
+  background-color: $base-bk-color;
+}
 #root {
   height: 100%;
   width: 100%;
 }
 
 .navigation {
-  width: 8%;
-  font-size: .56rem;
+  width: 10%;
+  font-size: .7rem;
+  font-weight: bold;
 }
 
 
@@ -159,4 +162,16 @@ $t-dump-font: #001219;
     max-width: 30vw;
     width: 30vw;
   }
+}
+
+.overview {
+  height: 73vh !important;
+  min-height: 300px;
+  width: 80%;
+  padding: 13px;
+  margin: 12vh auto;
+  border: 1px solid #ddd ;
+  box-shadow: rgba(0, 0, 0, 0.15) 0px 2px 8px;
+  border-radius: 5px;
+  background-color: #e9d8a6;
 }

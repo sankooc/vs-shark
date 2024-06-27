@@ -187,6 +187,7 @@ class EnhancedPacketVisitor extends BasicVisitor {
         const { name, readerCreator, content } = ele;
         const prefix = `${name}:enhanced`
         const reader = readerCreator.createReader(content, prefix, false);
+        const subPacket = new EtherPacket(content);
         const interfaceId = reader.read32();
         const highTS = reader.read32();
         const lowTS = reader.read32();
@@ -200,7 +201,6 @@ class EnhancedPacketVisitor extends BasicVisitor {
         if (mod > 0) {
             reader.skip((4 - mod))
         }
-        const subPacket = new EtherPacket(packet);
         subPacket.interface = interfaceId;
         subPacket.captured = capturedPacketLength;
         subPacket.origin = originalPacketLength;

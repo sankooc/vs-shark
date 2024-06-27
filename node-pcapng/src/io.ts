@@ -1,6 +1,8 @@
 // import fs from 'node:fs'fs
 // import path from 'path'
 
+import { read } from "fs";
+
 
 const read64 = (arr: Uint8Array, offset: number, littleEndian = true): bigint => {
     const dataView = new DataView(arr.buffer, offset, 8);
@@ -86,6 +88,35 @@ export class Uint8ArrayReader {
     readString(len: number): string {
         const data = this.slice(len)
         return new TextDecoder().decode(data);
+    }
+    readNBNSString(len: number){
+        const words = Math.floor(len / 2);
+        const real = [];
+        for(let i = 0 ; i< words; i +=1){
+            const n = this.read8() - 65;
+            const m = this.read8() - 65;
+            const v = n * 16 + m;
+            if(v === 32){
+                continue;
+            }
+            if(v === 0){
+                continue;
+            }
+            real.push(v);
+        }
+        return new TextDecoder().decode(new Uint8Array(real));
+    }
+    readNBNSQuery(): string {
+        let _size = 0;
+        const list = [];
+        do{
+            _size = this.read8();
+            if(_size > 0) {
+                const str = this.readNBNSString(_size)
+                list.push(str)
+            }
+        }while(_size> 0)
+        return list.join('.')
     }
     readDNSQuery(): string{
         let _size = 0;

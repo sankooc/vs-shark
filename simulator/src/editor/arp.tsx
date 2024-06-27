@@ -24,9 +24,13 @@ function ARPReplies(props: ARPProps) {
       data: graph.nodes,
       categories: graph.categories,
       force: {
-        repulsion: 800,
+        repulsion: 1000,
       },
-      edges: graph.links
+      edges: graph.links.map((edge: any) => {
+        edge.color = '#E2DFD0';
+        edge.width = 3;
+        return edge;
+      })
     }]
   };
   return <div style={{ padding: '8px' }}><ReactECharts option={option} style={{ height: '400px', width: '100%' }} /></div>;

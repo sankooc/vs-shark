@@ -3,3 +3,4 @@ src/
 .vscode/
 node_modules/
 test/
+README.md

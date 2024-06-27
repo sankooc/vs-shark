@@ -1,6 +1,13 @@
 import { BasicElement, IPPacket, PVisitor, Protocol } from './common';
+import { Uint8ArrayReader } from './io';
 import { UDP } from './transportLayer';
 
+
+/**
+ *  NB         0x0020   NetBIOS general Name Service Resource Record
+   NBSTAT     0x0021   NetBIOS NODE STATUS Resource Record (See NODE
+                       STATUS REQUEST)
+ */
 export class NBNS extends IPPacket {
     transactionId: string;
     flag: number;
@@ -9,22 +16,46 @@ export class NBNS extends IPPacket {
     authority: number;
     addtional: number;
     payload: Uint8Array;
+    queries: Query[] = [];
+    answers: Answer[] = [];
+    authorities: Authority[] = [];
+    addtionals: Addtional[] = [];
+    isAnswer: boolean;
+    getQhost(): string {
+        if(this.queries?.length){
+            return this.queries.map((qr: Query) => { return qr.name }).join(',')
+        }
+        return '';
+    }
     toString(): string {
-        return `NBNS transaction id: ${this.transactionId}`;
+        if(this.isAnswer){
+            return `Standard query response ${this.transactionId.toString(16)}`;
+        }
+        return `Standard query ${this.transactionId} ${this.getQhost()}`;
+    }
+    info(): string {
+        return this.toString();
+    }
+    summary(): string {
+        return 'NetBIOS Name Service';
     }
 }
 
-export class Query {
+class NSFact {
+    protocol!: Protocol;
+}
+export class Query extends NSFact {
     name: string;
     type: number;
-    cls: number;
+    cls: number; //0x0001 Internet class
     constructor(name: string, type: number, cls: number) {
+        super();
         this.name = name;
         this.type = type;
         this.cls = cls;
     }
 }
-export class Answer {
+export class Answer extends NSFact {
     name: number;
     type: number;
     cls: number;
@@ -32,13 +63,20 @@ export class Answer {
     len: number;
     host: string;
 }
-export class DNS extends NBNS {
-    domain: string;
+
+export class Authority extends NSFact {
+
+}
+export class Addtional extends NSFact {
+    name: number;
     type: number;
-    isAnswer: boolean;
-    queries: Query[] = [];
-    toString(): string {
-        return `DNS transaction id: ${this.transactionId}`;
+    cls: number;
+    ttl: number;
+
+}
+export class DNS extends NBNS {
+    summary(): string {
+        return 'Domain Name System';
     }
 }
 
@@ -54,63 +92,39 @@ export class DHCP extends IPPacket {
     }
 }
 
-export class DNSVisitor implements PVisitor {
-    visit(ele: BasicElement): IPPacket {
-        const { name, readerCreator, content } = ele;
-        const prefix = name + '/dns';
-        const reader = readerCreator.createReader(content, prefix, false);
-        const transactionId = reader.readHex(2)
-        const flag = reader.read16(false);
-        const question = reader.read16(false);
-        const answer = reader.read16(false);
-        const authority = reader.read16(false);
-        const addtional = reader.read16(false);
-        const data = new DNS(ele.packet, null, Protocol.DNS);
-        data.transactionId = transactionId;
-        data.flag = flag;
-        data.question = question;
-        data.answer = answer;
-        data.authority = authority;
-        data.addtional = addtional;
-        const udp: UDP = ele.packet.getProtocal(Protocol.UDP) as UDP;
-        data.isAnswer = udp.targetPort === 53;
-        for (let i = 0; i < data.question; i += 1) {
-            const domain = reader.readDNSQuery();
-            const type = reader.read16(false);
-            const cls = reader.read16(false);
-            data.queries.push(new Query(domain, type, cls));
-        }
-        for (let i = 0; i < data.answer; i += 1) {
-            const ans = new Answer();
-            ans.name = reader.read16(false);
-            ans.type = reader.read16(false);
-            ans.cls = reader.read16(false);
-            ans.ttl = reader.read32(false);
-            ans.len = reader.read16(false);
-            if (ans.type === 5) {
-                const [domain, id] = reader.readDNSAnswer(ans.len);
-                ans.host = domain;
-            } else {
-                ans.host = reader.readIp();
-            }
-        }
-        // if(data.answer > 0){
-        //     process.exit(0);
-        // }
-        // if (this.destPort === 53) {
-        //     const domain = reader.readDNSQuery();
-        //     const type = reader.read16(false)
-        //     const claz = reader.read16(false)
-        //     // Object.assign(this, { domain, type, claz });
-        //     ele.log('dns', type, claz, domain)
-        // }
-
-        return data;
-    }
-}
 
 export class NBNSVisitor implements PVisitor {
+    createPacket(ele: BasicElement): NBNS {
+        return new NBNS(ele.packet, null, Protocol.NBNS);
+    }
+    isAnswer(ele: BasicElement): boolean {
+        const udp: UDP = ele.packet.getProtocal(Protocol.UDP) as UDP;
+        return udp.targetPort === 137;
+    }
+    readQuery(reader: Uint8ArrayReader): Query {
+        const domain = reader.readNBNSQuery();
+        const type = reader.read16(false);
+        const cls = reader.read16(false);
+        const q = new Query(domain, type, cls);
+        q.protocol = Protocol.NBNS;
+        return q;
+    }
+    readAnswer(reader: Uint8ArrayReader): Answer {
+        //TODO
+        return null;
+    }
+    readAuthority(reader: Uint8ArrayReader): Authority {
+        // TODO
+        return null;
+    }
+    readAddtional(reader: Uint8ArrayReader): Addtional {
+        //TODO 
+        return null;
+    }
     visit(ele: BasicElement): IPPacket {
+        //https://datatracker.ietf.org/doc/html/rfc1001
+        //https://datatracker.ietf.org/doc/html/rfc1002
+        //https://blog.csdn.net/CodingMen/article/details/105056639
         const { name, readerCreator, content } = ele;
         const prefix = name + '/nbns';
         const reader = readerCreator.createReader(content, prefix, false);
@@ -120,15 +134,65 @@ export class NBNSVisitor implements PVisitor {
         const answer = reader.read16(false);
         const authority = reader.read16(false);
         const addtional = reader.read16(false);
-        const data = new NBNS(ele.packet, null, Protocol.NBNS);
+        const data = this.createPacket(ele);
         data.transactionId = transactionId;
         data.flag = flag;
         data.question = question;
         data.answer = answer;
         data.authority = authority;
         data.addtional = addtional;
-        data.payload = reader.extra();
+        data.isAnswer = this.isAnswer(ele);
+        for (let i = 0; i < data.question; i += 1) {
+            data.queries.push(this.readQuery(reader));
+        }
+        for (let i = 0; i < data.answer; i += 1) {
+            data.answers.push(this.readAnswer(reader))
+        }
+        for (let i = 0; i < data.authority; i += 1) {
+            data.authorities.push(this.readAuthority(reader));
+        }
+        for (let i = 0; i < data.addtional; i += 1) {
+            data.addtionals.push(this.readAddtional(reader))
+        }
         return data;
+    }
+}
+
+
+
+export class DNSVisitor extends NBNSVisitor {
+
+    createPacket(ele: BasicElement): NBNS {
+        return new DNS(ele.packet, null, Protocol.DNS);
+    }
+    isAnswer(ele: BasicElement): boolean {
+        const udp: UDP = ele.packet.getProtocal(Protocol.UDP) as UDP;
+        return udp.targetPort === 53;
+    }
+    readQuery(reader: Uint8ArrayReader): Query {
+        const domain = reader.readDNSQuery();
+        const type = reader.read16(false);
+        const cls = reader.read16(false);
+        const q = new Query(domain, type, cls);
+        q.protocol = Protocol.DNS;
+        return q;
+    }
+
+    readAnswer(reader): Answer {
+        const ans = new Answer();
+        ans.name = reader.read16(false);
+        ans.type = reader.read16(false);
+        ans.cls = reader.read16(false);
+        ans.ttl = reader.read32(false);
+        ans.len = reader.read16(false);
+        ans.protocol = Protocol.DNS;
+        if (ans.type === 5) {
+            const [domain, id] = reader.readDNSAnswer(ans.len);
+            ans.host = domain;
+        } else {
+            ans.host = reader.readIp();
+        }
+        return ans;
     }
 }
 
@@ -186,10 +250,10 @@ export class HttpPT extends IPPacket {
     summary(): string {
         return `Hypertext Transfer Protocol (${this.type})`
     }
-    getHeader(key: string): string{
-        for(const v of this.headers){
-            const [k , val] = v.split(': ');
-            if(k.toUpperCase() == key.toUpperCase()){
+    getHeader(key: string): string {
+        for (const v of this.headers) {
+            const [k, val] = v.split(': ');
+            if (k.toUpperCase() == key.toUpperCase()) {
                 return val;
             }
         }
