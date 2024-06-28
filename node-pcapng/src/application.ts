@@ -1,4 +1,4 @@
-import { BasicElement, IPPacket, PVisitor, Protocol } from './common';
+import { PacketElement, IPPacket, PVisitor, Protocol } from './common';
 import { Uint8ArrayReader } from './io';
 import { UDP } from './transportLayer';
 
@@ -29,7 +29,7 @@ export class NBNS extends IPPacket {
     }
     toString(): string {
         if(this.isAnswer){
-            return `Standard query response ${this.transactionId.toString(16)}`;
+            return `Standard query response ${this.transactionId}`;
         }
         return `Standard query ${this.transactionId} ${this.getQhost()}`;
     }
@@ -94,11 +94,13 @@ export class DHCP extends IPPacket {
 
 
 export class NBNSVisitor implements PVisitor {
-    createPacket(ele: BasicElement): NBNS {
-        return new NBNS(ele.packet, null, Protocol.NBNS);
+    createPacket(ele: PacketElement): [NBNS,Uint8ArrayReader] {
+        const parent = ele.getPacket();
+        const { reader } = parent;
+        return [new NBNS(parent, reader, Protocol.NBNS), reader];
     }
-    isAnswer(ele: BasicElement): boolean {
-        const udp: UDP = ele.packet.getProtocal(Protocol.UDP) as UDP;
+    isAnswer(ele: PacketElement): boolean {
+        const udp: UDP = ele.getPacket().getProtocal(Protocol.UDP) as UDP;
         return udp.targetPort === 137;
     }
     readQuery(reader: Uint8ArrayReader): Query {
@@ -121,20 +123,19 @@ export class NBNSVisitor implements PVisitor {
         //TODO 
         return null;
     }
-    visit(ele: BasicElement): IPPacket {
+    visit(ele: PacketElement): IPPacket {
         //https://datatracker.ietf.org/doc/html/rfc1001
         //https://datatracker.ietf.org/doc/html/rfc1002
         //https://blog.csdn.net/CodingMen/article/details/105056639
-        const { name, readerCreator, content } = ele;
-        const prefix = name + '/nbns';
-        const reader = readerCreator.createReader(content, prefix, false);
+        
+        const [data, reader] = this.createPacket(ele);
         const transactionId = reader.readHex(2)
         const flag = reader.read16(false);
         const question = reader.read16(false);
         const answer = reader.read16(false);
         const authority = reader.read16(false);
         const addtional = reader.read16(false);
-        const data = this.createPacket(ele);
+        
         data.transactionId = transactionId;
         data.flag = flag;
         data.question = question;
@@ -158,15 +159,15 @@ export class NBNSVisitor implements PVisitor {
     }
 }
 
-
-
 export class DNSVisitor extends NBNSVisitor {
 
-    createPacket(ele: BasicElement): NBNS {
-        return new DNS(ele.packet, null, Protocol.DNS);
+    createPacket(ele: PacketElement): [NBNS,Uint8ArrayReader] {
+        const parent = ele.getPacket();
+        const { reader } = parent;
+        return [new DNS(parent, reader, Protocol.DNS), reader];
     }
-    isAnswer(ele: BasicElement): boolean {
-        const udp: UDP = ele.packet.getProtocal(Protocol.UDP) as UDP;
+    isAnswer(ele: PacketElement): boolean {
+        const udp: UDP = ele.getPacket().getProtocal(Protocol.UDP) as UDP;
         return udp.targetPort === 53;
     }
     readQuery(reader: Uint8ArrayReader): Query {
@@ -198,10 +199,11 @@ export class DNSVisitor extends NBNSVisitor {
 
 export class DHCPVisitor implements PVisitor {
     // https://en.wikipedia.org/wiki/Dynamic_Host_Configuration_Protocol
-    visit(ele: BasicElement): IPPacket {
-        const { name, readerCreator, content } = ele;
-        const prefix = name + '/nbns';
-        const reader = readerCreator.createReader(content, prefix, false);
+    visit(ele: PacketElement): IPPacket {
+        const parent = ele.getPacket();
+        const { reader } = parent;
+        const data = new DHCP(parent, reader, Protocol.DHCP);
+
         const opt = reader.read8();
         const htype = reader.read8();
         const hlen = reader.read8();
@@ -218,8 +220,7 @@ export class DHCPVisitor implements PVisitor {
         reader.skip(64)//sname
         reader.skip(128)//file
         const magicCookie = reader.read32();
-        ele.log('dhcp:', opt, htype, clientAddress)
-        const data = new DHCP(ele.packet, null, Protocol.DHCP);
+
         data.transactionId = transactionId;
         data.clientAddress = clientAddress;
         data.yourAddress = yourAddress;
@@ -263,10 +264,10 @@ export class HttpPT extends IPPacket {
 
 
 export class HTTPVisitor implements PVisitor {
-    visit(ele: BasicElement): IPPacket {
-        const { name, readerCreator, content } = ele;
-        const prefix = name + '/http';
-        const reader = readerCreator.createReader(content, prefix, false);
+    visit(ele: PacketElement): IPPacket {
+        const parent = ele.getPacket();
+        const { reader } = parent;
+        const data = new HttpPT(parent, reader, Protocol.HTTP);
 
         const method = reader.readSpace(10);
         const type = method === 'HTTP/1.1' ? 'response' : 'request';
@@ -286,8 +287,7 @@ export class HTTPVisitor implements PVisitor {
             if (!line) break;
         } while (flag);
         reader.skip(2);
-        const payload = reader.extra();
-        const data = new HttpPT(ele.packet, payload, Protocol.HTTP);
+
         data.type = type;
         data.version = version;
         if (type === 'request') {
@@ -298,9 +298,6 @@ export class HTTPVisitor implements PVisitor {
             data.status = status;
         }
         data.headers = m;
-        data.payload = payload;
-        // console.log('data', type);
-        // console.log('data', type, data.version, data.toString());
         return data;
     }
 

@@ -1,10 +1,10 @@
-import { Context, Option, AbstractVisitor, Visitor, Packet, Protocol, IPPacket, Resolver, PVisitor, EtherPacket, BasicElement, AbstractRootVisitor, FileType, TCPStack, TCPConnect, CNode, ARPReply } from "./common";
+import { Context, Option, AbstractVisitor, Visitor, Packet, Protocol, IPPacket, Resolver, PVisitor, EtherPacket, InputElement, AbstractRootVisitor, FileType, TCPStack, TCPConnect, CNode, ARPReply } from "./common";
 import { AbstractReaderCreator } from './io';
 import { PCAPNGVisitor } from './pcapng';
 import { DataPacket } from './dataLinkLayer';
-import { IPv4, IPv6, ARP, IPPack } from './networkLayer';
-import { UDP, TCP, ICMP, IGMP } from './transportLayer';
-import { NBNS, DNS, DHCP, HttpPT } from './application';
+// import { IPv4, IPv6, ARP, IPPack } from './networkLayer';
+// import { UDP, TCP, ICMP, IGMP } from './transportLayer';
+// import { NBNS, DNS, DHCP, HttpPT } from './application';
 import { PCAPVisitor } from './pcap';
 import { linktypeMap, ipProtocolMap } from './constant';
 
@@ -24,7 +24,7 @@ export const checkFileType = (arr: Uint8Array): FileType => {
 export const readBuffers = (arr: Uint8Array): AbstractRootVisitor => {
   const ftype = checkFileType(arr);
   const creator = new AbstractReaderCreator();
-  const ele = new BasicElement('root', creator, arr.length, arr, null);
+  const ele = new InputElement(arr, creator);
   let visitor;
   switch (ftype) {
     case FileType.PCAP:
@@ -39,8 +39,9 @@ export const readBuffers = (arr: Uint8Array): AbstractRootVisitor => {
   visitor.visit(ele);
   return visitor;
 }
-export { Context,Option, AbstractVisitor, Visitor, Packet, Protocol, IPPacket, Resolver, PVisitor, BasicElement, AbstractRootVisitor, FileType, TCPStack, TCPConnect, CNode, ARPReply };
+export { Context,Option, AbstractVisitor, Visitor, Packet, Protocol, IPPacket, Resolver, PVisitor, AbstractRootVisitor, FileType, TCPStack, TCPConnect, CNode, ARPReply };
 
-export { EtherPacket, DataPacket, IPv4, IPv6, ARP, UDP, TCP, ICMP, IGMP, NBNS, DNS, DHCP, IPPack,HttpPT };
+// export { EtherPacket, DataPacket, IPv4, IPv6, ARP, UDP, TCP, ICMP, IGMP, NBNS, DNS, DHCP, IPPack,HttpPT };
+export{EtherPacket, DataPacket}
 
 export { linktypeMap, ipProtocolMap };

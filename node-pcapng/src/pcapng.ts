@@ -1,4 +1,4 @@
-import { Option, AbstractVisitor, Visitor, Packet, Protocol, FileInfo,IPPacket, EtherPacket, Resolver, PVisitor, BasicElement, AbstractRootVisitor } from "./common";
+import { Option, AbstractVisitor, Visitor, Packet, Protocol, FileInfo,IPPacket, EtherPacket, Context, Resolver, InputElement, PVisitor, AbstractRootVisitor, PacketElement } from "./common";
 import { Uint8ArrayReader, AbstractReaderCreator } from './io';
 import { DataLaylerVisitor } from './dataLinkLayer';
 import { linktypeMap } from './constant';
@@ -14,7 +14,7 @@ const OPTION_CODE = {
     6: '',
 }
 
-const readOption = (opt: BasicElement, reader: Uint8ArrayReader, isRaw: boolean = false): Option => {
+const readOption = (opt: PacketElement, reader: Uint8ArrayReader, isRaw: boolean = false): Option => {
     const optionCode = reader.read16();
     const optionLen = reader.read16();
     if (optionLen === opt_endofopt) { return }
@@ -24,7 +24,6 @@ const readOption = (opt: BasicElement, reader: Uint8ArrayReader, isRaw: boolean 
     if (mod > 0) {
         reader.skip((4 - mod))
     }
-    opt.log("option:" + optionLen)
     if (isRaw) {
         return new Option(optionCode, optionValue, optionLen)
     }
@@ -47,7 +46,7 @@ class BasicVisitor implements Visitor {
     constructor(type: string) {
         this.type = type;
     }
-    visit(ele: BasicElement) {
+    visit(ele: SectionPacket) {
         console.error('unimplement pcapng type:' + this.type);
         if (process.env.NODE_ENV === "DETECT") {
             process.exit(0)
@@ -81,14 +80,14 @@ class InterfaceDescriptionPacket extends Packet {
     if!: InterfaceInfo;
 }
 class SectionHeaderVisitor extends BasicVisitor {
-    visit(ele: BasicElement): SectionHeaderPacket {
-        const { name, readerCreator, content } = ele;
-        const reader = readerCreator.createReader(content, name + ':section', false);
+    visit(ele: SectionPacket): SectionHeaderPacket {
+        const { readerCreator, content } = ele;
+        const reader = readerCreator.createReader(content, 'section', false);
+        const data = new SectionHeaderPacket(reader);
         const orderMagic = reader.read32Hex();
         const major = reader.read16();
         const minor = reader.read16();
         reader.skip(8)
-        const data = new SectionHeaderPacket(null);
         data.orderMagic = orderMagic;
         data.major = major;
         data.minor = minor;
@@ -110,6 +109,7 @@ class SectionHeaderVisitor extends BasicVisitor {
 
             }
         }
+        data._end();
         return data;
     }
 }
@@ -129,14 +129,13 @@ class InterfaceInfo {
 
 }
 class InterfaceDescription extends BasicVisitor {
-    visit(ele: BasicElement): InterfaceDescriptionPacket {
-        const { name, readerCreator, content } = ele;
-        const reader = readerCreator.createReader(content, name + ':interface', false);
+    visit(ele: SectionPacket): InterfaceDescriptionPacket {
+        const { readerCreator, content } = ele;
+        const reader = readerCreator.createReader(content, 'interface', false);
+        const data = new InterfaceDescriptionPacket(reader);
         const linktype = reader.read16();
         const reserved = reader.read16();
         const snapLen = reader.read32();
-        // const type = linktypeMap[linktype];
-        const data = new InterfaceDescriptionPacket(content);
         data.if = new InterfaceInfo();
         data.if.type = linktype;
         while (true) {
@@ -172,22 +171,17 @@ class InterfaceDescription extends BasicVisitor {
                 //TODO 
             }
         }
+        data._end();
         return data;
     }
 
 }
 
 class EnhancedPacketVisitor extends BasicVisitor {
-    visitor: DataLaylerVisitor;
-    constructor(type: string) {
-        super(type);
-        this.visitor = new DataLaylerVisitor();
-    }
-    visit(ele: BasicElement): IPPacket {
-        const { name, readerCreator, content } = ele;
-        const prefix = `${name}:enhanced`
-        const reader = readerCreator.createReader(content, prefix, false);
-        const subPacket = new EtherPacket(content);
+    visitor: DataLaylerVisitor = new DataLaylerVisitor();
+    visit(ele: SectionPacket): IPPacket {
+        const { readerCreator, content } = ele;
+        const reader = readerCreator.createReader(content, 'pre', false);
         const interfaceId = reader.read32();
         const highTS = reader.read32();
         const lowTS = reader.read32();
@@ -195,18 +189,19 @@ class EnhancedPacketVisitor extends BasicVisitor {
         const n = BigInt(num).toString();
         const capturedPacketLength = reader.read32();
         const originalPacketLength = reader.read32();
-        ele.log('packet size', capturedPacketLength, originalPacketLength)
         const packet = reader.slice(capturedPacketLength)
         const mod = originalPacketLength % 4;
         if (mod > 0) {
             reader.skip((4 - mod))
         }
-        subPacket.interface = interfaceId;
-        subPacket.captured = capturedPacketLength;
-        subPacket.origin = originalPacketLength;
-        subPacket.ts = parseInt(n.substring(0, n.length - 3));
-        subPacket.nano = parseInt(n);
-        return subPacket.createSubElement(prefix, ele).accept(this.visitor);
+        
+        const data = ele.getContext().createEtherPacket(readerCreator.createReader(reader.extra(), 'frame', false));
+        data.interface = interfaceId;
+        data.captured = capturedPacketLength;
+        data.origin = originalPacketLength;
+        data.ts = parseInt(n.substring(0, n.length - 3));
+        data.nano = parseInt(n);
+        return data.accept(this.visitor);
     }
 }
 
@@ -220,14 +215,13 @@ class StaticsInfo extends Packet {
     isb_usrdeliv!: Uint8Array;//8
 }
 class InterfaceStatistic extends BasicVisitor {
-    visit(ele: BasicElement): StaticsInfo {
-        const { name, readerCreator, content } = ele;
-        const reader = readerCreator.createReader(content, name + ':statistic', false);
+    visit(ele: SectionPacket): StaticsInfo {
+        const { readerCreator, content } = ele;
+        const reader = readerCreator.createReader(content, 'statistic', false);
+        const data = new StaticsInfo(reader);
         const interfaceId = reader.read32();
         const highTS = reader.read32();
         const lowTS = reader.read32();
-        ele.log('statistic', interfaceId, highTS, lowTS)
-        const data = new StaticsInfo(content);
         while (true) {
             const option = readOption(ele, reader, true);
             if (!option) {
@@ -257,8 +251,24 @@ class InterfaceStatistic extends BasicVisitor {
                     break;
             }
         }
+        data._end();
         return null;
     }
+}
+
+
+class SectionPacket implements PacketElement {
+    constructor(public context: Context, public readerCreator: AbstractReaderCreator, public content: Uint8Array){}
+    getContext(): Context{
+        return this.context;
+    }
+    getPacket(): IPPacket {
+        return null;
+    }
+    accept(visitor: PVisitor): IPPacket {
+        return visitor.visit(this);
+    }
+
 }
 export class PCAPNGVisitor extends AbstractRootVisitor {
     public head!: SectionHeaderPacket;
@@ -285,11 +295,10 @@ export class PCAPNGVisitor extends AbstractRootVisitor {
         }
         return info;
     }
-    protected createElement(name: string, readerCreator: AbstractReaderCreator, content: Uint8Array): BasicElement {
-        const ele = new BasicElement(name, readerCreator, content.length, content, this);
-        return ele
+    protected createElement(name: string, readerCreator: AbstractReaderCreator, content: Uint8Array): SectionPacket {
+        return new SectionPacket(this, readerCreator, content);
     }
-    _visit(ele: BasicElement): void {
+    _visit(ele: InputElement): void {
         const { readerCreator, content } = ele;
         const reader = readerCreator.createReader(content, 'root', false);
         let count = 1;
