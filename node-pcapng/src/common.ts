@@ -119,6 +119,11 @@ export class IPPacket extends Packet implements PacketElement {
         this.fields.push(new PacketField(name, this.reader.cursor, 4))
         return this.reader.readIp()
     }
+    readDec(name: string,len: number, flag: string): string {
+        this.fields.push(new PacketField(name, this.reader.cursor, len))
+        return this.reader.readDec(len, flag);
+
+    }
     getContext(): Context {
         const ep = (this.getProtocal(Protocol.ETHER) as EtherPacket);
         if (ep) {

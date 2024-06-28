@@ -102,31 +102,25 @@ export class TCPVisitor implements PVisitor {
     dHCPVisitor: DHCPVisitor = new DHCPVisitor();
     httpVisitor: HTTPVisitor = new HTTPVisitor();
     visit(ele: PacketElement): IPPacket {
-        
+
         const parent = ele.getPacket();
         const { reader } = parent;
         const data = new TCP(parent, reader, Protocol.TCP);
 
-
-        const sourcePort = reader.read16(false);
-        const targetPort = reader.read16(false);
-        const sequence = reader.read32(false);
-        const acknowledge = reader.read32(false);
+        data.sourcePort = data.read16('sourcePort', false);
+        data.targetPort = data.read16('targetPort', false);
+        data.sequence = data.read32('sequence', false);
+        data.acknowledge = data.read32('acknowledge', false);
         const h1 = reader.read16(false);
         const len = (h1 >>> 12) & 0x08;
         const [cwr, ece, urg, ack, psh, rst, syn, fin] = lann(h1);
         const window = reader.read16(false);
         const checksum = reader.read16(false);
         const urgent = reader.read16(false);
-
         if (len > 5) {
             const optionLen = (len - 5) * 4;
             const optionBytes = reader.slice(optionLen);
         }
-        data.sourcePort = sourcePort;
-        data.targetPort = targetPort;
-        data.sequence = sequence;
-        data.acknowledge = acknowledge;
         data.ack = ack;
         data.psh = psh;
         data.rst = rst;
@@ -134,7 +128,7 @@ export class TCPVisitor implements PVisitor {
         data.fin = fin;
         data.extra = { window, cwr, ece, urg, urgent };
         ele.getContext().resolveTCP(data);
-        
+
         let nextVisitor;
         const method = reader.readSpace(10);
         if (method) {
@@ -149,10 +143,10 @@ export class TCPVisitor implements PVisitor {
                 case 'TRACE':
                 case 'PATCH':
                 case 'NOTIFY':
-                case 'HTTP/1.1':{
+                case 'HTTP/1.1': {
                     nextVisitor = this.httpVisitor;
                 }
-                break;
+                    break;
             }
         }
         return data.accept(nextVisitor);
@@ -164,22 +158,19 @@ export class UDPVisitor implements PVisitor {
     nBNSVisitor: NBNSVisitor = new NBNSVisitor();
     dHCPVisitor: DHCPVisitor = new DHCPVisitor();
     visit(ele: PacketElement): IPPacket {
-        
+
         const parent = ele.getPacket();
         const { reader } = parent;
         const data = new UDP(parent, reader, Protocol.UDP);
 
-
-        const sourcePort = reader.read16(false)
-        const targetPort = reader.read16(false)
+        data.sourcePort = data.read16('sourcePort', false)
+        data.targetPort = data.read16('targetPort', false)
         const len = reader.read16(false);
         const checksum = reader.read16();
 
-        data.sourcePort = sourcePort;
-        data.targetPort = targetPort;
         let visitor = null;
         // 137 NBNS  138 NBND 139 NBSS
-        switch (targetPort) {
+        switch (data.targetPort) {
             case 53:
                 visitor = this.dNSVisitor;
                 break;
@@ -191,7 +182,7 @@ export class UDPVisitor implements PVisitor {
                 visitor = this.dHCPVisitor;
                 break;
         }
-        switch (sourcePort) {
+        switch (data.sourcePort) {
             case 53:
                 visitor = this.dNSVisitor;
                 break;
@@ -209,31 +200,24 @@ export class ICMPVisitor implements PVisitor {
         const { reader } = parent;
         const data = new ICMP(parent, reader, Protocol.ICMP);
 
-        const type = reader.read8()
-        const code = reader.read8()
+        data.type = data.read8('type')
+        data.code = data.read8('code')
         const checksum = reader.read16(false)
         // Object.assign(this, { type, code, checksum });
-        data.type = type;
-        data.code = code;
         return data;
     }
 }
 
 export class IGMPVisitor implements PVisitor {
     visit(ele: PacketElement): IPPacket {
-        
+
         const parent = ele.getPacket();
         const { reader } = parent;
         const data = new IGMP(parent, reader, Protocol.IGMP);
-
-        const type = reader.read8()
-        const resp = reader.read8()
+        data.type = data.read8('type')
+        data.resp = data.read8('resp')
         const checksum = reader.read16(false)
-        const address = reader.readDec(4, '.')
-
-        data.type = type;
-        data.resp = resp;
-        data.address = address;
+        data.address = data.readDec('address', 4, '.')
         return data;
     }
 }
@@ -244,10 +228,8 @@ export class ICMPV6Visitor implements PVisitor {
         const { reader } = parent;
         const data = new ICMPV6(parent, reader, Protocol.ICMP);
 
-        const type = reader.read8();
-        const code = reader.read8();
-        data.type = type;
-        data.code = code;
+        data.type = data.read8('type');
+        data.code = data.read8('code');
         // reader.read16(); //crc
         // reader.skip(4); //flag
         // const target = reader.readHex(16, ':')

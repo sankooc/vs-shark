@@ -91,7 +91,6 @@ export class DHCP extends IPPacket {
     }
 }
 
-
 export class NBNSVisitor implements PVisitor {
     createPacket(ele: PacketElement): [NBNS,Uint8ArrayReader] {
         const parent = ele.getPacket();
@@ -207,25 +206,18 @@ export class DHCPVisitor implements PVisitor {
         const htype = reader.read8();
         const hlen = reader.read8();
         const hops = reader.read8();
-        const transactionId = reader.read32();
+        data.transactionId = reader.read32();
         const sec = reader.read16(false);
         const flag = reader.read16(false);
-        const clientAddress = reader.read32Hex();
-        const yourAddress = reader.read32Hex();
-        const nextServerAddress = reader.read32Hex();
-        const relayAddress = reader.read32Hex();
-        const macAddress = reader.readHex(6, ':');
+        data.clientAddress = reader.read32Hex();
+        data.yourAddress = reader.read32Hex();
+        data.nextServerAddress = reader.read32Hex();
+        data.relayAddress = reader.read32Hex();
+        data.macAddress = reader.readHex(6, ':');
         reader.skip(10)//padding
         reader.skip(64)//sname
         reader.skip(128)//file
         const magicCookie = reader.read32();
-
-        data.transactionId = transactionId;
-        data.clientAddress = clientAddress;
-        data.yourAddress = yourAddress;
-        data.nextServerAddress = nextServerAddress;
-        data.relayAddress = relayAddress;
-        data.macAddress = macAddress;
         return data;
     }
 }
