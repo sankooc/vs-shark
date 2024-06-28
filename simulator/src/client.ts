@@ -202,11 +202,6 @@ export abstract class Client extends PCAPClient {
       overview.valMap = map;
       console.log('parse complete', frames.length, cts.length);
       this.emitMessage(Panel.MAIN, new ComMessage<MainProps>('data', { status: 'done', items, tcps: cts, arpGraph: graph, overview }));
-      // this.emitMessage(Panel.MAIN, new ComMessage('tcplist', cts));
-      // this.emitMessage(Panel.MAIN, new ComMessage('arpGraph', graph));
-      // console.log(arpreplies);
-      // console.log(graph)
-      // console.log(JSON.stringify(graph));
     }
   }
 }
@@ -232,21 +227,50 @@ const formatDate = (date: Date): string => {
 }
 const _resolveARP = (item: CTreeItem, p: ARP): void => {
   const { oper, senderMac, senderIp, targetMac, targetIp, hardwareType, protocolType, hardwareSize, protocolSize } = p;
-
-  const code = '0x' + protocolType.toString(16).padStart(4, '0')
+  const code = '0x' + protocolType.toString(16).padStart(4, '0');
   item.label = `Address Resolution Protocol (${ARP_OPER_TYPE_MAP[oper]})`;
-  item.append(`Hardware type: ${ARP_HARDWARE_TYPE_MAP[hardwareType]} (${hardwareType})`);
-  item.append(`Hardware size: ${hardwareSize} bytes`);
-  item.append(`Protocol type: ${etypeMap[code]} (${code})`);
-  item.append(`Protocol size: ${protocolSize} bytes`);
-  item.append(`opcode ${ARP_OPER_TYPE_MAP[oper]} (${oper})`);
-  item.append(`Sender Mac address: ${senderMac}`);
-  item.append(`Sender IP address: ${senderIp}`);
-  item.append(`Target Mac address: ${targetMac}`);
-  item.append(`Target IP address: ${targetIp}`);
-}
+  for (const field of p.fields) {
+    const { name, size, start } = field;
+    switch (name) {
+      case 'htype':
+        item.addIndex(`Hardware type: ${ARP_HARDWARE_TYPE_MAP[hardwareType]} (${hardwareType})`, start, size);
+        break;
+      case 'ptype':
+        item.addIndex(`Protocol type: ${etypeMap[code]} (${code})`, start, size);
+        break;
+      case 'hlen':
+        item.addIndex(`Hardware size: ${hardwareSize} bytes`, start, size);
+        break;
+      case 'plen':
+        item.addIndex(`Protocol size: ${protocolSize} bytes`, start, size);
+        break;
+      case 'oper':
+        item.addIndex(`Operation code ${ARP_OPER_TYPE_MAP[oper]} (${oper})`, start, size);
+        break;
+      case 'senderMac':
+        item.addIndex(`Sender Mac address: ${senderMac}`, start, size);
+        break;
+      case 'senderIp':
+        item.addIndex(`Sender IP address: ${senderIp}`, start, size);
+        break;
+      case 'targetMac':
+        item.addIndex(`Target Mac address: ${targetMac}`, start, size);
+        break;
+      case 'targetIp':
+        item.addIndex(`Target IP address: ${targetIp}`, start, size);
+        break;
+    }
 
-const _resolve = (item: CTreeItem, p: IPv4): void => {
+  }
+  // item.append(`Hardware type: ${ARP_HARDWARE_TYPE_MAP[hardwareType]} (${hardwareType})`);
+  // item.append(`Hardware size: ${hardwareSize} bytes`);
+  // item.append(`Protocol type: ${etypeMap[code]} (${code})`);
+  // item.append(`Protocol size: ${protocolSize} bytes`);
+  // item.append(`opcode ${ARP_OPER_TYPE_MAP[oper]} (${oper})`);
+  // item.append(`Sender Mac address: ${senderMac}`);
+  // item.append(`Sender IP address: ${senderIp}`);
+  // item.append(`Target Mac address: ${targetMac}`);
+  // item.append(`Target IP address: ${targetIp}`);
 }
 const _stack = (root: Context, packet: IPPacket, items: CTreeItem[]): number => {
   const index = new Integer();
@@ -254,12 +278,15 @@ const _stack = (root: Context, packet: IPPacket, items: CTreeItem[]): number => 
     index.add(_stack(root, packet.parent, items));
   }
   const item = new CTreeItem(packet.toString());
+  if(packet.end > packet.start){
+    item.index = [packet.start, packet.end - packet.start];
+  }
   switch (packet.protocol) {
-    case Protocol.DNS:{
+    case Protocol.DNS: {
       const p: DNS = packet as DNS;
       // item.label = p.sum
     }
-    break;
+      break;
     case Protocol.HTTP: {
       const p = packet as HttpPT;
       item.label = p.summary();
@@ -283,19 +310,48 @@ const _stack = (root: Context, packet: IPPacket, items: CTreeItem[]): number => 
     case Protocol.IPV6: {
       const p = packet as IPv6;
       item.append(`IP version: 6`);
-      item.append(`source ip: ${p.source}`);
-      item.append(`target ip: ${p.target}`);
+      for (const field of p.fields) {
+        const { name, size, start } = field;
+        switch (name) {
+          case 'source':
+            item.addIndex(`Source IP Address: (${p.source})`, start, size);
+            break;
+          case 'target':
+            item.addIndex(`Destination IP Address: (${p.target})`, start, size);
+            break;
+          case 'ipprotocol':
+            item.addIndex(`Protocol: ${p.nextHeader}`, start, size);
+            break;
+        }
+      }
     }
       break;
     case Protocol.IPV4: {
       const p = packet as IPv4;
-      item.append(`IP version: ${p.version}`);
-      item.append(`Total length: ${p.totalLen}`);
-      item.append(`Identification: ${p.identification.toString(16)}`);
-      item.append(`Source Address: ${p.source}`);
-      item.append(`Destination Address: ${p.target}`);
-      item.append(`Protocol: ${p.ipprotocol}`);
-      item.append(`TTL: ${p.ttl}`);
+      item.append(`IP version: 4`);
+      for (const field of p.fields) {
+        const { name, size, start } = field;
+        switch (name) {
+          case 'source':
+            item.addIndex(`Source IP Address: (${p.source})`, start, size);
+            break;
+          case 'target':
+            item.addIndex(`Destination IP Address: (${p.target})`, start, size);
+            break;
+          case 'totalLen':
+            item.addIndex(`Total length: ${p.totalLen}`, start, size);
+            break;
+          case 'identification':
+            item.addIndex(`Identification: ${p.identification.toString(16)}`, start, size);
+            break;
+          case 'ttl':
+            item.addIndex(`TTL: ${p.ttl}`, start, size);
+            break;
+          case 'ipprotocol':
+            item.addIndex(`Protocol: ${p.ipprotocol}`, start, size);
+            break;
+        }
+      }
     }
       break;
     case Protocol.ARP: {
@@ -311,18 +367,18 @@ const _stack = (root: Context, packet: IPPacket, items: CTreeItem[]): number => 
       break;
     case Protocol.MAC: {
       const p = packet as DataPacket;
-      for(const field of p.fields){
+      for (const field of p.fields) {
         const { name, size, start } = field;
-        switch(name){
+        switch (name) {
           case 'source':
-            item.addIndex(`source MAC: (${p.source})`, start, size);
+            item.addIndex(`Source MAC Address: (${p.source})`, start, size);
             break;
           case 'target':
-            item.addIndex(`target MAC: (${p.target})`, start, size);
+            item.addIndex(`Destination MAC Address: (${p.target})`, start, size);
             break;
           case 'type':
             const code = `0x${p.type.toUpperCase()}`
-            item.addIndex(`type: ${etypeMap[code]} (${code})`, start, size);
+            item.addIndex(`Type : ${etypeMap[code]} (${code})`, start, size);
             break;
         }
       }

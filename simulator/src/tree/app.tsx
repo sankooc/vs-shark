@@ -30,7 +30,13 @@ const App: React.FC = () => {
     const len = item.children.length;
     if(len){
       return <details className="tree-nav__item is-expandable">
-        <summary className="tree-nav__item-title">{item.label}</summary>
+        <summary className="tree-nav__item-title" onClick={() => {
+        if(item.index && item.index.length){
+          const h = new HexV(data);
+          h.index = item.index;
+          emitMessage(new ComMessage<HexV>('hex-data', h));
+        }
+      }}>{item.label}</summary>
         <div className="tree-nav__item">
           {item.children.map(it => build(it))}
         </div>
