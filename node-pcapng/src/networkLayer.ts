@@ -85,31 +85,24 @@ export class IPv4Visitor implements PVisitor {
         const data = new IPv4(parent, reader, Protocol.IPV4);
 
         const cv = reader.read8();
-        const version = cv >>> 4;
+        data.version = cv >>> 4;
         const headLenth = cv & 0x0f;
         const tos = reader.read8();
-        const totalLen = reader.read16();
-        const identification = reader.read16();
+        data.totalLen = data.read16('totalLen');
+        data.identification = data.read16('identification');
         const flag = reader.read16() >>> 13
-        const ttl = reader.read8();
-        const protocol = reader.read8()
+        data.ttl = data.read8('ttl');
+        data.ipprotocol = data.read8('ipprotocol')
         const headCRC = reader.read16()
-        const source = reader.readIp();
-        const target = reader.readIp();
+        data.source = data.readIp('source');
+        data.target = data.readIp('target');
         if (headLenth > 5) {
             reader.skip((headLenth - 5) * 4)
         }
 
-        data.source = source;
-        data.target = target;
-        data.version = version;
-        data.totalLen = totalLen;
-        data.identification = identification;
-        data.ttl = ttl;
-        data.ipprotocol = protocol
         data.extra = { cv, headLenth, tos, flag, headCRC }
 
-        return data.accept(this.mapper.get(protocol));
+        return data.accept(this.mapper.get(data.ipprotocol));
     }
 }
 
@@ -117,35 +110,24 @@ export class IPv4Visitor implements PVisitor {
 export class ARPVisitor implements PVisitor {
     visit(ele: PacketElement): IPPacket {
 
-        
         const parent = ele.getPacket();
         const { reader } = parent;
         const data = new ARP(parent, reader, Protocol.ARP);
 
         //This field specifies the network link protocol type. Example: Ethernet is 1
-        const htype = reader.read16(false);
+        data.hardwareType = data.read16('htype', false);
         // This field specifies the internetwork protocol for which the ARP request is intended
-        const ptype = reader.read16(false);
+        data.protocolType = data.read16('ptype', false);
         //Length (in octets) of a hardware address. Ethernet address length is 6.
-        const hlen = reader.read8();
+        data.hardwareSize = data.read8('hlen');
         //Length (in octets) of internetwork addresses. The internetwork protocol is specified in PTYPE. Example: IPv4 address length is 4.
-        const plen = reader.read8();
+        data.protocolSize = data.read8('plen');
         //Specifies the operation that the sender is performing: 1 for request, 2 for reply.
-        const oper = reader.read16(false);
-        const senderMac = reader.readHex(6, ':');
-        const senderIp = reader.readIp()
-        const targetMac = reader.readHex(6, ':');
-        const targetIp = reader.readIp();
-
-        data.hardwareType = htype;
-        data.hardwareSize = hlen;
-        data.protocolType = ptype;
-        data.protocolSize = plen;
-        data.oper = oper;
-        data.senderMac = senderMac;
-        data.senderIp = senderIp;
-        data.targetMac = targetMac;
-        data.targetIp = targetIp;
+        data.oper = data.read16('oper', false);
+        data.senderMac = data.readHex('senderMac', 6, ':');
+        data.senderIp = data.readIp('senderIp')
+        data.targetMac = data.readHex('targetMac', 6, ':');
+        data.targetIp = data.readIp('targetIp');
         ele.getContext().resolve(data);
         return data;
     }
@@ -160,40 +142,17 @@ export class IPv6Visitor implements PVisitor {
         //https://en.wikipedia.org/wiki/List_of_IP_protocol_numbers
     }
     visit(ele: PacketElement): IPPacket {
-        
         const parent = ele.getPacket();
         const { reader } = parent;
         const data = new IPv6(parent, reader, Protocol.IPV6);
 
         reader.read32();
-        const plen = reader.read16(false);
-        const header = reader.read8();
-        const hopLimit = reader.read8();
+        data.plen = data.read16('plen',false);
+        data.nextHeader = data.read8('nextHeader');
+        data.hop = data.read8('hop');
         //https://en.wikipedia.org/wiki/IPv6_address
-        const sourceip = reader.readHex(16, ':')
-        const targetip = reader.readHex(16, ':')
-
-        data.source = sourceip;
-        data.target = targetip;
-        data.nextHeader = header;
-        data.hop = hopLimit;
-        data.plen = plen;
+        data.source = data.readHex('source', 16, ':')
+        data.target = data.readHex('target', 16, ':')
         return data.accept(this.mapper.get(data.nextHeader));
     }
 }
-
-// https://en.wikipedia.org/wiki/EtherType
-// export default {
-//     createVisitor(parent: AbstractVisitor, type: string): AbstractVisitor {
-//         switch (type) {
-//             case '0800':
-//                 return new IPv4Visitor(parent, 'ipv4', type);
-//             case '86dd':
-//                 return new IPv6Visitor(parent, 'ipv6', type);
-//             case '0806':
-//                 return new ARPVisitor(parent, 'arp', type);
-//             case '8035':
-//         }
-//         return new BasicVisitor(parent,'unknown', type);
-//     }
-// }

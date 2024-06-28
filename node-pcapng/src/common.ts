@@ -103,6 +103,22 @@ export class IPPacket extends Packet implements PacketElement {
         this.fields.push(new PacketField(name, this.reader.cursor, len))
         return this.reader.readHex(len, flag);
     };
+    read8(name: string): number{
+        this.fields.push(new PacketField(name, this.reader.cursor, 1))
+        return this.reader.read8();
+    };
+    read16(name: string, littleEndian: boolean = true): number{
+        this.fields.push(new PacketField(name, this.reader.cursor, 2))
+        return this.reader.read16(littleEndian);
+    };
+    read32(name: string, littleEndian: boolean = true): number{
+        this.fields.push(new PacketField(name, this.reader.cursor, 4))
+        return this.reader.read32(littleEndian);
+    };
+    readIp(name: string): string{
+        this.fields.push(new PacketField(name, this.reader.cursor, 4))
+        return this.reader.readIp()
+    }
     getContext(): Context {
         const ep = (this.getProtocal(Protocol.ETHER) as EtherPacket);
         if (ep) {
