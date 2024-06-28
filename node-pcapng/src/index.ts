@@ -2,9 +2,9 @@ import { Context, Option, AbstractVisitor, Visitor, Packet, Protocol, IPPacket, 
 import { AbstractReaderCreator } from './io';
 import { PCAPNGVisitor } from './pcapng';
 import { DataPacket } from './dataLinkLayer';
-// import { IPv4, IPv6, ARP, IPPack } from './networkLayer';
-// import { UDP, TCP, ICMP, IGMP } from './transportLayer';
-// import { NBNS, DNS, DHCP, HttpPT } from './application';
+import { IPv4, IPv6, ARP, IPPack } from './networkLayer';
+import { UDP, TCP, ICMP, IGMP } from './transportLayer';
+import { NBNS, DNS, DHCP, HttpPT } from './application';
 import { PCAPVisitor } from './pcap';
 import { linktypeMap, ipProtocolMap } from './constant';
 
@@ -41,7 +41,7 @@ export const readBuffers = (arr: Uint8Array): AbstractRootVisitor => {
 }
 export { Context,Option, AbstractVisitor, Visitor, Packet, Protocol, IPPacket, Resolver, PVisitor, AbstractRootVisitor, FileType, TCPStack, TCPConnect, CNode, ARPReply };
 
-// export { EtherPacket, DataPacket, IPv4, IPv6, ARP, UDP, TCP, ICMP, IGMP, NBNS, DNS, DHCP, IPPack,HttpPT };
-export{EtherPacket, DataPacket}
+export { EtherPacket, DataPacket, IPv4, IPv6, ARP, UDP, TCP, ICMP, IGMP, NBNS, DNS, DHCP, IPPack,HttpPT };
+// export{EtherPacket, DataPacket}
 
 export { linktypeMap, ipProtocolMap };

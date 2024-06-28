@@ -20,9 +20,9 @@ export class DataLaylerVisitor implements PVisitor {
         const parent = ele.getPacket();
         const { reader } = parent;
         const data = new DataPacket(parent, reader, Protocol.MAC);
-        data.target = reader.readHex(6, ':');
-        data.source = reader.readHex(6, ':');
-        data.type = reader.readHex(2, '');
+        data.target = data.readHex('target', 6, ':');
+        data.source = data.readHex('source', 6, ':');
+        data.type = data.readHex('type', 2, '');
         return data.accept(this.mapper.get(data.type));
     }
 }

@@ -10,12 +10,14 @@ if (process.argv.length > 2) {
     console.log('read complete');
     console.log('frames', ctx.getFrames().length);
     console.log('pcap/pcapng file info', ctx.getFileInfo());
-    // console.log('arp replies', ctx.getARPReplies());
-    // console.log('tcp connections', ctx.getTCPConnections().length);
-
-    // const frame = ctx.getFrames()[0];
-    // console.log('frame protocol', frame.protocol); // enum
-    // console.log('frame size', (frame.getProtocal(Protocol.ETHER) as EtherPacket).captured, 'kB');
+    console.log('arp replies', ctx.getARPReplies());
+    console.log('tcp connections', ctx.getTCPConnections().length);
+    
+    const frame = ctx.getFrames()[0];
+    console.log('frame protocol', frame.protocol); // enum
+    console.log('frame size', frame.getPacketSize(), 'bytes');
+    console.log('frame protocol size', frame.getProtocolSize(), 'bytes');
+    console.log('frame protocol pyload size', frame.getPayloadSize(), 'bytes');
     
   })
 }

@@ -1,7 +1,7 @@
 import { AbstractReaderCreator, Uint8ArrayReader } from './io';
-// import { ARP } from './networkLayer';
-// import { TCP } from './transportLayer';
-// import { DNS,NBNS} from './application';
+import { ARP } from './networkLayer';
+import { TCP } from './transportLayer';
+import { DNS, NBNS } from './application';
 import { DataPacket } from './dataLinkLayer';
 export enum Protocol {
     ETHER,
@@ -25,16 +25,12 @@ export enum Protocol {
 export enum FileType {
     PCAP,
     PCAPNG,
-  }
+}
 
 
 
 export class PacketField {
-    start: number;
-    end: number;
-    toString(): string {
-        return 'field';
-    }
+    constructor(public name: string, public start: number, public size: number){}
 }
 export class Packet {
     readonly reader: Uint8ArrayReader;
@@ -44,34 +40,36 @@ export class Packet {
         this.reader = reader;
         this.start = reader.cursor;
     }
-    getPacketSize(){
-        const len = this.reader.arr.length;
-        return len - this.start;
+    getPacketSize(): number {
+        return this.reader.arr.length;
     }
-    getSize(){
-        if(!this.end){
-            return 0
-        }
-        return this.end - this.start;
+    getProtocolSize(): number {
+        return this.reader.arr.length - this.start;
     }
-    _end() {
+    getPayLoad(): Uint8Array {
+        return this.reader.extra2();
+    }
+    getPayloadSize(): number {
+        return this.reader.left();
+    }
+    _end(): void {
         this.end = this.reader.cursor;
     }
     toString(): string {
         return 'packet';
     }
-    
 }
 
 export class IPPacket extends Packet implements PacketElement {
     index: number;
     protocol: Protocol;
     parent!: IPPacket;
+    fields: PacketField[] = [];
     constructor(parent: IPPacket, reader: Uint8ArrayReader, protocol: Protocol) {
         super(reader);
         this.protocol = protocol;
         this.parent = parent;
-        if(this.parent) {
+        if (this.parent) {
             this.parent._end();
         }
     }
@@ -97,11 +95,15 @@ export class IPPacket extends Packet implements PacketElement {
         }
         return null;
     }
-    
+
+    readHex(name: string, len: number, flag: string): string {
+        this.fields.push(new PacketField(name, this.reader.cursor, len))
+        return this.reader.readHex(len, flag);
+    };
     getContext(): Context {
         const ep = (this.getProtocal(Protocol.ETHER) as EtherPacket);
-        if(ep){
-            ep.context;
+        if (ep) {
+            return ep.context;
         }
         return null;
     }
@@ -109,7 +111,7 @@ export class IPPacket extends Packet implements PacketElement {
         return this;
     }
     accept(visitor: PVisitor): IPPacket {
-        if(!visitor) {
+        if (!visitor) {
             return this;
         }
         return visitor.visit(this);
@@ -252,7 +254,7 @@ export class FileInfo {
 export class CNode {
     ip: string;
     mac: string;
-    constructor(ip: string, mac: string){
+    constructor(ip: string, mac: string) {
         this.ip = ip;
         this.mac = mac;
     }
@@ -260,20 +262,20 @@ export class CNode {
 export class ARPReply {
     host: CNode;
     clients: CNode[] = [];
-    constructor(host: CNode){
+    constructor(host: CNode) {
         this.host = host;
     }
 }
 export interface Context {
-    getFrames():IPPacket[];
+    getFrames(): IPPacket[];
     getCurrentIndex(): number;
     getFileInfo(): FileInfo;
-    // resolve(p: ARP):void;
-    // getARPReplies(): ARPReply[];
-    // resolveTCP(p: TCP): void;
-    // getTCPConnections(): TCPConnect[];
-    // resolveDNS(p: DNS | NBNS): void;
-    createEtherPacket(reader: Uint8ArrayReader) : EtherPacket;
+    resolve(p: ARP): void;
+    getARPReplies(): ARPReply[];
+    resolveTCP(p: TCP): void;
+    getTCPConnections(): TCPConnect[];
+    resolveDNS(p: DNS | NBNS): void;
+    createEtherPacket(reader: Uint8ArrayReader): EtherPacket;
 }
 
 export abstract class AbstractRootVisitor implements Visitor, Context {
@@ -287,105 +289,102 @@ export abstract class AbstractRootVisitor implements Visitor, Context {
         return this.index;
     }
     abstract getFileInfo(): FileInfo;
-    protected getNextIndex(): number{
+    protected getNextIndex(): number {
         this.index += 1;
         return this.index;
     }
-    
-    createEtherPacket(reader: Uint8ArrayReader) : EtherPacket {
+
+    createEtherPacket(reader: Uint8ArrayReader): EtherPacket {
         return new EtherPacket(reader, this, this.getNextIndex());
     }
     protected addPacket(packet: IPPacket): void {
-        // packet.setIndex(this.getNextIndex());
         this.packets.push(packet);
     };
     public getContext(): Context {
         return this;
     }
-    // resolveDNS(p: DNS | NBNS): void {
-        
-    // }
-    // resolve(p: ARP):void {
-    //     const { oper } = p;
-    //     if(oper === 2){
-    //         const sourceKey = `${p.senderMac}@${p.senderIp}`;
-    //         let list = this.resolver.arpMap.get(sourceKey);
-    //         if(!list){
-    //             list = new Set();
-    //             this.resolver.arpMap.set(sourceKey, list);
-    //         }
-    //         list.add(`${p.targetMac}@${p.targetIp}`);
-    //     }
-    // }
-    // resolveTCP(p: TCP): void{
-    //     // const resolver = this.resolver;
-    //     // const noContent = p.ack && !p.psh && p.getSize();
-    //     // const [arch, ip1, port1, ip2, port2] = p.mess();
-    //     // const key = `${ip1}${port1}-${ip2}${port2}`;
-    //     // let connect = resolver.tcpCache.get(key);
-    //     // if (!connect) {
-    //     //     if (noContent) return;
-    //     //     connect = new TCPConnect(ip1, port1, ip2, port2);
-    //     //     resolver.tcpCache.set(key, connect);
-    //     // }
-    //     // const sequence = p.sequence;
-    //     // const nextSequence = p.sequence + p.packet.length;
-    //     // const stack = connect.getStack(arch);
-    //     // const dump = stack.checkDump(sequence, nextSequence);
-    //     // p.isDump = dump;
-    //     // connect.count += 1;
-    //     // connect.total += p.getPacketSize();
-    //     // connect.tcpSize += p.getSize();
-    //     // if (dump) {
-    //     //     return;
-    //     // }
-    //     // connect.tcpUse += p.packet.length;
-    //     // connect.countUse += 1;
-    //     // stack.sequence = sequence;
-    //     // stack.next = nextSequence;
-    //     // const stackRec = connect.getStack(!arch);
-    //     // stackRec.ack = p.acknowledge;
-    //     // if (p.ack) {
+    resolveDNS(p: DNS | NBNS): void {
 
-    //     // }
-    //     // if (p.ack && !p.psh) {
-    //     //     if (p.packet.length > 10) {
-    //     //         const len = p.getProtocal(Protocol.ETHER).packet.length;
-    //     //     }
-    //     // }
-    //     // if (p.psh) {
-    //     // }
+    }
+    resolve(p: ARP): void {
+        const { oper } = p;
+        if (oper === 2) {
+            const sourceKey = `${p.senderMac}@${p.senderIp}`;
+            let list = this.resolver.arpMap.get(sourceKey);
+            if (!list) {
+                list = new Set();
+                this.resolver.arpMap.set(sourceKey, list);
+            }
+            list.add(`${p.targetMac}@${p.targetIp}`);
+        }
+    }
+    resolveTCP(p: TCP): void {
+        const resolver = this.resolver;
+        const payloadSize = p.getPayloadSize()
+        const noContent = p.ack && !p.psh && payloadSize < 9;
+        const [arch, ip1, port1, ip2, port2] = p.mess();
+        const key = `${ip1}${port1}-${ip2}${port2}`;
+        let connect = resolver.tcpCache.get(key);
+        if (!connect) {
+            if (noContent) return;
+            connect = new TCPConnect(ip1, port1, ip2, port2);
+            resolver.tcpCache.set(key, connect);
+        }
+        const sequence = p.sequence;
+        const nextSequence = p.sequence + payloadSize
+        const stack = connect.getStack(arch);
+        const dump = stack.checkDump(sequence, nextSequence);
+        p.isDump = dump;
+        connect.count += 1;
+        connect.total += p.getPacketSize();
+        connect.tcpSize += payloadSize;
+        if (dump) {
+            return;
+        }
+        connect.tcpUse += payloadSize;
+        connect.countUse += 1;
+        stack.sequence = sequence;
+        stack.next = nextSequence;
+        const stackRec = connect.getStack(!arch);
+        stackRec.ack = p.acknowledge;
+        // if (p.ack) {
 
-    //     // const payload = p.packet;
-    // }
-    // getTCPConnections(): TCPConnect[]{
-    //     return this.resolver.tcpConnections;
-    // }
-    // getARPReplies(): ARPReply[]{
-    //     const arp = this.resolver.arpMap;
-    //     const hostnames = arp.keys();
-    //     const rs: ARPReply[] = [];
-    //     arp.forEach((values, hostname) => {
-    //         const [mac, ip] = hostname.split('@');
-    //         const reply = new ARPReply(new CNode(ip,mac));
-    //         values.forEach((val) => {
-    //             const [mac, ip] = val.split('@');
-    //             reply.clients.push(new CNode(ip,mac));
-    //         });
-    //         rs.push(reply);
-    //     });
-    //     return rs;
-    // }
+        // }
+        // if (p.ack && !p.psh) {
+        //     if (p.packet.length > 10) {
+        //         const len = p.getProtocal(Protocol.ETHER).packet.length;
+        //     }
+        // }
+        // if (p.psh) {
+        // }
+    }
+    getTCPConnections(): TCPConnect[] {
+        return this.resolver.tcpConnections;
+    }
+    getARPReplies(): ARPReply[] {
+        const arp = this.resolver.arpMap;
+        const hostnames = arp.keys();
+        const rs: ARPReply[] = [];
+        arp.forEach((values, hostname) => {
+            const [mac, ip] = hostname.split('@');
+            const reply = new ARPReply(new CNode(ip, mac));
+            values.forEach((val) => {
+                const [mac, ip] = val.split('@');
+                reply.clients.push(new CNode(ip, mac));
+            });
+            rs.push(reply);
+        });
+        return rs;
+    }
 
-    getHTTPConnects(): void {}
+    getHTTPConnects(): void { }
     abstract _visit(ele: InputElement): void;
     visit(ele: InputElement): Packet {
         const { readerCreator, content } = ele;
-        // const reader = readerCreator.createReader(content, 'root', false);
         const start = Date.now();
         this._visit(ele);
         const per = Date.now() - start;
-        // this.resolver.flush(null);
+        this.resolver.flush(null);
         return null;
     }
 }
@@ -405,5 +404,5 @@ export class InputElement implements PElement {
     accept(visitor: Visitor): IPPacket {
         return visitor.visit(this) as IPPacket;
     }
-    constructor(public content: Uint8Array, public readerCreator:AbstractReaderCreator){}
+    constructor(public content: Uint8Array, public readerCreator: AbstractReaderCreator) { }
 } 

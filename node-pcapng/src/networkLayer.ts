@@ -146,7 +146,7 @@ export class ARPVisitor implements PVisitor {
         data.senderIp = senderIp;
         data.targetMac = targetMac;
         data.targetIp = targetIp;
-        // ele.context.resolve(data);//TODO
+        ele.getContext().resolve(data);
         return data;
     }
 }

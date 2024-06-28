@@ -5,7 +5,6 @@ import { IPv4, IPv6 } from './networkLayer';
 
 export class UDP extends IPPacket {
     extra: any;
-    payload: Uint8Array
     sourcePort: number;
     targetPort: number;
     toString(): string {
@@ -48,7 +47,7 @@ export class TCP extends UDP {
         return `[TCP] ${this.sourcePort} -> ${this.targetPort}, ${this.getFlag()}`
     }
     detail(): string {
-        return `Transmission Control Protocol, Src Port: ${this.sourcePort}, Dst Prot: ${this.targetPort}, Len: ${this.getSize()}`;
+        return `Transmission Control Protocol, Src Port: ${this.sourcePort}, Dst Prot: ${this.targetPort}, Len: ${this.getProtocolSize()}`;
     }
     public getFlag(): string {
         const its = [];
@@ -134,7 +133,7 @@ export class TCPVisitor implements PVisitor {
         data.syn = syn;
         data.fin = fin;
         data.extra = { window, cwr, ece, urg, urgent };
-        // ele.context.resolveTCP(data);
+        ele.getContext().resolveTCP(data);
         
         let nextVisitor;
         const method = reader.readSpace(10);

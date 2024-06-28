@@ -15,7 +15,6 @@ export class NBNS extends IPPacket {
     answer: number;
     authority: number;
     addtional: number;
-    payload: Uint8Array;
     queries: Query[] = [];
     answers: Answer[] = [];
     authorities: Authority[] = [];
@@ -241,7 +240,6 @@ export class HttpPT extends IPPacket {
     type!: string;
     version!: string;
     headers!: Set<string>;
-    payload!: Uint8Array;
     toString(): string {
         if (this.type === 'request') {
             return `${this.method} ${this.path} ${this.version}`;
