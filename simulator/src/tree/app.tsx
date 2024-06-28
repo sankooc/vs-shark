@@ -1,6 +1,6 @@
 import React,{ useEffect, useState } from "react";
-import { onMessage } from '../connect';
-import { CTreeItem } from "../common";
+import { onMessage, emitMessage } from '../connect';
+import { CTreeItem, ComMessage, HexV } from "../common";
 import "./app.css";
 
 // const convert = (item: CTreeItem, key: string): TreeDataNode => {
@@ -16,23 +16,16 @@ import "./app.css";
 //   return p;
 // }
 const App: React.FC = () => {
-  const [items, setItem] = useState<CTreeItem[]>([]);
+  const [{items, data}, setItem] = useState<any>({items: []});
   useEffect(() => {
     onMessage('message', (e: any) => {
       const { type, body, requestId } = e.data;
       switch (type) {
         case 'frame':
-          const data = body as CTreeItem[];
-          setItem(data);
+          setItem(body);
       }
     });
   }, []);
-  // const root = new CTreeItem('root');
-  // root.children.push(...items);
-  // const _item = convert(root, Date.now() + '');
-  // const onSelect: TreeProps['onSelect'] = (selectedKeys, info) => {
-  //   console.log('selected', selectedKeys, info);
-  // };
   const build = (item: CTreeItem) => {
     const len = item.children.length;
     if(len){
@@ -43,7 +36,13 @@ const App: React.FC = () => {
         </div>
       </details>;
     } else {
-      return <a className="tree-nav__item-title"><i className="icon ion-ios-bookmarks"></i> {item.label}</a>
+      return <a className="tree-nav__item-title" onClick={() => {
+        if(item.index && item.index.length){
+          const h = new HexV(data);
+          h.index = item.index;
+          emitMessage(new ComMessage<HexV>('hex-data', h));
+        }
+      }}>{item.label}</a>
     }
   };
   return (

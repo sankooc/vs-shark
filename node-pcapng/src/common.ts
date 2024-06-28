@@ -30,7 +30,7 @@ export enum FileType {
 
 
 export class PacketField {
-    constructor(public name: string, public start: number, public size: number){}
+    constructor(public name: string, public start: number, public size: number) { }
 }
 export class Packet {
     readonly reader: Uint8ArrayReader;
@@ -39,6 +39,9 @@ export class Packet {
     constructor(reader: Uint8ArrayReader) {
         this.reader = reader;
         this.start = reader.cursor;
+    }
+    getPacketData(): Uint8Array {
+        return this.reader.arr;
     }
     getPacketSize(): number {
         return this.reader.arr.length;
@@ -268,6 +271,7 @@ export class ARPReply {
 }
 export interface Context {
     getFrames(): IPPacket[];
+    getFrame(inx: number): IPPacket;//1 based
     getCurrentIndex(): number;
     getFileInfo(): FileInfo;
     resolve(p: ARP): void;
@@ -284,6 +288,9 @@ export abstract class AbstractRootVisitor implements Visitor, Context {
     index: number = 0;
     getFrames(): IPPacket[] {
         return this.packets;
+    }
+    getFrame(inx: number): IPPacket {
+        return this.packets[inx - 1];
     }
     getCurrentIndex(): number {
         return this.index;

@@ -10,6 +10,7 @@ function HexView() {
       switch (type) {
         case 'hex-data':
           const data = body as HexV;
+          console.log(data)
           setData(data);
       }
     });
@@ -17,8 +18,20 @@ function HexView() {
   const indexes = [];
   const codes = [];
   let text = '';
+  let start = 0;
+  let end = 0;
+  const getActive = (inx: number): string => {
+    if(end > 0 && inx >= start && inx < end){
+      return 'active';
+    }
+    return '';
+  }
   if (data) {
     const lent = data.data.length;
+    if(data.index && data.index[1]){
+      start = data.index[0];
+      end = start + data.index[1]
+    }
     for (let i = 0; i < lent; i += 16) {
       const inx = `0x${i.toString(16).padStart(8, '0')}`;
       indexes.push(inx);
@@ -42,7 +55,7 @@ function HexView() {
       {indexes.map(inx => <pre>{inx}</pre>)}
     </div>
     <div className="hex">
-      {codes.map((code, inx) => <code>{code}</code>)}
+      {codes.map((code, inx) => <code className={getActive(inx)}>{code}</code>)}
     </div>
     <div className="text">
       <pre>{text}</pre>

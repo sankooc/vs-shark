@@ -1,5 +1,5 @@
-import { PCAPClient, ComMessage, ComLog, Panel, Frame, CTreeItem, TCPCol, Grap, Category, GrapNode, GrapLink, MainProps, OverviewSource } from "./common";
-import { DataPacket, IPPacket, IPv6, AbstractRootVisitor, TCP, readBuffers, IPPack, ARP, linktypeMap, HttpPT, UDP, TCPConnect, EtherPacket, TCPStack, ARPReply, DNS } from 'protocols';
+import { PCAPClient, ComMessage, ComLog, Panel, Frame, CTreeItem, TCPCol, Grap, Category, GrapNode, GrapLink, MainProps, OverviewSource, HexV } from "./common";
+import { DataPacket, IPPacket, IPv6, Context, TCP, readBuffers, IPPack, ARP, linktypeMap, HttpPT, UDP, TCPConnect, EtherPacket, TCPStack, ARPReply, DNS } from 'protocols';
 import { ARP_OPER_TYPE_MAP, ARP_HARDWARE_TYPE_MAP, etypeMap } from 'protocols/built/src/constant';
 import { Protocol, IPv4 } from "protocols"
 
@@ -30,7 +30,7 @@ export class Statc {
   stc: Map<string, number> = new Map();
   public addLable(label: string, packet: IPPacket): void {
     const count = this.stc.get(label) || 0;
-    const size = (packet.getProtocal(Protocol.ETHER) as EtherPacket).packet?.length || 0;
+    const size = packet.getPacketSize() || 0;
     this.stc.set(label, count + size);
   }
   public static create(ts: number, per: number) {
@@ -45,24 +45,26 @@ const getNanoDate = (p: IPPacket) => {
 }
 
 export abstract class Client extends PCAPClient {
-  root!: AbstractRootVisitor;
+  root!: Context;
   abstract emitMessage(panel: Panel, msg: ComMessage<any>): void;
   abstract printLog(log: ComLog): void;
   protected getPacket(no: number): Uint8Array {
     if (!this.root) return new Uint8Array();
-    const packet: IPPacket = this.root.packets[no - 1];
+    const packet: IPPacket = this.root.getFrame(no);
     if (!packet) return new Uint8Array();
-    return packet.getProtocal(Protocol.ETHER).packet;
+    return packet.getPacketData();
   }
   protected buildFrameTree(no: number): CTreeItem[] {
     if (!this.root) return [];
-    const packet: IPPacket = this.root.packets[no - 1];
+    const packet: IPPacket = this.root.getFrame(no);
     if (!packet) return [];
     const items: CTreeItem[] = [];
     _stack(this.root, packet, items);
     return items;
   }
   abstract selectFrame(no: number): void;
+
+  abstract renderHexView(data: HexV): void;
 
   constructor() {
     super();
@@ -88,7 +90,7 @@ export abstract class Client extends PCAPClient {
       rs.source = ip.source;
       rs.dest = ip.target;
     }
-    rs.len = packet.getProtocal(Protocol.ETHER).packet.length;
+    rs.len = packet.getPacketSize();
     rs.info = packet.toString();
 
     return rs;
@@ -246,7 +248,7 @@ const _resolveARP = (item: CTreeItem, p: ARP): void => {
 
 const _resolve = (item: CTreeItem, p: IPv4): void => {
 }
-const _stack = (root: AbstractRootVisitor, packet: IPPacket, items: CTreeItem[]): number => {
+const _stack = (root: Context, packet: IPPacket, items: CTreeItem[]): number => {
   const index = new Integer();
   if (packet.parent) {
     index.add(_stack(root, packet.parent, items));
@@ -265,7 +267,7 @@ const _stack = (root: AbstractRootVisitor, packet: IPPacket, items: CTreeItem[])
       p.headers.forEach((val: string) => {
         if (val) item.append(val);
       });
-      item.append(`File Data ${p.payload?.length || 0} bytes`);
+      item.append(`File Data ${p.getPayloadSize()} bytes`);
     }
       break;
     case Protocol.TCP: {
@@ -275,7 +277,7 @@ const _stack = (root: AbstractRootVisitor, packet: IPPacket, items: CTreeItem[])
       item.append(`Acknowledge: ${p.acknowledge}`);
       item.append(`Source Port: ${p.sourcePort}`);
       item.append(`Destination Port: ${p.targetPort}`);
-      item.append(`Payload Length: ${p.packet.length} bytes`);
+      item.append(`Payload Length: ${p.getPayloadSize()} bytes`);
     }
       break;
     case Protocol.IPV6: {
@@ -304,15 +306,26 @@ const _stack = (root: AbstractRootVisitor, packet: IPPacket, items: CTreeItem[])
       const p = packet as UDP;
       item.append(`Source Port: ${p.sourcePort}`);
       item.append(`Destination Port: ${p.targetPort}`);
-      item.append(`Payload Length: ${p.packet?.length} bytes`);
+      item.append(`Payload Length: ${p.getPayloadSize()} bytes`);
     }
       break;
     case Protocol.MAC: {
       const p = packet as DataPacket;
-      item.append(`source MAC: (${p.source})`);
-      item.append(`target MAC: (${p.target})`);
-      const code = `0x${p.type.toUpperCase()}`
-      item.append(`type: ${etypeMap[code]} (${code})`);
+      for(const field of p.fields){
+        const { name, size, start } = field;
+        switch(name){
+          case 'source':
+            item.addIndex(`source MAC: (${p.source})`, start, size);
+            break;
+          case 'target':
+            item.addIndex(`target MAC: (${p.target})`, start, size);
+            break;
+          case 'type':
+            const code = `0x${p.type.toUpperCase()}`
+            item.addIndex(`type: ${etypeMap[code]} (${code})`, start, size);
+            break;
+        }
+      }
     }
       break;
     case Protocol.ETHER: {

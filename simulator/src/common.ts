@@ -35,6 +35,8 @@ export abstract class PCAPClient {
     abstract emitMessage(panel: Panel, msg: ComMessage<any>): void;
     abstract printLog(log: ComLog): void;
     abstract selectFrame(no: number): void;
+
+    abstract renderHexView(data: HexV): void;
     abstract init(): void;
 
     handle(msg: ComMessage<any>){
@@ -53,6 +55,9 @@ export abstract class PCAPClient {
                 case 'frame-select':
                     this.selectFrame(body.index as number);
                     break;
+                case 'hex-data':
+                    this.renderHexView(body as HexV);
+                    break;
                 default:
                     console.log('unknown type', msg.type);
             }
@@ -69,14 +74,14 @@ export interface ColumnItem {
 }
 
 export class TCPCol implements ColumnItem {
-    no: number;
-    ep1: string;
-    ep2: string;
-    total: number;
-    tcp: number;
-    tcpUse: number;
-    count: number;
-    countUse: number;
+    no!: number;
+    ep1!: string;
+    ep2!: string;
+    total!: number;
+    tcp!: number;
+    tcpUse!: number;
+    count!: number;
+    countUse!: number;
     getIndex(): number {
         return 0;
     }
@@ -127,7 +132,7 @@ export class Grap {
 
 export class Frame implements ColumnItem {
     no!: number;
-    time: number;
+    time!: number;
     source: string = 'n/a';
     dest: string = 'n/a';
     protocol!: string;
@@ -160,6 +165,15 @@ export class CTreeItem {
         this.children.push(item);
         return item;
     }
+    addIndex(label:string, start: number, size: number): CTreeItem{
+        if(!size){
+            return this.append(label);
+        }
+        const item = new CTreeItem(label);
+        item.index = [start, size];
+        this.children.push(item);
+        return item;
+    }
 }
 
 export class HexV {
@@ -177,9 +191,9 @@ export class OverviewSource {
     valMap: any;
 }
 export class MainProps {
-    status: string;
-    items: Frame[];
-    tcps: TCPCol[];
+    status!: string;
+    items!: Frame[];
+    tcps!: TCPCol[];
     arpGraph!: Grap;
-    overview: OverviewSource;
+    overview!: OverviewSource;
 }

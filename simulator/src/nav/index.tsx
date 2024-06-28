@@ -45,11 +45,14 @@ class DemoClient extends Client {
   printLog(log: ComLog) {
     console.log(log.msg);
   }
+  renderHexView(data: HexV) {
+    this.emitMessage(Panel.DETAIL, new ComMessage('hex-data', data));
+  }
   selectFrame(no: number): void {
     const items = this.buildFrameTree(no);
-    this.emitMessage(Panel.TREE, new ComMessage('frame', items));
     const data = this.getPacket(no);
-    this.emitMessage(Panel.DETAIL, new ComMessage('hex-data',  new HexV(data)));
+    this.emitMessage(Panel.TREE, new ComMessage('frame', {items, data }));
+    this.renderHexView(new HexV(data));
   }
 }
 const ele = document.getElementById("files");
@@ -64,5 +67,6 @@ window.addEventListener('message', function (msg: any) {
   if(msg.data.type){
     const _msg = msg.data as ComMessage<any>;
     client.handle(_msg);
+    console.log('--', _msg)
   }
 });

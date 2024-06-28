@@ -95,9 +95,12 @@ class PcapDocument extends Disposable implements vscode.CustomDocument {
 export class PCAPClient extends Client {
 	selectFrame(no: number): void {
 		const items = this.buildFrameTree(no);
-		vscode.commands.executeCommand('pcaptree.load', no, items);
 		const data = this.getPacket(no);
-		vscode.commands.executeCommand('detail.load', data);
+		vscode.commands.executeCommand('pcaptree.load', no, items, data);
+		vscode.commands.executeCommand('detail.load', data, [0,0]);
+	}
+  renderHexView(data: HexV): void {
+
 	}
 	webviewPanel: vscode.WebviewPanel;
 	output: vscode.LogOutputChannel;
@@ -132,10 +135,10 @@ export class PcapViewerProvider implements vscode.CustomReadonlyEditorProvider<P
 
 	public static register(context: vscode.ExtensionContext): vscode.Disposable {
 		vscode.window.registerTreeDataProvider('pcap.tree', PcapViewerProvider.pcapProvider);
-		vscode.commands.registerCommand('pcaptree.load', (no: number, items: CTreeItem[]) => {PcapViewerProvider.pcapProvider.refresh(items)});
+		vscode.commands.registerCommand('pcaptree.load', (no: number, items: CTreeItem[], data: Uint8Array) => {PcapViewerProvider.pcapProvider.refresh(items, data)});
 		const detailProvider = new DetailProvider(context);
-		vscode.commands.registerCommand('detail.load', (data: Uint8Array) => {
-			detailProvider.load(data, [0,0]);
+		vscode.commands.registerCommand('detail.load', (data: Uint8Array, index: [number, number]) => {
+			detailProvider.load(data, index);
 		});
 
 		vscode.window.registerWebviewViewProvider("pcap.detail", detailProvider, {
@@ -207,7 +210,7 @@ export class PcapViewerProvider implements vscode.CustomReadonlyEditorProvider<P
 				<meta name="viewport" content="width=device-width, initial-scale=1" />
 			  </head>
 			  <body>
-				<div id="root"></div>
+				<div id="app"></div>
 				<script nonce="${nonce}" src="${scriptUri}"></script>
 			  </body>
 			</html>
