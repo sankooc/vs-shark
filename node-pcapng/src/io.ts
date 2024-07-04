@@ -30,7 +30,7 @@ export class Uint8ArrayReader {
         this.arr = arr;
         this.cursor = 0;
         this.size = arr.length;
-        
+
     }
     read8(): number {
         const v = read8(this.arr, this.cursor);
@@ -38,8 +38,8 @@ export class Uint8ArrayReader {
         return v;
     }
     readSpace(max: number = 10): string {
-        for(let i = 0; i < max; i += 1){
-            if(this.arr[this.cursor + i] == 32) {
+        for (let i = 0; i < max; i += 1) {
+            if (this.arr[this.cursor + i] == 32) {
                 const data = this.arr.slice(this.cursor, this.cursor + i);
                 return textDecoder.decode(data);
             }
@@ -47,8 +47,8 @@ export class Uint8ArrayReader {
         return null;
     }
     readEnter(): string {
-        for(let i = 0; i < this.left(); i += 1){
-            if(this.arr[this.cursor + i] == 13 && this.arr[this.cursor + i + 1] == 10) {
+        for (let i = 0; i < this.left(); i += 1) {
+            if (this.arr[this.cursor + i] == 13 && this.arr[this.cursor + i + 1] == 10) {
                 const data = this.arr.slice(this.cursor, this.cursor + i);
                 this.skip(i + 2);
                 return textDecoder.decode(data);
@@ -65,6 +65,20 @@ export class Uint8ArrayReader {
         const v = read32(this.arr, this.cursor, littleEndian);
         this.cursor += 4;
         return v;
+    }
+    tryReadTLS(): [number, number, number, number] {
+        const type = read8(this.arr, this.cursor);
+        const major = read8(this.arr, this.cursor + 1);
+        const minor = read8(this.arr, this.cursor + 2);
+        const len = read16(this.arr, this.cursor + 3, false);
+        return [type, major, minor, len];
+    }
+    tryTLSMessage(): [number, number] {
+        const type = read8(this.arr, this.cursor);
+        const len = read8(this.arr, this.cursor + 1) * 256 * 256 + read16(this.arr, this.cursor + 2, false);
+        // const major = read8(this.arr, this.cursor + 4);
+        // const minor = read8(this.arr, this.cursor + 5);
+        return [type, len];
     }
     readBig64(littleEndian = true): bigint {
         const v = read64(this.arr, this.cursor, littleEndian);
@@ -89,17 +103,17 @@ export class Uint8ArrayReader {
         const data = this.slice(len)
         return new TextDecoder().decode(data);
     }
-    readNBNSString(len: number){
+    readNBNSString(len: number) {
         const words = Math.floor(len / 2);
         const real = [];
-        for(let i = 0 ; i< words; i +=1){
+        for (let i = 0; i < words; i += 1) {
             const n = this.read8() - 65;
             const m = this.read8() - 65;
             const v = n * 16 + m;
-            if(v === 32){
+            if (v === 32) {
                 continue;
             }
-            if(v === 0){
+            if (v === 0) {
                 continue;
             }
             real.push(v);
@@ -109,43 +123,64 @@ export class Uint8ArrayReader {
     readNBNSQuery(): string {
         let _size = 0;
         const list = [];
-        do{
+        do {
             _size = this.read8();
-            if(_size > 0) {
+            if (_size > 0) {
                 const str = this.readNBNSString(_size)
                 list.push(str)
             }
-        }while(_size> 0)
+        } while (_size > 0)
         return list.join('.')
     }
-    readDNSQuery(): string{
+    readDNSQuery(): string {
         let _size = 0;
         const list = [];
-        do{
+        do {
             _size = this.read8();
-            if(_size > 0) {
+            if (_size > 0) {
                 const str = this.readString(_size)
                 list.push(str)
             }
-        }while(_size)
+        } while (_size)
         return list.join('.')
     }
-    readDNSAnswer(len: number): [string, number]{
+    
+    readCompressStringWithRef(): [string, number] {
+        const list = [];
+        while(true) {
+            const _size = this.read8();
+            if (_size > 0) {
+                const str = this.readString(_size)
+                list.push(str)
+            }
+            const nextVal = read8(this.arr, this.cursor);
+            if(nextVal === 0) {
+                return [list.join('.'), 0 ]
+            }
+            if(nextVal >= 0xc0){
+                return [list.join('.'), this.read16(false)]
+            }
+            if(nextVal > this.left()){
+                return [list.join('.'), 0 ]
+            }
+        }
+    }
+    readDNSAnswer(len: number): [string, number] {
         let _len = len;
         let _size = 0;
         const list = [];
-        do{
+        do {
             _size = this.read8();
             _len -= 1;
-            if(_size > 0) {
+            if (_size > 0) {
                 const str = this.readString(_size)
                 _len -= _size;
                 list.push(str)
             }
-        }while(_size && _len > 2)
+        } while (_size && _len > 2)
         return [list.join('.'), this.read16(false)]
     }
-    left(): number{
+    left(): number {
         return this.size - this.cursor
     }
     slice(len: number): Uint8Array {
@@ -159,7 +194,7 @@ export class Uint8ArrayReader {
     extra2(): Uint8Array {
         return this.arr.slice(this.cursor, this.size);
     }
-    skip(len:number): void {
+    skip(len: number): void {
         this.cursor += len;
     }
     // pad(size){

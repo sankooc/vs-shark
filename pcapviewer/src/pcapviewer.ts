@@ -5,6 +5,24 @@ import { Panel, ComMessage, ComLog, CTreeItem, HexV } from './common';
 import { FrameProvider } from './treeProvider';
 
 
+const createWebviewHtml = (context:vscode.ExtensionContext, webview: vscode.Webview, file: string): string => {
+	const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(context.extensionUri, 'media', file));
+	const nonce = getNonce();
+	const result = `<!DOCTYPE html>
+		<html lang="en">
+			<head>
+			<meta charset="utf-8" />
+			<meta name="viewport" content="width=device-width, initial-scale=1" />
+			</head>
+			<body>
+			<div id="app"></div>
+			<script nonce="${nonce}" src="${scriptUri}"></script>
+			</body>
+		</html>
+		`;
+	return result;
+}
+
 class DetailProvider implements vscode.WebviewViewProvider {
 	// public static instance: DetailProvider = new DetailProvider();
 	context: vscode.ExtensionContext;
@@ -22,7 +40,9 @@ class DetailProvider implements vscode.WebviewViewProvider {
 				this._extensionUri
 			]
 		};
-		webviewView.webview.html = this.render(webviewView.webview);
+		webviewView.webview.html = createWebviewHtml(this.context, webviewView.webview, 'hex.js');
+		//
+		//  this.render(webviewView.webview);
 	}
 	load(data: Uint8Array, hightlight: [number, number]): void{
 		if(!this.webview) return;
@@ -30,23 +50,23 @@ class DetailProvider implements vscode.WebviewViewProvider {
 		it.index = hightlight;
 		this.webview.webview.postMessage(new ComMessage('hex-data', it));
 	}
-	render(webview: vscode.Webview): string {
-		const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(this.context.extensionUri, 'media', 'hex.js'));
-		const nonce = getNonce();
-		const result = `<!DOCTYPE html>
-			<html lang="en">
-			  <head>
-				<meta charset="utf-8" />
-				<meta name="viewport" content="width=device-width, initial-scale=1" />
-			  </head>
-			  <body>
-				<div id="app"></div>
-				<script nonce="${nonce}" src="${scriptUri}"></script>
-			  </body>
-			</html>
-			`;
-		return result;
-	}
+	// render(webview: vscode.Webview): string {
+	// 	const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(this.context.extensionUri, 'media', 'hex.js'));
+	// 	const nonce = getNonce();
+	// 	const result = `<!DOCTYPE html>
+	// 		<html lang="en">
+	// 		  <head>
+	// 			<meta charset="utf-8" />
+	// 			<meta name="viewport" content="width=device-width, initial-scale=1" />
+	// 		  </head>
+	// 		  <body>
+	// 			<div id="app"></div>
+	// 			<script nonce="${nonce}" src="${scriptUri}"></script>
+	// 		  </body>
+	// 		</html>
+	// 		`;
+	// 	return result;
+	// }
 }
 /**
  * Define the document (the data model) used for paw draw files.
@@ -193,30 +213,31 @@ export class PcapViewerProvider implements vscode.CustomReadonlyEditorProvider<P
 		webviewPanel.webview.options = {
 			enableScripts: true,
 		};
-		webviewPanel.webview.html = this.getHtmlForWebview(webviewPanel.webview);
+		webviewPanel.webview.html = createWebviewHtml(this._context, webviewPanel.webview, 'app.js');
+		// this.getHtmlForWebview(webviewPanel.webview);
 
 		const client = new PCAPClient(document.documentData, webviewPanel,PcapViewerProvider.output, PcapViewerProvider.pcapProvider);
 		webviewPanel.webview.onDidReceiveMessage(client.handle.bind(client));
 	}
 
-	private getHtmlForWebview(webview: vscode.Webview): string {
-		const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(this._context.extensionUri, 'media', 'app.js'));
-		const cssUri = webview.asWebviewUri(vscode.Uri.joinPath(this._context.extensionUri, 'media', 'app.css'));
-		const nonce = getNonce();
-		const result = `<!DOCTYPE html>
-			<html lang="en">
-			  <head>
-				<meta charset="utf-8" />
-				<meta name="viewport" content="width=device-width, initial-scale=1" />
-			  </head>
-			  <body>
-				<div id="app"></div>
-				<script nonce="${nonce}" src="${scriptUri}"></script>
-			  </body>
-			</html>
-			`;
-		return result;
-	}
+	// private getHtmlForWebview(webview: vscode.Webview): string {
+	// 	const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(this._context.extensionUri, 'media', 'app.js'));
+	// 	const cssUri = webview.asWebviewUri(vscode.Uri.joinPath(this._context.extensionUri, 'media', 'app.css'));
+	// 	const nonce = getNonce();
+	// 	const result = `<!DOCTYPE html>
+	// 		<html lang="en">
+	// 		  <head>
+	// 			<meta charset="utf-8" />
+	// 			<meta name="viewport" content="width=device-width, initial-scale=1" />
+	// 		  </head>
+	// 		  <body>
+	// 			<div id="app"></div>
+	// 			<script nonce="${nonce}" src="${scriptUri}"></script>
+	// 		  </body>
+	// 		</html>
+	// 		`;
+	// 	return result;
+	// }
 
 	private _requestId = 1;
 	private readonly _callbacks = new Map<number, (response: any) => void>();

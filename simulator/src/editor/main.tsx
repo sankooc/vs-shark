@@ -3,6 +3,7 @@ import ProgressBar from 'react-bootstrap/ProgressBar';
 import Overview from './overview';
 import FrameList from './frame';
 import ConnectList from './tcpConnection';
+import DNSList from './dns';
 import ARPReplies from './arp';
 import FakeProgress from "fake-progress";
 import "bootstrap/dist/css/bootstrap.css"
@@ -47,7 +48,7 @@ function Main(props: MainProps) {
     }
     return (<li key={key}><a href="#" className="nav-link text-white" onClick={() => {
       setStore({ ...store, page: key });
-    }}>{txt}&nbsp;&nbsp;&nbsp;{num ? <span className="badge rounded-pill text-bg-warning">{num}</span>: null}</a></li>);
+    }}>{txt}&nbsp;&nbsp;&nbsp;{num ? <span className="badge rounded-pill text-bg-warning">{num}</span> : null}</a></li>);
   }
   const getTable = (): ReactElement => {
     switch (store.page) {
@@ -57,6 +58,8 @@ function Main(props: MainProps) {
         return <ConnectList items={props.tcps} />
       case 'arp':
         return <ARPReplies graph={props.arpGraph} legends={['sender', 'target']} />
+      case 'dns':
+        return <DNSList items={props.dnsRecords} />
     }
     return <FrameList items={props.items}></FrameList>;
   }
@@ -70,7 +73,10 @@ function Main(props: MainProps) {
       navs.push(buildNav('tcp', 'TCP', props.tcps?.length));
     }
     if (props.arpGraph?.nodes.length) {
-      navs.push(buildNav('arp', 'ARP',props.arpGraph?.nodes.length));
+      navs.push(buildNav('arp', 'ARP', props.arpGraph?.nodes.length));
+    }
+    if (props.dnsRecords?.length) {
+      navs.push(buildNav('dns', 'DNS', props.dnsRecords.length));
     }
     return navs
   }

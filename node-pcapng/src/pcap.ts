@@ -40,8 +40,13 @@ export class PCAPVisitor extends AbstractRootVisitor {
       data.origin = origin;
       data.ts = ts;
       data.nano = highTS * 1000000 + lowTS;
-      // this.addPacket(data.accept(this.visitor));
-      this.addPacket(data);
+      try {
+        this.addPacket(data.accept(this.visitor));
+      }catch(e){
+        console.log('error#', data.getIndex());
+        console.error(e);
+      }
+      // this.addPacket(data);
     } while (reader.eof());
   }
 }

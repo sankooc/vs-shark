@@ -1,27 +1,14 @@
 import { PCAPClient, ComMessage, ComLog, Panel, Frame, CTreeItem, TCPCol, Grap, Category, GrapNode, GrapLink, MainProps, OverviewSource, HexV } from "./common";
-import { DataPacket, IPPacket, IPv6, Context, TCP, readBuffers, IPPack, ARP, linktypeMap, HttpPT, UDP, TCPConnect, EtherPacket, TCPStack, ARPReply, DNS } from 'protocols';
-import { ARP_OPER_TYPE_MAP, ARP_HARDWARE_TYPE_MAP, etypeMap } from 'protocols/built/src/constant';
+import { DataPacket, IPPacket, IPv6, Context, TCP, readBuffers, IPPack, ARP, linktypeMap, HttpPT, UDP, TCPConnect, EtherPacket, TCPStack, ARPReply, DNS, TLS, ICMP, IGMP } from 'protocols';
+import { protocolList } from 'protocols/built/src/constant';
+import { TLSClientHello, TLSServerHello, TLSHandshake, TLSHandshakeMessage } from 'protocols/built/src/tls';
+import { RR, RR_A, RR_CNAME, RR_SOA, RR_PRT, DHCP } from 'protocols/built/src/application';
+import { DNSRecord } from 'protocols/built/src/common';
 import { Protocol, IPv4 } from "protocols"
+import { PPPoESS } from "protocols/built/src/dataLinkLayer";
 
-const _map: string[] = [
-  'ETHER',
-  'MAC',
-  'IPV4',
-  'IPV6',
-  'ARP',
-  'TCP',
-  'UDP',
-  'ICMP',
-  'IGMP',
-  'DNS',
-  'NBNS',
-  'DHCP',
-  'TLS',
-  'SSL',
-  'HTTP',
-  'HTTPS',
-  'WEBSOCKET',
-];
+const _map: string[] = protocolList;
+
 export class Statc {
   size: number = 0;
   count: number = 0;
@@ -171,7 +158,7 @@ export abstract class Client extends PCAPClient {
         const it = getArray(nano);
         it.size += origin;
         it.count += 1;
-        const pname = _map[item.protocol].toLowerCase();
+        const pname = _map[item.protocol]?.toLowerCase() || '';
         it.addLable(pname, item);
         ps.add(pname);
       }
@@ -201,7 +188,8 @@ export abstract class Client extends PCAPClient {
       overview.counts = countlist;
       overview.valMap = map;
       console.log('parse complete', frames.length, cts.length);
-      this.emitMessage(Panel.MAIN, new ComMessage<MainProps>('data', { status: 'done', items, tcps: cts, arpGraph: graph, overview }));
+      const dnsRecords = this.root.getDNSRecord();
+      this.emitMessage(Panel.MAIN, new ComMessage<MainProps>('data', { status: 'done', items, tcps: cts, arpGraph: graph, overview, dnsRecords }));
     }
   }
 }
@@ -228,15 +216,15 @@ const formatDate = (date: Date): string => {
 const _resolveARP = (item: CTreeItem, p: ARP): void => {
   const { oper, senderMac, senderIp, targetMac, targetIp, hardwareType, protocolType, hardwareSize, protocolSize } = p;
   const code = '0x' + protocolType.toString(16).padStart(4, '0');
-  item.label = `Address Resolution Protocol (${ARP_OPER_TYPE_MAP[oper]})`;
+  item.label = `Address Resolution Protocol (${p.getOperation()})`;
   for (const field of p.fields) {
     const { name, size, start } = field;
     switch (name) {
       case 'htype':
-        item.addIndex(`Hardware type: ${ARP_HARDWARE_TYPE_MAP[hardwareType]} (${hardwareType})`, start, size);
+        item.addIndex(`Hardware type: ${p.getHardwareType()} (${hardwareType})`, start, size);
         break;
       case 'ptype':
-        item.addIndex(`Protocol type: ${etypeMap[code]} (${code})`, start, size);
+        item.addIndex(`Protocol type: ${p.getProtocolType()} (${code})`, start, size);
         break;
       case 'hlen':
         item.addIndex(`Hardware size: ${hardwareSize} bytes`, start, size);
@@ -245,7 +233,7 @@ const _resolveARP = (item: CTreeItem, p: ARP): void => {
         item.addIndex(`Protocol size: ${protocolSize} bytes`, start, size);
         break;
       case 'oper':
-        item.addIndex(`Operation code ${ARP_OPER_TYPE_MAP[oper]} (${oper})`, start, size);
+        item.addIndex(`Operation code ${p.getOperation()} (${oper})`, start, size);
         break;
       case 'senderMac':
         item.addIndex(`Sender Mac address: ${senderMac}`, start, size);
@@ -262,30 +250,253 @@ const _resolveARP = (item: CTreeItem, p: ARP): void => {
     }
 
   }
-  // item.append(`Hardware type: ${ARP_HARDWARE_TYPE_MAP[hardwareType]} (${hardwareType})`);
-  // item.append(`Hardware size: ${hardwareSize} bytes`);
-  // item.append(`Protocol type: ${etypeMap[code]} (${code})`);
-  // item.append(`Protocol size: ${protocolSize} bytes`);
-  // item.append(`opcode ${ARP_OPER_TYPE_MAP[oper]} (${oper})`);
-  // item.append(`Sender Mac address: ${senderMac}`);
-  // item.append(`Sender IP address: ${senderIp}`);
-  // item.append(`Target Mac address: ${targetMac}`);
-  // item.append(`Target IP address: ${targetIp}`);
 }
+// for (const field of p.fields) {
+//   const { name, size, start } = field;
+//   switch(name){
+
+//   }
+// }
+const _resolveUdp = (item: CTreeItem, p: UDP): void => {
+  item.label = 'User Datagram Protocaol';
+  for (const field of p.fields) {
+    const { name, size, start } = field;
+    switch (name) {
+      case 'sourcePort':
+        item.addIndex(`Source Port: ${p.sourcePort}`, start, size);
+        break;
+      case 'targetPort':
+        item.addIndex(`Destination Port: ${p.targetPort}`, start, size);
+        break;
+    }
+  }
+
+  item.append(`Payload Length: ${p.getPayloadSize()} bytes`);
+}
+
+const _resolveDNS = (item: CTreeItem, p: DNS): void => {
+
+  for (const field of p.fields) {
+    const { name, size, start } = field;
+    switch (name) {
+      case 'transactionId':
+        item.addIndex(`Transaction Id: ${p.transactionId}`, start, size);
+        break;
+      case 'question':
+        item.addIndex(`Questions: ${p.question}`, start, size);
+        break;
+      case 'answer':
+        item.addIndex(`Answer RRs: ${p.answer}`, start, size);
+        break;
+      case 'authority':
+        item.addIndex(`Authority RRs: ${p.authority}`, start, size);
+        break;
+
+      case 'addtional':
+        item.addIndex(`Addtional RRs: ${p.addtional}`, start, size);
+        break;
+    }
+  }
+
+  const { queries, answers, authorities, addtionals } = p;
+  if (queries.length) {
+    const _queries = item.append('Queries');
+    for (const q of queries) {
+      const qs = _queries.append(`${q.name}: type ${q.type}, class ${q.cls}`);
+      qs.append(`Name: ${q.name}`);
+      qs.append(`Type: (${q.type})`);
+      qs.append(`Class (${q.cls})`);
+    }
+  }
+  const render = (r: RR) => {
+
+  };
+
+  const addRR = (title: string, items: RR[]): void => {
+    const rritem = item.append(title);
+    for (const rr of items) {
+      const itemop = rritem.append(rr.summary());
+      itemop.append(`Name: ${rr.record.onwer.toString()}`);
+      itemop.append(`Type: ${rr.getType()} (${rr.record.type})`);
+      itemop.append(`Class: ${rr.getClass()} (${rr.record.clz})`);
+      itemop.append(`Time To Live: ${rr.record.ttl}`);
+      itemop.append(`Data Length: ${rr.record.len}`);
+      if (rr instanceof RR_A) {
+        itemop.append(`Address: ${(rr as RR_A).ip}`);
+      } else if (rr instanceof RR_CNAME) {
+        itemop.append(`CNAME: ${(rr as RR_CNAME).host.toString()}`);
+      } else if (rr instanceof RR_PRT) {
+        itemop.append(`Domain: ${(rr as RR_PRT).domain.toString()}`);
+      }
+    }
+  }
+  if (answers.length) {
+    addRR('Answers', answers);
+  }
+
+  if (authorities.length) {
+    addRR('Authorities', authorities);
+  }
+  // transactionId
+};
+
+const _resolveTcp = (item: CTreeItem, p: TCP): void => {
+  item.label = `Transmission Control Protocol, Src Port: ${p.sourcePort}, Dst Prot: ${p.targetPort}, Len: ${p.getProtocolSize()}`;
+  for (const field of p.fields) {
+    const { name, size, start } = field;
+    switch (name) {
+      case 'sourcePort':
+        item.addIndex(`Source Port: ${p.sourcePort}`, start, size);
+        break;
+      case 'targetPort':
+        item.addIndex(`Destination Port: ${p.targetPort}`, start, size);
+        break;
+      case 'sequence':
+        item.addIndex(`Sequence: ${p.sequence}`, start, size);
+        break;
+      case 'acknowledge':
+        item.addIndex(`Acknowledge: ${p.acknowledge}`, start, size);
+        break;
+    }
+  }
+  const psize = p.getPayloadSize();
+  const start = p.getPacketSize() - psize;
+  item.addIndex(`Payload Length: ${p.getPayloadSize()} bytes`, start, psize);
+
+};
+
+const _resolveDHCP = (item: CTreeItem, p: DHCP) => {
+
+}
+
+const _resolveIGMP = (item: CTreeItem, p: IGMP) => {
+  for (const field of p.fields) {
+    const { name, size, start } = field;
+    switch (name) {
+      case 'type':
+        item.addIndex(`Type: ${p.getType()} (${p.type})`, start, size);
+        break;
+      case 'resp':
+        item.addIndex(`Max Resp Time: ${p.resp} sec`, start, size);
+        break;
+      case 'address':
+        item.addIndex(`Multicast Address: ${p.address}`, start, size);
+        break;
+    }
+  }
+
+}
+
+
 const _stack = (root: Context, packet: IPPacket, items: CTreeItem[]): number => {
   const index = new Integer();
   if (packet.parent) {
     index.add(_stack(root, packet.parent, items));
   }
   const item = new CTreeItem(packet.toString());
-  if(packet.end > packet.start){
+  if (packet.end > packet.start) {
     item.index = [packet.start, packet.end - packet.start];
   }
   switch (packet.protocol) {
-    case Protocol.DNS: {
-      const p: DNS = packet as DNS;
-      // item.label = p.sum
+    case Protocol.PPPOESS: {
+      const p = packet as PPPoESS;
+      for (const field of p.fields) {
+        const { name, size, start } = field;
+        switch (name) {
+          case 'head':
+            item.addIndex(`Version: 1`, start, size);
+            item.addIndex(`Type: 1`, start, size);
+            break;
+          case 'code':
+            item.addIndex(`Code: ${p.getCode()} (${p.code})`, start, size);
+            break;
+          case 'session':
+            item.addIndex(`Session Id: 0x${p.sessionId.toString(16)}`, start, size);
+            break;
+          case 'payload':
+            item.addIndex(`Payload Length: ${p.payload}`, start, size);
+            break;
+          case 'protocol':
+            item.addIndex(`Protocol: ${p.getProtocol()} (0x${p.protocol.toString(16)})`, start, size);
+            break;
+        }
+      }
     }
+      break;
+    case Protocol.TLS: {
+      const p: TLS = packet as TLS;
+      p.records.forEach((e) => {
+        const sum = e.summary();
+        const it = item.append(sum);
+        it.append(`Content Type: ${e.getContentType()} (${e.type})`);
+        it.append(`Version: ${e.getVersion()} (${e.version})`);
+        it.append(`Length: ${e.data.length}`);
+        if (e instanceof TLSHandshake) {
+          const t = e as TLSHandshake;
+          t.messages.forEach((msg) => {
+            const message = it.append(msg.summary());
+            if (msg instanceof TLSClientHello) {
+              const ms = msg as TLSClientHello;
+              message.append('Handshake Type: Client Hello (1)');
+              message.append(`Length: ${ms.content.length}`);
+              message.append(`Version: ${ms.getVersion()}`);
+              message.append(`Random: ${ms.random}`);
+              message.append(`Session Id: ${ms.sessionId}`);
+              const suites = ms.cipherSuites;
+              const cs = message.append(`Cipher Suites (${suites.length} suites)`);
+              {
+                for (const s of suites) {
+                  cs.append(`Cipher Suite: ${TLSHandshakeMessage.getAlgoType(s)} (${s})`);
+                }
+              }
+              const es = message.append(`Extensions (${ms.extensions.length})`);
+              for (const ex of ms.extensions) {
+                const _exten = es.append(ex.summary());
+                _exten.append(`Type: ${ex.getType()}`);
+                _exten.append(`Length: ${ex.getDataSize()}`);
+              }
+            } else if (msg instanceof TLSServerHello) {
+              const ms = msg as TLSServerHello;
+              message.append('Handshake Type: Server Hello (2)');
+              message.append(`Length: ${ms.content.length}`);
+              message.append(`Version: ${ms.getVersion()}`);
+              message.append(`Random: ${ms.random}`);
+              message.append(`Session Id: ${ms.sessionId}`);
+              message.append(`Cipher Suite ${TLSHandshakeMessage.getAlgoType(ms.cipherSuite)} (${ms.cipherSuite})`);
+
+              const es = message.append(`Extensions (${ms.extensions.length})`);
+              for (const ex of ms.extensions) {
+                const _exten = es.append(ex.summary());
+                _exten.append(`Type: ${ex.getType()}`);
+                _exten.append(`Length: ${ex.getDataSize()}`);
+              }
+            }
+          })
+        }
+      });
+    }
+      break;
+    case Protocol.DNS: {
+      _resolveDNS(item, packet as DNS);
+    }
+      break;
+    case Protocol.ICMP: {
+      const p: ICMP = packet as ICMP;
+      for (const field of p.fields) {
+        const { name, size, start } = field;
+        switch (name) {
+          case 'type':
+            item.addIndex(`Type: ${p.getType()} (${p.type})`, start, size);
+            break;
+          case 'code':
+            item.addIndex(`Code: ${p.code}`, start, size);
+            break;
+        }
+      }
+    }
+      break;
+    case Protocol.IGMP:
+      _resolveIGMP(item, packet as IGMP);
       break;
     case Protocol.HTTP: {
       const p = packet as HttpPT;
@@ -298,13 +509,7 @@ const _stack = (root: Context, packet: IPPacket, items: CTreeItem[]): number => 
     }
       break;
     case Protocol.TCP: {
-      const p = packet as TCP;
-      item.label = p.detail();
-      item.append(`Sequence: ${p.sequence}`);
-      item.append(`Acknowledge: ${p.acknowledge}`);
-      item.append(`Source Port: ${p.sourcePort}`);
-      item.append(`Destination Port: ${p.targetPort}`);
-      item.append(`Payload Length: ${p.getPayloadSize()} bytes`);
+      _resolveTcp(item, packet as TCP);
     }
       break;
     case Protocol.IPV6: {
@@ -339,16 +544,16 @@ const _stack = (root: Context, packet: IPPacket, items: CTreeItem[]): number => 
             item.addIndex(`Destination IP Address: (${p.target})`, start, size);
             break;
           case 'totalLen':
-            item.addIndex(`Total length: ${p.totalLen}`, start, size);
+            item.addIndex(`Total length: 0x${p.totalLen.toString(16).padStart(4, '0')} (${p.totalLen})`, start, size);
             break;
           case 'identification':
-            item.addIndex(`Identification: ${p.identification.toString(16)}`, start, size);
+            item.addIndex(`Identification: 0x${p.identification.toString(16).padStart(4, '0')} (${p.identification})`, start, size);
             break;
           case 'ttl':
-            item.addIndex(`TTL: ${p.ttl}`, start, size);
+            item.addIndex(`Time to Live: ${p.ttl}`, start, size);
             break;
           case 'ipprotocol':
-            item.addIndex(`Protocol: ${p.ipprotocol}`, start, size);
+            item.addIndex(`Protocol: ${p.getProtocalType()} (${p.ipprotocol})`, start, size);
             break;
         }
       }
@@ -359,10 +564,8 @@ const _stack = (root: Context, packet: IPPacket, items: CTreeItem[]): number => 
     }
       break;
     case Protocol.UDP: {
-      const p = packet as UDP;
-      item.append(`Source Port: ${p.sourcePort}`);
-      item.append(`Destination Port: ${p.targetPort}`);
-      item.append(`Payload Length: ${p.getPayloadSize()} bytes`);
+      _resolveUdp(item, packet as UDP);
+      break;
     }
       break;
     case Protocol.MAC: {
@@ -378,7 +581,7 @@ const _stack = (root: Context, packet: IPPacket, items: CTreeItem[]): number => 
             break;
           case 'type':
             const code = `0x${p.type.toUpperCase()}`
-            item.addIndex(`Type : ${etypeMap[code]} (${code})`, start, size);
+            item.addIndex(`Type : ${p.getProtocolType()} (${code})`, start, size);
             break;
         }
       }
@@ -410,3 +613,6 @@ const _stack = (root: Context, packet: IPPacket, items: CTreeItem[]): number => 
   items.push(item);
   return index.val;
 };
+
+
+export { DNSRecord }

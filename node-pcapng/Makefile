@@ -1,16 +1,11 @@
-clean-ts:
-	rm -rf built
-clean-temp:
-	rm -rf temp
-	mkdir -p temp
-clear: clean-ts clean-temp
-test: clear
+test:
 	npx tsc -p ./tsconfig.dev.json --declaration
-	NODE_ENV=DETECT node built/test/resolve.js "./sandbox/11.pcapng"
-debug: clean-ts
+	NODE_ENV=DETECT node built/test/resolve.js "./sandbox/dns.pcapng"
+debug:
 	npx tsc -p ./tsconfig.dev.json
 	NODE_ENV=DEBUG node built/test/debug.js
-compile: clean-ts
+compile:
 	npx tsc -p ./tsconfig.dev.json --declaration
 eslint:
 	pnpm eslint src
+.PHONY: all test clean

@@ -60,6 +60,7 @@
 		]
 	},
 	"scripts": {
+		"build": "sh build.sh",
 		"vscode:prepublish": "pnpm run package",
 		"compile": "webpack",
 		"watch": "webpack --watch",

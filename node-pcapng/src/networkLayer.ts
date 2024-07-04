@@ -1,8 +1,8 @@
-import { PVisitor, PacketElement, IPPacket, Protocol } from './common';
-import { ipProtocolMap } from './constant';
+import { PVisitor, PacketElement, IPPacket, Protocol,IPProvider } from './common';
+import { etypeMap, ipProtocolMap, ARP_OPER_TYPE_MAP, ARP_HARDWARE_TYPE_MAP } from './constant';
 import { TCPVisitor, UDPVisitor, ICMPVisitor, IGMPVisitor, ICMPV6Visitor } from './transportLayer';
 
-export class IPPack extends IPPacket {
+export class IPPack extends IPProvider {
     protected _source: string;
     protected _target: string;
     set source(s: string) {
@@ -17,6 +17,12 @@ export class IPPack extends IPPacket {
     get target(): string {
         return this._target;
     }
+    getSourceIp(): string {
+        return this._source;
+    }
+    getTargetIp(): string {
+        return this._target;
+    }
 }
 export class IPv4 extends IPPack {
     version: number;
@@ -27,6 +33,9 @@ export class IPv4 extends IPPack {
     extra: any;
     toString(): string {
         return `Internet Protocol Version : ${this.version} length: ${this.totalLen}`;
+    }
+    getProtocalType(): string{
+        return ipProtocolMap[this.ipprotocol];
     }
 }
 
@@ -55,6 +64,16 @@ export class ARP extends IPPack {
     }
     get target(): string {
         return this.targetIp;
+    }
+    public getOperation(): string{
+        return ARP_OPER_TYPE_MAP[this.oper];
+    }
+    public getHardwareType(): string {
+        return ARP_HARDWARE_TYPE_MAP[this.hardwareType];
+    }
+    public getProtocolType(): string{
+        const code = '0x' + this.protocolType.toString(16).padStart(4, '0');
+        return etypeMap[code];
     }
     toString(): string {
         if (this.oper === 1) {
@@ -88,7 +107,7 @@ export class IPv4Visitor implements PVisitor {
         data.version = cv >>> 4;
         const headLenth = cv & 0x0f;
         const tos = reader.read8();
-        data.totalLen = data.read16('totalLen');
+        data.totalLen = data.read16('totalLen', false);
         data.identification = data.read16('identification');
         const flag = reader.read16() >>> 13
         data.ttl = data.read8('ttl');

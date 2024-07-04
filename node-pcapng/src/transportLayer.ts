@@ -1,14 +1,23 @@
-import { PVisitor, PacketElement, IPPacket, Protocol, TCPStack, TCPConnect } from './common';
+import { PVisitor, PacketElement, IPPacket, Protocol, TCPStack, TCPConnect, TCPOption, PortProvider } from './common';
 
 import { DNSVisitor, NBNSVisitor, DHCPVisitor, HTTPVisitor } from './application';
-import { IPv4, IPv6 } from './networkLayer';
+import { TLSVisitor } from './tls';
+import { Uint8ArrayReader } from './io';
+import { IPv4, IPv6, IPPack } from './networkLayer';
+import { ICMPV6_TYPE_MAP, IGMP_TYPE_MAP } from './constant';
 
-export class UDP extends IPPacket {
+export class UDP extends PortProvider {
     extra: any;
     sourcePort: number;
     targetPort: number;
     toString(): string {
         return `[UDP] ${this.sourcePort} -> ${this.targetPort}`;
+    }
+    getSourcePort(): number {
+        return this.sourcePort;
+    }
+    getTargetPort(): number {
+        return this.targetPort;
     }
 }
 export class TCP extends UDP {
@@ -21,6 +30,15 @@ export class TCP extends UDP {
     fin: boolean;
     unseen: boolean;
     isDump: boolean = false;
+    options!: TCPOption[];
+    connection!: TCPConnect;
+    missPre!: boolean;
+    hasContent: boolean;
+    // tlsRecords: TLSRecord[] = [];
+    getIp(): string {
+        const ip = (this.parent as IPPack).source;
+        return ip;
+    }
     mess(): any[] {
         let sourceIp;
         let targetIp;
@@ -64,13 +82,19 @@ export class ICMP extends IPPacket {
     type: number;
     code: number;
     toString(): string {
-        return 'ICMP';
+        return 'ICMP:' + this.getType();
+    }
+    public getType(): string {
+        return ICMPV6_TYPE_MAP[this.type];
     }
 }
 export class IGMP extends IPPacket {
     type: number;
     resp: number;
     address: string;
+    public getType(){
+        return IGMP_TYPE_MAP[this.type];
+    }
 }
 
 export class ICMPV6 extends ICMP {
@@ -81,54 +105,76 @@ const lann = (mask: number) => {
     return arr.map((off) => (!!((mask >>> off) & 0x01)))
 }
 
-//https://en.wikipedia.org/wiki/Transport_Layer_Security
-const minorVersion = {
-    0: 'ssl 3.0',
-    1: 'tls 1.0',
-    2: 'tls 1.1',
-    3: 'tls 1.2',
-    4: 'tls 1.3',
-}
-const types = {
-    20: 'ChangeCipherSpec',
-    21: 'Alert',
-    22: 'Handshake',
-    23: 'Application',
-    24: 'Heartbeat',
-}
 export class TCPVisitor implements PVisitor {
     dNSVisitor: DNSVisitor = new DNSVisitor();
     nBNSVisitor: NBNSVisitor = new NBNSVisitor();
     dHCPVisitor: DHCPVisitor = new DHCPVisitor();
     httpVisitor: HTTPVisitor = new HTTPVisitor();
+    tlsVisitor: TLSVisitor = new TLSVisitor();
     visit(ele: PacketElement): IPPacket {
-
         const parent = ele.getPacket();
         const { reader } = parent;
         const data = new TCP(parent, reader, Protocol.TCP);
-
         data.sourcePort = data.read16('sourcePort', false);
         data.targetPort = data.read16('targetPort', false);
         data.sequence = data.read32('sequence', false);
         data.acknowledge = data.read32('acknowledge', false);
-        const h1 = reader.read16(false);
-        const len = (h1 >>> 12) & 0x08;
+        const h1 = data.read16('head', false);
+        const len = (h1 >>> 12) & 0x0f;
         const [cwr, ece, urg, ack, psh, rst, syn, fin] = lann(h1);
-        const window = reader.read16(false);
-        const checksum = reader.read16(false);
-        const urgent = reader.read16(false);
-        if (len > 5) {
-            const optionLen = (len - 5) * 4;
-            const optionBytes = reader.slice(optionLen);
+        const window = data.read16('window', false);
+        const checksum = data.read16('checksum', false);
+        const urgent = data.read16('urgent', false);
+        //https://en.wikipedia.org/wiki/Transmission_Control_Protocol
+        const optionSize = len - 5;
+        if (optionSize > 0) {
+            const optionLen = optionSize * 4;
+            data.options = data.readTcpOption(optionLen);
         }
+        // if (len > 5) {
+        //     const optionLen = (len - 5) * 4;
+        //     const optionBytes = reader.slice(optionLen);
+        // }
         data.ack = ack;
         data.psh = psh;
         data.rst = rst;
         data.syn = syn;
         data.fin = fin;
         data.extra = { window, cwr, ece, urg, urgent };
-        ele.getContext().resolveTCP(data);
 
+        const tcpConnection = ele.getContext().resolveTCP(data);
+        data.connection = tcpConnection;
+        if (!tcpConnection) {
+            return data;
+        }
+        const ip = (parent as IPPack).source;
+        const stack = tcpConnection.getStackFromStr(ip, data.sourcePort);
+
+
+        const tryCheckTLS = (_reader: Uint8ArrayReader): [boolean, number] => {
+            if (_reader.left() > 5) {
+                const [type, major, minor, len] = _reader.tryReadTLS();
+                if (type > 19 && type < 25 && major === 3 && minor < 5) {
+                    return [true, len];
+                }
+            }
+            return [false, 0];
+        }
+        if (stack.temp) {
+            const _content = new Uint8Array([...stack.temp, ...reader.extra2()]);
+            const _reader = new Uint8ArrayReader(_content);
+            const [isTLS, len] = tryCheckTLS(_reader);
+            if (isTLS) {
+                tcpConnection.isTLS = true;
+                return data.accept(this.tlsVisitor)
+            }
+        } else {
+            const [isTLS, len] = tryCheckTLS(reader);
+            if (isTLS) {
+                tcpConnection.isTLS = true;
+                return data.accept(this.tlsVisitor)
+            }
+        }
         let nextVisitor;
         const method = reader.readSpace(10);
         if (method) {

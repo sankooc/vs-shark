@@ -1,4 +1,5 @@
 
+import { DNSRecord } from 'protocols/built/src/common';
 
 export class ComMessage<T> {
     type: string;
@@ -196,4 +197,5 @@ export class MainProps {
     tcps!: TCPCol[];
     arpGraph!: Grap;
     overview!: OverviewSource;
+    dnsRecords!: DNSRecord[];
 }

@@ -194,7 +194,6 @@ class EnhancedPacketVisitor extends BasicVisitor {
         if (mod > 0) {
             reader.skip((4 - mod))
         }
-        
         const data = ele.getContext().createEtherPacket(readerCreator.createReader(packet, 'frame', false));
         data.interface = interfaceId;
         data.captured = capturedPacketLength;
