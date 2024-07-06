@@ -1,16 +1,16 @@
-# NODE-Potocols
+# NShark
 
 pcap/pcapng analyzer written by pure Nodejs
 
 ## Install
 
-`pnpm install protocols`
+`pnpm install nashrk`
 
 ## Basic Usage
 
 ```typescript
 
-  import { IPPacket, Protocol, readBuffers, IPv4, EtherPacket, Context } from 'protocols';
+  import { IPPacket, Protocol, readBuffers, IPv4, EtherPacket, Context } from 'nashrk';
   const raw: Uint8Array = getData();
   const ctx: Context = readBuffers(raw);
   console.log('read complete');
@@ -24,6 +24,7 @@ pcap/pcapng analyzer written by pure Nodejs
 ## Support Protocol
 
 - Ethernet II
+- SLL
 - IPv4
 - IPv6
 - ARP

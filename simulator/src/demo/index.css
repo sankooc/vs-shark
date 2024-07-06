@@ -1,0 +1,72 @@
+html, body {
+  height: 100%;
+  padding: 0;
+  margin: 0;
+  font-size: 10px;
+}
+
+#app {
+  height: 100%;
+  padding: 0;
+  margin: 0;
+}
+#app > div {
+  height: 100%;
+}
+
+.vector {
+  padding: 0;
+  cursor: pointer;
+}
+.vector > button {
+  height: 1.8rem;
+  margin: 0;
+}
+.vector span {
+  text-wrap: nowrap;
+}
+
+li.vector.active {
+  background-color: #333;
+}
+
+li.active {
+  background-color: rebeccapurple;
+}
+
+tr, td {
+  font-family: "0xProto Nerd Font", sans-serif;
+}
+
+tr[role=row] {
+  background-color: #e9d8a6;
+  color: #001219;
+}
+tr[role=row].active {
+  background-color: #94d2bd;
+  color: #001219;
+}
+tr[role=row].tcp {
+  background-color: #005f73;
+  color: #edf2f4;
+}
+tr[role=row].arp {
+  background-color: #84a98c;
+  color: #001219;
+}
+tr[role=row].http {
+  background-color: #3AB0FF;
+  color: #edf2f4;
+}
+tr[role=row].dump {
+  background-color: #8d99ae;
+  color: #001219;
+}
+tr[role=row].tls {
+  background-color: #cc6600;
+  color: #001219;
+}
+tr[role=row].udp {
+  background-color: #A0937D;
+  color: #001219;
+}

@@ -148,6 +148,9 @@ export class Uint8ArrayReader {
     readCompressStringWithRef(): [string, number] {
         const list = [];
         while(true) {
+            if(this.left() === 2){
+                return ['', this.read16(false)]
+            }
             const _size = this.read8();
             if (_size > 0) {
                 const str = this.readString(_size)

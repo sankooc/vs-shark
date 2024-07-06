@@ -1,6 +1,6 @@
-import { Option, AbstractVisitor, Visitor, Packet, Protocol, FileInfo,IPPacket, EtherPacket, Context, Resolver, InputElement, PVisitor, AbstractRootVisitor, PacketElement } from "./common";
+import { Option, AbstractVisitor, Visitor, Packet, Protocol, FileInfo, IPPacket, EtherPacket, Context, Resolver, InputElement, PVisitor, AbstractRootVisitor, PacketElement } from "./common";
 import { Uint8ArrayReader, AbstractReaderCreator } from './io';
-import { DataLaylerVisitor } from './dataLinkLayer';
+import { DataLaylerVisitor, SLLVisitor } from './dataLinkLayer';
 import { linktypeMap } from './constant';
 //https://www.ietf.org/archive/id/draft-tuexen-opsawg-pcapng-03.html
 
@@ -64,13 +64,13 @@ class SectionHeaderPacket extends Packet {
     userapp!: string;
     toString(): string {
         let str = `version: ${this.major}.${this.minor}`;
-        if(this.hardware) {
+        if (this.hardware) {
             str += ` hw: ${this.hardware}`
         }
-        if(this.os) {
+        if (this.os) {
             str += ` os: ${this.os}`
         }
-        if(this.userapp) {
+        if (this.userapp) {
             str += ` client: ${this.userapp}`
         }
         return str;
@@ -179,6 +179,7 @@ class InterfaceDescription extends BasicVisitor {
 
 class EnhancedPacketVisitor extends BasicVisitor {
     visitor: DataLaylerVisitor = new DataLaylerVisitor();
+    sll: SLLVisitor = new SLLVisitor();
     visit(ele: SectionPacket): IPPacket {
         const { readerCreator, content } = ele;
         const reader = readerCreator.createReader(content, 'pre', false);
@@ -200,7 +201,18 @@ class EnhancedPacketVisitor extends BasicVisitor {
         data.origin = originalPacketLength;
         data.ts = parseInt(n.substring(0, n.length - 3));
         data.nano = parseInt(n);
-        return data.accept(this.visitor);
+
+        try {
+            switch (ele.getContext().getFileInfo().linkType) {
+                case 113:
+                    return data.accept(this.sll);
+            }
+            return data.accept(this.visitor);
+        } catch (e) {
+            console.log('error#', data.getIndex());
+            console.error(e);
+        }
+        return data;
     }
 }
 
@@ -257,8 +269,8 @@ class InterfaceStatistic extends BasicVisitor {
 
 
 class SectionPacket implements PacketElement {
-    constructor(public context: Context, public readerCreator: AbstractReaderCreator, public content: Uint8Array){}
-    getContext(): Context{
+    constructor(public context: Context, public readerCreator: AbstractReaderCreator, public content: Uint8Array) { }
+    getContext(): Context {
         return this.context;
     }
     getPacket(): IPPacket {
@@ -280,14 +292,14 @@ export class PCAPNGVisitor extends AbstractRootVisitor {
 
     getFileInfo(): FileInfo {
         const info = new FileInfo();
-        if(this.head){
+        if (this.head) {
             info.os = this.head.os;
             info.client = this.head.userapp;
             info.hardware = this.head.hardware;
             info.majorVersion = this.head.major;
             info.minorVersion = this.head.minor;
         }
-        if(this.interface){
+        if (this.interface) {
             info.linkType = this.interface.type;
             info.interfaceName = this.interface.name;
             info.interfaceDesc = this.interface.description;

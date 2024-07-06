@@ -1,5 +1,5 @@
 import React from "react";
-
+import './index.css';
 function Loading() {
   return (<div id="loader-wrapper">
   <div id="loader"></div>

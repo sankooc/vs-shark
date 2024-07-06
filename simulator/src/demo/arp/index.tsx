@@ -1,6 +1,7 @@
 import React from "react";
 import ReactECharts from 'echarts-for-react';
-import { Grap } from "../common";
+import { Grap } from "../../common";
+import './index.css';
 class ARPProps {
   graph: Grap;
   legends: string[];
@@ -33,7 +34,9 @@ function ARPReplies(props: ARPProps) {
       })
     }]
   };
-  return <div style={{ padding: '8px' }}><ReactECharts option={option} style={{ height: '400px', width: '100%' }} /></div>;
+  return <div className="w-full h-full">
+    <ReactECharts className="arp-panel" option={option}/>
+    </div>;
 }
 
 export default ARPReplies;

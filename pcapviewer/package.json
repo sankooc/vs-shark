@@ -12,38 +12,6 @@
 	"activationEvents": [],
 	"main": "./dist/extension.js",
 	"contributes": {
-		"viewsContainers": {
-			"activitybar": [
-				{
-					"id": "package-explorer",
-					"title": "Protocol",
-					"icon": "media/dep.svg"
-				}
-			]
-		},
-		"views": {
-			"package-explorer": [
-				{
-					"id": "pcap.tree",
-					"name": "protocol stack",
-					"visibility": "visible",
-					"contextualTitle": "protocol"
-				},
-				{
-					"id": "pcap.detail",
-					"name": "detail info",
-					"visibility": "visible",
-					"type": "webview",
-					"contextualTitle": "binary title"
-				}
-			]
-		},
-		"commands": [
-			{
-				"command": "nodeDependencies.refreshEntry",
-				"title": "Refresh"
-			}
-		],
 		"customEditors": [
 			{
 				"viewType": "proto.pcapng",
@@ -69,7 +37,7 @@
 		"watch-tests": "tsc -p . -w --outDir out",
 		"pretest": "pnpm run compile-tests && pnpm run compile && pnpm run lint",
 		"lint": "eslint src --ext ts",
-		"reset": "rm -rf node_modules/protocols && pnpm install",
+		"reset": "rm -rf node_modules/nshark && pnpm install",
 		"test": "vscode-test"
 	},
 	"devDependencies": {
@@ -87,6 +55,6 @@
 		"webpack-cli": "^5.1.4"
 	},
 	"dependencies": {
-		"protocols": "file:../node-pcapng/"
+		"nshark": "file:../node-pcapng/"
 	}
 }

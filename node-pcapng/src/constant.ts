@@ -17,6 +17,7 @@ export const protocolList: string[] = [
     'HTTPS',
     'WEBSOCKET',
     'PPPOESS',
+    'SLL',
 ];
 export const linktypeMap = {
     0: "NULL",
@@ -215,6 +216,14 @@ export const linktypeMap = {
     299: "FIRA_UCI",
     300: "MDB",
     301: "DECT_NR"
+}
+
+export const SLL_TYPE = {
+    0: 'Sent to us',
+    1: 'Boardcast',
+    2: 'Multicast not boardcast',
+    3: 'Send to somebody else by somebody else',
+    4: 'Send by us',
 }
 
 export const ipProtocolMap = {
@@ -481,6 +490,57 @@ export const ARP_OPER_TYPE_MAP = {
     "25": "OP_EXP2"
 }
 
+//https://datatracker.ietf.org/doc/html/rfc792
+
+export const ICMP_TYPE_MAP = {
+    0: 'Echo reply',
+    3: {
+        0: "Destination network unreachableunknow",
+        1: "Destination host unreachable",
+        2: "Destination protocol unreachable",
+        3: "Destination port unreachable",
+        4: "Fragmentation required, and DF flag set",
+        5: "Source route failed",
+        6: "Destination network unknown",
+        7: "Destination host unknown",
+        8: "Source host isolated",
+        9: "Network administratively prohibited",
+        10: "Host administratively prohibited",
+        11: "Network unreachable for ToS",
+        12: "Host unreachable for ToS",
+        13: "Communication administratively prohibited",
+        14: "Host Precedence Violation",
+        15: "Precedence cutoff in effect",
+    },
+    4: 'Source quench',
+    5: {
+        0: 'Redirect datagrams for the Network',
+        1: 'Redirect datagrams for the Host',
+        2: 'Redirect datagrams for the Type of Service and Network',
+        3: 'Redirect datagrams for the Type of Service and Host',
+    },
+    8: 'Echo request',
+    9: 'Router Advertisement',
+    10: 'Router discovery/selection/solicitation',
+    11: {
+        0: 'TTL expired in transit',
+        1: 'Fragment reassembly time exceeded',
+    },
+    12: {
+        0: 'pointer indicates the error'
+    },
+    13: 'timestamp message',
+    14: 'timestamp reply message',
+    15: 'Information Request',
+    16: 'Information Reply',
+    43: {
+        0: 'No Error',
+        1: 'Malformed Query',
+        2: 'No Such Interface',
+        3: 'No Such Table Entry',
+        4: 'Multiple Interfaces Satisfy Query',
+    },
+}
 
 //https://en.wikipedia.org/wiki/ICMPv6
 export const ICMPV6_TYPE_MAP = {
@@ -513,6 +573,7 @@ export const ICMPV6_TYPE_MAP = {
     149: "Certification Path Advertisement",
     151: "Multicast Router Advertisement"
 }
+
 
 
 export const TCP_OPTION_KIND_MAP = {

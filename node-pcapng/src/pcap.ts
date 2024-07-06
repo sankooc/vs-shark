@@ -1,12 +1,13 @@
 import { Uint8ArrayReader, AbstractReaderCreator } from './io';
 import { Option, AbstractVisitor, Visitor, Packet, Protocol, IPPacket, Resolver, PVisitor, InputElement, AbstractRootVisitor, EtherPacket, FileInfo } from "./common";
-import { DataLaylerVisitor } from './dataLinkLayer';
+import { DataLaylerVisitor, SLLVisitor } from './dataLinkLayer';
 
 export class PCAPVisitor extends AbstractRootVisitor {
   linktype!: number;
   major!: number;
   minor!: number;
   visitor: DataLaylerVisitor = new DataLaylerVisitor();
+  sll: SLLVisitor = new SLLVisitor();
   getFileInfo(): FileInfo {
     const info = new FileInfo();
     info.linkType = this.linktype;
@@ -34,15 +35,22 @@ export class PCAPVisitor extends AbstractRootVisitor {
       const captured = reader.read32();
       const origin = reader.read32();
       const _packet = reader.slice(origin);
-      
+
       const data = this.createEtherPacket(readerCreator.createReader(_packet, 'frame', false));
       data.captured = captured;
       data.origin = origin;
       data.ts = ts;
       data.nano = highTS * 1000000 + lowTS;
       try {
-        this.addPacket(data.accept(this.visitor));
-      }catch(e){
+        switch (linktype) {
+          case 113:
+            this.addPacket(data.accept(this.sll));
+            break;
+          default:
+            this.addPacket(data.accept(this.visitor));
+            break;
+        }
+      } catch (e) {
         console.log('error#', data.getIndex());
         console.error(e);
       }

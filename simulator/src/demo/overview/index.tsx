@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
 import ReactECharts from 'echarts-for-react';
-import { OverviewSource } from "../common";
+import { OverviewSource } from "../../common";
+import { TabView, TabPanel } from 'primereact/tabview';
+import './index.css';
 
 const bytesFormater = (v) => {
   let h = 0;
@@ -11,11 +13,11 @@ const bytesFormater = (v) => {
     return [Math.floor(num / mod), num % mod]
   }
   [h, l] = cop(v);
-  if(h < mod){
+  if (h < mod) {
     return `${h}.${l}kB`
   }
   [h, l] = cop(h);
-  if(h < mod){
+  if (h < mod) {
     return `${h}.${l}mB`
   }
   [h, l] = cop(h);
@@ -28,13 +30,13 @@ class OverviewProps {
 function Overview(props: OverviewProps) {
   const title = 'Network Traffic';
 
-  const {legends, labels, counts, valMap} = props.data;
-
+  const { legends, labels, counts, valMap } = props.data;
+  console.log('---')
 
   const labelFormater = (v) => {
     const ts = Math.floor(v);
     const date = new Date(ts);
-    const [minutes, seconds, ms ] = [
+    const [minutes, seconds, ms] = [
       date.getMinutes(),
       date.getSeconds(),
       date.getMilliseconds()
@@ -54,7 +56,7 @@ function Overview(props: OverviewProps) {
       type: 'line',
       data
     };
-    if(key === 'total'){
+    if (key === 'total') {
       rs.areaStyle = {};
     }
     return rs;
@@ -66,11 +68,11 @@ function Overview(props: OverviewProps) {
     legend: {
       right: 50,
       data: legends
-      
+
     },
     tooltip: {
       trigger: 'axis',
-      valueFormatter : bytesFormater,
+      valueFormatter: bytesFormater,
       axisPointer: {
         type: 'cross',
         label: {
@@ -128,20 +130,18 @@ function Overview(props: OverviewProps) {
       }
     ],
     series: [
-      // {
-      //   yAxisIndex: 0,
-      //   type: 'line',
-      //   smooth: true,
-      //   data: counts,
-      //   label: {
-      //     show: true,
-      //     position: 'top'
-      //   },
-      // },
       ...datas
     ]
   };
-  return <ReactECharts option={option} className="overview" />;
+  return (<TabView className="w-full">
+    <TabPanel header="Connection">
+      <ReactECharts option={option} className="overview" />
+    </TabPanel>
+    <TabPanel header="DNS">
+    </TabPanel>
+    <TabPanel header="TLS">
+    </TabPanel>
+  </TabView>);
 }
 
 export default Overview;

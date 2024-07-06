@@ -1,20 +1,9 @@
 import React, { useEffect, useState } from "react";
-import { onMessage } from '../connect';
-import { HexV } from "../common";
-
+import { HexV } from "../../common";
+import { onMessage } from "../../connect";
+import './app.css';
 function HexView() {
-  const [data, setData] = useState<HexV>();
-  useEffect(() => {
-    onMessage('message', (e: any) => {
-      const { type, body, requestId } = e.data;
-      switch (type) {
-        case 'hex-data':
-          const data = body as HexV;
-          console.log(data)
-          setData(data);
-      }
-    });
-  }, []);
+  const [data, setData] = useState(null);
   const indexes = [];
   const codes = [];
   let text = '';
@@ -45,22 +34,32 @@ function HexView() {
         if (code > 33 && code !== 129 && code !== 141 && code !== 143 && code !== 144 && code !== 157) {
           text += String.fromCharCode(code)
         } else {
-          text += '?'
+          text += ''
         }
       }
     } catch (e) { }
   }
-  return (<>
+  useEffect(() => {
+    onMessage('message', (e: any) => {
+      const { type, body, requestId } = e.data;
+      switch (type) {
+        case 'hex-data':
+          const data = body as HexV;
+          setData(data);
+      }
+    });
+  }, []);
+  return (<div id="detail" className="w-full h-full">
     <div className="index">
-      {indexes.map(inx => <pre>{inx}</pre>)}
+      {indexes.map(inx => <pre key={'line'+ inx}>{inx}</pre>)}
     </div>
     <div className="hex">
-      {codes.map((code, inx) => <code className={getActive(inx)}>{code}</code>)}
+      {codes.map((code, inx) => <code key={'code'+inx} className={getActive(inx)}>{code}</code>)}
     </div>
     <div className="text">
       <pre>{text}</pre>
     </div>
-  </>
+  </div>
   );
 }
 

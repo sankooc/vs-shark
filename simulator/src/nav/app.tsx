@@ -7,12 +7,12 @@ function Page() {
         </div>
         <div className="f-g-1 flex flex-column">
             <div>
-                <iframe id="iframe" src="frame.html"></iframe>
+                <iframe id="main" src="frame.html"></iframe>
             </div>
-            <div className="flex flex-row">
+            {/* <div className="flex flex-row">
                 <iframe id="tree" src="tree.html"></iframe>
                 <iframe id="hex" src="hex.html"></iframe>
-            </div>
+            </div> */}
         </div>
     </div>
     );

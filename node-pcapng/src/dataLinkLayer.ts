@@ -1,6 +1,6 @@
 import { PVisitor, PacketElement, IPPacket, Protocol } from './common';
 import { IPv4Visitor, IPv6Visitor, ARPVisitor } from './networkLayer';
-import { etypeMap, PPP_CODE_MAP, PPP_DLL_NUMBER_MAP } from './constant';
+import { SLL_TYPE, linktypeMap, etypeMap, PPP_CODE_MAP, PPP_DLL_NUMBER_MAP } from './constant';
 
 export class DataPacket extends IPPacket {
     target: string;
@@ -11,6 +11,25 @@ export class DataPacket extends IPPacket {
     }
     public getProtocolType(): string {
         const code = `0x${this.type.toUpperCase()}`
+        return etypeMap[code];
+    }
+}
+export class SLLPacket extends IPPacket {
+    type!: number;
+    ltype!: number;
+    source: string;
+    ptype: string;
+    toString(): string {
+        return `Linux Cooked capture`;
+    }
+    public getPacketType(): string {
+        return SLL_TYPE[this.type];
+    }
+    public getLinkLaylerAddressType(): string {
+        return linktypeMap[this.ltype];
+    }
+    public getProtocolType(): string {
+        const code = `0x${this.ptype.toUpperCase()}`
         return etypeMap[code];
     }
 }
@@ -81,4 +100,27 @@ export class DataLaylerVisitor implements PVisitor {
         //8864 893a 890d c0a8
         return data.accept(this.mapper.get(data.type));
     }
+}
+
+export class SLLVisitor implements PVisitor {
+    mapper: Map<string, PVisitor> = new Map();
+    constructor() {
+        this.mapper.set('0800', new IPv4Visitor());
+        this.mapper.set('86dd', new IPv6Visitor());
+        this.mapper.set('0806', new ARPVisitor());
+        this.mapper.set('8864', new PPPoE_Session_Stage_Visitor());
+    }
+    visit(ele: PacketElement): IPPacket {
+        const parent = ele.getPacket();
+        const { reader } = parent;
+        const data = new SLLPacket(parent, reader, Protocol.SLL);
+        data.type = data.read16('type', false);
+        data.ltype = data.read16('ltype', false);
+        const len = data.read16('len', false);
+        data.source = data.readHex('source', len, ':');
+        reader.skip(2);
+        data.ptype = data.readHex('ptype', 2, '');
+        return data.accept(this.mapper.get(data.ptype));
+    }
+
 }

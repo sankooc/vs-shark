@@ -2,6 +2,7 @@ import { AbstractReaderCreator, Uint8ArrayReader } from './io';
 import { ARP } from './networkLayer';
 import { TCP } from './transportLayer';
 import { DNS, NBNS, RR, RR_A, RR_CNAME } from './application';
+import { linktypeMap } from './constant';
 import { DataPacket } from './dataLinkLayer';
 export enum Protocol {
     ETHER,
@@ -22,6 +23,7 @@ export enum Protocol {
     HTTPS,
     WEBSOCKET,
     PPPOESS,
+    SLL,
 }
 export enum FileType {
     PCAP,
@@ -413,6 +415,9 @@ export class FileInfo {
     linkType!: number;
     interfaceName!: string;
     interfaceDesc!: string;
+    getLinkType(): string {
+        return linktypeMap[this.linkType];
+    }
 }
 
 export class CNode {

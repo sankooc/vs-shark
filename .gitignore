@@ -5,5 +5,3 @@ node_modules/
 sandbox/
 .vscode/
 *lock.json
-*/media/*.js
-*/media/*.css

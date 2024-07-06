@@ -1,11 +1,11 @@
 import { PCAPClient, ComMessage, ComLog, Panel, Frame, CTreeItem, TCPCol, Grap, Category, GrapNode, GrapLink, MainProps, OverviewSource, HexV } from "./common";
-import { DataPacket, IPPacket, IPv6, Context, TCP, readBuffers, IPPack, ARP, linktypeMap, HttpPT, UDP, TCPConnect, EtherPacket, TCPStack, ARPReply, DNS, TLS, ICMP, IGMP } from 'protocols';
-import { protocolList } from 'protocols/built/src/constant';
-import { TLSClientHello, TLSServerHello, TLSHandshake, TLSHandshakeMessage } from 'protocols/built/src/tls';
-import { RR, RR_A, RR_CNAME, RR_SOA, RR_PRT, DHCP } from 'protocols/built/src/application';
-import { DNSRecord } from 'protocols/built/src/common';
-import { Protocol, IPv4 } from "protocols"
-import { PPPoESS } from "protocols/built/src/dataLinkLayer";
+import { DataPacket, IPPacket, IPv6, Context, TCP, readBuffers, IPPack, ARP, HttpPT, UDP, TCPConnect, EtherPacket, TCPStack, ARPReply, DNS, TLS, ICMP, IGMP } from 'nshark';
+import { protocolList } from 'nshark/built/src/constant';
+import { TLSClientHello, TLSServerHello, TLSHandshake, TLSHandshakeMessage } from 'nshark/built/src/tls';
+import { RR, RR_A, RR_CNAME, RR_SOA, RR_PRT, DHCP } from 'nshark/built/src/application';
+import { DNSRecord } from 'nshark/built/src/common';
+import { Protocol, IPv4 } from "nshark"
+import { PPPoESS } from "nshark/built/src/dataLinkLayer";
 
 const _map: string[] = protocolList;
 
@@ -30,7 +30,16 @@ export class Statc {
 const getNanoDate = (p: IPPacket) => {
   return (p.getProtocal(Protocol.ETHER) as EtherPacket).nano;
 }
-
+const parseTime = (time: number): string => {
+  const date = new Date(time);
+  const [hour, minutes, seconds, ms ] = [
+    date.getHours(),
+    date.getMinutes(),
+    date.getSeconds(),
+    date.getMilliseconds()
+  ];
+  return `${minutes}:${seconds} ${ms}`;
+}
 export abstract class Client extends PCAPClient {
   root!: Context;
   abstract emitMessage(panel: Panel, msg: ComMessage<any>): void;
@@ -59,6 +68,7 @@ export abstract class Client extends PCAPClient {
   protected convertTo(packet: IPPacket): Frame {
     const rs = new Frame();
     rs.time = (packet.getProtocal(Protocol.ETHER) as EtherPacket).ts;
+    rs.time_str = parseTime(rs.time);
     rs.no = packet.getIndex();
     const ip = (packet.getProtocal(Protocol.IPV4) || packet.getProtocal(Protocol.IPV6)) as IPPack;
     rs.protocol = (_map[packet.protocol] || '').toLowerCase();
@@ -120,10 +130,7 @@ export abstract class Client extends PCAPClient {
   }
   init(): void {
     if (this.data) {
-      // this.emitMessage(Panel.MAIN, new ComMessage('init', {
-      //   status: 'init',
-      //   time: Date.now()
-      // }));
+      console.log('data init');
       this.root = readBuffers(this.data);
       const frames = this.root.getFrames();
       const items: Frame[] = frames.map(this.convertTo);
@@ -365,11 +372,11 @@ const _resolveTcp = (item: CTreeItem, p: TCP): void => {
 
 };
 
-const _resolveDHCP = (item: CTreeItem, p: DHCP) => {
+const _resolveDHCP = (item: CTreeItem, p: DHCP): void => {
 
 }
 
-const _resolveIGMP = (item: CTreeItem, p: IGMP) => {
+const _resolveIGMP = (item: CTreeItem, p: IGMP): void => {
   for (const field of p.fields) {
     const { name, size, start } = field;
     switch (name) {
@@ -482,6 +489,7 @@ const _stack = (root: Context, packet: IPPacket, items: CTreeItem[]): number => 
       break;
     case Protocol.ICMP: {
       const p: ICMP = packet as ICMP;
+      console.log(p);
       for (const field of p.fields) {
         const { name, size, start } = field;
         switch (name) {
@@ -597,7 +605,7 @@ const _stack = (root: Context, packet: IPPacket, items: CTreeItem[]): number => 
       item.append(`Divice: ${hardware}  OS: ${os} Client: ${client}`);
       const date = new Date(p.ts);
       item.append(`Frame Number: ${packet.index}`);
-      const inf = item.append(`Interface type: ${linktypeMap[info.linkType]}(${info.linkType})`);
+      const inf = item.append(`Interface type: ${info.getLinkType()}(${info.linkType})`);
       if (info.interfaceName) {
         inf.append(`Interface name: ${info.interfaceName}`);
       }

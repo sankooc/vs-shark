@@ -5,7 +5,7 @@ settings:
   excludeLinksFromLockfile: false
 
 dependencies:
-  protocols:
+  nshark:
     specifier: file:../node-pcapng/
     version: file:../node-pcapng
 
@@ -2469,5 +2469,5 @@ packages:
 
   file:../node-pcapng:
     resolution: {directory: ../node-pcapng, type: directory}
-    name: protocols
+    name: nshark
     dev: false

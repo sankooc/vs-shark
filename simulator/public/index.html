@@ -54,6 +54,16 @@
       height: 450px;
       width: 40%;
     }
+    html {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+    }
+    body{
+      height: 100%;
+      margin: 0;
+      padding: 0;
+    }
   </style>
 </head>
 
@@ -62,13 +72,14 @@
     <input type="file" id="files" name="avatar" />
   </div>
   <div class="f-g-1 flex flex-column">
-    <div>
+    <iframe id="main" src="demo.html" class="f-g-1"></iframe>
+    <!-- <div>
       <iframe id="iframe" src="frame.html"></iframe>
     </div>
     <div class="flex flex-row">
       <iframe id="tree" src="tree.html"></iframe>
       <iframe id="hex" src="hex.html"></iframe>
-    </div>
+    </div> -->
   </div>
   <script src="./main.js"></script>
 </body>

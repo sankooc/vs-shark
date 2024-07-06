@@ -27,19 +27,21 @@ class DemoClient extends Client {
   }
   emitMessage(panel: Panel, msg: ComMessage<any>) {
     let el: HTMLIFrameElement;
-    switch(panel){
-      case Panel.MAIN:
-        el = this.main;
-        break;
-      case Panel.TREE:
-        el = this.tree;
-        break;
-      case Panel.DETAIL:
-        el = this.detail;
-        break;
-      default:
-        return;
-    }
+    el = this.main;
+    // switch(panel){
+    //   case Panel.MAIN:
+    //     el = this.main;
+    //     break;
+    //   case Panel.TREE:
+    //     el = this.tree;
+    //     break;
+    //   case Panel.DETAIL:
+    //     el = this.detail;
+    //     break;
+    //   default:
+    //     return;
+    // }
+    console.log('---')
     el.contentWindow.postMessage(msg, '*');
   }
   printLog(log: ComLog) {
@@ -49,6 +51,7 @@ class DemoClient extends Client {
     this.emitMessage(Panel.DETAIL, new ComMessage('hex-data', data));
   }
   selectFrame(no: number): void {
+    console.log('frame select', no);
     const items = this.buildFrameTree(no);
     const data = this.getPacket(no);
     this.emitMessage(Panel.TREE, new ComMessage('frame', {items, data }));
@@ -56,7 +59,7 @@ class DemoClient extends Client {
   }
 }
 const ele = document.getElementById("files");
-const main = document.getElementById('iframe') as HTMLIFrameElement;
+const main = document.getElementById('main') as HTMLIFrameElement;
 const tree = document.getElementById('tree') as HTMLIFrameElement;
 const detail = document.getElementById('hex') as HTMLIFrameElement;
 
@@ -67,6 +70,5 @@ window.addEventListener('message', function (msg: any) {
   if(msg.data.type){
     const _msg = msg.data as ComMessage<any>;
     client.handle(_msg);
-    console.log('--', _msg)
   }
 });

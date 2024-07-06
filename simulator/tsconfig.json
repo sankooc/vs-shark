@@ -110,5 +110,6 @@
   "include": [
       "./src/**/*",
       "./externals.d.ts"
-  ]
+  ],
+  "exclude": ["./sandbox/*"]
 }

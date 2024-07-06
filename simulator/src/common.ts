@@ -1,5 +1,5 @@
 
-import { DNSRecord } from 'protocols/built/src/common';
+import { DNSRecord } from 'nshark/built/src/common';
 
 export class ComMessage<T> {
     type: string;
@@ -70,8 +70,23 @@ export abstract class PCAPClient {
 }
 
 export interface ColumnItem {
+    style?: string;
+    no?: number;
     getIndex(): number;
     getStyle(inx: number): string;
+}
+
+export class IDNSRecord implements ColumnItem {
+    constructor(public readonly record: DNSRecord){}
+    style?: string;
+    no?: number;
+    getIndex(): number {
+        return 0;
+    };
+    getStyle(inx: number): string {
+        return '';
+    }
+
 }
 
 export class TCPCol implements ColumnItem {
@@ -134,6 +149,7 @@ export class Grap {
 export class Frame implements ColumnItem {
     no!: number;
     time!: number;
+    time_str: string;
     source: string = 'n/a';
     dest: string = 'n/a';
     protocol!: string;
@@ -141,10 +157,10 @@ export class Frame implements ColumnItem {
     len: number = 0;
     style: string='';
     info!: string;
-    getIndex(): number {
+    public getIndex(): number {
         return this.no;
     }
-    getStyle(inx: number): string {
+    public getStyle(inx: number): string {
         if(this.no === inx){
             return 'active';
         }
@@ -155,6 +171,7 @@ export class Frame implements ColumnItem {
 
 
 export class CTreeItem {
+    key?: string;
     label: string;
     index?: [number, number];
     children: CTreeItem[] = [];
@@ -192,10 +209,10 @@ export class OverviewSource {
     valMap: any;
 }
 export class MainProps {
-    status!: string;
-    items!: Frame[];
-    tcps!: TCPCol[];
-    arpGraph!: Grap;
-    overview!: OverviewSource;
-    dnsRecords!: DNSRecord[];
+    status?: string;
+    items?: Frame[];
+    tcps?: TCPCol[];
+    arpGraph?: Grap;
+    overview?: OverviewSource;
+    dnsRecords?: DNSRecord[];
 }

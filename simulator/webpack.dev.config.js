@@ -3,6 +3,16 @@ const path = require('path');
 
 module.exports = {
   ...org,
+  entry: { 
+    main: './src/nav/index.tsx',
+    ...org.entry,
+    react: 'react',
+    reactDom: 'react-dom',
+    // primeflex: 'primeflex',
+    // primeicons: 'primeicons/primeicons.css',
+
+    // primereact: 'primereact',
+  },
   devServer: {
     client: {
       overlay: {
@@ -25,8 +35,11 @@ module.exports = {
   watchOptions: {
     ignored: /node_modules/,
   },
+  mode: 'development',
   externals: {
       "echarts": "echarts",
       "bootstrap": "bootstrap",
+      // "react": "React",
+      // "react-dom": "react-dom",
   },
 };

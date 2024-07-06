@@ -4,7 +4,7 @@ import { DNSVisitor, NBNSVisitor, DHCPVisitor, HTTPVisitor } from './application
 import { TLSVisitor } from './tls';
 import { Uint8ArrayReader } from './io';
 import { IPv4, IPv6, IPPack } from './networkLayer';
-import { ICMPV6_TYPE_MAP, IGMP_TYPE_MAP } from './constant';
+import { ICMPV6_TYPE_MAP, IGMP_TYPE_MAP, ICMP_TYPE_MAP } from './constant';
 
 export class UDP extends PortProvider {
     extra: any;
@@ -85,7 +85,14 @@ export class ICMP extends IPPacket {
         return 'ICMP:' + this.getType();
     }
     public getType(): string {
-        return ICMPV6_TYPE_MAP[this.type];
+        const ch = ICMP_TYPE_MAP[this.type];
+        if(ch){
+            if(typeof ch === 'string'){
+                return ch;
+            }
+            return ch[this.code] || 'Reserved';
+        }
+        return 'Reserved';
     }
 }
 export class IGMP extends IPPacket {
