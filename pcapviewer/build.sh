@@ -1,5 +1,6 @@
 npm run reset
-rm -f media/*
+rm -rf media/
+mkdir media
 cd ../simulator/
 npm run css
 npm run build

@@ -131,10 +131,6 @@ export abstract class Client extends PCAPClient {
   init(): void {
     if (this.data) {
       console.log('data init');
-      // this.emitMessage(Panel.MAIN, new ComMessage('init', {
-      //   status: 'init',
-      //   time: Date.now()
-      // }));
       this.root = readBuffers(this.data);
       const frames = this.root.getFrames();
       const items: Frame[] = frames.map(this.convertTo);

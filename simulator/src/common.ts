@@ -46,7 +46,12 @@ export abstract class PCAPClient {
         try {
             switch(type){
                 case 'ready':
-                    this.init();
+                    try{
+                        this.init();
+                    } catch(e) {
+                        console.error(e);
+                        this.printLog(new ComLog('error', 'failed to open file'));
+                    }
                     break;
                 case 'log':
                     this.printLog(body as ComLog);
@@ -149,7 +154,7 @@ export class Grap {
 export class Frame implements ColumnItem {
     no!: number;
     time!: number;
-    time_str: string;
+    time_str?: string;
     source: string = 'n/a';
     dest: string = 'n/a';
     protocol!: string;
