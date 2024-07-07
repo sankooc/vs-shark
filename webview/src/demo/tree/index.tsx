@@ -4,6 +4,7 @@ import { Tree, TreeEventNodeEvent, TreeNodeClickEvent } from 'primereact/tree';
 import { TreeNode } from 'primereact/treenode';
 import { emitMessage, onMessage } from '../../connect';
 import { CTreeItem, ComMessage } from '../../common';
+import './app.css';
 
 const className = 'vector';
 
@@ -44,7 +45,7 @@ export default function Stack() {
     }
     return (
         <div className="flex-grow-1 justify-content-center" style={{ height: '100%', border: 0, padding: 0}}>
-            <Tree value={stacks} style={{ border: 0, padding: 0 }} contentStyle={{ padding: 0 }} onNodeClick={onSelect} />
+            <Tree className="tree-view" value={stacks} style={{ border: 0, padding: 0 }} contentStyle={{ padding: 0 }} onNodeClick={onSelect} />
         </div>
     )
 }

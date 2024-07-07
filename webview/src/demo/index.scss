@@ -44,6 +44,12 @@ li.active {
 tr, td {
     font-family: $base-family;
 }
+td.ign {
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+    text-align: center;
+}
 $t-select :#94d2bd;
 $t-select-font: #001219;
 

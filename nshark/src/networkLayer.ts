@@ -65,6 +65,12 @@ export class ARP extends IPPack {
     get target(): string {
         return this.targetIp;
     }
+    getSourceIp(): string {
+        return this.source;
+    }
+    getTargetIp(): string {
+        return this.target;
+    }
     public getOperation(): string{
         return ARP_OPER_TYPE_MAP[this.oper];
     }

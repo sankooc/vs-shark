@@ -28,7 +28,7 @@ export class Statc {
   }
 }
 const getNanoDate = (p: IPPacket) => {
-  return (p.getProtocal(Protocol.ETHER) as EtherPacket).nano;
+  return (p.getProtocol(Protocol.ETHER) as EtherPacket).nano;
 }
 const parseTime = (time: number): string => {
   const date = new Date(time);
@@ -67,26 +67,32 @@ export abstract class Client extends PCAPClient {
   }
   protected convertTo(packet: IPPacket): Frame {
     const rs = new Frame();
-    rs.time = (packet.getProtocal(Protocol.ETHER) as EtherPacket).ts;
-    rs.time_str = parseTime(rs.time);
+    const eth = packet.getProtocol(Protocol.ETHER) as EtherPacket;
+    rs.time = eth.ts;
+    rs.time_str = ((eth.nano - this.root.getMetadata().getStart()) + '').replace(/(\d)(?=(\d\d\d)+(?!\d))/g, "$1,");
     rs.no = packet.getIndex();
-    const ip = (packet.getProtocal(Protocol.IPV4) || packet.getProtocal(Protocol.IPV6)) as IPPack;
+    const ip = (packet.getProtocol(Protocol.IPV4) || packet.getProtocol(Protocol.IPV6)) as IPPack;
     rs.protocol = (_map[packet.protocol] || '').toLowerCase();
     rs.style = rs.protocol;
     if ('tcp' === rs.style) {
-      const tcp = packet.getProtocal(Protocol.TCP) as TCP;
+      const tcp = packet.getProtocol(Protocol.TCP) as TCP;
       if (tcp.isDump) {
         rs.style = 'dump';
       }
     }
-    const arp = packet.getProtocal(Protocol.ARP) as ARP;
-    if (arp) {
-      rs.source = arp.senderIp;
-      rs.dest = arp.targetIp;
-    } else if (ip) {
-      rs.source = ip.source;
-      rs.dest = ip.target;
+    const ipPro = packet.getIpProvider();
+    if(ipPro){
+      rs.source = ipPro.getSourceIp();
+      rs.dest = ipPro.getTargetIp();
     }
+    // const arp = packet.getProtocol(Protocol.ARP) as ARP;
+    // if (arp) {
+    //   rs.source = arp.senderIp;
+    //   rs.dest = arp.targetIp;
+    // } else if (ip) {
+    //   rs.source = ip.source;
+    //   rs.dest = ip.target;
+    // }
     rs.len = packet.getPacketSize();
     rs.info = packet.toString();
 
@@ -133,7 +139,7 @@ export abstract class Client extends PCAPClient {
       console.log('data init');
       this.root = readBuffers(this.data);
       const frames = this.root.getFrames();
-      const items: Frame[] = frames.map(this.convertTo);
+      const items: Frame[] = frames.map(this.convertTo.bind(this));
       const connections: TCPConnect[] = this.root.getTCPConnections();
       const cts = connections.map(this.convertToConnect);
       const arpreplies = this.root.getARPReplies();
@@ -160,7 +166,7 @@ export abstract class Client extends PCAPClient {
         return getArray(num);
       }
       for (const item of frames) {
-        const packet = item.getProtocal(Protocol.ETHER) as EtherPacket;
+        const packet = item.getProtocol(Protocol.ETHER) as EtherPacket;
         const { nano, origin } = packet;
         const it = getArray(nano);
         it.size += origin;
@@ -424,7 +430,7 @@ const _stack = (root: Context, packet: IPPacket, items: CTreeItem[]): number => 
             item.addIndex(`Payload Length: ${p.payload}`, start, size);
             break;
           case 'protocol':
-            item.addIndex(`Protocol: ${p.getProtocol()} (0x${p.protocol.toString(16)})`, start, size);
+            item.addIndex(`Protocol: ${p.getPOEProtocol()} (0x${p.protocol.toString(16)})`, start, size);
             break;
         }
       }

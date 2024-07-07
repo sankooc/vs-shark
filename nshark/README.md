@@ -10,7 +10,7 @@ pcap/pcapng analyzer written by pure Nodejs
 
 ```typescript
 
-  import { IPPacket, Protocol, readBuffers, IPv4, EtherPacket, Context } from 'nashrk';
+  import { IPPacket, Protocol, readBuffers, IPv4, EtherPacket, Context } from 'nshark';
   const raw: Uint8Array = getData();
   const ctx: Context = readBuffers(raw);
   console.log('read complete');

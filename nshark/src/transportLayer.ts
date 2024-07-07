@@ -42,12 +42,12 @@ export class TCP extends UDP {
     mess(): any[] {
         let sourceIp;
         let targetIp;
-        let rs = this.getProtocal(Protocol.IPV4);
+        let rs = this.getProtocol(Protocol.IPV4);
         if (rs && rs instanceof IPv4) {
             sourceIp = (rs as IPv4).source;
             targetIp = (rs as IPv4).target;
         }
-        rs = this.getProtocal(Protocol.IPV6);
+        rs = this.getProtocol(Protocol.IPV6);
         if (rs instanceof IPv6) {
             sourceIp = (rs as IPv6).source;
             targetIp = (rs as IPv6).target;
@@ -105,7 +105,9 @@ export class IGMP extends IPPacket {
 }
 
 export class ICMPV6 extends ICMP {
-
+    public getType(): string {
+        return ICMPV6_TYPE_MAP[this.type];
+    }
 }
 const lann = (mask: number) => {
     const arr = [7, 6, 5, 4, 3, 2, 1, 0];

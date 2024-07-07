@@ -215,7 +215,7 @@ export class NBNSVisitor implements PVisitor {
         return [new NBNS(parent, reader, Protocol.NBNS), reader];
     }
     isAnswer(ele: PacketElement): boolean {
-        const udp: UDP = ele.getPacket().getProtocal(Protocol.UDP) as UDP;
+        const udp: UDP = ele.getPacket().getProtocol(Protocol.UDP) as UDP;
         return udp.targetPort === 137;
     }
     readQuery(reader: Uint8ArrayReader): Query {
@@ -281,7 +281,7 @@ export class DNSVisitor implements PVisitor {
         return [new DNS(parent, reader, Protocol.DNS), reader];
     }
     isAnswer(ele: PacketElement): boolean {
-        const udp: UDP = ele.getPacket().getProtocal(Protocol.UDP) as UDP;
+        const udp: UDP = ele.getPacket().getProtocol(Protocol.UDP) as UDP;
         return udp.targetPort === 53;
     }
     readQuery(reader: Uint8ArrayReader): Query {

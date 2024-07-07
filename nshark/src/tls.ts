@@ -262,7 +262,7 @@ export class TLSVisitor implements PVisitor {
         const [its, len] = tryCheckTLS(_reader);
         if (!its) {
           console.log('########error', tcp.getIndex());
-          process.exit(1);
+          // process.exit(1);
           break;
         }
         if (len + 5 > _reader.left()) {
@@ -291,7 +291,6 @@ export class TLSVisitor implements PVisitor {
         } catch (e) {
           console.log(data.getIndex(), len);
           console.error(e);
-          process.exit(0);
         }
       }
     }

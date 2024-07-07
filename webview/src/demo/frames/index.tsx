@@ -26,10 +26,10 @@ function FrameList(props: FrameListProps) {
   };
   const items = getData();
   const columes = [
-    { field: 'no', header: 'index', style: { width: '5%' } },
-    { field: 'time_str', header: 'time' },
-    { field: 'source', header: 'source' },
-    { field: 'dest', header: 'dest' },
+    { field: 'no', header: 'index', style: { width: '4%' } },
+    { field: 'time_str', header: 'time', style: { width: '8%' } },
+    { field: 'source', header: 'source', style: { width: '15%' }, className: "ign" },
+    { field: 'dest', header: 'dest', style: { width: '18%' }, className: "ign"},
     { field: 'protocol', header: 'protocol', style: { width: '5%' } },
     { field: 'len', header: 'length', style: { width: '5%' } },
     { field: 'info', header: 'info' }
@@ -51,10 +51,8 @@ function FrameList(props: FrameListProps) {
     <Splitter layout="vertical" className="h-full w-full">
       <SplitterPanel className="flex flex-column align-items-center justify-content-center" size={70}>
         <IconField iconPosition="left" className="w-full">
-
           <MultiSelect value={filters} onChange={(e) => { setFilter(e.value) }} options={protos} optionLabel="name"
             placeholder="Select Protocols" maxSelectedLabels={10} className="p-inputtext-sm w-2" />
-          {/* <InputText placeholder="Search" className="p-inputtext-sm w-10"/> */}
         </IconField>
         <DTable cols={columes} items={items} onSelect={onSelect} />
       </SplitterPanel>

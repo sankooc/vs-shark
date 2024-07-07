@@ -27,7 +27,7 @@ const DTable = (props: Props) => {
       }
       return data.style;
     }} onSelectionChange={onSelectionChange}
-      virtualScrollerOptions={{ itemSize: 15 }} scrollable showGridlines 
+      virtualScrollerOptions={{ itemSize: 20 }} scrollable showGridlines 
       scrollHeight={props.scrollHeight || "67vh"} size={props.size|| "small"} className={props.className|| "w-full"}
       currentPageReportTemplate="{first} to {last} of {totalRecords}">
       {props.cols.map((c: ColumnProps, inx: number): ReactElement => {

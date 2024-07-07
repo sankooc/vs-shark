@@ -3,7 +3,7 @@ import { ARP } from './networkLayer';
 import { TCP } from './transportLayer';
 import { DNS, NBNS, RR, RR_A, RR_CNAME } from './application';
 import { linktypeMap } from './constant';
-import { DataPacket } from './dataLinkLayer';
+
 export enum Protocol {
     ETHER,
     MAC,
@@ -165,12 +165,12 @@ export class IPPacket extends Packet implements PacketElement {
         }
         return this.index;
     }
-    getProtocal(name: Protocol): IPPacket {
+    getProtocol(name: Protocol): IPPacket {
         if (this.protocol === name) {
             return this;
         }
         if (this.parent) {
-            return this.parent.getProtocal(name);
+            return this.parent.getProtocol(name);
         }
         return null;
     }
@@ -243,7 +243,7 @@ export class IPPacket extends Packet implements PacketElement {
         return list;
     };
     getContext(): Context {
-        const ep = (this.getProtocal(Protocol.ETHER) as EtherPacket);
+        const ep = (this.getProtocol(Protocol.ETHER) as EtherPacket);
         if (ep) {
             return ep.context;
         }
@@ -435,6 +435,14 @@ export class ARPReply {
         this.host = host;
     }
 }
+
+export class Metadata {
+    peroid: [number, number] = [0, 0];
+    public getStart() {
+        return this.peroid[0];
+    }
+}
+
 export interface Context {
     getFrames(): IPPacket[];
     getFrame(inx: number): IPPacket;//1 based
@@ -447,12 +455,15 @@ export interface Context {
     resolveDNS(p: DNS | NBNS): void;
     getDNSRecord(): DNSRecord[];
     createEtherPacket(reader: Uint8ArrayReader): EtherPacket;
+    getMetadata(): Metadata;
 }
+
 
 export abstract class AbstractRootVisitor implements Visitor, Context {
     resolver: Resolver = new Resolver();
     readonly packets: IPPacket[] = []
     index: number = 0;
+    readonly metadata: Metadata = new Metadata();
     getFrames(): IPPacket[] {
         return this.packets;
     }
@@ -472,10 +483,21 @@ export abstract class AbstractRootVisitor implements Visitor, Context {
         return new EtherPacket(reader, this, this.getNextIndex());
     }
     protected addPacket(packet: IPPacket): void {
+        const epack =  packet.getProtocol(Protocol.ETHER) as EtherPacket;
+        if(epack){
+            const nano = epack.nano;
+            if(this.packets.length == 0){
+                this.metadata.peroid[0] = nano;
+            }
+            this.metadata.peroid[1] = nano;
+        }
         this.packets.push(packet);
     };
     public getContext(): Context {
         return this;
+    }
+    getMetadata(): Metadata{
+        return this.metadata;
     }
     getDNSRecord(): DNSRecord[] {
         return this.resolver.dnsRecord;
@@ -556,7 +578,7 @@ export abstract class AbstractRootVisitor implements Visitor, Context {
         // }
         // if (p.ack && !p.psh) {
         //     if (p.packet.length > 10) {
-        //         const len = p.getProtocal(Protocol.ETHER).packet.length;
+        //         const len = p.getProtocol(Protocol.ETHER).packet.length;
         //     }
         // }
         // if (p.psh) {

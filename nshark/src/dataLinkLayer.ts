@@ -43,7 +43,7 @@ export class PPPoESS extends IPPacket {
     public getCode(): string {
         return PPP_CODE_MAP[this.code];
     }
-    public getProtocol(): string {
+    public getPOEProtocol(): string {
         const type = this._protocol.toString(16).padStart(4, '0');
         return PPP_DLL_NUMBER_MAP[type]
     }
