@@ -6,4 +6,4 @@ sandbox/
 .vscode/
 *lock.json
 *.css
-pcapviewer/media/
+extension/media/

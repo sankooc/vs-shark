@@ -55,6 +55,6 @@
 		"webpack-cli": "^5.1.4"
 	},
 	"dependencies": {
-		"nshark": "file:../node-pcapng/"
+		"nshark": "file:../nshark/"
 	}
 }
