@@ -53,6 +53,7 @@ export class PCAPVisitor extends AbstractRootVisitor {
       } catch (e) {
         console.log('error#', data.getIndex());
         console.error(e);
+        process.exit(0);
       }
       // this.addPacket(data);
     } while (reader.eof());

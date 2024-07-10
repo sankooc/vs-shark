@@ -1,26 +1,15 @@
-import { PVisitor, PacketElement, IPPacket, Protocol,IPProvider } from './common';
+import { PVisitor, PacketElement, IPPacket, Protocol, IPProvider } from './common';
 import { etypeMap, ipProtocolMap, ARP_OPER_TYPE_MAP, ARP_HARDWARE_TYPE_MAP } from './constant';
+import { IPAddress } from './io';
 import { TCPVisitor, UDPVisitor, ICMPVisitor, IGMPVisitor, ICMPV6Visitor } from './transportLayer';
 
 export class IPPack extends IPProvider {
-    protected _source: string;
-    protected _target: string;
-    set source(s: string) {
-        this._source = s;
-    }
-    get source(): string {
+    _source: IPAddress;
+    _target: IPAddress;
+    getSourceIp(): IPAddress {
         return this._source;
     }
-    set target(s: string) {
-        this._target = s;
-    }
-    get target(): string {
-        return this._target;
-    }
-    getSourceIp(): string {
-        return this._source;
-    }
-    getTargetIp(): string {
+    getTargetIp(): IPAddress {
         return this._target;
     }
 }
@@ -34,8 +23,30 @@ export class IPv4 extends IPPack {
     toString(): string {
         return `Internet Protocol Version : ${this.version} length: ${this.totalLen}`;
     }
-    getProtocalType(): string{
+    getProtocalType(): string {
         return ipProtocolMap[this.ipprotocol];
+    }
+    summary(): string {
+        return `Internet Protocol Version: 4 Src: ${this._source.getAddress()}  Dst: ${this._target.getAddress()}`;
+    }
+    createSummary(field: string): string {
+        switch (field) {
+            // case 'head':
+            //     return [`IP Protocol Vesion: (${this.source})`];
+            case 'source':
+                return `Source IP Address: (${this.getSourceIp().getAddress()})`;
+            case 'target':
+                return `Destination IP Address: (${this.getTargetIp().getAddress()})`;
+            case 'totalLen':
+                return `Total length: 0x${this.totalLen.toString(16).padStart(4, '0')} (${this.totalLen})`;
+            case 'identification':
+                return `Identification: 0x${this.identification.toString(16).padStart(4, '0')} (${this.identification})`;
+            case 'ttl':
+                return `Time to Live: ${this.ttl}`;
+            case 'ipprotocol':
+                return `Protocol: ${this.getProtocalType()} (${this.ipprotocol})`;
+        }
+        return null;
     }
 }
 
@@ -43,8 +54,19 @@ export class IPv6 extends IPPack {
     nextHeader: number;
     hop: number;
     plen: number;
-    toString(): string {
-        return `Internet Protocol Version : 6 src: ${this.source} dst: ${this.target}`;
+    summary(): string {
+        return `Internet Protocol Version: 6 Src: ${this._source.getAddress()}  Dst: ${this._target.getAddress()}`;
+    }
+    createSummary(field: string): string {
+        switch (field) {
+            case 'nextHeader':
+                return `Protocol: ${this.nextHeader}`;
+            case 'source':
+                return `Source IP Address: (${this.getSourceIp().getAddress()})`;
+            case 'target':
+                return `Destination IP Address: (${this.getTargetIp().getAddress()})`;
+        }
+        return null;
     }
 }
 
@@ -52,46 +74,68 @@ export class ARP extends IPPack {
     //https://en.wikipedia.org/wiki/Address_Resolution_Protocol
     oper: number;//1 request 2 reply
     senderMac: string;
-    senderIp: string;
+    senderIp: IPAddress;
     targetMac: string;
-    targetIp: string;
+    targetIp: IPAddress;
     hardwareType: number;
     protocolType: number;
     hardwareSize: number;
     protocolSize: number;
-    get source(): string {
+    getSourceIp(): IPAddress {
         return this.senderIp;
     }
-    get target(): string {
+    getTargetIp(): IPAddress {
         return this.targetIp;
     }
-    getSourceIp(): string {
-        return this.source;
-    }
-    getTargetIp(): string {
-        return this.target;
-    }
-    public getOperation(): string{
+    public getOperation(): string {
         return ARP_OPER_TYPE_MAP[this.oper];
     }
     public getHardwareType(): string {
         return ARP_HARDWARE_TYPE_MAP[this.hardwareType];
     }
-    public getProtocolType(): string{
+    public getProtocolType(): string {
         const code = '0x' + this.protocolType.toString(16).padStart(4, '0');
         return etypeMap[code];
     }
     toString(): string {
         if (this.oper === 1) {
-            if (this.senderIp === this.targetIp) {
-                return `ARP Announcement for ${this.senderIp}`;
+            if (this.senderIp.getAddress() === this.targetIp.getAddress()) {
+                return `ARP Announcement for ${this.senderIp.getAddress()}`;
             }
-            if (this.senderIp === '0.0.0.0') {
-                return `who has ${this.targetIp}? (ARP probe)`;
+            if (this.senderIp.getAddress() === '0.0.0.0') {
+                return `who has ${this.targetIp.getAddress()}? (ARP probe)`;
             }
-            return `who has ${this.targetIp}? tell ${this.senderIp}`;
+            return `who has ${this.targetIp.getAddress()}? tell ${this.senderIp.getAddress()}`;
         }
-        return `${this.senderIp} at ${this.senderMac}`;
+        return `${this.senderIp.getAddress()} at ${this.senderMac}`;
+    }
+    summary(): string {
+        return `Address Resolution Protocol (${this.getOperation()})`
+    }
+
+    createSummary(field: string): string {
+        switch (field) {
+            case 'htype':
+                return `Hardware type: ${this.getHardwareType()} (${this.hardwareType})`;
+            case 'ptype':
+                const code = '0x' + this.protocolType.toString(16).padStart(4, '0');
+                return `Protocol type: ${this.getProtocolType()} (${code})`;
+            case 'hlen':
+                return `Hardware size: ${this.hardwareSize} bytes`;
+            case 'plen':
+                return `Protocol size: ${this.protocolSize} bytes`;
+            case 'oper':
+                return `Operation code ${this.getOperation()} (${this.oper})`;
+            case 'senderMac':
+                return `Sender Mac address: ${this.senderMac}`;
+            case 'senderIp':
+                return `Sender IP address: ${this.senderIp.getAddress()}`;
+            case 'targetMac':
+                return `Target Mac address: ${this.targetMac}`;
+            case 'targetIp':
+                return `Target IP address: ${this.targetIp.getAddress()}`;
+        }
+        return null;
     }
 }
 // https://en.wikipedia.org/wiki/Internet_Protocol_version_4
@@ -109,18 +153,18 @@ export class IPv4Visitor implements PVisitor {
         const { reader } = parent;
         const data = new IPv4(parent, reader, Protocol.IPV4);
 
-        const cv = reader.read8();
+        const cv = data.read8('head');
         data.version = cv >>> 4;
         const headLenth = cv & 0x0f;
-        const tos = reader.read8();
+        const tos = data.read8('tos');
         data.totalLen = data.read16('totalLen', false);
         data.identification = data.read16('identification');
-        const flag = reader.read16() >>> 13
+        const flag = data.read16('flag', true) >>> 13
         data.ttl = data.read8('ttl');
         data.ipprotocol = data.read8('ipprotocol')
-        const headCRC = reader.read16()
-        data.source = data.readIp('source');
-        data.target = data.readIp('target');
+        const headCRC = data.read16('crc')
+        data._source = data.readIp('source');
+        data._target = data.readIp('target');
         if (headLenth > 5) {
             reader.skip((headLenth - 5) * 4)
         }
@@ -134,7 +178,6 @@ export class IPv4Visitor implements PVisitor {
 //https://en.wikipedia.org/wiki/Address_Resolution_Protocol
 export class ARPVisitor implements PVisitor {
     visit(ele: PacketElement): IPPacket {
-
         const parent = ele.getPacket();
         const { reader } = parent;
         const data = new ARP(parent, reader, Protocol.ARP);
@@ -172,12 +215,12 @@ export class IPv6Visitor implements PVisitor {
         const data = new IPv6(parent, reader, Protocol.IPV6);
 
         reader.read32();
-        data.plen = data.read16('plen',false);
+        data.plen = data.read16('plen', false);
         data.nextHeader = data.read8('nextHeader');
         data.hop = data.read8('hop');
         //https://en.wikipedia.org/wiki/IPv6_address
-        data.source = data.readHex('source', 16, ':')
-        data.target = data.readHex('target', 16, ':')
+        data._source = data.readIp6('source');
+        data._target = data.readIp6('target');
         return data.accept(this.mapper.get(data.nextHeader));
     }
 }

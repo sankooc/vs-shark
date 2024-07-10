@@ -1,9 +1,3 @@
-// import fs from 'node:fs'fs
-// import path from 'path'
-
-import { read } from "fs";
-
-
 const read64 = (arr: Uint8Array, offset: number, littleEndian = true): bigint => {
     const dataView = new DataView(arr.buffer, offset, 8);
     return dataView.getBigUint64(0, littleEndian);
@@ -12,13 +6,35 @@ const read32 = (arr: Uint8Array, offset: number, littleEndian = true): number =>
     const dataView = new DataView(arr.buffer, offset, 4);
     return dataView.getUint32(0, littleEndian);
 }
-const read16 = (arr: Uint8Array, offset: number, littleEndian = true): number => {
+export const read16 = (arr: Uint8Array, offset: number, littleEndian = true): number => {
     const dataView = new DataView(arr.buffer, offset, 2);
     return dataView.getUint16(0, littleEndian);
 }
-const read8 = (arr: Uint8Array, offset: number): number => {
+export const read8 = (arr: Uint8Array, offset: number): number => {
     const dataView = new DataView(arr.buffer, offset, 1);
     return dataView.getUint8(0)
+}
+
+export interface IPAddress {
+    getAddress(): string;
+}
+export class IP4Address implements IPAddress {
+    constructor(private arr: Uint8Array){}
+    getAddress(): string {
+        return this.arr.reduce((acc, current, index) => acc + (index ? '.' : '') + current, '');
+    }
+}
+
+export class IP6Address implements IPAddress {
+    constructor(private arr: Uint8Array){}
+    getAddress(): string {
+        const groups: string[] = [];
+        for(let i =0 ; i < 8; i += 1){
+            groups.push(read16(this.arr, i * 2, true).toString(16));
+        }
+        const ad = groups.join(':');
+        return ad.replace(/(:0)+/i, ':');
+    }
 }
 
 const textDecoder = new TextDecoder('utf-8');
@@ -96,8 +112,11 @@ export class Uint8ArrayReader {
         const v = this.slice(len);
         return v.reduce((acc, current, index) => acc + (index ? flag : '') + current.toString(10), '');
     }
-    readIp(): string {
-        return this.readDec(4, '.');
+    readIp(): IP4Address {
+        return new IP4Address(this.slice(4));
+    }
+    readIpv6(): IP6Address {
+        return new IP6Address(this.slice(16));
     }
     readString(len: number): string {
         const data = this.slice(len)

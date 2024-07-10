@@ -1,9 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { HexV } from "../../common";
-import { onMessage } from "../../connect";
 import './app.css';
-function HexView() {
-  const [data, setData] = useState(null);
+function HexView(props: {data?: HexV}) {
   const indexes = [];
   const codes = [];
   let text = '';
@@ -15,6 +13,7 @@ function HexView() {
     }
     return '';
   }
+  const data = props.data;
   if (data) {
     const lent = data.data.length;
     if(data.index && data.index[1]){
@@ -39,16 +38,6 @@ function HexView() {
       }
     } catch (e) { }
   }
-  useEffect(() => {
-    onMessage('message', (e: any) => {
-      const { type, body, requestId } = e.data;
-      switch (type) {
-        case 'hex-data':
-          const data = body as HexV;
-          setData(data);
-      }
-    });
-  }, []);
   return (<div id="detail" className="w-full h-full">
     <div className="index">
       {indexes.map(inx => <pre key={'line'+ inx}>{inx}</pre>)}

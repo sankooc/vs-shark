@@ -7,7 +7,6 @@ if (process.argv.length > 2) {
   const e = new EventTarget();
   readLoc(filepath, (arr: Uint8Array) => {
     const ctx: Context = readBuffers(arr);
-    console.log('read complete');
     console.log('frames', ctx.getFrames().length);
     console.log('pcap/pcapng file info', ctx.getFileInfo());
     console.log('metadata', ctx.getMetadata());

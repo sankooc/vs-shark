@@ -7,6 +7,7 @@ html, body {
     padding: 0;
     margin: 0;
     font-size: 10px;
+    overflow: hidden;
 }
 
 #app {
@@ -44,11 +45,13 @@ li.active {
 tr, td {
     font-family: $base-family;
 }
-td.ign {
+tr td {
     text-overflow: ellipsis;
     white-space: nowrap;
     overflow: hidden;
-    text-align: center;
+}
+.pcap-table table{
+    table-layout: fixed;
 }
 $t-select :#94d2bd;
 $t-select-font: #001219;

@@ -1,11 +1,20 @@
-import { PacketElement, IPPacket, PVisitor, Protocol } from './common';
+import { PacketElement, IPPacket, PVisitor, Protocol, Packet, PosReader } from './common';
 import { Uint8ArrayReader } from './io';
 import { TCP } from './transportLayer';
-import { TLS_MIN_VERSION_MAP, TLS_CONTENT_TYPE_MAP, TLS_EXTENSION_MAP, TLS_CIPHER_SUITES_MAP } from './constant';
-
-
-export class TLSRecord {
-  constructor(public readonly type: number, public version: number, public data: Uint8Array) { }
+import { TLS_MIN_VERSION_MAP, TLS_CONTENT_TYPE_MAP, TLS_EXTENSION_MAP, TLS_CIPHER_SUITES_MAP,TLS_HS_MESSAGE_TYPE } from './constant';
+// export class ObjectViewer<T> {
+  
+// }
+class ComposeRecord {}
+export class TLSRecord extends Packet {
+  type?: number;
+  version?: number;
+  data?: Uint8Array;
+  len?: number;
+  extra?: Packet;
+  constructor(reader: Uint8ArrayReader) {
+    super(reader);
+  }
   public getDataSize(): number {
     return this.data.length;
   }
@@ -18,12 +27,24 @@ export class TLSRecord {
   public summary(): string {
     return `${this.getVersion()} Record Layer: ${this.getContentType()}`;
   }
-  static createHanshake(r: TLSRecord, _reader: Uint8ArrayReader): TLSRecord {
-    const hanshake = new TLSHandshake(r);
+  createSummary(field: string): string {
+      switch (field) {
+          case 'type':
+              return `Content type: ${this.getContentType()} (${this.type})`;
+          case 'version':
+              return `Version: ${this.getVersion()}`;
+          case 'len':
+              return `Length: ${this.len}`
+      }
+      return null;
+  }
+  static createHanshake(reader: Uint8ArrayReader): Packet {
+    const hanshake = new TLSHandshake(reader);
     do {
-      const msg = TLSHandshakeMessage.read(_reader);
-      hanshake.messages.push(msg)
-      if (!_reader.eof()) {
+      const msg = TLSHandshakeMessage.read(hanshake);
+      hanshake.messages.push(msg);
+      hanshake.fields.push(msg);
+      if (!reader.eof()) {
         break;
       }
     } while (true)
@@ -38,38 +59,49 @@ export class TLSRecord {
   static createCCS(r: TLSRecord, _reader: Uint8ArrayReader): TLSRecord {
     return r;
   }
-  static create(type: number, version: number, data: Uint8Array): TLSRecord {
-    const r = new TLSRecord(type, version, data);
-    const _reader = new Uint8ArrayReader(data);
-    switch (type) {
-      case 20:
-        return TLSRecord.createCCS(r, _reader);
-      case 21:
-        return TLSRecord.createAlert(r, _reader);
-      case 22:
-        return TLSRecord.createHanshake(r, _reader);
-      case 23:
-        break;
-      case 24:
-        return TLSRecord.createHeartbeat(r, _reader);
-    }
-    return r;
-  }
+  // static create(type: number, version: number, data: Uint8Array): TLSRecord {
+  //   const r = new TLSRecord(type, version, data);
+  //   const _reader = new Uint8ArrayReader(data);
+  //   switch (type) {
+  //     case 20:
+  //       return TLSRecord.createCCS(r, _reader);
+  //     case 21:
+  //       return TLSRecord.createAlert(r, _reader);
+  //     case 22:
+  //       return TLSRecord.createHanshake(r, _reader);
+  //     case 23:
+  //       break;
+  //     case 24:
+  //       return TLSRecord.createHeartbeat(r, _reader);
+  //   }
+  //   return r;
+  // }
   static read(_reader: Uint8ArrayReader): TLSRecord {
-    const type = _reader.read8();
+    const record = new TLSRecord(_reader);
+    record.type = record.read8('type');
     const major = _reader.read8();
-    const minor = _reader.read8();
-    const len = _reader.read16(false);
-    const _content = _reader.slice(len);
-    return TLSRecord.create(type, minor, _content);
+    record.version = record.read8('version');
+    record.len = record.read16('len', false);
+    record.data = record.slice('data', record.len);
+    switch (record.type) {
+      // case 20:
+        // return TLSRecord.createCCS(r, record.data);
+      // case 21:
+        // return TLSRecord.createAlert(r, _reader);
+        // break;
+      case 22:
+        record.extra = TLSRecord.createHanshake(new Uint8ArrayReader(record.data));
+        record.fields.push(record.extra)
+        break;
+      // case 23:
+      //   break;
+      // case 24:
+        // return TLSRecord.createHeartbeat(r, _reader);
+    }
+    return record;
   }
 };
 
-export class ComposeRecord extends TLSRecord {
-  constructor(record: TLSRecord) {
-    super(record.type, record.version, record.data);
-  }
-}
 
 export class TLSAlert extends ComposeRecord {
   level: number;
@@ -134,26 +166,43 @@ const readTLSExtension = (_reader: Uint8ArrayReader): TLSExtension[] => {
   return rs;
 }
 
-export class TLSHandshakeMessage {
-  constructor(public content: Uint8Array) { }
+export class TLSHandshakeMessage extends Packet{
+  type: number = 9999;
+  len?: number;
+  extra?: TLSHandshakeExtra;
+  createSummary(field: string): string {
+    switch(field){
+      case 'type':
+        return ``
+      case 'len':
+    }
+    return null;
+    // return this.extra && this.extra.createSummary(field);
+  }
   public summary(): string {
-    return 'Handshake Protocol: Encrypted Handshake Message';
+    return `Handshake Protocol: ${this.getType()}`;
+  }
+  getType(): string{
+    return TLS_HS_MESSAGE_TYPE[this.type] || 'Encrypted Handshake Message'
   }
   static getAlgoType(s: string): string {
     return TLS_CIPHER_SUITES_MAP['0x'+ s]
   }
 
-  static read(_reader: Uint8ArrayReader): TLSHandshakeMessage {
-    const content = _reader.extra2();
-    if(content.length < 4){
-      return new TLSHandshakeMessage(content);
+  static read(pos: PosReader): TLSHandshakeMessage {
+    const _reader = pos.getReader();
+    const rs =  new TLSHandshakeMessage(pos.getReader());
+    if(_reader.left() < 4){
+      return rs;
     }
-    const [type, len] = _reader.tryTLSMessage();
+    const [type, len] = pos.getReader().tryTLSMessage();
     switch (type) {
       case 1: {
-        _reader.skip(4)
+        rs.type = pos.read8('type');
+        rs.len = len;
+        pos.slice('len', 3);
         if (len == _reader.left()) {
-          const ins = new TLSClientHello(content);
+          const ins = new TLSClientHello();
           const major = _reader.read8();
           const min = _reader.read8();
           ins.type= type;
@@ -164,16 +213,19 @@ export class TLSHandshakeMessage {
           ins.compressMethod = readTLSMethods(_reader);
           ins.extensions = readTLSExtension(_reader);
           _reader.extra();
-          return ins;
+          rs.extra = ins;
+          break;
         }
       }
         break;
       case 2:{
-        _reader.skip(4)
+        rs.type = pos.read8('type');
+        rs.len = len;
+        pos.slice('len', 3);
         if (len == _reader.left()) {
           const major = _reader.read8();
           const min = _reader.read8();
-          const ins = new TLSServerHello(content);
+          const ins = new TLSServerHello();
           ins.type= type;
           ins.version = min;
           ins.random = _reader.readHex(32);
@@ -182,19 +234,30 @@ export class TLSHandshakeMessage {
           ins.compressMethod = _reader.read8();
           ins.extensions = readTLSExtension(_reader);
           _reader.extra();
-          return ins;
+          rs.extra = ins;
+          break;
         }
       }
         break;
     }
     _reader.extra()
-    return new TLSHandshakeMessage(content);
+    return new TLSHandshakeMessage(_reader);
   }
 }
-export class TLSHandshake extends ComposeRecord {
+export class TLSHandshake extends Packet {
+  getSubType(): string{
+    return 'Encrypted Handshake Message';
+  }
+  summary(): string {
+    return 'Handshake Protocol: '
+  }
   messages: TLSHandshakeMessage[] = [];
 }
-export class TLSClientHello extends TLSHandshakeMessage {
+
+export class TLSHandshakeExtra {
+
+}
+export class TLSClientHello extends TLSHandshakeExtra {
   type: number;
   version: number;
   random: string;
@@ -205,11 +268,8 @@ export class TLSClientHello extends TLSHandshakeMessage {
   public getVersion(): string {
     return TLS_MIN_VERSION_MAP[this.version] || 'KnownVersion';
   }
-  public summary(): string {
-      return 'Handshake Protocol: Client Hello';
-  }
 }
-export class TLSServerHello extends TLSHandshakeMessage {
+export class TLSServerHello extends TLSHandshakeExtra {
   type: number;
   version: number;
   random: string;
@@ -219,9 +279,6 @@ export class TLSServerHello extends TLSHandshakeMessage {
   extensions: TLSExtension[];
   public getVersion(): string {
     return TLS_MIN_VERSION_MAP[this.version] || 'KnownVersion';
-  }
-  public summary(): string {
-      return 'Handshake Protocol: Server Hello';
   }
 }
 
@@ -266,42 +323,27 @@ export class TLSVisitor implements PVisitor {
           break;
         }
         if (len + 5 > _reader.left()) {
-          if (stack.temp) {
-            stack.temp = new Uint8Array([...stack.temp, ..._reader.extra()]);
-          } else {
-            stack.temp = _reader.extra();
-          }
+          stack.addSegment(data.getIndex(), _reader.extra());
           break;
         }
         try {
           const record = TLSRecord.read(_reader);
-          if(record instanceof TLSHandshake){
-            for(const msg of record.messages){
-              if(msg instanceof TLSClientHello){
-                tcpConnection.clientHello = msg;
-                break;
-              }
-              if(msg instanceof TLSServerHello){
-                tcpConnection.serverHello = msg;
-                break;
-              }
-            }
-          }
-          if (record) data.records.push(record);
+          tcpConnection.resolveTLS(record);
+          
+          record.extra instanceof TLSHandshake
+          data.records.push(record);
+          data.fields.push(record);
+          stack.clearSegment();
         } catch (e) {
           console.log(data.getIndex(), len);
           console.error(e);
+          break;
         }
       }
     }
-    if (stack.temp) {
-      const _content = new Uint8Array([...stack.temp, ...reader.extra()]);
-      stack.temp = null;
-      const _reader = new Uint8ArrayReader(_content);
-      tlsProcess(_reader);
-    } else {
-      tlsProcess(reader);
-    }
+    const _reader = stack.rebuildReader(reader);
+    stack.clearSegment();
+    tlsProcess(_reader);
     return data;
   }
 }

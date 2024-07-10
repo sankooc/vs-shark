@@ -43,6 +43,4 @@ export const readBuffers = (arr: Uint8Array): AbstractRootVisitor => {
 export { Context,Option, AbstractVisitor, Visitor, Packet, Protocol, IPPacket, Resolver, PVisitor, AbstractRootVisitor, FileType, TCPStack, TCPConnect, CNode, ARPReply };
 
 export { EtherPacket, DataPacket, IPv4, IPv6, ARP, UDP, TCP, ICMP, IGMP, NBNS, DNS, DHCP, IPPack,HttpPT, TLS };
-// export{EtherPacket, DataPacket}
 
-export { linktypeMap, ipProtocolMap };

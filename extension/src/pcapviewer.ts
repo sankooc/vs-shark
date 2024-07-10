@@ -1,8 +1,8 @@
 import * as vscode from 'vscode';
 import { Disposable, disposeAll } from './dispose';
-import { Client } from './client';
-import { Panel, ComMessage, ComLog, CTreeItem, HexV } from './common';
-import { FrameProvider } from './treeProvider';
+// import { Client } from './client';
+// import { Panel, ComMessage, ComLog, CTreeItem, HexV } from './common';
+// import { FrameProvider } from './treeProvider';
 
 function getNonce() {
 	let text = '';
@@ -31,32 +31,32 @@ const createWebviewHtml = (context: vscode.ExtensionContext, webview: vscode.Web
 	return result;
 }
 
-class DetailProvider implements vscode.WebviewViewProvider {
-	// public static instance: DetailProvider = new DetailProvider();
-	context: vscode.ExtensionContext;
-	webview!: vscode.WebviewView;
-	_extensionUri: vscode.Uri;
-	constructor(context: vscode.ExtensionContext) {
-		this.context = context;
-		this._extensionUri = context.extensionUri
-	}
-	resolveWebviewView(webviewView: vscode.WebviewView, context: vscode.WebviewViewResolveContext<unknown>, token: vscode.CancellationToken): void | Thenable<void> {
-		this.webview = webviewView;
-		webviewView.webview.options = {
-			enableScripts: true,
-			localResourceRoots: [
-				this._extensionUri
-			]
-		};
-		webviewView.webview.html = createWebviewHtml(this.context, webviewView.webview, 'hex.js');
-	}
-	load(data: Uint8Array, hightlight: [number, number]): void {
-		if (!this.webview) return;
-		const it = new HexV(data);
-		it.index = hightlight;
-		this.webview.webview.postMessage(new ComMessage('hex-data', it));
-	}
-}
+// class DetailProvider implements vscode.WebviewViewProvider {
+// 	// public static instance: DetailProvider = new DetailProvider();
+// 	context: vscode.ExtensionContext;
+// 	webview!: vscode.WebviewView;
+// 	_extensionUri: vscode.Uri;
+// 	constructor(context: vscode.ExtensionContext) {
+// 		this.context = context;
+// 		this._extensionUri = context.extensionUri
+// 	}
+// 	resolveWebviewView(webviewView: vscode.WebviewView, context: vscode.WebviewViewResolveContext<unknown>, token: vscode.CancellationToken): void | Thenable<void> {
+// 		this.webview = webviewView;
+// 		webviewView.webview.options = {
+// 			enableScripts: true,
+// 			localResourceRoots: [
+// 				this._extensionUri
+// 			]
+// 		};
+// 		webviewView.webview.html = createWebviewHtml(this.context, webviewView.webview, 'hex.js');
+// 	}
+// 	load(data: Uint8Array, hightlight: [number, number]): void {
+// 		if (!this.webview) return;
+// 		const it = new HexV(data);
+// 		it.index = hightlight;
+// 		this.webview.webview.postMessage(new ComMessage('hex-data', it));
+// 	}
+// }
 /**
  * Define the document (the data model) used for paw draw files.
  */
@@ -101,51 +101,51 @@ class PcapDocument extends Disposable implements vscode.CustomDocument {
 }
 
 
-export class PCAPClient extends Client {
-	selectFrame(no: number): void {
-		const items = this.buildFrameTree(no);
-		const data = this.getPacket(no);
-		// vscode.commands.executeCommand('pcaptree.load', no, items, data);
-		// vscode.commands.executeCommand('detail.load', data, [0,0]);
+// export class PCAPClient extends Client {
+// 	selectFrame(no: number): void {
+// 		const items = this.buildFrameTree(no);
+// 		const data = this.getPacket(no);
+// 		// vscode.commands.executeCommand('pcaptree.load', no, items, data);
+// 		// vscode.commands.executeCommand('detail.load', data, [0,0]);
 
-		this.emitMessage(Panel.TREE, new ComMessage('frame', { items, data }));
-		this.renderHexView(new HexV(data));
-	}
-	renderHexView(data: HexV): void {
-		this.emitMessage(Panel.DETAIL, new ComMessage('hex-data', data));
-	}
-	webviewPanel: vscode.WebviewPanel;
-	output: vscode.LogOutputChannel;
-	treeProvider: FrameProvider;
-	constructor(doc: Uint8Array, webviewPanel: vscode.WebviewPanel, output: vscode.LogOutputChannel, treeProvider: FrameProvider) {
-		super();
-		this.data = doc;
-		this.webviewPanel = webviewPanel;
-		this.output = output;
-		this.treeProvider = treeProvider;
-	}
-	emitMessage(panel: Panel, msg: ComMessage<any>): void {
-		this.webviewPanel.webview.postMessage(msg);
-	}
-	printLog(log: ComLog): void {
-		switch(log.level){
-			case 'error':
-				vscode.window.showErrorMessage(log.msg.toString());
-				break;
-		}
-		this.output.info(log.msg.toString());
-	}
-	init(): void {
-		super.init();
-	}
+// 		this.emitMessage(Panel.TREE, new ComMessage('frame', { items, data }));
+// 		this.renderHexView(new HexV(data));
+// 	}
+// 	renderHexView(data: HexV): void {
+// 		this.emitMessage(Panel.DETAIL, new ComMessage('hex-data', data));
+// 	}
+// 	webviewPanel: vscode.WebviewPanel;
+// 	output: vscode.LogOutputChannel;
+// 	treeProvider: FrameProvider;
+// 	constructor(doc: Uint8Array, webviewPanel: vscode.WebviewPanel, output: vscode.LogOutputChannel, treeProvider: FrameProvider) {
+// 		super();
+// 		this.data = doc;
+// 		this.webviewPanel = webviewPanel;
+// 		this.output = output;
+// 		this.treeProvider = treeProvider;
+// 	}
+// 	emitMessage(panel: Panel, msg: ComMessage<any>): void {
+// 		this.webviewPanel.webview.postMessage(msg);
+// 	}
+// 	printLog(log: ComLog): void {
+// 		switch(log.level){
+// 			case 'error':
+// 				vscode.window.showErrorMessage(log.msg.toString());
+// 				break;
+// 		}
+// 		this.output.info(log.msg.toString());
+// 	}
+// 	init(): void {
+// 		super.init();
+// 	}
 
-}
+// }
 
 export class PcapViewerProvider implements vscode.CustomReadonlyEditorProvider<PcapDocument> {
 
-	private static newPawDrawFileId = 1;
-	private static output: vscode.LogOutputChannel = vscode.window.createOutputChannel('pcap console', { log: true });
-	private static pcapProvider: FrameProvider = new FrameProvider();
+	// private static newPawDrawFileId = 1;
+	// private static output: vscode.LogOutputChannel = vscode.window.createOutputChannel('pcap console', { log: true });
+	// private static pcapProvider: FrameProvider = new FrameProvider();
 
 	public get output(): vscode.LogOutputChannel { return this.output };
 
@@ -211,8 +211,32 @@ export class PcapViewerProvider implements vscode.CustomReadonlyEditorProvider<P
 		webviewPanel.webview.html = createWebviewHtml(this._context, webviewPanel.webview, 'app.js');
 		// this.getHtmlForWebview(webviewPanel.webview);
 
-		const client = new PCAPClient(document.documentData, webviewPanel, PcapViewerProvider.output, PcapViewerProvider.pcapProvider);
-		webviewPanel.webview.onDidReceiveMessage(client.handle.bind(client));
+		// const client = new PCAPClient(document.documentData, webviewPanel, PcapViewerProvider.output, PcapViewerProvider.pcapProvider);
+
+
+		webviewPanel.webview.onDidReceiveMessage((msg) => {
+			const { type, body } = msg
+			try {
+				switch (type) {
+					case 'ready':
+						try {
+							console.log('inited');
+							// this.init();
+							webviewPanel.webview.postMessage({ type: 'raw-data', body: document.documentData });
+						} catch (e) {
+							console.error(e);
+						}
+						break;
+					case 'log':
+						// this.printLog(body as ComLog);
+						break;
+					default:
+						console.log('unknown type', msg.type);
+				}
+			} catch (e) {
+				console.error(e);
+			}
+		});
 	}
 
 	private _requestId = 1;

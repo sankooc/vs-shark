@@ -1,4 +1,4 @@
-import React, { ReactElement, SyntheticEvent,useEffect, useState  } from "react";
+import React, { ReactElement, SyntheticEvent, useEffect, useState } from "react";
 import { Button } from 'primereact/button';
 import { DataTable, DataTableSelectionSingleChangeEvent } from 'primereact/datatable';
 import { Column, ColumnProps } from 'primereact/column';
@@ -7,7 +7,7 @@ import { ColumnItem } from "../common";
 
 class Props {
   cols: ColumnProps[] = [];
-  items: ColumnItem[] =[];
+  items: ColumnItem[] = [];
   onSelect: (item: ColumnItem) => void;
   scrollHeight?: string;
   size?: 'small' | 'normal' | 'large';
@@ -22,13 +22,14 @@ const DTable = (props: Props) => {
   }
   return (<>
     <DataTable value={props.items} selectionMode="single" rowClassName={(data: ColumnItem) => {
-      if(select === data.no){
+      if (select === data.no) {
         return 'active';
       }
       return data.style;
     }} onSelectionChange={onSelectionChange}
-      virtualScrollerOptions={{ itemSize: 20 }} scrollable showGridlines 
-      scrollHeight={props.scrollHeight || "67vh"} size={props.size|| "small"} className={props.className|| "w-full"}
+      virtualScrollerOptions={{ itemSize: 20 }} scrollable showGridlines
+      style={{ tableLayout: 'fixed' }}
+      scrollHeight={props.scrollHeight || "67vh"} size={props.size || "small"} className={"pcap-table w-full"}
       currentPageReportTemplate="{first} to {last} of {totalRecords}">
       {props.cols.map((c: ColumnProps, inx: number): ReactElement => {
         return (<Column {...c} key={'col' + inx}></Column>)

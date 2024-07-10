@@ -38,7 +38,7 @@ export abstract class PCAPClient {
     abstract selectFrame(no: number): void;
 
     abstract renderHexView(data: HexV): void;
-    abstract init(): void;
+    abstract init(): MainProps;
 
     handle(msg: ComMessage<any>){
         if(!msg) return;
@@ -214,7 +214,7 @@ export class OverviewSource {
     valMap: any;
 }
 export class MainProps {
-    status?: string;
+    client?: PCAPClient;
     items?: Frame[];
     tcps?: TCPCol[];
     arpGraph?: Grap;

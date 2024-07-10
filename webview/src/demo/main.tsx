@@ -2,7 +2,7 @@ import React, { ReactElement, SyntheticEvent, useEffect, useState } from "react"
 import { MenuItem } from 'primereact/menuitem';
 import { Badge } from 'primereact/badge';
 import { Menu } from 'primereact/menu';
-import { MainProps, ComMessage, IDNSRecord } from '../common';
+import { ComMessage, IDNSRecord } from '../common';
 import Loading from './loading';
 import { onMessage, emitMessage } from '../connect';
 import Overview from './overview';
@@ -12,6 +12,21 @@ import TCPList from './tcp';
 import ARPReplies from './arp';
 import DNSList from './dns';
 import { DNSRecord } from "nshark/built/src/common";
+import { Client } from "../client";
+import { ComLog, Panel, Frame, CTreeItem, TCPCol, Grap, Category, GrapNode, GrapLink, MainProps, OverviewSource, HexV } from "../common";
+class BrowserClient extends Client {
+  selectFrame(no: number): void {
+  }
+  renderHexView(data: HexV): void{
+  }
+  emitMessage(panel: Panel, msg: ComMessage<any>): void {
+  }
+  printLog(log: ComLog): void {
+
+  }
+
+}
+
 
 const itemRenderer = (item, options) => {
   return <a className="flex align-items-center px-3 py-2 cursor-pointer" onClick={options.onClick}>
@@ -27,24 +42,18 @@ const Main = () => {
     onMessage('message', (e: any) => {
       const { type, body, requestId } = e.data;
       switch (type) {
-        case 'init':
-          {
-            if (body) {
-              const { status } = body;
-              // setLoad({loaded: true, status});
-              return;
-            } else {
-              return;
-            }
+        case 'raw-data': {
+          const client = new BrowserClient();
+          client.initData(body);
+          try {
+            const ret = client.init();
+            console.log('--');
+            setData(ret);
+          } catch(e) {
+            console.error(e);
+            emitMessage(new ComMessage<ComLog>('log', new ComLog('error', 'parse_failed')));
           }
-        case 'data':
-          {
-            console.log(body);
-            setData(body as MainProps);
-            // setLoad({loaded: true, status: 'done'});
-
-          }
-          break;
+        }
       }
     });
     emitMessage(new ComMessage('ready', 'demo'));
@@ -67,15 +76,10 @@ const Main = () => {
     if(props.dnsRecords?.length) addPanel('dns', 'DNS',props.dnsRecords?.length + '', 'pi pi-address-book');
     return mitems;
   };
-
-  // case 'arp':
-  //   return <ARPReplies graph={props.arpGraph} legends={['sender', 'target']} />
-  // case 'dns':
-  //   return <DNSList items={props.dnsRecords} />
   const buildPage = (): ReactElement => {
     switch(select){
       case 'frame':
-        return <FrameList items = {data.items}/>;
+        return <FrameList items = {data.items} ctx={(data.client as Client).root}/>;
       case 'tcp':
         return <TCPList items={data.tcps} />
         
@@ -97,8 +101,8 @@ const Main = () => {
   const navItems = convert(data);
   return (<>
     <div className="card h-full">
-      <div className="flex flex-column md:flex-row h-full">
-        <div className="w-2 flex flex-column">
+      <div className="flex flex-row h-full">
+        <div className="w-2 flex flex-column flex-grow-0 flex-shrink-0">
           <Menu model={navItems} className="w-full h-full" />
         </div>
         <div className="w-full flex flex-grow-1">

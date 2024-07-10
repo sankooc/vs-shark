@@ -5,42 +5,39 @@ import { TreeNode } from 'primereact/treenode';
 import { emitMessage, onMessage } from '../../connect';
 import { CTreeItem, ComMessage } from '../../common';
 import './app.css';
-
+import { Packet, Context } from 'nshark';
+import { IField } from 'nshark/built/src/common';
 const className = 'vector';
-
-class StackData {
-    data: Uint8Array;
-    items: CTreeItem[];
-    key?: string;
+class StackProps {
+    items: Packet[];
+    ctx: Context;
+    onSelect: (field: IField) => void;
 }
-export default function Stack() {
-    const [store, setStore] = useState<StackData>({ items: [], key: '', data: null });
-    useEffect(() => {
-        onMessage('message', (e: any) => {
-            const { type, body, requestId } = e.data;
-            switch (type) {
-                case 'frame':
-                    setStore(body as StackData);
-            }
-        });
-    }, []);
+export default function Stack(props:StackProps) {
+    const [store, setStore] = useState({ items: [], key: '', data: null });
     let counter = 0;
-    const mapper = (it: CTreeItem): TreeNode => {
+    const mapper = (it: IField): TreeNode => {
         const key = 'item' + (counter += 1);
         const rs = {
             key,
-            label: it.label,
-            data: {data: store.data, index: it.index},
-            className: store.key === key ? className+ ' active' : className,
-            children: (it.children || []).map(mapper),
+            label: it.summary(),
+            data: it,
+            className: store.key === key ? className +' active' : className,
+            children: [],
             selectable: true,
         };
+        for(const f of (it.getChildFields() || [])){
+            if(f.summary()) {
+                rs.children.push(mapper(f));
+            }
+        }
         return rs;
     }
-    const stacks: TreeNode[] = store.items.map(mapper);
+    const stacks: TreeNode[] = props.items.map(mapper);
     const onSelect = (e: TreeNodeClickEvent) => {
         const { node } = e;
-        emitMessage(new ComMessage('hex-data', node.data));
+        props.onSelect(node.data as IField);
+        // emitMessage(new ComMessage('hex-data', node.data));
         setStore({...store, key: node.key + ''})
     }
     return (
