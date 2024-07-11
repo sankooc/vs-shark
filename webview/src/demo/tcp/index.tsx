@@ -16,7 +16,7 @@ const TCPList = (props: ListProps) => {
     };
     const items = getData();
     const columes = [
-        { field: 'no', header: 'index', style: { width: '2%' } },
+        { field: 'no', header: 'index', style: { width: '5%' } },
         { field: 'ep1', header: 'ep1' },
         { field: 'ep2', header: 'ep2' },
         { field: 'total', header: 'total', style: { width: '7%' } },

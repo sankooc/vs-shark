@@ -31,8 +31,6 @@ function Overview(props: OverviewProps) {
   const title = 'Network Traffic';
 
   const { legends, labels, counts, valMap } = props.data;
-  console.log('---')
-
   const labelFormater = (v) => {
     const ts = Math.floor(v);
     const date = new Date(ts);

@@ -1,6 +1,6 @@
-import { Uint8ArrayReader, AbstractReaderCreator } from './io';
-import { Option, AbstractVisitor, Visitor, Packet, Protocol, IPPacket, Resolver, PVisitor, InputElement, AbstractRootVisitor, EtherPacket, FileInfo } from "./common";
-import { DataLaylerVisitor, SLLVisitor } from './dataLinkLayer';
+import { InputElement, FileInfo } from "./common";
+import { DataLaylerVisitor, SLLVisitor } from './specs/dataLinkLayer';
+import { AbstractRootVisitor } from './specs';
 
 export class PCAPVisitor extends AbstractRootVisitor {
   linktype!: number;
@@ -53,7 +53,6 @@ export class PCAPVisitor extends AbstractRootVisitor {
       } catch (e) {
         console.log('error#', data.getIndex());
         console.error(e);
-        process.exit(0);
       }
       // this.addPacket(data);
     } while (reader.eof());

@@ -1,11 +1,11 @@
 import { PCAPClient, ComMessage, ComLog, Panel, Frame, CTreeItem, TCPCol, Grap, Category, GrapNode, GrapLink, MainProps, OverviewSource, HexV } from "./common";
 import { DataPacket, IPPacket, IPv6, Context, TCP, readBuffers, IPPack, ARP, HttpPT, UDP, TCPConnect, EtherPacket, TCPStack, ARPReply, DNS, TLS, ICMP, IGMP } from 'nshark';
-import { protocolList } from 'nshark/built/src/constant';
-import { TLSClientHello, TLSServerHello, TLSHandshake, TLSHandshakeMessage } from 'nshark/built/src/tls';
-import { RR, RR_A, RR_CNAME, RR_SOA, RR_PRT, DHCP } from 'nshark/built/src/application';
+import { protocolList } from 'nshark/built/src/common/constant';
+import { TLSClientHello, TLSServerHello, TLSHandshake, TLSHandshakeMessage } from 'nshark/built/src/specs/tls';
+import { RR, RR_A, RR_CNAME, RR_SOA, RR_PRT, DHCP } from 'nshark/built/src/specs/application';
 import { DNSRecord } from 'nshark/built/src/common';
 import { Protocol, IPv4 } from "nshark"
-import { PPPoESS } from "nshark/built/src/dataLinkLayer";
+import { PPPoESS } from "nshark/built/src/specs/dataLinkLayer";
 
 const _map: string[] = protocolList;
 

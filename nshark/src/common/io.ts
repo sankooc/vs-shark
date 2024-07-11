@@ -53,7 +53,7 @@ export class Uint8ArrayReader {
         this.cursor += 1;
         return v;
     }
-    readSpace(max: number = 10): string {
+    readSpace(max: number = 10): string | null {
         for (let i = 0; i < max; i += 1) {
             if (this.arr[this.cursor + i] == 32) {
                 const data = this.arr.slice(this.cursor, this.cursor + i);
@@ -70,7 +70,7 @@ export class Uint8ArrayReader {
                 return textDecoder.decode(data);
             }
         }
-        return null;
+        return '';
     }
     read16(littleEndian = true): number {
         const v = read16(this.arr, this.cursor, littleEndian);
@@ -241,7 +241,7 @@ export class Uint8ArrayReader {
 // }
 
 export class AbstractReaderCreator {
-    folder: string;
+    folder?: string;
     createReader(arr: Uint8Array, name: string, debug: boolean): Uint8ArrayReader {
         return new Uint8ArrayReader(arr)
     }

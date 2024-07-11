@@ -13,7 +13,7 @@ import ARPReplies from './arp';
 import DNSList from './dns';
 import { DNSRecord } from "nshark/built/src/common";
 import { Client } from "../client";
-import { ComLog, Panel, Frame, CTreeItem, TCPCol, Grap, Category, GrapNode, GrapLink, MainProps, OverviewSource, HexV } from "../common";
+import { ComLog, Panel, MainProps, HexV } from "../common";
 class BrowserClient extends Client {
   selectFrame(no: number): void {
   }
@@ -47,11 +47,10 @@ const Main = () => {
           client.initData(body);
           try {
             const ret = client.init();
-            console.log('--');
             setData(ret);
           } catch(e) {
             console.error(e);
-            emitMessage(new ComMessage<ComLog>('log', new ComLog('error', 'parse_failed')));
+            emitMessage(new ComMessage<ComLog>('log', new ComLog('error', 'invalid_file_format')));
           }
         }
       }

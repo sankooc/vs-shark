@@ -1,6 +1,6 @@
-import { PVisitor, PacketElement, IPPacket, Protocol, IPProvider } from './common';
-import { etypeMap, ipProtocolMap, ARP_OPER_TYPE_MAP, ARP_HARDWARE_TYPE_MAP } from './constant';
-import { IPAddress } from './io';
+import { PVisitor, PacketElement, IPPacket, Protocol, IPProvider } from '../common';
+import { etypeMap, ipProtocolMap, ARP_OPER_TYPE_MAP, ARP_HARDWARE_TYPE_MAP } from '../common/constant';
+import { IPAddress } from '../common/io';
 import { TCPVisitor, UDPVisitor, ICMPVisitor, IGMPVisitor, ICMPV6Visitor } from './transportLayer';
 
 export class IPPack extends IPProvider {

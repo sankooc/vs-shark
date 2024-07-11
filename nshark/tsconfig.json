@@ -4,7 +4,7 @@
     "module": "NodeNext",
     // "target":"ESNext",
     // "module": "CommonJS",
-    "target": "ES5",
+    "target": "ES2016",
     "baseUrl": ".",
     "allowJs": true,
     "sourceMap": true,
@@ -37,5 +37,5 @@
     // "skipDefaultLibCheck": true,                      /* Skip type checking .d.ts files that are included with TypeScript. */
     "skipLibCheck": true                                 /* Skip type checking all .d.ts files. */
   },
-  "include": ["./src/*"],
+  "include": ["./src/**/*.ts"],
 }

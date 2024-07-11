@@ -1,6 +1,6 @@
-import { PVisitor, PacketElement, IPPacket, Protocol } from './common';
+import { PVisitor, PacketElement, IPPacket, Protocol } from '../common';
 import { IPv4Visitor, IPv6Visitor, ARPVisitor } from './networkLayer';
-import { SLL_TYPE, linktypeMap, etypeMap, PPP_CODE_MAP, PPP_DLL_NUMBER_MAP } from './constant';
+import { SLL_TYPE, linktypeMap, etypeMap, PPP_CODE_MAP, PPP_DLL_NUMBER_MAP } from '../common/constant';
 
 export class DataPacket extends IPPacket {
   target: string;

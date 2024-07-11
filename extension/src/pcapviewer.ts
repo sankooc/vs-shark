@@ -144,7 +144,7 @@ class PcapDocument extends Disposable implements vscode.CustomDocument {
 export class PcapViewerProvider implements vscode.CustomReadonlyEditorProvider<PcapDocument> {
 
 	// private static newPawDrawFileId = 1;
-	// private static output: vscode.LogOutputChannel = vscode.window.createOutputChannel('pcap console', { log: true });
+	private static output: vscode.LogOutputChannel = vscode.window.createOutputChannel('pcap console', { log: true });
 	// private static pcapProvider: FrameProvider = new FrameProvider();
 
 	public get output(): vscode.LogOutputChannel { return this.output };
@@ -228,7 +228,11 @@ export class PcapViewerProvider implements vscode.CustomReadonlyEditorProvider<P
 						}
 						break;
 					case 'log':
-						// this.printLog(body as ComLog);
+						console.log(body);
+						if(body.level === 'error'){
+							vscode.window.showErrorMessage(body.msg?.toString());
+						}
+						this.output.appendLine(JSON.stringify(body));
 						break;
 					default:
 						console.log('unknown type', msg.type);

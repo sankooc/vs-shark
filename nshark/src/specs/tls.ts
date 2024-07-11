@@ -1,7 +1,7 @@
-import { PacketElement, IPPacket, PVisitor, Protocol, Packet, PosReader } from './common';
-import { Uint8ArrayReader } from './io';
+import { PacketElement, IPPacket, PVisitor, Protocol, Packet, PosReader } from '../common';
+import { Uint8ArrayReader } from '../common/io';
 import { TCP } from './transportLayer';
-import { TLS_MIN_VERSION_MAP, TLS_CONTENT_TYPE_MAP, TLS_EXTENSION_MAP, TLS_CIPHER_SUITES_MAP,TLS_HS_MESSAGE_TYPE } from './constant';
+import { TLS_MIN_VERSION_MAP, TLS_CONTENT_TYPE_MAP, TLS_EXTENSION_MAP, TLS_CIPHER_SUITES_MAP,TLS_HS_MESSAGE_TYPE } from '../common/constant';
 // export class ObjectViewer<T> {
   
 // }
@@ -328,9 +328,9 @@ export class TLSVisitor implements PVisitor {
         }
         try {
           const record = TLSRecord.read(_reader);
-          tcpConnection.resolveTLS(record);
+          // tcpConnection.resolveTLS(record);
           
-          record.extra instanceof TLSHandshake
+          // record.extra instanceof TLSHandshake
           data.records.push(record);
           data.fields.push(record);
           stack.clearSegment();

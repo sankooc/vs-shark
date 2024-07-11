@@ -1,10 +1,10 @@
-import { PVisitor, PacketElement, IPPacket, Protocol, TCPStack, TCPConnect, PortProvider, Packet, IField } from './common';
+import { PVisitor, PacketElement, IPPacket, Protocol, TCPStack, TCPConnect, PortProvider, Packet, IField } from '../common';
 
 import { DNSVisitor, NBNSVisitor, DHCPVisitor, HTTPVisitor } from './application';
 import { TLSVisitor } from './tls';
-import { Uint8ArrayReader, read16, read8 } from './io';
+import { Uint8ArrayReader, read16, read8 } from '../common/io';
 import { IPv4, IPv6, IPPack } from './networkLayer';
-import { TCP_OPTION_KIND_MAP, ICMPV6_TYPE_MAP, IGMP_TYPE_MAP, ICMP_TYPE_MAP } from './constant';
+import { TCP_OPTION_KIND_MAP, ICMPV6_TYPE_MAP, IGMP_TYPE_MAP, ICMP_TYPE_MAP } from '../common/constant';
 
 export class UDP extends PortProvider {
   sourcePort?: number;

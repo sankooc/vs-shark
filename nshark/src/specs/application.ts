@@ -1,7 +1,7 @@
-import { PacketElement, IPPacket, PVisitor, Protocol, Packet, FolderField, PosReader, PacketField } from './common';
-import { Uint8ArrayReader } from './io';
+import { PacketElement, IPPacket, PVisitor, Protocol, Packet, FolderField, PosReader } from '../common';
+import { Uint8ArrayReader } from '../common/io';
 import { UDP } from './transportLayer';
-import { ARP_HARDWARE_TYPE_MAP, DHCP_TYPE_MAP, DHCP_OPTION_TYPE_MAP, DNS_TYPE_MAP, DNS_CLASS_MAP } from './constant';
+import { ARP_HARDWARE_TYPE_MAP, DHCP_TYPE_MAP, DHCP_OPTION_TYPE_MAP, DNS_TYPE_MAP, DNS_CLASS_MAP } from '../common/constant';
 
 
 

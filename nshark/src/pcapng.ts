@@ -1,7 +1,7 @@
-import { Option, AbstractVisitor, Visitor, Packet, Protocol, FileInfo, IPPacket, EtherPacket, Context, Resolver, InputElement, PVisitor, AbstractRootVisitor, PacketElement } from "./common";
-import { Uint8ArrayReader, AbstractReaderCreator } from './io';
-import { DataLaylerVisitor, SLLVisitor } from './dataLinkLayer';
-import { linktypeMap } from './constant';
+import { Option, AbstractVisitor, Visitor, Packet, Protocol, FileInfo, IPPacket, EtherPacket, Context, InputElement, PVisitor, PacketElement } from "./common";
+import { Uint8ArrayReader, AbstractReaderCreator } from './common/io';
+import { DataLaylerVisitor, SLLVisitor } from './specs/dataLinkLayer';
+import { AbstractRootVisitor, Resolver } from './specs';
 //https://www.ietf.org/archive/id/draft-tuexen-opsawg-pcapng-03.html
 
 const opt_endofopt = 0
@@ -14,10 +14,10 @@ const OPTION_CODE = {
     6: '',
 }
 
-const readOption = (opt: PacketElement, reader: Uint8ArrayReader, isRaw: boolean = false): Option => {
+const readOption = (opt: PacketElement, reader: Uint8ArrayReader, isRaw: boolean = false): Option | null => {
     const optionCode = reader.read16();
     const optionLen = reader.read16();
-    if (optionLen === opt_endofopt) { return }
+    if (optionLen === opt_endofopt) { return null }
     const optionValue = reader.slice(optionLen);
     // reader.pad(4)
     const mod = optionLen % 4;
@@ -35,11 +35,11 @@ const readOption = (opt: PacketElement, reader: Uint8ArrayReader, isRaw: boolean
 //https://www.ietf.org/staging/draft-tuexen-opsawg-pcapng-02.html#name-enhanced-packet-block
 
 //https://www.ietf.org/staging/draft-tuexen-opsawg-pcapng-02.html#name-simple-packet-block
-const simplePacket = (opt) => { }
+const simplePacket = (): void => { }
 //https://www.ietf.org/staging/draft-tuexen-opsawg-pcapng-02.html#name-name-resolution-block
-const nameResolution = (opt) => { }
+const nameResolution = (): void => { }
 //https://www.ietf.org/staging/draft-tuexen-opsawg-pcapng-02.html#name-systemd-journal-export-bloc
-const systemJournal = (opt) => { }
+const systemJournal = (): void => { }
 
 class BasicVisitor implements Visitor {
     type: string;

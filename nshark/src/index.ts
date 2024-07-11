@@ -1,13 +1,13 @@
-import { Context, Option, AbstractVisitor, Visitor, Packet, Protocol, IPPacket, Resolver, PVisitor, EtherPacket, InputElement, AbstractRootVisitor, FileType, TCPStack, TCPConnect, CNode, ARPReply } from "./common";
-import { AbstractReaderCreator } from './io';
+import { Context, Option, AbstractVisitor, Visitor, Packet, Protocol, IPPacket, PVisitor, EtherPacket, InputElement, FileType, TCPStack, TCPConnect, CNode, ARPReply } from "./common";
+import { AbstractReaderCreator } from './common/io';
 import { PCAPNGVisitor } from './pcapng';
-import { DataPacket } from './dataLinkLayer';
-import { IPv4, IPv6, ARP, IPPack } from './networkLayer';
-import { UDP, TCP, ICMP, IGMP } from './transportLayer';
-import { NBNS, DNS, DHCP, HttpPT } from './application';
-import { TLS } from './tls';
+import { DataPacket } from './specs/dataLinkLayer';
+import { IPv4, IPv6, ARP, IPPack } from './specs/networkLayer';
+import { UDP, TCP, ICMP, IGMP } from './specs/transportLayer';
+import { NBNS, DNS, DHCP, HttpPT } from './specs/application';
+import { TLS } from './specs/tls';
 import { PCAPVisitor } from './pcap';
-import { linktypeMap, ipProtocolMap } from './constant';
+import { AbstractRootVisitor, Resolver } from './specs';
 
 
 export const checkFileType = (arr: Uint8Array): FileType => {
@@ -40,7 +40,7 @@ export const readBuffers = (arr: Uint8Array): AbstractRootVisitor => {
   visitor.visit(ele);
   return visitor;
 }
-export { Context,Option, AbstractVisitor, Visitor, Packet, Protocol, IPPacket, Resolver, PVisitor, AbstractRootVisitor, FileType, TCPStack, TCPConnect, CNode, ARPReply };
+export { Context, Option, AbstractVisitor, Visitor, Packet, Protocol, IPPacket, Resolver, PVisitor, AbstractRootVisitor, FileType, TCPStack, TCPConnect, CNode, ARPReply };
 
-export { EtherPacket, DataPacket, IPv4, IPv6, ARP, UDP, TCP, ICMP, IGMP, NBNS, DNS, DHCP, IPPack,HttpPT, TLS };
+export { EtherPacket, DataPacket, IPv4, IPv6, ARP, UDP, TCP, ICMP, IGMP, NBNS, DNS, DHCP, IPPack, HttpPT, TLS };
 
