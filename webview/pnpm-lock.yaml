@@ -29,6 +29,9 @@ dependencies:
   react-dom:
     specifier: ^18.3.0
     version: 18.3.1(react@18.3.1)
+  rshark:
+    specifier: file:../rshark/pkg
+    version: file:../rshark/pkg
 
 devDependencies:
   '@types/node-sass':
@@ -4847,5 +4850,10 @@ packages:
 
   file:../nshark:
     resolution: {directory: ../nshark, type: directory}
+    name: nshark
+    dev: false
+
+  file:../rshark/pkg:
+    resolution: {directory: ../rshark/pkg, type: directory}
     name: nshark
     dev: false

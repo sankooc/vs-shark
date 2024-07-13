@@ -14,6 +14,12 @@ import DNSList from './dns';
 import { DNSRecord } from "nshark/built/src/common";
 import { Client } from "../client";
 import { ComLog, Panel, MainProps, HexV } from "../common";
+// import init, { greet } from 'rshark';
+// const data = new Uint8Array([0, 1]);
+// init().then(() => {
+//   const rt = greet(data);
+//   console.log(rt.get());
+// });
 class BrowserClient extends Client {
   selectFrame(no: number): void {
   }
