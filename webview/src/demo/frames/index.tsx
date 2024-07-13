@@ -33,9 +33,9 @@ function FrameList(props: FrameListProps) {
   const columes = [
     { field: 'no', header: 'index', style: { width: '4%' } },
     { field: 'time_str', header: 'time', style: { width: '8%' } },
-    { field: 'source', header: 'source', style: { width: '20%' }},
-    { field: 'dest', header: 'dest', style: { width: '20%' }},
-    { field: 'protocol', header: 'protocol', style: { width: '5%' } },
+    { field: 'source', header: 'source', style: { width: '80px' }},
+    { field: 'dest', header: 'dest', style: { width: '80px' }},
+    { field: 'protocol', header: 'protocol', style: { width: '30px' } },
     { field: 'len', header: 'length', style: { width: '5%' } },
     { field: 'info', header: 'info', style: { width: '20vw' }  }
   ];
