@@ -25,10 +25,10 @@ support *.pcap *.pcapng files
 
 ## features 
 
-<img src="../assets/frame.png" style="text-align:center, width: 80%"/>
+<img src="https://raw.githubusercontent.com/sankooc/vs-shark/master/assets/frame.png" style="text-align:center, width: 80%"/>
 </br>
 
-<img src="../assets/dash.png" style="text-align:center, width: 80%"/>
+<img src="https://raw.githubusercontent.com/sankooc/vs-shark/master/assets/dash.png" style="text-align:center, width: 80%"/>
 </br>
 
-<img src="../assets/arp.png" style="text-align:center, width: 80%"/>
+<img src="https://raw.githubusercontent.com/sankooc/vs-shark/master/assets/arp.png" style="text-align:center, width: 80%"/>
