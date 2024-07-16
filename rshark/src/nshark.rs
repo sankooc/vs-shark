@@ -1,37 +1,31 @@
-use wasm_bindgen::prelude::*;
-use js_sys::Uint8Array;
+use crate::common::Context;
 use crate::entry::*;
-
-struct ImportantExcerpt<'a> {
-  pub part:  u8,
-  pub content: &'a str
-}
+use crate::files::CContext;
+use js_sys::Uint8Array;
+use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
-pub struct Context {
-  
+pub struct WContext {
+    ctx: Box<CContext>,
 }
 #[wasm_bindgen]
-pub struct Foo {
-  part: Box<ImportantExcerpt<'static>>,
-  // im: ImportantExcerpt,
-}
-#[wasm_bindgen]
-impl Foo {
+impl WContext {
     #[wasm_bindgen(constructor)]
-    pub fn new(_: &str) -> Foo {
-        Foo { part: Box::new(ImportantExcerpt{part: 1,content: "ct"}) }
+    pub fn new (s: &Uint8Array) -> WContext {
+        let mut slice = vec![0; s.length() as usize];
+        s.copy_to(&mut slice[..]);
+        WContext {
+            ctx: Box::new(load_data(slice).unwrap()),
+        }
     }
 
-    pub fn get(&self) -> String {
-      self.part.content.into()
-    }
+    // pub fn get_file_type(&self) -> String {
+        // format!("{:?}",self.ctx.get_file_type().file_type)
+    // }
 }
 
+
 #[wasm_bindgen]
-pub fn greet(s: &Uint8Array) -> Foo {
-    let str = format!("rust in, {}!", s.length());
-    // s.copy_to(dst);
-    Foo::new(&str)
-    // loadData(8);
+pub fn load(s: &Uint8Array) -> WContext {
+    WContext::new(s)
 }

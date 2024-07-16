@@ -14,7 +14,7 @@ import DNSList from './dns';
 import { DNSRecord } from "nshark/built/src/common";
 import { Client } from "../client";
 import { ComLog, Panel, MainProps, HexV } from "../common";
-// import init, { greet } from 'rshark';
+import init, { load } from 'rshark';
 // const data = new Uint8Array([0, 1]);
 // init().then(() => {
 //   const rt = greet(data);
@@ -41,6 +41,8 @@ const itemRenderer = (item, options) => {
     {item.data && <Badge className="ml-auto" value={item.data} />}
   </a>
 }; //pi-chart-bar
+
+const initPro = init();
 const Main = () => {
   const [select, setSelect] = useState('overview');
   const [data, setData] = useState<MainProps>(null);
@@ -49,6 +51,11 @@ const Main = () => {
       const { type, body, requestId } = e.data;
       switch (type) {
         case 'raw-data': {
+          initPro.then(() => {
+            const ctx = load(body as Uint8Array);
+            console.log(ctx);
+            console.log(ctx.get_file_type());
+            
           const client = new BrowserClient();
           client.initData(body);
           try {
@@ -58,6 +65,7 @@ const Main = () => {
             console.error(e);
             emitMessage(new ComMessage<ComLog>('log', new ComLog('error', 'invalid_file_format')));
           }
+          });
         }
       }
     });
