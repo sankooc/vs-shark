@@ -10,7 +10,7 @@ mod tests {
         env_logger::builder().is_test(true).try_init().unwrap();
         let fname = "../sandbox/demo.pcap";
         let data: Vec<u8> = fs::read(fname)?;
-        load_data(data).unwrap();
+        load_data(&data).unwrap();
         Ok(())
     }
 }

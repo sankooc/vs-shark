@@ -1,9 +1,5 @@
 use std::{borrow::BorrowMut, marker::Copy};
 
-#[warn(dead_code)]
-pub trait Context {
-    fn get_file_type(&self) -> FileInfo;
-}
 #[derive(Default, Clone)]
 pub struct FileInfo {
     pub link_type: u16,
@@ -12,31 +8,32 @@ pub struct FileInfo {
     pub version: String,
 }
 
-
-// impl FileInfo {
-//   fn new() -> FileInfo{
-
-//   }
-// }
-
-// enum IpAddrKind {
-//   V4,
-//   V6,
-// }
-
 pub struct IO;
 
 impl IO {
+    pub fn read64(data: &[u8], endian: bool) -> u64 {
+        if endian {
+            return u64::from_be_bytes(data.try_into().unwrap());
+        }
+        u64::from_ne_bytes(data.try_into().unwrap())
+    }
     pub fn read32(data: &[u8], endian: bool) -> u32 {
         if endian {
             return u32::from_be_bytes(data.try_into().unwrap());
         }
         u32::from_ne_bytes(data.try_into().unwrap())
     }
+    
+    pub fn read16(data: &[u8], endian: bool) -> u16 {
+        if endian {
+            return u16::from_be_bytes(data.try_into().unwrap());
+        }
+        u16::from_ne_bytes(data.try_into().unwrap())
+    }
 }
 pub struct Reader<'a> {
     data: &'a [u8],
-    cursor: usize,
+    pub cursor: usize,
 }
 
 impl<'a> Reader<'a> {
@@ -65,23 +62,45 @@ impl<'a> Reader<'a> {
         let len = 2;
         let data: &[u8] = &self.data[self.cursor..self.cursor + len];
         self._move(len);
-        if endian {
-            return u16::from_be_bytes(data.try_into().unwrap());
-        }
-        u16::from_ne_bytes(data.try_into().unwrap())
+        IO::read16(data, endian)
     }
 
     pub fn read32(&mut self, endian: bool) -> u32 {
         let len = 4;
         let data: &[u8] = &self.data[self.cursor..self.cursor + len];
         self._move(len);
-        if endian {
-            return u32::from_be_bytes(data.try_into().unwrap());
+        IO::read32(data, endian)
+    }
+
+    pub fn read_mac(&mut self) -> Option<[u8; 6]>{
+        let len = 6;
+        if self.left() < len {
+            return None;
         }
-        u32::from_ne_bytes(data.try_into().unwrap())
+        let mut data: [u8; 6] = [0; 6];
+        data.copy_from_slice(&self.data[self.cursor..self.cursor+6]);
+        Some(data)
+    }
+    pub fn left(&self) -> usize {
+        self.data.len() - self.cursor
     }
     pub fn has(&self) -> bool{
       return self.cursor < self.data.len() 
+    }
+
+    pub fn _read_mac(reader: &mut Reader) -> Option<[u8; 6]> {
+        reader.read_mac()
+    }
+    pub fn _read8(reader: &mut Reader) -> u8 {
+        reader.read8()
+    }
+    
+    pub fn _read16_be(reader: &mut Reader) -> u16 {
+        reader.read16(true)
+    }
+    
+    pub fn _read16_ne(reader: &mut Reader) -> u16 {
+        reader.read16(false)
     }
 }
 
