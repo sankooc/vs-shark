@@ -24,7 +24,6 @@ pub fn  load_data<'a> (data: &[u8] )->  Result<CContext, Error>{
   // let data: &[u8] = &Vec::new();
   let head: &[u8] = &data[..4];
   let head_str = format!("{:x}", IO::read32(head, false));
-  info!("head-{}", head_str);
   match head_str.as_str() {
     "a1b2c3d4" => {
       return Ok(pcap::parse(&data));

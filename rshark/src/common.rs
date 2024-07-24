@@ -1,4 +1,3 @@
-use std::{borrow::BorrowMut, marker::Copy};
 
 #[derive(Default, Clone)]
 pub struct FileInfo {
@@ -31,13 +30,19 @@ impl IO {
         u16::from_ne_bytes(data.try_into().unwrap())
     }
 }
-pub struct Reader<'a> {
-    data: &'a [u8],
+pub struct Reader {
+    // data: &'a [u8],
+    data: Vec<u8>,
     pub cursor: usize,
 }
+impl Reader{
+    pub fn get_data(&mut self)->&[u8]{
+        &self.data
+    }
+}
 
-impl<'a> Reader<'a> {
-    pub fn new(data: &'a [u8]) -> Reader<'a> {
+impl Reader {
+    pub fn new(data: Vec<u8>) -> Reader {
         Reader { data, cursor: 0 }
     }
 
@@ -48,8 +53,10 @@ impl<'a> Reader<'a> {
         &self.data[self.cursor..self.cursor + len]
     }
     pub fn slice(&mut self, len: usize) -> &[u8] {
-        let _tmp = &self.data[self.cursor..self.cursor + len];
+        let c = self.cursor;
+        // let f = *self;
         self.cursor += len;
+        let _tmp = &self.get_data()[c..c+len];
         _tmp
     }
     pub fn read8(&mut self) -> u8 {
@@ -60,15 +67,17 @@ impl<'a> Reader<'a> {
 
     pub fn read16(&mut self, endian: bool) -> u16 {
         let len = 2;
-        let data: &[u8] = &self.data[self.cursor..self.cursor + len];
+        let c = self.cursor;
         self._move(len);
+        let data: &[u8] = &self.data[c..c + len];
         IO::read16(data, endian)
     }
 
     pub fn read32(&mut self, endian: bool) -> u32 {
         let len = 4;
-        let data: &[u8] = &self.data[self.cursor..self.cursor + len];
+        let c = self.cursor;
         self._move(len);
+        let data: &[u8] = &self.data[c..c + len];
         IO::read32(data, endian)
     }
 
