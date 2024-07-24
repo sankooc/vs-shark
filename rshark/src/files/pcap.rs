@@ -4,7 +4,7 @@ use log::*;
 use super::CContext;
 
 
-pub fn parse (data: & [u8]) -> CContext {
+pub fn parse (data: &[u8]) -> CContext {
   let mut ctx = CContext::new(FileType::PCAP);
   let mut reader = Reader::new(data);
   let _magic = reader.read32(true);

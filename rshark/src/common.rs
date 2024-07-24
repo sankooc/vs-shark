@@ -30,19 +30,19 @@ impl IO {
         u16::from_ne_bytes(data.try_into().unwrap())
     }
 }
-pub struct Reader {
-    // data: &'a [u8],
-    data: Vec<u8>,
+pub struct Reader<'a> {
+    data: &'a [u8],
+    // data: Vec<u8>,
     pub cursor: usize,
 }
-impl Reader{
+impl Reader<'_>{
     pub fn get_data(&mut self)->&[u8]{
         &self.data
     }
 }
 
-impl Reader {
-    pub fn new(data: Vec<u8>) -> Reader {
+impl Reader<'_> {
+    pub fn new(data: &[u8]) -> Reader {
         Reader { data, cursor: 0 }
     }
 

@@ -2,7 +2,7 @@
 // extern crate init;
 // use std::collections::HashMap;
 
-use crate::{common::{Protocol, Reader}, files::{FramePacket, Initer, PacketContext}};
+use crate::{common::{Protocol, Reader}, files::{Element, Initer, PacketContext}};
 
 // pub struct  MacAddress {
 
@@ -39,19 +39,19 @@ impl Ethernet {
 }
 pub struct Visitor;
 
-impl <FramePacket: 'static> crate::files::Visitor<FramePacket, Ethernet> for Visitor {
-    fn visit(&self, ele:  PacketContext<FramePacket>) -> PacketContext<Ethernet>{
-        // ele.set_next(Box::new(ele.get_frame().create_packet()));
-        let mut packet:PacketContext<Ethernet> = ele.get_frame().create_packet();
-        let source = packet.read(Reader::_read_mac, Some(Ethernet::_source_mac));
-        let target =  packet.read(Reader::_read_mac, Some(Ethernet::_target_mac));
-        let ptype = packet.read(Reader::_read16_be, Some(Ethernet::_ptype));
+impl crate::files::Visitor for Visitor {
+    fn visit(&self, ele: &dyn Element, reader: &mut Reader) {
+        let f = ele.get_frame();
+        let mut packet:PacketContext<Ethernet> = f.create_packet();
+        
+        let source: Option<[u8; 6]> = packet.read(reader, Reader::_read_mac, Some(Ethernet::_source_mac));
+        let target =  packet.read(reader, Reader::_read_mac, Some(Ethernet::_target_mac));
+        let ptype = packet.read(reader, Reader::_read16_be, Some(Ethernet::_ptype));
         
         // packet.val.unwrap();
-        let p = &mut packet.val.unwrap();
+        let p = &mut packet.val;
         p.source_mac = source;
         p.target_mac = target;
         p.ptype = ptype;
-        packet
     }
 } 
