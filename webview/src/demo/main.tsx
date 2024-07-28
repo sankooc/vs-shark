@@ -12,18 +12,14 @@ import TCPList from './tcp';
 import ARPReplies from './arp';
 import DNSList from './dns';
 import { DNSRecord } from "nshark/built/src/common";
-import { Client } from "../client";
+import { Client, CProto } from "../client";
 import { ComLog, Panel, MainProps, HexV } from "../common";
-import init, { load } from 'rshark';
-// const data = new Uint8Array([0, 1]);
-// init().then(() => {
-//   const rt = greet(data);
-//   console.log(rt.get());
-// });
+import init, { load, WContext,FrameInfo } from 'rshark';
+
 class BrowserClient extends Client {
   selectFrame(no: number): void {
   }
-  renderHexView(data: HexV): void{
+  renderHexView(data: HexV): void {
   }
   emitMessage(panel: Panel, msg: ComMessage<any>): void {
   }
@@ -45,7 +41,7 @@ const itemRenderer = (item, options) => {
 const initPro = init();
 const Main = () => {
   const [select, setSelect] = useState('overview');
-  const [data, setData] = useState<MainProps>(null);
+  const [data, setData] = useState<CProto>(null);
   useEffect(() => {
     onMessage('message', (e: any) => {
       const { type, body, requestId } = e.data;
@@ -53,18 +49,16 @@ const Main = () => {
         case 'raw-data': {
           initPro.then(() => {
             const ctx = load(body as Uint8Array);
-            console.log(ctx);
-            console.log(ctx.get_file_type());
-            
-          const client = new BrowserClient();
-          client.initData(body);
-          try {
-            const ret = client.init();
-            setData(ret);
-          } catch(e) {
-            console.error(e);
-            emitMessage(new ComMessage<ComLog>('log', new ComLog('error', 'invalid_file_format')));
-          }
+            setData({ctx})
+            // const client = new BrowserClient();
+            // client.initData(body);
+            // try {
+            //   const ret = client.init();
+            //   setData(ret);
+            // } catch (e) {
+            //   console.error(e);
+            //   emitMessage(new ComMessage<ComLog>('log', new ComLog('error', 'invalid_file_format')));
+            // }
           });
         }
       }
@@ -72,42 +66,45 @@ const Main = () => {
     emitMessage(new ComMessage('ready', 'demo'));
   }, []);
 
-  const convert = (props: MainProps): MenuItem[] => {
+  const convert = (props: CProto): MenuItem[] => {
     const mitems: MenuItem[] = [];
-    if(!props) return [];
-    const addPanel = (id: string, label: string, extra: string, icon: string=''): void => {
+    // if (!props) return [];
+    const addPanel = (id: string, label: string, extra: string, icon: string = ''): void => {
       mitems.push({
         id, data: extra, template: itemRenderer, label, icon, className: select === id ? 'active' : '', command: (env) => {
           setSelect(env.item.id);
         }
       });
     };
-    addPanel('overview', 'Overview', '', 'pi pi-chart-bar');
-    if(props.items?.length) addPanel('frame', 'Frame', props.items.length + '', 'pi pi-list');
-    if(props.tcps?.length) addPanel('tcp', 'TCP', props.tcps.length + '', 'pi pi-server');
-    if(props.arpGraph?.nodes?.length) addPanel('arp', 'ARP', props.arpGraph?.nodes?.length + '', 'pi pi-chart-pie');
-    if(props.dnsRecords?.length) addPanel('dns', 'DNS',props.dnsRecords?.length + '', 'pi pi-address-book');
+    // addPanel('overview', 'Overview', '', 'pi pi-chart-bar');
+    addPanel('frame', 'Frame', '', 'pi pi-list');
+    // if (props.tcps?.length) addPanel('tcp', 'TCP', props.tcps.length + '', 'pi pi-server');
+    // if (props.arpGraph?.nodes?.length) addPanel('arp', 'ARP', props.arpGraph?.nodes?.length + '', 'pi pi-chart-pie');
+    // if (props.dnsRecords?.length) addPanel('dns', 'DNS', props.dnsRecords?.length + '', 'pi pi-address-book');
     return mitems;
   };
   const buildPage = (): ReactElement => {
-    switch(select){
-      case 'frame':
-        return <FrameList items = {data.items} ctx={(data.client as Client).root}/>;
-      case 'tcp':
-        return <TCPList items={data.tcps} />
-        
-      case 'arp':
-        return <ARPReplies graph={data.arpGraph} legends={['sender', 'target']} />
-        case 'dns':
-          return <DNSList items={data.dnsRecords.map((record:DNSRecord, inx: number) => {
-            const r = new IDNSRecord(record);
-            r.no = inx + 1;
-            return r;
-          })} />
-    }
-    return <Overview data={data.overview} />;
+    // switch (select) {
+    //   case 'frame':
+    //     const items: FrameInfo[] = data.ctx.get_frames();
+    //     return <FrameList items={items} ctx={data.ctx} />;
+      // case 'tcp':
+      //   return <TCPList items={data.tcps} />
+
+      // case 'arp':
+      //   return <ARPReplies graph={data.arpGraph} legends={['sender', 'target']} />
+      // case 'dns':
+      //   return <DNSList items={data.dnsRecords.map((record: DNSRecord, inx: number) => {
+      //     const r = new IDNSRecord(record);
+      //     r.no = inx + 1;
+      //     return r;
+      //   })} />
+    // }
+    const items: FrameInfo[] = data.ctx.get_frames();
+    return <FrameList items={items} ctx={data.ctx} />;
+    // return <Overview data={data.overview} />;
   };
-  if (!data || !data.items?.length) {
+  if (!data || !data.ctx) {
     return <Loading />
   }
 

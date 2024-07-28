@@ -1,27 +1,28 @@
 
-// extern crate init;
-// use std::collections::HashMap;
-
-use crate::{common::{Protocol, Reader}, files::{Element, Initer, PacketContext}};
-
-// pub struct  MacAddress {
-
-// }
+use std::fmt::Display;
+use crate::{common::{Protocol, Reader}, files::{Element, Frame, Initer, PacketContext}};
+use crate::files::Visitor;
 pub struct Ethernet {
-    // pub packet: PacketContext<'a, Self>
     protocol: Protocol,
     source_mac: Option<[u8; 6]>,
     target_mac: Option<[u8; 6]>,
+    len: u16,
     ptype: u16,
 }
-
+impl Display for Ethernet {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        f.write_str("Ethernet II, Src: f4:2a:7d:13:4a:9e, Dst: 44:56:e2:60:2b:f8")?;
+        Ok(())
+    }
+}
 impl Initer<Ethernet> for Ethernet {
     fn new() -> Ethernet {
-        Ethernet{source_mac: None, target_mac: None, ptype: 0, protocol: Protocol::ETHERNET}
+        Ethernet{source_mac: None, target_mac: None, ptype: 0, len: 0, protocol: Protocol::ETHERNET}
     }
-    // fn new<'a, Ethernet>(packet: PacketContext<Ethernet>) -> Ethernet<'a> {
-    //     Ethernet{packet, source_mac: None, target_mac: None, ptype: 0}
-    // }
+    
+    fn get_protocol(&self) -> Protocol {
+        self.protocol.clone()
+    }
 }
 impl Ethernet {
     pub fn _source_mac(p: &Ethernet) -> String{
@@ -33,25 +34,36 @@ impl Ethernet {
     pub fn _ptype(p: &Ethernet) -> String{
         String::from("sourc-asd")
     }
-    pub fn source_mac(&self){
-
-    }
 }
-pub struct Visitor;
+pub struct EthernetVisitor;
 
-impl crate::files::Visitor for Visitor {
-    fn visit(&self, ele: &dyn Element, reader: &mut Reader) {
-        let f = ele.get_frame();
-        let mut packet:PacketContext<Ethernet> = f.create_packet();
+impl Visitor for EthernetVisitor {
+    fn visit(&self, frame: &Frame, reader: &Reader){
+        let mut packet:PacketContext<Ethernet> = Frame::create_packet();
         
         let source: Option<[u8; 6]> = packet.read(reader, Reader::_read_mac, Some(Ethernet::_source_mac));
         let target =  packet.read(reader, Reader::_read_mac, Some(Ethernet::_target_mac));
         let ptype = packet.read(reader, Reader::_read16_be, Some(Ethernet::_ptype));
-        
-        // packet.val.unwrap();
         let p = &mut packet.val;
         p.source_mac = source;
         p.target_mac = target;
+        if reader.left() == ptype as usize {
+            p.len = ptype;
+            // info!("{}", ptype); // IEEE 802.3
+            return;
+        }
         p.ptype = ptype;
+        frame.add_element(Box::new(packet));
+        excute(ptype, frame, reader);
     }
-} 
+}
+
+pub fn excute(etype: u16, frame: &Frame, reader: &Reader){
+    match etype {
+        2048 => {
+            let visitor = super::network::IP4Visitor{};
+            visitor.visit(frame, reader);
+        },
+        _ => (),
+    }
+}

@@ -360,4 +360,45 @@ lazy_static! {
 		m.insert(4, "Send by us");
 		m
 	};
+	pub static ref etype_map: HashMap<u16, &'static str> = {
+		let mut m = HashMap::new();
+		m.insert(2048, "IPv4");
+		m.insert(2049, "X.75");
+		m.insert(2053, "X.25 Level 3");
+		m.insert(2054, "ARP");
+		m.insert(2056, "Frame Relay ARP");
+		m.insert(8947, "TRILL");
+		m.insert(8948, "L2-IS-IS");
+		m.insert(25944, "Trans Ether Bridging");
+		m.insert(25945, "Raw Frame Relay");
+		m.insert(32821, "RARP");
+		m.insert(32923, "Appletalk");
+		m.insert(33024, "802.1Q");
+		m.insert(33079, "IPX/SPX");
+		m.insert(33100, "SNMP");
+		m.insert(34525, "IPv6");
+		m.insert(34667, "TCP/IP Compression");
+		m.insert(34668, "IP Autonomous Systems");
+		m.insert(34669, "Secure Data");
+		m.insert(34824, "IEEE Std 802.3 - Ethernet Passive Optical Network (EPON)");
+		m.insert(34827, "PPP");
+		m.insert(34828, "General Switch Management Protocol (GSMP)");
+		m.insert(34887, "MPLS (multiprotocol label switching)");
+		m.insert(34888, "MPLS with upstream-assigned label");
+		m.insert(34915, "PPP over Ethernet (PPPoE) Discovery Stage");
+		m.insert(34916, "PPP over Ethernet (PPPoE) Session Stage");
+		m.insert(34958, "IEEE Std 802.1X - Port-based network access control");
+		m.insert(34984, "IEEE Std 802.1Q - Service VLAN tag identifier (S-Tag)");
+		m.insert(34999, "IEEE Std 802 - OUI Extended Ethertype");
+		m.insert(35015, "IEEE Std 802.11 - Pre-Authentication (802.11i)");
+		m.insert(35020, "IEEE Std 802.1AB - Link Layer Discovery Protocol (LLDP)");
+		m.insert(35045, "IEEE Std 802.1AE - Media Access Control Security");
+		m.insert(35061, "IEEE Std 802.1Q - Multiple VLAN Registration Protocol (MVRP)");
+		m.insert(35062, "IEEE Std 802.1Q - Multiple Multicast Registration Protocol (MMRP)");
+		m.insert(35131, "FGL");
+		m.insert(35142, "TRILL RBridge Channel");
+		m.insert(35130, "IEE 1905.1a");
+		m.insert(35085, "TDLS");
+		m
+	};
 }
