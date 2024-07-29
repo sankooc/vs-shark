@@ -177,7 +177,7 @@ impl fmt::Display for IPv4Address {
 #[derive(Default, Debug, Copy, Clone)]
 pub enum FileType {
     PCAP,
-    // PCAPNG,
+    PCAPNG,
     #[default]
     NONE,
 }

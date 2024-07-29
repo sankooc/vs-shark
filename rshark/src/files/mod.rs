@@ -1,10 +1,10 @@
 pub mod pcap;
+pub mod pcapng;
 
 use std::{cell::{Ref, RefCell}, time::{Duration, UNIX_EPOCH}};
 use crate::constants::link_type_mapper;
 
 use chrono::{DateTime, Utc};
-use log::info;
 use wasm_bindgen::prelude::*;
 
 // pub mod pcapng;
@@ -63,6 +63,7 @@ impl Field {
 
 pub fn date_str(ts: u64) -> String {
     let d = UNIX_EPOCH + Duration::from_micros(ts);
+    // let dt: DateTime<Utc> = d.clone().into();
     let datetime = DateTime::<Utc>::from(d);
     datetime.format("%Y-%m-%d %H:%M:%S").to_string()
 }
@@ -284,7 +285,6 @@ impl<'a> CContext {
     }
     pub fn create(&mut self, data: &[u8], ts: u64, capture_size: u32, origin_size: u32) {
         self.count += 1;
-        info!("ts: {}", ts);
         let f = Frame::new(data.to_vec(), ts, capture_size, origin_size, self.count, self.info.link_type);
         let reader = f.get_reader();
         match crate::specs::get_visitor(self.info.link_type) {
