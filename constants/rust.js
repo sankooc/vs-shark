@@ -11,16 +11,34 @@ const buildConstants = (name, obj, fn, typed) => {
 ${wk}\r\n\t\tm
 \t};\r\n`;
 };
-const conts = [
-  buildConstants('link_type', linktypeMap, k => parseInt(k, 10), 'u16'),
-  buildConstants('ip_protocol_type', ipProtocolMap, k => parseInt(k, 10), 'u16'),
-  buildConstants('ssl_type', SLL_TYPE, k => parseInt(k, 10), 'u16'),
-  buildConstants('etype_map', etypeMap, k => parseInt(k, 16), 'u16'),
+
+const buildMapper = (name, typed) => {
+  return `pub fn ${name}_mapper(code:${typed}) -> String {
+    (*${name}_map.get(&code).unwrap_or(&"unknown")).into()
+  }`;
+}
+
+const items = [
+  ['link_type', linktypeMap, k => parseInt(k, 10), 'u16'],
+  ['ip_protocol_type', ipProtocolMap, k => parseInt(k, 10), 'u16'],
+  ['ssl_type', SLL_TYPE, k => parseInt(k, 10), 'u16'],
+  ['etype', etypeMap,  k => parseInt(k, 16), 'u16'],
 ];
 
+// const conts = [
+//   buildConstants('link_type_map', linktypeMap, k => parseInt(k, 10), 'u16'),
+//   buildConstants('ip_protocol_type_map', ipProtocolMap, k => parseInt(k, 10), 'u16'),
+//   buildConstants('ssl_type_map', SLL_TYPE, k => parseInt(k, 10), 'u16'),
+//   buildConstants('etype_map', etypeMap, k => parseInt(k, 16), 'u16'),
+// ];
+
+const conts = items.map((item) => buildConstants(item[0]+'_map', item[1], item[2], item[3]));
 
 
 
-const _content = str + "lazy_static! {\r\n" + conts.join('')+ "}";
+
+let _content = str + "lazy_static! {\r\n" + conts.join('')+ "}";
+
+_content += (items.map((item) => buildMapper(item[0], item[3])).join('\r\n'))
 
 fs.writeFileSync('../rshark/src/constants.rs', _content);

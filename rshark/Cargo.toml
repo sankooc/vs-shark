@@ -5,14 +5,15 @@ authors = ["sankooc <sankooc@163.com>"]
 description = "pcap/pcapng file analyzer"
 edition = "2021"
 repository = "https://github.com/sankooc/vs-shark"
-
+readme="../README.MD"
+license-file = "../LICENSE"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 
 [lib]
 crate-type = ["cdylib"]
 
 [dependencies]
+chrono = "0.4.38"
 js-sys = "0.3.69"
 lazy_static = "1.5.0"
 log = "0.4.22"

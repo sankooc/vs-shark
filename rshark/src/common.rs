@@ -1,7 +1,6 @@
 use std::cell::Cell;
 use std::fmt;
 
-
 #[derive(Default, Clone)]
 pub struct FileInfo {
     pub link_type: u16,
@@ -13,7 +12,7 @@ pub struct FileInfo {
 pub struct IO;
 
 impl IO {
-    pub fn read64(data: &[u8], endian: bool) -> u64 {
+    pub fn _read64(data: &[u8], endian: bool) -> u64 {
         if endian {
             return u64::from_be_bytes(data.try_into().unwrap());
         }
@@ -25,7 +24,7 @@ impl IO {
         }
         u32::from_ne_bytes(data.try_into().unwrap())
     }
-    
+
     pub fn read16(data: &[u8], endian: bool) -> u16 {
         if endian {
             return u16::from_be_bytes(data.try_into().unwrap());
@@ -37,18 +36,21 @@ pub struct Reader<'a> {
     data: &'a [u8],
     cursor: Cell<usize>,
 }
-impl Reader<'_>{
-    pub fn get_data(&self)->&[u8]{
+impl Reader<'_> {
+    pub fn _get_data(&self) -> &[u8] {
         &self.data
     }
     pub fn cursor(&self) -> usize {
-        return self.cursor.get()
+        return self.cursor.get();
     }
 }
 
 impl Reader<'_> {
     pub fn new(data: &[u8]) -> Reader {
-        Reader { data, cursor: Cell::new(0) }
+        Reader {
+            data,
+            cursor: Cell::new(0),
+        }
     }
 
     pub fn _move(&self, len: usize) {
@@ -83,7 +85,7 @@ impl Reader<'_> {
         IO::read32(data, endian)
     }
 
-    pub fn read_mac(&self) -> Option<[u8; 6]>{
+    pub fn read_mac(&self) -> Option<MacAddress> {
         let len = 6;
         if self.left() < len {
             return None;
@@ -91,9 +93,9 @@ impl Reader<'_> {
         let mut data: [u8; 6] = [0; 6];
         data.copy_from_slice(self._slice(len));
         self._move(len);
-        Some(data)
+        Some(MacAddress { data })
     }
-    pub fn read_ipv4(&self) -> Option<IPv4Address>{
+    pub fn read_ipv4(&self) -> Option<IPv4Address> {
         let len = 4;
         if self.left() < len {
             return None;
@@ -101,43 +103,66 @@ impl Reader<'_> {
         let mut data: [u8; 4] = [0; 4];
         data.copy_from_slice(self._slice(len));
         self._move(len);
-        Some(IPv4Address{data})
+        Some(IPv4Address { data })
     }
     pub fn left(&self) -> usize {
         self.data.len() - self.cursor.get()
     }
-    pub fn has(&self) -> bool{
-      return self.cursor.get() < self.data.len() 
+    pub fn has(&self) -> bool {
+        return self.cursor.get() < self.data.len();
     }
 
-    pub fn _read_mac(reader: &Reader) -> Option<[u8; 6]> {
+    pub fn _read_mac(reader: &Reader) -> Option<MacAddress> {
         reader.read_mac()
     }
-    
+
     pub fn _read_ipv4(reader: &Reader) -> Option<IPv4Address> {
         reader.read_ipv4()
     }
     pub fn _read8(reader: &Reader) -> u8 {
         reader.read8()
     }
-    
+
     pub fn _read16_be(reader: &Reader) -> u16 {
         reader.read16(true)
     }
-    
+
     pub fn _read16_ne(reader: &Reader) -> u16 {
         reader.read16(false)
     }
 }
 
 #[derive(Debug)]
-pub struct IPv4Address{
+pub struct MacAddress {
+    pub data: [u8; 6],
+}
+
+impl fmt::Display for MacAddress {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+        let str = (&self.data)
+            .iter()
+            .map(|x| format!("{:x?}", x))
+            .collect::<Vec<String>>()
+            .join(":");
+        fmt.write_str(str.as_str())?;
+        Ok(())
+    }
+}
+
+pub const DEF_EMPTY_MAC: MacAddress = MacAddress { data: [0; 6] };
+
+#[derive(Debug)]
+pub struct IPv4Address {
     pub data: [u8; 4],
 }
 
 impl fmt::Display for IPv4Address {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
-        let str =(&self.data).iter().map(|x|format!("{}",x)).collect::<Vec<String>>().join(".");
+        let str = (&self.data)
+            .iter()
+            .map(|x| format!("{}", x))
+            .collect::<Vec<String>>()
+            .join(".");
         fmt.write_str(str.as_str())?;
         Ok(())
     }
@@ -152,27 +177,27 @@ impl fmt::Display for IPv4Address {
 #[derive(Default, Debug, Copy, Clone)]
 pub enum FileType {
     PCAP,
-    PCAPNG,
+    // PCAPNG,
     #[default]
     NONE,
 }
 
 #[derive(Default, Debug, Copy, Clone)]
-pub enum Protocol{
+pub enum Protocol {
     ETHERNET,
-    SSL,
+    // SSL,
     IPV4,
-    IPV6,
-    ARP,
-    TCP,
-    UDP,
-    ICMP,
-    ICMPV6,
-    IGMP,
-    DNS,
-    DHCP,
-    TLS,
-    HTTP,
+    // IPV6,
+    // ARP,
+    // TCP,
+    // UDP,
+    // ICMP,
+    // ICMPV6,
+    // IGMP,
+    // DNS,
+    // DHCP,
+    // TLS,
+    // HTTP,
     #[default]
     UNKNOWN,
 }

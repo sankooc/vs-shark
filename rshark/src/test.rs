@@ -10,7 +10,19 @@ mod tests {
         env_logger::builder().is_test(true).try_init().unwrap();
         let fname = "../sandbox/demo.pcap";
         let data: Vec<u8> = fs::read(fname)?;
-        load_data(&data).unwrap();
+        let ctx = load_data(&data).unwrap();
+        let frames = ctx.get_frames();
+        // for f in frames.iter() {
+        //     info!("inx:{} size:{}", f.summary.borrow().index, f.capture_size);
+        //     let ff = f.eles.borrow();
+        //     for e in ff.iter(){
+        //         info!(" - {}", e.summary());
+        //         let fields = e.get_fields();
+        //         for field in fields.iter(){
+        //             info!("   - {}", field.summary())
+        //         }
+        //     }
+        // }
         Ok(())
     }
 }

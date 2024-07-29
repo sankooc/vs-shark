@@ -1,8 +1,6 @@
-use std::borrow::Borrow;
-
 use crate::common::FileInfo;
 use crate::entry::*;
-use crate::files::{CContext, Frame};
+use crate::files::{CContext, Field};
 use js_sys::Uint8Array;
 use wasm_bindgen::prelude::*;
 
@@ -16,7 +14,7 @@ pub struct WFileInfo {
     pub link_type: u16,
     file_type: String,
     pub start_time: u64,
-    version:  String,
+    version: String,
 }
 #[wasm_bindgen]
 impl WFileInfo {
@@ -30,8 +28,13 @@ impl WFileInfo {
     }
 }
 impl WFileInfo {
-    fn new(info: &FileInfo) -> WFileInfo{
-        WFileInfo{link_type: info.link_type, file_type:  format!("{:?}",info.file_type), start_time: info.start_time, version: info.version.clone() }
+    fn new(info: &FileInfo) -> WFileInfo {
+        WFileInfo {
+            link_type: info.link_type,
+            file_type: format!("{:?}", info.file_type),
+            start_time: info.start_time,
+            version: info.version.clone(),
+        }
     }
 }
 #[wasm_bindgen]
@@ -42,37 +45,36 @@ pub struct FrameInfo {
     pub time: u32,
     source: String,
     dest: String,
-    protocol:String,
+    protocol: String,
     pub len: u32,
     pub irtt: u16,
     info: String,
 }
 
 #[wasm_bindgen]
-impl FrameInfo{
+impl FrameInfo {
     #[wasm_bindgen(getter)]
-    pub fn source(&self)-> String{
+    pub fn source(&self) -> String {
         self.source.clone()
     }
     #[wasm_bindgen(getter)]
-    pub fn dest(&self)-> String{
+    pub fn dest(&self) -> String {
         self.dest.clone()
     }
     #[wasm_bindgen(getter)]
-    pub fn protocol(&self)-> String {
+    pub fn protocol(&self) -> String {
         self.protocol.clone()
     }
     #[wasm_bindgen(getter)]
-    pub fn info(&self)-> String {
+    pub fn info(&self) -> String {
         self.info.clone()
     }
 }
 
-
 #[wasm_bindgen]
 impl WContext {
     #[wasm_bindgen(constructor)]
-    pub fn new (s: &Uint8Array) -> WContext {
+    pub fn new(s: &Uint8Array) -> WContext {
         let mut slice = vec![0; s.length() as usize];
         s.copy_to(&mut slice[..]);
         WContext {
@@ -93,32 +95,36 @@ impl WContext {
                 None => "none".into(),
             };
             // last.get_protocol();
-            let mut item = FrameInfo{..Default::default()};
-            let sum =  frame.summary.borrow();
+            let mut item = FrameInfo {
+                ..Default::default()
+            };
+            let sum = frame.summary.borrow();
             item.index = sum.index;
             item.time = (frame.ts - start_ts) as u32;
             item.len = frame.capture_size;
             item.source = sum.source.clone();
             item.dest = sum.target.clone();
             item.protocol = proto;
-            item.info = "test-in-test".into();
+            item.info = frame.info();
             item.irtt = 1;
             rs.push(item);
         }
         rs
     }
-    pub fn get_detail(&self, index: u32) {
+    #[wasm_bindgen]
+    pub fn get_fields(&self, index: u32) -> Vec<Field> {
         let binding = self.ctx.get_frames();
         let f = binding.get(index as usize).unwrap();
-        let ps = f.eles.borrow();
-        for p in ps.iter() {
-            
-        }
-        // for(let p in ){}
-
+        f.get_fields()
+    }
+    #[wasm_bindgen]
+    pub fn get_frame_data(&self, index: u32) -> Uint8Array {
+        let binding = self.ctx.get_frames();
+        let f = binding.get(index as usize).unwrap();
+        let data: &[u8] = &f.data;
+        data.into()
     }
 }
-
 
 #[wasm_bindgen]
 pub fn load(s: &Uint8Array) -> WContext {

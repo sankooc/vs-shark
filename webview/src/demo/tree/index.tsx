@@ -5,29 +5,28 @@ import { TreeNode } from 'primereact/treenode';
 import { emitMessage, onMessage } from '../../connect';
 import { CTreeItem, ComMessage } from '../../common';
 import './app.css';
-import { Packet, Context } from 'nshark';
-import { IField } from 'nshark/built/src/common';
+import { Field } from 'rshark';
 const className = 'vector';
 class StackProps {
-    items: Packet[];
-    ctx: Context;
-    onSelect: (field: IField) => void;
+    items: Field[];
+    // data: Uint8Array;
+    onSelect: (field) => void;
 }
 export default function Stack(props:StackProps) {
     const [store, setStore] = useState({ items: [], key: '', data: null });
     let counter = 0;
-    const mapper = (it: IField): TreeNode => {
+    const mapper = (it: Field): TreeNode => {
         const key = 'item' + (counter += 1);
         const rs = {
             key,
-            label: it.summary(),
-            data: it,
+            label: it.summary,
+            // data: it,
             className: store.key === key ? className +' active' : className,
             children: [],
             selectable: true,
         };
-        for(const f of (it.getChildFields() || [])){
-            if(f.summary()) {
+        for(const f of (it.children || [])){
+            if(f.summary) {
                 rs.children.push(mapper(f));
             }
         }
@@ -36,9 +35,9 @@ export default function Stack(props:StackProps) {
     const stacks: TreeNode[] = props.items.map(mapper);
     const onSelect = (e: TreeNodeClickEvent) => {
         const { node } = e;
-        props.onSelect(node.data as IField);
+        props.onSelect(node.data);
         // emitMessage(new ComMessage('hex-data', node.data));
-        setStore({...store, key: node.key + ''})
+        // setStore({...store, key: node.key + ''})
     }
     return (
         <div className="flex-grow-1 justify-content-center" style={{ height: '100%', border: 0, padding: 0}}>

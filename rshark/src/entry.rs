@@ -1,6 +1,3 @@
-use log::info;
-use js_sys::Uint8Array;
-
 use crate::files::*;
 
 // use std::str;
@@ -9,14 +6,14 @@ use std::result::Result;
 use std::fmt::Error;
 use crate::common::IO;
 
-pub struct Pack<'a>{
-  data: &'a [u8]
-}
-impl Pack<'_> {
-  pub fn new(data: &[u8])-> Pack{
-    Pack{data}
-  }
-}
+// pub struct Pack<'a>{
+//   data: &'a [u8]
+// }
+// impl Pack<'_> {
+//   pub fn new(data: &[u8])-> Pack{
+//     Pack{data}
+//   }
+// }
 // pub fn load_data2 (data: & [u8])-> {
 
 // }

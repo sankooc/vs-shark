@@ -1,7 +1,7 @@
 use lazy_static::lazy_static;
 use std::collections::HashMap;
 lazy_static! {
-	pub static ref link_type: HashMap<u16, &'static str> = {
+	pub static ref link_type_map: HashMap<u16, &'static str> = {
 		let mut m = HashMap::new();
 		m.insert(0, "NULL");
 		m.insert(1, "ETHERNET");
@@ -201,7 +201,7 @@ lazy_static! {
 		m.insert(301, "DECT_NR");
 		m
 	};
-	pub static ref ip_protocol_type: HashMap<u16, &'static str> = {
+	pub static ref ip_protocol_type_map: HashMap<u16, &'static str> = {
 		let mut m = HashMap::new();
 		m.insert(0, "HOPOPT");
 		m.insert(1, "ICMP");
@@ -351,7 +351,7 @@ lazy_static! {
 		m.insert(145, "NSH");
 		m
 	};
-	pub static ref ssl_type: HashMap<u16, &'static str> = {
+	pub static ref ssl_type_map: HashMap<u16, &'static str> = {
 		let mut m = HashMap::new();
 		m.insert(0, "Sent to us");
 		m.insert(1, "Boardcast");
@@ -402,3 +402,15 @@ lazy_static! {
 		m
 	};
 }
+pub fn link_type_mapper(code:u16) -> String {
+    (*link_type_map.get(&code).unwrap_or(&"unknown")).into()
+  }
+pub fn ip_protocol_type_mapper(code:u16) -> String {
+    (*ip_protocol_type_map.get(&code).unwrap_or(&"unknown")).into()
+  }
+pub fn ssl_type_mapper(code:u16) -> String {
+    (*ssl_type_map.get(&code).unwrap_or(&"unknown")).into()
+  }
+pub fn etype_mapper(code:u16) -> String {
+    (*etype_map.get(&code).unwrap_or(&"unknown")).into()
+  }

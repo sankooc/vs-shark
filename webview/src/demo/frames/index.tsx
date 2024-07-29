@@ -10,8 +10,7 @@ import { InputIcon } from 'primereact/inputicon';
 import { InputText } from 'primereact/inputtext';
 import { MultiSelect } from 'primereact/multiselect';
 import { Context, Packet } from "nshark";
-import { IField } from "nshark/built/src/common";
-import { WContext, FrameInfo } from 'rshark';
+import { WContext, FrameInfo, Field } from 'rshark';
 
 class FrameListProps {
   items: FrameInfo[];
@@ -52,7 +51,7 @@ export class FrameItem implements ColumnItem {
 }
 function FrameList(props: FrameListProps) {
   const [filters, setFilter] = useState(null);
-  const [stacks, setStack] = useState<Packet[]>([]);
+  const [stacks, setStack] = useState<Field[]>([]);
   const [hex, setHex] = useState<HexV>(null);
   const getData = (): ColumnItem[] => {
     return props.items.map((item) => new FrameItem(item));
@@ -73,8 +72,6 @@ function FrameList(props: FrameListProps) {
     { field: 'len', header: 'len', style: { width: '5%' } },
     { field: 'info', header: 'info', style: { width: '20vw' }  }
   ];
-  console.log(props.items);
-  console.log(items);
   const protos = [
   ];
   const _map = {};
@@ -86,15 +83,14 @@ function FrameList(props: FrameListProps) {
     protos.push({ name: `${code.toUpperCase()} (${_map[code]})`, code});
   }
   const onSelect = (item: ColumnItem): void => {
-    const f: FrameInfo = props.ctx.get_frames()[item.no - 1];
-    // const f = props.ctx.getFrames()[item.no - 1];
-    // const fs: Packet[] = [];
-    // let tmp = f;
-    // do{
-    //   fs.unshift(tmp);
-    //   tmp = tmp.parent;
-    // } while(tmp);
-    // setStack(fs);
+    console.log(props.ctx);
+    const items = props.ctx.get_fields(item.no - 1);
+    const data = props.ctx.get_frame_data(item.no - 1);
+    const stackProps = {
+      items,
+      data,
+    };
+    setStack(items);
   };
   return (<div className="flex flex-nowrap h-full w-full" id="frame-page">
     <Splitter layout="vertical" className="h-full w-full">
@@ -108,14 +104,14 @@ function FrameList(props: FrameListProps) {
       <SplitterPanel className="flex align-items-center justify-content-center" size={30} minSize={20}>
         <Splitter className="w-full">
           <SplitterPanel className="flex align-items-center" size={50} minSize={50} style={{ height: '28vh', overflow: 'auto' }}>
-            {/* <Stack items={stacks} ctx={props.ctx} onSelect={(f: IField) => {
-              const data = f.getSource();
-              const start = f.getStartIndex();
-              const size = f.getSize();
-              const h = new HexV(data);
-              h.index = [start, size];
-              setHex(h);
-            }}/> */}
+            <Stack items={stacks} onSelect={(f) => {
+              // const data = f.getSource();
+              // const start = f.getStartIndex();
+              // const size = f.getSize();
+              // const h = new HexV(data);
+              // h.index = [start, size];
+              // setHex(h);
+            }}/>
           </SplitterPanel>
           <SplitterPanel className="flex align-items-center" size={50} minSize={50} style={{ height: '28vh', overflow: 'auto' }}>
             <HexView data={hex}/>
