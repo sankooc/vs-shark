@@ -22,7 +22,7 @@ const items = [
   ['link_type', linktypeMap, k => parseInt(k, 10), 'u16'],
   ['ip_protocol_type', ipProtocolMap, k => parseInt(k, 10), 'u16'],
   // ['ssl_type', SLL_TYPE, k => parseInt(k, 10), 'u16'],
-  // ['etype', etypeMap,  k => parseInt(k, 16), 'u16'],
+  ['etype', etypeMap,  k => parseInt(k, 16), 'u16'],
 ];
 
 const conts = items.map((item) => buildConstants(item[0]+'_map', item[1], item[2], item[3]));

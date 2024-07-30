@@ -8,8 +8,8 @@ mod tests {
         use std::fs;
         // use env_logger::{Builder, Target};
         env_logger::builder().is_test(true).try_init().unwrap();
-        // let fname = "../sandbox/demo.pcap";
-        let fname = "../sandbox/11.pcapng";
+        let fname = "../sandbox/demo.pcap";
+        // let fname = "../sandbox/11.pcapng";
         let data: Vec<u8> = fs::read(fname)?;
         let _ctx = load_data(&data).unwrap();
         // let frames = ctx.get_frames();

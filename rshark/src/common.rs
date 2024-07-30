@@ -1,5 +1,6 @@
 use std::cell::Cell;
 use std::fmt;
+use crate::constants::{etype_mapper,ip_protocol_type_mapper};
 
 use crate::files::Field;
 
@@ -12,9 +13,47 @@ pub trait PlayloadPacket {
     fn len(&self) -> u16;
 }
 
+pub trait IPPacket {
+    fn source_ip_address(&self) -> String;
+    fn target_ip_address(&self) -> String;
+}
+
+pub trait MacPacket {
+    fn source_mac(&self) -> String;
+    fn target_mac(&self) -> String;
+}
+
+pub trait PtypePacket {
+    fn protocol_type(&self) -> u16;
+}
+
+pub trait TtypePacket {
+    fn t_protocol_type(&self) -> u16;
+}
+
+
 pub struct Description;
 
 impl Description {
+    pub fn source_mac(start: usize, size: usize, packet: &impl MacPacket) -> Field {
+        Field::new(start, size, format!("Source: {}", packet.source_mac()))
+    }
+    pub fn target_mac(start: usize, size: usize, packet: &impl MacPacket) -> Field {
+        Field::new(start, size, format!("Destination: {}", packet.target_mac()))
+    }
+    pub fn ptype(start: usize, size: usize, packet: &impl PtypePacket) -> Field {
+        Field::new(start, size, format!("Type: {} ({:#06x})",etype_mapper(packet.protocol_type()), packet.protocol_type()))
+    }
+    pub fn source_ip(start: usize, size: usize, packet: &impl IPPacket) -> Field {
+        Field::new(start, size, format!("Source Address: {}", packet.source_ip_address()))
+    }
+    pub fn target_ip(start: usize, size: usize, packet: &impl IPPacket) -> Field {
+        Field::new(start, size, format!("Destination Address: {}", packet.target_ip_address()))
+    }
+    pub fn t_protocol(start: usize, size: usize, packet: &impl TtypePacket) -> Field {
+        let ttype = packet.t_protocol_type();
+        Field::new(start, size, format!("Protocol: {} ({})", ip_protocol_type_mapper(ttype), ttype))
+    }
     pub fn source_port(start: usize, size: usize, packet: &impl PortablePacket) -> Field {
         Field::new(start, size, format!("Source Port: {}", packet.source_port()))
     }

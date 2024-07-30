@@ -1,7 +1,7 @@
 use std::fmt::{Formatter, Result};
 
 use crate::{
-    common::{IPv4Address, Protocol, Reader}, constants::ip_protocol_type_mapper, files::{Field, Frame, Initer, PacketContext, Visitor}
+    common::{Description, IPPacket, IPv4Address, Protocol, Reader, TtypePacket}, files::{Field, Frame, Initer, PacketContext, Visitor}
 };
 
 pub fn excute(ipprototype: u8, frame: &Frame, reader: &Reader) {
@@ -23,25 +23,26 @@ pub struct IPv4 {
     identification: u16,
     flag: u16,
     ttl: u8,
-    ipproto: u8,
+    t_protocol: u8,
     crc: u16,
 }
 
-impl IPv4 {
-    pub fn _source_ip(start: usize, size: usize, p: &IPv4) -> Field {
-        let ip = p.source_ip.as_ref().unwrap().to_string();
-        let txt = format!("Source Address: {}", ip);
-        Field::new(start, size, txt)
+impl IPPacket for IPv4 {
+    fn source_ip_address(&self) -> String {
+        self.source_ip.as_ref().unwrap().to_string()
     }
-    pub fn _target_ip(start: usize, size: usize, p: &IPv4) -> Field {
-        let ip = p.target_ip.as_ref().unwrap().to_string();
-        let txt = format!("Destination Address: {}", ip);
-        Field::new(start, size, txt)
-    }
-    pub fn _proto(start: usize, size: usize, p: &IPv4) -> Field{
-        Field::new(start, size, format!("Protocol: {} ({})", ip_protocol_type_mapper(p.ipproto as u16), p.ipproto))
+
+    fn target_ip_address(&self) -> String {
+        self.target_ip.as_ref().unwrap().to_string()
     }
 }
+
+impl TtypePacket for IPv4{
+    fn t_protocol_type(&self) -> u16 {
+        self.t_protocol as u16
+    }
+}
+
 impl std::fmt::Display for IPv4 {
     fn fmt(&self, fmt: &mut Formatter) -> Result {
         let source = match &self.source_ip {
@@ -88,17 +89,17 @@ impl crate::files::Visitor for IP4Visitor {
         let identification = packet.read(reader, Reader::_read16_be, Some(|start, size, val| Field::new(start, size, format!("Identification: {:#06x}", val.identification))));
         let flag = packet.read(reader, Reader::_read16_be, None);
         let ttl = packet.read(reader, Reader::_read8, Some(|start, size, val| Field::new(start, size, format!("Time To Live: {}", val.ttl))));
-        let ipproto = packet.read(reader, Reader::_read8, Some(IPv4::_proto));
+        let ipproto = packet.read(reader, Reader::_read8, Some(Description::t_protocol));
         let crc: u16 = packet.read(reader, Reader::_read16_be, None);
-        let source = packet.read(reader, Reader::_read_ipv4, Some(IPv4::_source_ip));
-        let target = packet.read(reader, Reader::_read_ipv4, Some(IPv4::_target_ip));
+        let source = packet.read(reader, Reader::_read_ipv4, Some(Description::source_ip));
+        let target = packet.read(reader, Reader::_read_ipv4, Some(Description::target_ip));
         // let ptype = packet.read(reader, Reader::_read16_be, Some(IPv4::_ptype));
         let p = &mut packet.val;
         p.total_len = total_len;
         p.identification = identification;
         p.flag = flag;
         p.ttl = ttl;
-        p.ipproto = ipproto;
+        p.t_protocol = ipproto;
         p.crc = crc;
         p.source_ip = source;
         p.target_ip = target;

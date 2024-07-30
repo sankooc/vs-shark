@@ -1,8 +1,8 @@
-use crate::common::{MacAddress, DEF_EMPTY_MAC};
+use crate::common::{Description, MacAddress, MacPacket, PtypePacket, DEF_EMPTY_MAC};
 use crate::files::Visitor;
 use crate::{
     common::{Protocol, Reader},
-    files::{Field, Frame, Initer, PacketContext},
+    files::{Frame, Initer, PacketContext},
 };
 use std::fmt::Display;
 pub struct Ethernet {
@@ -14,8 +14,16 @@ pub struct Ethernet {
 }
 impl Display for Ethernet {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        let source = self.source_mac.as_ref().unwrap_or(&DEF_EMPTY_MAC).to_string();
-        let target = self.target_mac.as_ref().unwrap_or(&DEF_EMPTY_MAC).to_string();
+        let source = self
+            .source_mac
+            .as_ref()
+            .unwrap_or(&DEF_EMPTY_MAC)
+            .to_string();
+        let target = self
+            .target_mac
+            .as_ref()
+            .unwrap_or(&DEF_EMPTY_MAC)
+            .to_string();
         f.write_str(format!("Ethernet II, Src: {}, Dst: {}", source, target).as_str())?;
         Ok(())
     }
@@ -34,37 +42,42 @@ impl Initer<Ethernet> for Ethernet {
     fn get_protocol(&self) -> Protocol {
         self.protocol.clone()
     }
-    
+
     fn info(&self) -> String {
         self.to_string().clone()
     }
 }
-impl Ethernet {
-    pub fn _source_mac(start: usize, size: usize, p: &Ethernet) -> Field {
-        let addr = p.source_mac.as_ref().unwrap_or(&DEF_EMPTY_MAC).to_string();
-        let txt = format!("Destination: {}", addr);
-        Field::new(start, size, txt)
+
+impl MacPacket for Ethernet {
+    fn source_mac(&self) -> String {
+        self.source_mac
+            .as_ref()
+            .unwrap_or(&DEF_EMPTY_MAC)
+            .to_string()
     }
-    pub fn _target_mac(start: usize, size: usize, p: &Ethernet) -> Field {
-        let addr = p.target_mac.as_ref().unwrap_or(&DEF_EMPTY_MAC).to_string();
-        let txt = format!("Source: {}", addr);
-        Field::new(start, size, txt)
-    }
-    pub fn _ptype(start: usize, size: usize, p: &Ethernet) -> Field {
-        let txt = format!("Type: IPv4 ({:#06x})", p.ptype);
-        Field::new(start, size, txt)
+
+    fn target_mac(&self) -> String {
+        self.target_mac
+            .as_ref()
+            .unwrap_or(&DEF_EMPTY_MAC)
+            .to_string()
     }
 }
+impl PtypePacket for Ethernet {
+    fn protocol_type(&self) -> u16 {
+        self.ptype
+    }
+}
+
 pub struct EthernetVisitor;
 
 impl Visitor for EthernetVisitor {
     fn visit(&self, frame: &Frame, reader: &Reader) {
         let mut packet: PacketContext<Ethernet> = Frame::create_packet();
 
-        let source: Option<MacAddress> =
-            packet.read(reader, Reader::_read_mac, Some(Ethernet::_source_mac));
-        let target = packet.read(reader, Reader::_read_mac, Some(Ethernet::_target_mac));
-        let ptype = packet.read(reader, Reader::_read16_be, Some(Ethernet::_ptype));
+        let source = packet.read(reader, Reader::_read_mac, Some(Description::source_mac));
+        let target = packet.read(reader, Reader::_read_mac, Some(Description::target_mac));
+        let ptype = packet.read(reader, Reader::_read16_be, Some(Description::ptype));
         let p = &mut packet.val;
         p.source_mac = source;
         p.target_mac = target;
