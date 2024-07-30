@@ -82,8 +82,7 @@ impl Visitor for EthernetVisitor {
 pub fn excute(etype: u16, frame: &Frame, reader: &Reader) {
     match etype {
         2048 => {
-            let visitor = super::network::IP4Visitor {};
-            visitor.visit(frame, reader);
+            super::network::IP4Visitor.visit(frame, reader);
         }
         _ => (),
     }

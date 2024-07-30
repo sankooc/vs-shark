@@ -1,6 +1,32 @@
 use std::cell::Cell;
 use std::fmt;
 
+use crate::files::Field;
+
+pub trait PortablePacket {
+    fn source_port(&self) -> u16;
+    fn target_port(&self) -> u16;
+}
+
+pub trait PlayloadPacket {
+    fn len(&self) -> u16;
+}
+
+pub struct Description;
+
+impl Description {
+    pub fn source_port(start: usize, size: usize, packet: &impl PortablePacket) -> Field {
+        Field::new(start, size, format!("Source Port: {}", packet.source_port()))
+    }
+    pub fn target_port(start: usize, size: usize, packet: &impl PortablePacket) -> Field {
+        Field::new(start, size, format!("Destination Port: {}", packet.target_port()))
+    }
+    pub fn packet_length(start: usize, size: usize, packet: &impl PlayloadPacket) -> Field {
+        Field::new(start, size, format!("Length: {}", packet.len()))
+    }
+}
+
+
 #[derive(Default, Clone)]
 pub struct FileInfo {
     pub link_type: u16,
@@ -167,12 +193,6 @@ impl fmt::Display for IPv4Address {
         Ok(())
     }
 }
-// impl IPv4 {
-//     pub fn to_string(&self) -> String {
-//         self.data.join(".");
-//         "".into()
-//     }
-// }
 
 #[derive(Default, Debug, Copy, Clone)]
 pub enum FileType {
@@ -190,7 +210,7 @@ pub enum Protocol {
     // IPV6,
     // ARP,
     // TCP,
-    // UDP,
+    UDP,
     // ICMP,
     // ICMPV6,
     // IGMP,

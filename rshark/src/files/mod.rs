@@ -110,6 +110,7 @@ where
     // pub next: Option<Box<dyn Element>>,
     pub val: T,
     fields: Vec<Position<T>>,
+    // pos: RefCell<Position<T>>
 }
 
 impl<T> Element for PacketContext<T>
@@ -123,12 +124,7 @@ where
         let t = &self.val;
         let mut rs: Vec<Field> = Vec::new();
         for pos in self.fields.iter() {
-            match pos.render {
-                Some(_render) => {
-                    rs.push(_render(pos.start, pos.size, t));
-                }
-                _ => (),
-            }
+            rs.push((pos.render)(pos.start, pos.size, t));
         }
         rs
     }
@@ -153,16 +149,21 @@ where
         let start = reader.cursor();
         let val: K = opt(reader);
         let end = reader.cursor();
-        self.fields.push(Position {
-            start,
-            size: end - start,
-            render,
-        });
+        self.add_pos(start, end - start, render);
         val
     }
-    // pub fn read_empty<K>(&mut self, render: Option<fn(usize, usize, &T) -> Field>) {
-    //     self.fields.push(Position {start: 0, size:0, render});
-    // }
+    pub fn read_empty(&mut self,reader: &Reader, size: usize, render: Option<fn(usize, usize, &T) -> Field>) {
+        let start = reader.cursor();
+        self.add_pos(start, size, render);
+        // self.fields.push(Position {start, size, render});
+    }
+
+    fn add_pos(&mut self, start:usize, size: usize, _render: Option<fn(usize, usize, &T) -> Field>){
+        match _render {
+            Some(render) => self.fields.push(Position {start, size, render}),
+            _ => (),
+        }
+    }
     // pub fn iter(&self) {
     //     let v = &self.val;
     //     // for pos in &self.fields {
@@ -173,10 +174,11 @@ where
     //     &self.val
     // }
 }
+
 pub struct Position<T> {
     pub start: usize,
     pub size: usize,
-    render: Option<fn(usize, usize, &T) -> Field>,
+    pub render: fn(usize, usize, &T) -> Field,
 }
 
 pub trait Initer<T> {
@@ -258,6 +260,7 @@ impl Frame {
     {
         let val = K::new();
         PacketContext {
+            // pos: RefCell::new(Position{start:0,size:0, render:None}),
             val,
             fields: Vec::new(),
         }

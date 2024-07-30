@@ -37,7 +37,7 @@ export default function Stack(props:StackProps) {
         const { node } = e;
         props.onSelect(node.data);
         // emitMessage(new ComMessage('hex-data', node.data));
-        // setStore({...store, key: node.key + ''})
+        setStore({...store, key: node.key + ''})
     }
     return (
         <div className="flex-grow-1 justify-content-center" style={{ height: '100%', border: 0, padding: 0}}>

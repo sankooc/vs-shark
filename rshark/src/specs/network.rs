@@ -1,9 +1,18 @@
 use std::fmt::{Formatter, Result};
 
 use crate::{
-    common::{IPv4Address, Protocol, Reader},
-    files::{Field, Frame, Initer, PacketContext},
+    common::{IPv4Address, Protocol, Reader}, constants::ip_protocol_type_mapper, files::{Field, Frame, Initer, PacketContext, Visitor}
 };
+
+pub fn excute(ipprototype: u8, frame: &Frame, reader: &Reader) {
+    match ipprototype {
+        17 => {
+            super::transport::UDPVisitor.visit(frame, reader);
+        }
+        _ => (),
+    }
+}
+
 
 #[derive(Default)]
 pub struct IPv4 {
@@ -28,6 +37,9 @@ impl IPv4 {
         let ip = p.target_ip.as_ref().unwrap().to_string();
         let txt = format!("Destination Address: {}", ip);
         Field::new(start, size, txt)
+    }
+    pub fn _proto(start: usize, size: usize, p: &IPv4) -> Field{
+        Field::new(start, size, format!("Protocol: {} ({})", ip_protocol_type_mapper(p.ipproto as u16), p.ipproto))
     }
 }
 impl std::fmt::Display for IPv4 {
@@ -76,7 +88,7 @@ impl crate::files::Visitor for IP4Visitor {
         let identification = packet.read(reader, Reader::_read16_be, Some(|start, size, val| Field::new(start, size, format!("Identification: {:#06x}", val.identification))));
         let flag = packet.read(reader, Reader::_read16_be, None);
         let ttl = packet.read(reader, Reader::_read8, Some(|start, size, val| Field::new(start, size, format!("Time To Live: {}", val.ttl))));
-        let ipproto = packet.read(reader, Reader::_read8, None);
+        let ipproto = packet.read(reader, Reader::_read8, Some(IPv4::_proto));
         let crc: u16 = packet.read(reader, Reader::_read16_be, None);
         let source = packet.read(reader, Reader::_read_ipv4, Some(IPv4::_source_ip));
         let target = packet.read(reader, Reader::_read_ipv4, Some(IPv4::_target_ip));
@@ -97,7 +109,7 @@ impl crate::files::Visitor for IP4Visitor {
         if ext > 0 {
             reader.slice((ext * 4) as usize);
         }
-        // frame.source.set()
         frame.add_element(Box::new(packet));
+        excute(ipproto,frame, reader);
     }
 }
