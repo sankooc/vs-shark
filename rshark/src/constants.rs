@@ -392,6 +392,35 @@ lazy_static! {
 		m.insert(35085, "TDLS");
 		m
 	};
+	pub static ref dns_class_map: HashMap<u16, &'static str> = {
+		let mut m = HashMap::new();
+		m.insert(1, "IN");
+		m.insert(2, "CS");
+		m.insert(3, "CH");
+		m.insert(4, "HS");
+		m
+	};
+	pub static ref dns_type_map: HashMap<u16, &'static str> = {
+		let mut m = HashMap::new();
+		m.insert(1, "A");
+		m.insert(2, "NS");
+		m.insert(3, "MD");
+		m.insert(4, "MF");
+		m.insert(5, "CNAME");
+		m.insert(6, "SOA");
+		m.insert(7, "MB");
+		m.insert(8, "MG");
+		m.insert(9, "MR");
+		m.insert(10, "NULL");
+		m.insert(11, "WKS");
+		m.insert(12, "PTR");
+		m.insert(13, "HINFO");
+		m.insert(14, "MINFO");
+		m.insert(15, "MX");
+		m.insert(16, "TXT");
+		m.insert(28, "AAAA");
+		m
+	};
 }pub fn link_type_mapper(code:u16) -> String {
     (*link_type_map.get(&code).unwrap_or(&"unknown")).into()
   }
@@ -400,4 +429,10 @@ pub fn ip_protocol_type_mapper(code:u16) -> String {
   }
 pub fn etype_mapper(code:u16) -> String {
     (*etype_map.get(&code).unwrap_or(&"unknown")).into()
+  }
+pub fn dns_class_mapper(code:u16) -> String {
+    (*dns_class_map.get(&code).unwrap_or(&"unknown")).into()
+  }
+pub fn dns_type_mapper(code:u16) -> String {
+    (*dns_type_map.get(&code).unwrap_or(&"unknown")).into()
   }

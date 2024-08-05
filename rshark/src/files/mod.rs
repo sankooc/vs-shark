@@ -1,14 +1,14 @@
 pub mod pcap;
 pub mod pcapng;
 
-use std::{cell::{Ref, RefCell}, time::{Duration, UNIX_EPOCH}};
+use std::{cell::{Ref, RefCell}, rc::Rc, time::{Duration, UNIX_EPOCH}};
 use crate::constants::link_type_mapper;
 
 use chrono::{DateTime, Utc};
 use wasm_bindgen::prelude::*;
 
 // pub mod pcapng;
-use crate::common::{FileInfo, FileType, Protocol, Reader};
+use crate::common::{FileInfo, FileType, Protocol, Reader, ContainProtocol};
 
 #[derive(Default, Clone)]
 #[wasm_bindgen]
@@ -86,20 +86,41 @@ pub trait Visitor {
     fn visit(&self, frame: &Frame, reader: &Reader);
 }
 
-pub struct FramePacket {
-    // pub frame: &'a Frame
+// pub struct FramePacket {
+// }
+
+// pub struct FolderOption<T> {
+//     field: Field,
+//     obj: T,
+//     // reader: &'a Reader<'a>,
+//     // name: String,
+    
+// }
+
+// impl FolderOption {
+    // pub fn read<K>(&self, reader: &Reader, opt: fn(&Reader) -> K) -> (K, Field) {
+    //     let start = reader.cursor();
+    //     let val: K = opt(reader);
+    //     let end = reader.cursor();
+    //     let size = end - start;
+    // }
+// }
+
+pub trait FieldBuilder<T> {
+    fn build(&self, t: &T) -> Field;
 }
 
-impl Initer<FramePacket> for FramePacket {
-    fn new() -> FramePacket {
-        FramePacket {}
+pub type MultiBlock<T> = Vec<Rc<RefCell<T>>>;
+// pub trait Multi {
+//     fn summary() -> String;
+// }
+impl <T>Initer<MultiBlock<T>> for MultiBlock<T> {
+    fn new() -> MultiBlock<T> {
+        Vec::new()
     }
-    fn get_protocol(&self) -> Protocol {
-        Protocol::UNKNOWN
-    }
-    
+
     fn info(&self) -> String {
-        "".into()
+        String::from("")
     }
 }
 
@@ -107,63 +128,112 @@ pub struct PacketContext<T>
 where
     T: Initer<T>,
 {
-    // pub next: Option<Box<dyn Element>>,
-    pub val: T,
-    fields: Vec<Position<T>>,
-    // pos: RefCell<Position<T>>
+    val: Rc<RefCell<T>>,
+    fields: RefCell<Vec<Box<dyn FieldBuilder<T>>>>,
 }
 
-impl<T> Element for PacketContext<T>
-where
-    T: Initer<T> + ToString,
-{
-    fn summary(&self) -> String {
-        self.val.to_string().clone()
+impl <T>PacketContext<T> where T: Initer<T>{
+    pub fn _clone_obj(&self) -> Rc<RefCell<T>> {
+        self.val.clone()
+    }
+    pub fn get(&self) -> &RefCell<T>{
+        &self.val
     }
     fn get_fields(&self) -> Vec<Field> {
-        let t = &self.val;
+        let t:&T = &self.get().borrow();
         let mut rs: Vec<Field> = Vec::new();
-        for pos in self.fields.iter() {
-            rs.push((pos.render)(pos.start, pos.size, t));
+        for pos in self.fields.borrow().iter() {
+            rs.push(pos.build(t));
         }
         rs
     }
+}
+
+
+impl<T> Element for PacketContext<T>
+where
+    T: Initer<T> + ToString + ContainProtocol,
+{
+    fn summary(&self) -> String {
+        self.get().borrow().to_string().clone()
+    }
+    fn get_fields(&self) -> Vec<Field> {
+        self.get_fields()
+        // let t = &self.val;
+        // let mut rs: Vec<Field> = Vec::new();
+        // for pos in self.fields.iter() {
+        //     rs.push(pos.build(t));
+        // }
+        // rs
+    }
     fn get_protocol(&self) -> Protocol {
-        self.val.get_protocol()
+        self.get().borrow().get_protocol()
     }
     
     fn info(&self) -> String {
-        self.val.info()
+        self.get().borrow().info()
     }
 }
 impl<T> PacketContext<T>
 where
-    T: Initer<T>,
+    T: Initer<T>+ 'static
 {
-    pub fn read<K>(
-        &mut self,
+    // pub fn _read(
+    //     &mut self,
+    //     reader: &Reader,
+    //     opt: fn(&Reader) -> Field,
+    // ){
+    //     let start = reader.cursor();
+    //     let child: Field = opt(reader);
+    //     let end = reader.cursor();
+    //     let size = end - start;
+    //     let render = move |start, size, _v:&T| {
+    //         return Field::new(start, size, format!("Total Length"))
+    //     };
+    //     self.add_pos(start, end - start, Some(render) );
+    // }
+    // pub fn _read<K>(
+    //     &self,
+    //     reader: &Reader,
+    //     opt: impl Fn(&Reader) -> K,
+    //     render: fn(usize, usize, &T) -> Field,
+    // ) -> K {
+    //     let start = reader.cursor();
+    //     let val: K = opt(reader);
+    //     let end = reader.cursor();
+    //     self.add_pos(start, end - start, render);
+    //     val
+    // }
+    pub fn read_with_string<K>(
+        &self,
         reader: &Reader,
-        opt: fn(&Reader) -> K,
-        render: Option<fn(usize, usize, &T) -> Field>,
+        opt: impl Fn(&Reader) -> K,
+        render: fn(&T) -> String,
     ) -> K {
         let start = reader.cursor();
         let val: K = opt(reader);
         let end = reader.cursor();
-        self.add_pos(start, end - start, render);
+        let size = end - start;
+        self.fields.borrow_mut().push(Box::new(StringPosition{start, size, render}));
         val
     }
-    pub fn read_empty(&mut self,reader: &Reader, size: usize, render: Option<fn(usize, usize, &T) -> Field>) {
+    pub fn read_with_field<K>(
+        &self,
+        reader: &Reader,
+        opt: impl Fn(&Reader) -> PacketContext<K>,
+        head: Option<String>,
+    ) -> Rc<RefCell<K>> where K: Initer<K>+'static,FieldPosition<K>: FieldBuilder<T> {
         let start = reader.cursor();
-        self.add_pos(start, size, render);
-        // self.fields.push(Position {start, size, render});
+        let packet = opt(reader);
+        let rs = packet._clone_obj();
+        let end = reader.cursor();
+        let size = end - start;
+        self.fields.borrow_mut().push(Box::new(FieldPosition{start, size, head, packet}));
+        rs
     }
-
-    fn add_pos(&mut self, start:usize, size: usize, _render: Option<fn(usize, usize, &T) -> Field>){
-        match _render {
-            Some(render) => self.fields.push(Position {start, size, render}),
-            _ => (),
-        }
-    }
+    // fn add_pos(&self, start:usize, size: usize, render: fn(usize, usize,&T) -> Field){
+    //     self.fields.borrow_mut().push(Box::new(Position {start, size, render}));
+    // }
     // pub fn iter(&self) {
     //     let v = &self.val;
     //     // for pos in &self.fields {
@@ -180,10 +250,58 @@ pub struct Position<T> {
     pub size: usize,
     pub render: fn(usize, usize, &T) -> Field,
 }
+impl <T>FieldBuilder<T> for Position<T>{
+    fn build(&self, t: &T) -> Field {
+        (self.render)(self.start, self.size, t)
+    }
+}
+
+pub struct FieldPosition<T> where T: Initer<T>{
+    pub start: usize,
+    pub size: usize,
+    head: Option<String>,
+    pub packet: PacketContext<T>,
+}
+impl <T, K>FieldBuilder<T> for FieldPosition<K> where K: Initer<K>{
+    fn build(&self, _: &T) -> Field {
+        let summary = match self.head.clone() {
+            Some(t) => t,
+            _ => self.packet.get().borrow().info(),
+        };
+        let mut field = Field::new(self.start, self.size, summary);
+        let fields = self.packet.get_fields();
+        field.children = RefCell::new(fields);
+        field
+    }
+}
+
+pub struct StringPosition<T> {
+    pub start: usize,
+    pub size: usize,
+    pub render: fn(&T) -> String,
+}
+impl <T>FieldBuilder<T> for StringPosition<T>{
+    fn build(&self, t: &T) -> Field {
+        let summary = (self.render)(t);
+        Field::new(self.start, self.size, summary)
+    }
+}
+
+pub struct TXTPosition {
+    start: usize,
+    size: usize,
+    content: String
+}
+impl <T>FieldBuilder<T> for TXTPosition {
+    fn build(&self, _: &T) -> Field {
+        Field::new(self.start, self.size, self.content.clone())
+    }
+}
+
 
 pub trait Initer<T> {
     fn new() -> T;
-    fn get_protocol(&self) -> Protocol;
+    // fn get_protocol(&self) -> Protocol;
     fn info(&self) -> String;
 }
 #[derive(Default, Clone)]
@@ -261,8 +379,8 @@ impl Frame {
         let val = K::new();
         PacketContext {
             // pos: RefCell::new(Position{start:0,size:0, render:None}),
-            val,
-            fields: Vec::new(),
+            val: Rc::new(RefCell::new(val)),
+            fields: RefCell::new(Vec::new()),
         }
     }
     pub fn add_element(&self, ele: Box<dyn Element>) {

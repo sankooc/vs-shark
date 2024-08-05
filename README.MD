@@ -9,9 +9,6 @@
     <img src="https://img.shields.io/visual-studio-marketplace/d/sankooc.pcapviewer">
   </a>
   <a href="/">
-    <img src="https://img.shields.io/github/stars/sankooc/vs-shark">
-  </a>
-  <a href="/">
     <img src="https://img.shields.io/github/languages/count/sankooc/vs-shark">
   </a>
   <a href="/">
@@ -20,6 +17,15 @@
   <a href="/">
     <img src="https://img.shields.io/npm/unpacked-size/nshark">
   </a>
+  <a href="/">
+    <img src="https://img.shields.io/github/stars/sankooc/vs-shark">
+  </a>
 </p>
 
 ## PCAP FILE VIEWER 
+
+- PCAP
+- PCAPNG
+- ETHERNET II
+- IPv4
+- UDP

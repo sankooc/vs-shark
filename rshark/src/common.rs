@@ -1,8 +1,12 @@
+use crate::constants::{etype_mapper, ip_protocol_type_mapper};
 use std::cell::Cell;
 use std::fmt;
-use crate::constants::{etype_mapper,ip_protocol_type_mapper};
+use std::str;
+use std::str::from_utf8;
 
-use crate::files::Field;
+pub trait ContainProtocol {
+    fn get_protocol(&self) -> Protocol;
+}
 
 pub trait PortablePacket {
     fn source_port(&self) -> u16;
@@ -31,40 +35,47 @@ pub trait TtypePacket {
     fn t_protocol_type(&self) -> u16;
 }
 
-
 pub struct Description;
 
 impl Description {
-    pub fn source_mac(start: usize, size: usize, packet: &impl MacPacket) -> Field {
-        Field::new(start, size, format!("Source: {}", packet.source_mac()))
+    // pub fn swap<T>(getter: fn(&T) -> String) -> impl Fn(usize, usize, &T) -> Field {
+    //     move |start: usize, size: usize, t: &T| {
+    //         return Field::new(start, size, getter(t));
+    //     }
+    // }
+    pub fn source_mac(packet: &impl MacPacket) -> String {
+        format!("Source: {}", packet.source_mac())
     }
-    pub fn target_mac(start: usize, size: usize, packet: &impl MacPacket) -> Field {
-        Field::new(start, size, format!("Destination: {}", packet.target_mac()))
+    pub fn target_mac(packet: &impl MacPacket) -> String {
+        format!("Destination: {}", packet.target_mac())
     }
-    pub fn ptype(start: usize, size: usize, packet: &impl PtypePacket) -> Field {
-        Field::new(start, size, format!("Type: {} ({:#06x})",etype_mapper(packet.protocol_type()), packet.protocol_type()))
+    pub fn ptype(packet: &impl PtypePacket) -> String {
+        format!(
+            "Type: {} ({:#06x})",
+            etype_mapper(packet.protocol_type()),
+            packet.protocol_type()
+        )
     }
-    pub fn source_ip(start: usize, size: usize, packet: &impl IPPacket) -> Field {
-        Field::new(start, size, format!("Source Address: {}", packet.source_ip_address()))
+    pub fn source_ip(packet: &impl IPPacket) -> String {
+        format!("Source Address: {}", packet.source_ip_address())
     }
-    pub fn target_ip(start: usize, size: usize, packet: &impl IPPacket) -> Field {
-        Field::new(start, size, format!("Destination Address: {}", packet.target_ip_address()))
+    pub fn target_ip(packet: &impl IPPacket) -> String {
+        format!("Destination Address: {}", packet.target_ip_address())
     }
-    pub fn t_protocol(start: usize, size: usize, packet: &impl TtypePacket) -> Field {
+    pub fn t_protocol(packet: &impl TtypePacket) -> String {
         let ttype = packet.t_protocol_type();
-        Field::new(start, size, format!("Protocol: {} ({})", ip_protocol_type_mapper(ttype), ttype))
+        format!("Protocol: {} ({})", ip_protocol_type_mapper(ttype), ttype)
     }
-    pub fn source_port(start: usize, size: usize, packet: &impl PortablePacket) -> Field {
-        Field::new(start, size, format!("Source Port: {}", packet.source_port()))
+    pub fn source_port(packet: &impl PortablePacket) -> String {
+        format!("Source Port: {}", packet.source_port())
     }
-    pub fn target_port(start: usize, size: usize, packet: &impl PortablePacket) -> Field {
-        Field::new(start, size, format!("Destination Port: {}", packet.target_port()))
+    pub fn target_port(packet: &impl PortablePacket) -> String {
+        format!("Destination Port: {}", packet.target_port())
     }
-    pub fn packet_length(start: usize, size: usize, packet: &impl PlayloadPacket) -> Field {
-        Field::new(start, size, format!("Length: {}", packet.len()))
+    pub fn packet_length(packet: &impl PlayloadPacket) -> String {
+        format!("Length: {}", packet.len())
     }
 }
-
 
 #[derive(Default, Clone)]
 pub struct FileInfo {
@@ -97,6 +108,7 @@ impl IO {
         u16::from_ne_bytes(data.try_into().unwrap())
     }
 }
+#[derive(Clone)]
 pub struct Reader<'a> {
     data: &'a [u8],
     cursor: Cell<usize>,
@@ -118,8 +130,14 @@ impl Reader<'_> {
         }
     }
 
+    pub fn _set(&self, cursor: usize){
+        self.cursor.set(cursor);
+    }
     pub fn _move(&self, len: usize) {
         self.cursor.set(self.cursor.get() + len);
+    }
+    pub fn _back(&self, len: usize) {
+        self.cursor.set(self.cursor.get() - len);
     }
     pub fn _slice(&self, len: usize) -> &[u8] {
         &self.data[self.cursor.get()..self.cursor.get() + len]
@@ -136,6 +154,61 @@ impl Reader<'_> {
         u8::from_be_bytes([a])
     }
 
+    pub fn read_string(&self, size: usize) -> String{
+        let _data = self.slice(size);
+        from_utf8(_data).unwrap().into()
+    }
+    pub fn read_dns_query(&self) -> String {
+        let mut list = Vec::new();
+        loop {
+            let len = self.read8() as usize;
+            if len > 0 {
+                let st = str::from_utf8(self.slice(len)).unwrap();
+                list.push(st);
+            } else {
+                break;
+            }
+        }
+        list.into_iter().collect::<Vec<_>>().join(".")
+    }
+    pub fn read_compress_string(&self) -> (String, u16){
+        let mut list:Vec<String> = Vec::new();
+        // let _join = || list.into_iter().collect::<Vec<_>>().join(".");
+        loop {
+            if self.left() == 2 {
+                return (list.into_iter().collect::<Vec<_>>().join("."), self.read16(true));
+            }
+            let _size = self.read8();
+            if _size > 0 {
+                let str = self.read_string(_size as usize);
+                list.push(str);
+            }
+            let next = self.data[self.cursor.get()];
+            if next == 0 {
+                return (list.into_iter().collect::<Vec<_>>().join("."), 0);
+            }
+            if next >= 0xc0 {
+                return (list.into_iter().collect::<Vec<_>>().join("."), self.read16(true));
+            }
+            if next > self.left() as u8 {
+                return (list.into_iter().collect::<Vec<_>>().join("."), 0);
+            }
+        }
+    }
+    pub fn read_dns_compress_string(&self, archor: usize, def: &str, refer: u16) -> String {
+        let inx = (refer & 0x3fff) as usize;
+        let from = archor + inx;
+        let _reader = self.clone();
+        _reader._set(from);
+        let mut rs = String::from(def);
+        let (str, refer2) = _reader.read_compress_string();
+        rs.push_str(str.as_str());
+        if refer2 > 0 {
+            self.read_dns_compress_string(archor, rs.as_str(), refer2)
+        } else {
+            rs
+        }
+    }
     pub fn read16(&self, endian: bool) -> u16 {
         let len = 2;
         let data: &[u8] = self._slice(len);
@@ -195,6 +268,18 @@ impl Reader<'_> {
     pub fn _read16_ne(reader: &Reader) -> u16 {
         reader.read16(false)
     }
+    
+    pub fn _read32_be(reader: &Reader) -> u32 {
+        reader.read32(true)
+    }
+
+    pub fn _read32_ne(reader: &Reader) -> u32 {
+        reader.read32(false)
+    }
+
+    pub fn _read_dns_query(reader: &Reader) -> String {
+        reader.read_dns_query()
+    }
 }
 
 #[derive(Debug)]
@@ -253,7 +338,7 @@ pub enum Protocol {
     // ICMP,
     // ICMPV6,
     // IGMP,
-    // DNS,
+    DNS,
     // DHCP,
     // TLS,
     // HTTP,

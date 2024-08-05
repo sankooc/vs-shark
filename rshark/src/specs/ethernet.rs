@@ -1,4 +1,4 @@
-use crate::common::{Description, MacAddress, MacPacket, PtypePacket, DEF_EMPTY_MAC};
+use crate::common::{ContainProtocol, Description, MacAddress, MacPacket, PtypePacket, DEF_EMPTY_MAC};
 use crate::files::Visitor;
 use crate::{
     common::{Protocol, Reader},
@@ -39,12 +39,13 @@ impl Initer<Ethernet> for Ethernet {
         }
     }
 
-    fn get_protocol(&self) -> Protocol {
-        self.protocol.clone()
-    }
-
     fn info(&self) -> String {
         self.to_string().clone()
+    }
+}
+impl ContainProtocol for Ethernet {
+    fn get_protocol(&self) -> Protocol {
+      self.protocol.clone()
     }
 }
 
@@ -73,20 +74,19 @@ pub struct EthernetVisitor;
 
 impl Visitor for EthernetVisitor {
     fn visit(&self, frame: &Frame, reader: &Reader) {
-        let mut packet: PacketContext<Ethernet> = Frame::create_packet();
+        let packet: PacketContext<Ethernet> = Frame::create_packet();
 
-        let source = packet.read(reader, Reader::_read_mac, Some(Description::source_mac));
-        let target = packet.read(reader, Reader::_read_mac, Some(Description::target_mac));
-        let ptype = packet.read(reader, Reader::_read16_be, Some(Description::ptype));
-        let p = &mut packet.val;
-        p.source_mac = source;
-        p.target_mac = target;
+        let mut p = packet.get().borrow_mut();
+        p.source_mac = packet.read_with_string(reader, Reader::_read_mac, Description::source_mac);
+        p.target_mac = packet.read_with_string(reader, Reader::_read_mac, Description::target_mac);
+        let ptype = packet.read_with_string(reader, Reader::_read16_be, Description::ptype);
         if reader.left() == ptype as usize {
             p.len = ptype;
             // info!("{}", ptype); // IEEE 802.3
             return;
         }
         p.ptype = ptype;
+        drop(p);
         frame.add_element(Box::new(packet));
         excute(ptype, frame, reader);
     }

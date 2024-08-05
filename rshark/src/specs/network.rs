@@ -1,7 +1,7 @@
 use std::fmt::{Formatter, Result};
 
 use crate::{
-    common::{Description, IPPacket, IPv4Address, Protocol, Reader, TtypePacket}, files::{Field, Frame, Initer, PacketContext, Visitor}
+    common::{ContainProtocol, Description, IPPacket, IPv4Address, Protocol, Reader, TtypePacket}, files::{Frame, Initer, PacketContext, Visitor}
 };
 
 pub fn excute(ipprototype: u8, frame: &Frame, reader: &Reader) {
@@ -69,32 +69,33 @@ impl Initer<IPv4> for IPv4 {
             ..Default::default()
         }
     }
-    fn get_protocol(&self) -> Protocol {
-        self.protocol.clone()
-    }
     fn info(&self) -> String {
         self.to_string().clone()
     }
 }
-
+impl ContainProtocol for IPv4 {
+    fn get_protocol(&self) -> Protocol {
+      self.protocol.clone()
+    }
+}
 pub struct IP4Visitor;
 
 impl crate::files::Visitor for IP4Visitor {
     fn visit(&self, frame: &Frame, reader: &Reader) {
-        let mut packet: PacketContext<IPv4> = Frame::create_packet();
-        let head = packet.read(reader, Reader::_read8, None); //head
+        let packet: PacketContext<IPv4> = Frame::create_packet();
+        let head = reader.read8();
         let head_len = head & 0x0f;
-        packet.read(reader, Reader::_read8, None); //tos
-        let total_len = packet.read(reader, Reader::_read16_be, Some(|start, size, val| Field::new(start, size, format!("Total Length: {}", val.total_len))));
-        let identification = packet.read(reader, Reader::_read16_be, Some(|start, size, val| Field::new(start, size, format!("Identification: {:#06x}", val.identification))));
-        let flag = packet.read(reader, Reader::_read16_be, None);
-        let ttl = packet.read(reader, Reader::_read8, Some(|start, size, val| Field::new(start, size, format!("Time To Live: {}", val.ttl))));
-        let ipproto = packet.read(reader, Reader::_read8, Some(Description::t_protocol));
-        let crc: u16 = packet.read(reader, Reader::_read16_be, None);
-        let source = packet.read(reader, Reader::_read_ipv4, Some(Description::source_ip));
-        let target = packet.read(reader, Reader::_read_ipv4, Some(Description::target_ip));
+        reader.read8();//tos
+        let total_len = packet.read_with_string(reader, Reader::_read16_be, | val| format!("Total Length: {}", val.total_len));
+        let identification = packet.read_with_string(reader, Reader::_read16_be, | val| format!("Identification: {:#06x}", val.identification));
+        let flag = reader.read16(false);
+        let ttl = packet.read_with_string(reader, Reader::_read8, |val| format!("Time To Live: {}", val.ttl));
+        let ipproto = packet.read_with_string(reader, Reader::_read8, Description::t_protocol);
+        let crc: u16 = reader.read16(false);
+        let source = packet.read_with_string(reader, Reader::_read_ipv4, Description::source_ip);
+        let target = packet.read_with_string(reader, Reader::_read_ipv4, Description::target_ip);
         // let ptype = packet.read(reader, Reader::_read16_be, Some(IPv4::_ptype));
-        let p = &mut packet.val;
+        let mut p = packet.get().borrow_mut();
         p.total_len = total_len;
         p.identification = identification;
         p.flag = flag;
@@ -110,6 +111,7 @@ impl crate::files::Visitor for IP4Visitor {
         if ext > 0 {
             reader.slice((ext * 4) as usize);
         }
+        drop(p);
         frame.add_element(Box::new(packet));
         excute(ipproto,frame, reader);
     }
