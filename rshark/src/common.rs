@@ -201,6 +201,9 @@ impl Reader<'_> {
         let _reader = self.clone();
         _reader._set(from);
         let mut rs = String::from(def);
+        if def.len() > 0 {
+            rs.push_str(".");
+        }
         let (str, refer2) = _reader.read_compress_string();
         rs.push_str(str.as_str());
         if refer2 > 0 {
@@ -329,6 +332,7 @@ pub enum FileType {
 #[derive(Default, Debug, Copy, Clone)]
 pub enum Protocol {
     ETHERNET,
+    PPPoESS,
     // SSL,
     IPV4,
     // IPV6,

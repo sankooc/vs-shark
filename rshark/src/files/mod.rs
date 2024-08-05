@@ -384,7 +384,9 @@ impl Frame {
         }
     }
     pub fn add_element(&self, ele: Box<dyn Element>) {
-        self.eles.borrow_mut().push(ele)
+        let mut mref = self.summary.borrow_mut();
+        mref.protocol = ele.get_protocol();
+        self.eles.borrow_mut().push(ele);
     }
 }
 

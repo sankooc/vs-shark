@@ -91,11 +91,84 @@ impl Visitor for EthernetVisitor {
         excute(ptype, frame, reader);
     }
 }
+#[derive(Default)]
+pub struct PPPoESS {
+    protocol: Protocol,
+    version: u8,
+    _type: u8,
+    code: u8,
+    session_id: u16,
+    payload: u16,
+    ptype: u16,
+}
+impl Display for PPPoESS {
+    fn fmt(&self, _f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        Ok(())
+    }
+}
+impl Initer<PPPoESS> for PPPoESS {
+    fn new() -> PPPoESS {
+        PPPoESS {
+            protocol: Protocol::PPPoESS,
+            ..Default::default()
+        }
+    }
+
+    fn info(&self) -> String {
+        self.to_string().clone()
+    }
+}
+impl ContainProtocol for PPPoESS {
+    fn get_protocol(&self) -> Protocol {
+      self.protocol.clone()
+    }
+}
+impl PPPoESS{
+    fn code(p:&PPPoESS) -> String{
+        format!("Code: Session Data ({:#04x})", p.code)
+    }
+    fn session_id(p:&PPPoESS) -> String{
+        format!("Session ID: {:#06x}", p.session_id)
+    }
+    fn payload(p:&PPPoESS) -> String{
+        format!("Payload Length: {}", p.payload)
+    }
+    fn ptype(p:&PPPoESS) -> String{
+        match p.ptype {
+            33 => "Protocol: Internet Protocol version 4 (0x0021)".into(),
+            87 => "Protocol: Internet Protocol version 6 (0x0057)".into(),
+            _ => format!("Unknown: {}", p.ptype),
+        }
+    }
+}
+struct PPPoESSVisitor;
+impl Visitor for PPPoESSVisitor {
+    fn visit(&self, frame: &Frame, reader: &Reader) {
+        let packet: PacketContext<PPPoESS> = Frame::create_packet();
+        let mut p = packet.get().borrow_mut();
+        let head = reader.read8();
+        p.version = head >> 4;
+        p._type = head & 0x0f;
+        p.code = packet.read_with_string(reader, Reader::_read8, PPPoESS::code);
+        p.session_id = packet.read_with_string(reader, Reader::_read16_be, PPPoESS::session_id);
+        p.payload = packet.read_with_string(reader, Reader::_read16_be, PPPoESS::payload);
+        p.ptype = packet.read_with_string(reader, Reader::_read16_be, PPPoESS::ptype);
+        if p.code == 0 {
+            match p.ptype {
+                33 => super::network::IP4Visitor.visit(frame, reader),
+                _ =>(),
+            }
+        }
+    }
+}
 
 pub fn excute(etype: u16, frame: &Frame, reader: &Reader) {
     match etype {
         2048 => {
             super::network::IP4Visitor.visit(frame, reader);
+        }
+        34916 => {
+            PPPoESSVisitor.visit(frame, reader);
         }
         _ => (),
     }

@@ -2,7 +2,7 @@
 mod tests {
     use log::info;
 
-    use crate::files::Field;
+    use crate::{common::Protocol, files::Field};
 
     fn _dis(inx: usize, field: &Field) {
         //assert_eq!("hello       ", format!("{:width$}", "hello", width=12));
@@ -20,15 +20,18 @@ mod tests {
         // use env_logger::{Builder, Target};
         env_logger::builder().is_test(true).try_init().unwrap();
         // let fname = "../sandbox/demo.pcap";
-        let fname = "../sandbox/11.pcapng";
+        // let fname = "../sandbox/11.pcapng";
+        let fname = "../sandbox/dns.pcapng";
         let data: Vec<u8> = fs::read(fname)?;
         let _ctx = load_data(&data).unwrap();
         let frames = _ctx.get_frames();
         for f in frames.iter() {
-            if f.summary.borrow().index > 1572 {
-                continue;
+
+            match f.summary.borrow().protocol {
+                Protocol::DNS => (),
+                _ => continue,
             }
-            info!("inx:{} size:{}", f.summary.borrow().index, f.capture_size);
+            info!("inx:{} protocol: {:?} size:{}", f.summary.borrow().index,  f.summary.borrow().protocol, f.capture_size);
             let ff = f.eles.borrow();
             for e in ff.iter() {
                 info!("- {}", e.summary());
