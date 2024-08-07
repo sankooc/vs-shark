@@ -1,13 +1,14 @@
 use crate::common::FileInfo;
 use crate::entry::*;
-use crate::files::{CContext, Field};
+use crate::files::{Instance, Field};
 use js_sys::Uint8Array;
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
 pub struct WContext {
-    ctx: Box<CContext>,
+    ctx: Box<Instance>,
 }
+
 
 #[wasm_bindgen]
 pub struct WFileInfo {
@@ -28,7 +29,7 @@ impl WFileInfo {
     }
 }
 impl WFileInfo {
-    fn new(info: &FileInfo) -> WFileInfo {
+    fn new(info: FileInfo) -> WFileInfo {
         WFileInfo {
             link_type: info.link_type,
             file_type: format!("{:?}", info.file_type),

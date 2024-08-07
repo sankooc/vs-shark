@@ -1,9 +1,9 @@
 use crate::common::{FileType, Reader};
 
-use super::CContext;
+use super::Instance;
 
-pub fn parse(data: &[u8]) -> CContext {
-    let mut ctx = CContext::new(FileType::PCAP);
+pub fn parse(data: &[u8]) -> Instance {
+    let ctx = Instance::new(FileType::PCAP);
     let reader = Reader::new(data);
     let _magic = reader.read32(true);
     let major = reader.read16(true);

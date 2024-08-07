@@ -1,7 +1,9 @@
 use std::fmt::Display;
 
+use pcap_derive::Packet;
+
 use crate::common::{ContainProtocol, Description, PlayloadPacket, PortablePacket};
-use crate::files::{Field, Visitor};
+use crate::files::Visitor;
 use crate::{
     common::{Protocol, Reader},
     files::{Frame, Initer, PacketContext},
@@ -19,7 +21,7 @@ fn execute(source: u16, target: u16,frame: &Frame, reader: &Reader){
     }
 }
 
-#[derive(Default)]
+#[derive(Default, Packet)]
 pub struct UDP {
     protocol: Protocol,
     source_port: u16,
@@ -56,34 +58,25 @@ impl Display for UDP {
         Ok(())
     }
 }
-impl Initer<UDP> for UDP {
-    fn new() -> UDP {
-        UDP {
-            protocol: Protocol::UDP,
-            ..Default::default()
-        }
+impl UDP {
+    fn _info(&self) -> String {
+        return self.to_string()
     }
-    fn info(&self) -> String {
-        self.to_string().clone()
-    }
-}
-impl ContainProtocol for UDP {
-    fn get_protocol(&self) -> Protocol {
-      self.protocol.clone()
+    fn _summary(&self) -> String {
+        return self.to_string()
     }
 }
 pub struct UDPVisitor;
 
 impl Visitor for UDPVisitor {
     fn visit(&self, frame: &Frame, reader: &Reader) {
-        let packet: PacketContext<UDP> = Frame::create_packet();
+        let packet: PacketContext<UDP> = Frame::create_packet(Protocol::UDP);
         let source = packet.read_with_string(reader, Reader::_read16_be, Description::source_port);
         let target = packet.read_with_string(reader, Reader::_read16_be, Description::target_port);
         let len = packet.read_with_string(reader, Reader::_read16_be, Description::packet_length);
         let crc = reader.read16(false);
         let playload_size = len - 8;
-        // packet.read_empty(reader, playload_size as usize, |start, size, val:&UDP| Field::new(start, size, format!("UDP payload ({} bytes)", val.len - 8)));
-        
+        packet.append_string(format!("UDP payload ({} bytes)", playload_size));
         let mut p = packet.get().borrow_mut();
         p.source_port = source;
         p.target_port = target;

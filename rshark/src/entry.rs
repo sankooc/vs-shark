@@ -1,11 +1,11 @@
 use crate::files::*;
 
-use crate::files::CContext;
+use crate::files::Instance;
 use std::result::Result;
 use std::fmt::Error;
 use crate::common::IO;
 
-pub fn  load_data<'a> (data: &[u8] )->  Result<CContext, Error>{
+pub fn  load_data<'a> (data: &[u8] )->  Result<Instance, Error>{
   let head: &[u8] = &data[..4];
   let head_str = format!("{:x}", IO::read32(head, false));
   match head_str.as_str() {

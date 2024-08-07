@@ -6,6 +6,7 @@ use std::str::from_utf8;
 
 pub trait ContainProtocol {
     fn get_protocol(&self) -> Protocol;
+    // fn info(&self) -> String;
 }
 
 pub trait PortablePacket {
@@ -316,7 +317,11 @@ impl fmt::Display for IPv4Address {
             .map(|x| format!("{}", x))
             .collect::<Vec<String>>()
             .join(".");
-        fmt.write_str(str.as_str())?;
+        if str == "255.255.255.255"{
+            fmt.write_str("Boardcast")?;
+        } else {
+            fmt.write_str(str.as_str())?;
+        }
         Ok(())
     }
 }

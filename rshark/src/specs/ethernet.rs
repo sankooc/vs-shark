@@ -1,3 +1,5 @@
+use pcap_derive::Packet;
+
 use crate::common::{ContainProtocol, Description, MacAddress, MacPacket, PtypePacket, DEF_EMPTY_MAC};
 use crate::files::Visitor;
 use crate::{
@@ -5,6 +7,8 @@ use crate::{
     files::{Frame, Initer, PacketContext},
 };
 use std::fmt::Display;
+
+#[derive(Default, Packet)]
 pub struct Ethernet {
     protocol: Protocol,
     source_mac: Option<MacAddress>,
@@ -12,6 +16,15 @@ pub struct Ethernet {
     len: u16,
     ptype: u16,
 }
+impl Ethernet {
+    fn _info(&self) -> String {
+        return self.to_string()
+    }
+    fn _summary(&self) -> String {
+        return self.to_string()
+    }
+}
+
 impl Display for Ethernet {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         let source = self
@@ -26,26 +39,6 @@ impl Display for Ethernet {
             .to_string();
         f.write_str(format!("Ethernet II, Src: {}, Dst: {}", source, target).as_str())?;
         Ok(())
-    }
-}
-impl Initer<Ethernet> for Ethernet {
-    fn new() -> Ethernet {
-        Ethernet {
-            source_mac: None,
-            target_mac: None,
-            ptype: 0,
-            len: 0,
-            protocol: Protocol::ETHERNET,
-        }
-    }
-
-    fn info(&self) -> String {
-        self.to_string().clone()
-    }
-}
-impl ContainProtocol for Ethernet {
-    fn get_protocol(&self) -> Protocol {
-      self.protocol.clone()
     }
 }
 
@@ -74,7 +67,7 @@ pub struct EthernetVisitor;
 
 impl Visitor for EthernetVisitor {
     fn visit(&self, frame: &Frame, reader: &Reader) {
-        let packet: PacketContext<Ethernet> = Frame::create_packet();
+        let packet: PacketContext<Ethernet> = Frame::create_packet(Protocol::ETHERNET);
 
         let mut p = packet.get().borrow_mut();
         p.source_mac = packet.read_with_string(reader, Reader::_read_mac, Description::source_mac);
@@ -91,7 +84,7 @@ impl Visitor for EthernetVisitor {
         excute(ptype, frame, reader);
     }
 }
-#[derive(Default)]
+#[derive(Default, Packet)]
 pub struct PPPoESS {
     protocol: Protocol,
     version: u8,
@@ -106,24 +99,14 @@ impl Display for PPPoESS {
         Ok(())
     }
 }
-impl Initer<PPPoESS> for PPPoESS {
-    fn new() -> PPPoESS {
-        PPPoESS {
-            protocol: Protocol::PPPoESS,
-            ..Default::default()
-        }
-    }
 
-    fn info(&self) -> String {
-        self.to_string().clone()
-    }
-}
-impl ContainProtocol for PPPoESS {
-    fn get_protocol(&self) -> Protocol {
-      self.protocol.clone()
-    }
-}
 impl PPPoESS{
+    fn _info(&self) -> String {
+        return self.to_string()
+    }
+    fn _summary(&self) -> String {
+        return self.to_string()
+    }
     fn code(p:&PPPoESS) -> String{
         format!("Code: Session Data ({:#04x})", p.code)
     }
@@ -144,7 +127,7 @@ impl PPPoESS{
 struct PPPoESSVisitor;
 impl Visitor for PPPoESSVisitor {
     fn visit(&self, frame: &Frame, reader: &Reader) {
-        let packet: PacketContext<PPPoESS> = Frame::create_packet();
+        let packet: PacketContext<PPPoESS> = Frame::create_packet(Protocol::PPPoESS);
         let mut p = packet.get().borrow_mut();
         let head = reader.read8();
         p.version = head >> 4;

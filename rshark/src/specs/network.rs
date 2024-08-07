@@ -1,5 +1,7 @@
 use std::fmt::{Formatter, Result};
 
+use pcap_derive::Packet;
+
 use crate::{
     common::{ContainProtocol, Description, IPPacket, IPv4Address, Protocol, Reader, TtypePacket}, files::{Frame, Initer, PacketContext, Visitor}
 };
@@ -14,7 +16,7 @@ pub fn excute(ipprototype: u8, frame: &Frame, reader: &Reader) {
 }
 
 
-#[derive(Default)]
+#[derive(Default, Packet)]
 pub struct IPv4 {
     protocol: Protocol,
     source_ip: Option<IPv4Address>,
@@ -61,28 +63,19 @@ impl std::fmt::Display for IPv4 {
         Ok(())
     }
 }
-
-impl Initer<IPv4> for IPv4 {
-    fn new() -> IPv4 {
-        IPv4 {
-            protocol: Protocol::IPV4,
-            ..Default::default()
-        }
+impl IPv4 {
+    fn _info(&self) -> String {
+        return self.to_string()
     }
-    fn info(&self) -> String {
-        self.to_string().clone()
-    }
-}
-impl ContainProtocol for IPv4 {
-    fn get_protocol(&self) -> Protocol {
-      self.protocol.clone()
+    fn _summary(&self) -> String {
+        return self.to_string()
     }
 }
 pub struct IP4Visitor;
 
 impl crate::files::Visitor for IP4Visitor {
     fn visit(&self, frame: &Frame, reader: &Reader) {
-        let packet: PacketContext<IPv4> = Frame::create_packet();
+        let packet: PacketContext<IPv4> = Frame::create_packet(Protocol::IPV4);
         let head = reader.read8();
         let head_len = head & 0x0f;
         reader.read8();//tos

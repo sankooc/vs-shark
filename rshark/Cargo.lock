@@ -235,6 +235,7 @@ dependencies = [
  "js-sys",
  "lazy_static",
  "log",
+ "pcap_derive",
  "wasm-bindgen",
  "wasm-bindgen-test",
 ]
@@ -253,6 +254,14 @@ name = "once_cell"
 version = "1.19.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3fdb12b2476b595f9358c5161aa467c2438859caa136dec86c26fdd2efe17b92"
+
+[[package]]
+name = "pcap_derive"
+version = "0.1.0"
+dependencies = [
+ "quote",
+ "syn",
+]
 
 [[package]]
 name = "proc-macro2"

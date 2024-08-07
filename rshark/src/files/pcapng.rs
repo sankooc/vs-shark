@@ -10,7 +10,7 @@
 // }
 use crate::common::{FileType, Reader};
 
-use super::CContext;
+use super::Instance;
 
 fn parse_head(data: &[u8]) -> String {
     let reader = Reader::new(data);
@@ -25,7 +25,7 @@ fn parse_interface(data: &[u8]) -> u16 {
     reader.read16(false)
 }
 
-fn parse_enhance(ctx: &mut CContext, data: &[u8]) {
+fn parse_enhance(ctx: &Instance, data: &[u8]) {
     let reader = Reader::new(data);
     let _interface_id = reader.read32(false);
     let mut ts = reader.read32(false) as u64;
@@ -41,8 +41,8 @@ fn parse_enhance(ctx: &mut CContext, data: &[u8]) {
     }
     ctx.create(raw, ts, captured, origin);
 }
-pub fn parse(data: &[u8]) -> CContext {
-    let mut ctx = CContext::new(FileType::PCAPNG);
+pub fn parse(data: &[u8]) -> Instance {
+    let ctx = Instance::new(FileType::PCAPNG);
     let reader = Reader::new(data);
 
     loop {
@@ -59,7 +59,7 @@ pub fn parse(data: &[u8]) -> CContext {
                     ctx.get_info().link_type = parse_interface(&raw);
                 }
                 "0x00000006" => {
-                    parse_enhance(&mut ctx, &raw);
+                    parse_enhance(&ctx, &raw);
                 }
                 _ => (),
             }
