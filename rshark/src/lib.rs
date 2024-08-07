@@ -1,4 +1,3 @@
-pub mod macr;
 mod common;
 mod files;
 mod specs;

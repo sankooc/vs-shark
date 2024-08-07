@@ -4,13 +4,12 @@ version = "0.1.0"
 edition = "2021"
 
 [lib]
-# crate-type = ["proc-macro"]
 proc-macro = true
 
 [[test]]
 name = "test"
 path = "test/progress.rs"
+
 [dependencies]
-# pcap = { path = "../pcap" }
 syn = "2.0"
 quote = "1.0"

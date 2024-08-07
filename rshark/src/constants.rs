@@ -351,6 +351,15 @@ lazy_static! {
 		m.insert(145, "NSH");
 		m
 	};
+	pub static ref ssl_type_map: HashMap<u16, &'static str> = {
+		let mut m = HashMap::new();
+		m.insert(0, "Sent to us");
+		m.insert(1, "Boardcast");
+		m.insert(2, "Multicast not boardcast");
+		m.insert(3, "Send to somebody else by somebody else");
+		m.insert(4, "Send by us");
+		m
+	};
 	pub static ref etype_map: HashMap<u16, &'static str> = {
 		let mut m = HashMap::new();
 		m.insert(2048, "IPv4");
@@ -426,6 +435,9 @@ lazy_static! {
   }
 pub fn ip_protocol_type_mapper(code:u16) -> String {
     (*ip_protocol_type_map.get(&code).unwrap_or(&"unknown")).into()
+  }
+pub fn ssl_type_mapper(code:u16) -> String {
+    (*ssl_type_map.get(&code).unwrap_or(&"unknown")).into()
   }
 pub fn etype_mapper(code:u16) -> String {
     (*etype_map.get(&code).unwrap_or(&"unknown")).into()

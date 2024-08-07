@@ -65,7 +65,7 @@ impl Description {
     }
     pub fn t_protocol(packet: &impl TtypePacket) -> String {
         let ttype = packet.t_protocol_type();
-        format!("Protocol: {} ({})", ip_protocol_type_mapper(ttype), ttype)
+        format!("Protocol: {} ({:#06x})", ip_protocol_type_mapper(ttype), ttype)
     }
     pub fn source_port(packet: &impl PortablePacket) -> String {
         format!("Source Port: {}", packet.source_port())
@@ -338,7 +338,7 @@ pub enum FileType {
 pub enum Protocol {
     ETHERNET,
     PPPoESS,
-    // SSL,
+    SSL,
     IPV4,
     // IPV6,
     // ARP,

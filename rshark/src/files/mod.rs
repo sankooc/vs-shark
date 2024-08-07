@@ -115,7 +115,7 @@ pub trait FieldBuilder<T> {
 pub type MultiBlock<T> = Vec<Rc<RefCell<T>>>;
 
 impl<T> Initer for MultiBlock<T> {
-    fn new(protocol: Protocol) -> MultiBlock<T> {
+    fn new(_p: Protocol) -> MultiBlock<T> {
         Vec::new()
     }
 
@@ -326,19 +326,6 @@ pub trait DomainService {
     fn ttl(&self) -> u32;
 }
 
-// pub struct DNSRecord {
-//     name: String,
-//     _type: String,
-//     class: String,
-//     content: String,
-//     proto: String,
-//     ttl: u32,
-// }
-// impl DNSRecord {
-//     fn new (rr: Ref<dyn DomainService>) -> DNSRecord {
-//         DNSRecord{name: rr.name(), _type: rr._type(),class:rr.class(),content: rr.content(),proto:rr.proto(),ttl: rr.ttl()}
-//     }
-// }
 
 pub trait Initer {
     fn new(protocol: Protocol) -> Self;
@@ -510,10 +497,7 @@ impl Instance {
             link_type,
         );
         let reader = f.get_reader();
-        match crate::specs::get_visitor(link_type) {
-            Some(visitor) => visitor.visit(&f, &reader),
-            None => (),
-        };
+        crate::specs::execute(link_type, &f, &reader);
         self.frames.borrow_mut().push(f);
         ctx.count.set(count + 1);
     }

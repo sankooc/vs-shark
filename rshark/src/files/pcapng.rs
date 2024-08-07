@@ -50,13 +50,17 @@ pub fn parse(data: &[u8]) -> Instance {
         let len = reader.read32(false);
         let raw = reader.slice((len - 12) as usize);
         let _len = reader.read32(false);
+        let context = ctx.context();
         if len == _len {
             match block_type.as_str() {
                 "0x0a0d0d0a" => {
-                    ctx.get_info().version = parse_head(&raw);
+                    let mut info = context.info.borrow_mut();
+                    info.version = parse_head(&raw);
                 }
                 "0x00000001" => {
-                    ctx.get_info().link_type = parse_interface(&raw);
+                    let mut info = context.info.borrow_mut();
+                    let ltype = parse_interface(&raw);
+                    info.link_type = ltype;
                 }
                 "0x00000006" => {
                     parse_enhance(&ctx, &raw);

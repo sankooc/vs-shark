@@ -8,12 +8,15 @@ pub fn parse(data: &[u8]) -> Instance {
     let _magic = reader.read32(true);
     let major = reader.read16(true);
     let minor = reader.read16(true);
-    ctx.get_info().version = format!("{}-{}", major, minor);
+    
+    let context = ctx.context();
+    let mut info = context.info.borrow_mut();
+    info.version = format!("{}-{}", major, minor);
     reader._move(8);
     let _snap_len = reader.read32(false);
     reader._move(2);
     let linktype = reader.read16(true);
-    ctx.get_info().link_type = linktype;
+    info.link_type = linktype;
     while reader.has() {
         let h_ts: u64 = reader.read32(false).into();
         let l_ts: u64 = reader.read32(false).into();

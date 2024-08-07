@@ -96,5 +96,4 @@ pub trait Initer {
 fn tests() {
     // let token = DeriveInput::parse("");
     Ethernet::new(Protocol::ETHERNET);
-    // Pancakes::hello_macro();
 }

@@ -1,6 +1,7 @@
 use pcap_derive::Packet;
 
 use crate::common::{ContainProtocol, Description, MacAddress, MacPacket, PtypePacket, DEF_EMPTY_MAC};
+use crate::constants::{etype_mapper, link_type_mapper, ssl_type_mapper};
 use crate::files::Visitor;
 use crate::{
     common::{Protocol, Reader},
@@ -107,20 +108,20 @@ impl PPPoESS{
     fn _summary(&self) -> String {
         return self.to_string()
     }
-    fn code(p:&PPPoESS) -> String{
-        format!("Code: Session Data ({:#04x})", p.code)
+    fn code(&self) -> String{
+        format!("Code: Session Data ({:#04x})", self.code)
     }
-    fn session_id(p:&PPPoESS) -> String{
-        format!("Session ID: {:#06x}", p.session_id)
+    fn session_id(&self) -> String{
+        format!("Session ID: {:#06x}", self.session_id)
     }
-    fn payload(p:&PPPoESS) -> String{
-        format!("Payload Length: {}", p.payload)
+    fn payload(&self) -> String{
+        format!("Payload Length: {}", self.payload)
     }
-    fn ptype(p:&PPPoESS) -> String{
-        match p.ptype {
+    fn ptype(&self) -> String{
+        match self.ptype {
             33 => "Protocol: Internet Protocol version 4 (0x0021)".into(),
             87 => "Protocol: Internet Protocol version 6 (0x0057)".into(),
-            _ => format!("Unknown: {}", p.ptype),
+            _ => format!("Unknown: {}", self.ptype),
         }
     }
 }
@@ -136,12 +137,71 @@ impl Visitor for PPPoESSVisitor {
         p.session_id = packet.read_with_string(reader, Reader::_read16_be, PPPoESS::session_id);
         p.payload = packet.read_with_string(reader, Reader::_read16_be, PPPoESS::payload);
         p.ptype = packet.read_with_string(reader, Reader::_read16_be, PPPoESS::ptype);
-        if p.code == 0 {
-            match p.ptype {
+        let code = p.code;
+        let ptype = p.ptype;
+        drop(p);
+        frame.add_element(Box::new(packet));
+        if code == 0 {
+            match ptype {
                 33 => super::network::IP4Visitor.visit(frame, reader),
                 _ =>(),
             }
         }
+    }
+}
+#[derive(Default, Packet)]
+pub struct SSL {
+    protocol: Protocol,
+    _type: u16,
+    ltype: u16,
+    len: u16,
+    source: Option<MacAddress>,
+    ptype: u16,
+}
+
+impl SSL {
+    fn _summary(&self) -> String{
+        "Linux cooked capture v1".into()
+    }
+    fn _info(&self) -> String{
+        self._summary()
+    }
+    fn _type(&self) -> String{
+        format!("Packet Type: {}", ssl_type_mapper(self._type))
+    }
+    fn ltype(&self) -> String{
+        format!("Link-layer address type: {} ({})", link_type_mapper(self.ltype), self.ltype)
+    }
+    fn len_str(&self) -> String{
+        format!("Link-layer address length: {}", self._type)
+    }
+    fn source_str(&self) -> String{
+        let add = self.source
+        .as_ref()
+        .unwrap_or(&DEF_EMPTY_MAC)
+        .to_string();
+        format!("Source: {}", add)
+    }
+    fn ptype_str(&self) -> String{
+        format!("Protocol: {} ({:#06x})", etype_mapper(self.ptype), self.ptype)
+    }
+}
+
+pub struct SSLVisitor;
+impl Visitor for SSLVisitor {
+    fn visit(&self, frame: &Frame, reader: &Reader) {
+        let packet:PacketContext<SSL> = Frame::create_packet(Protocol::SSL);
+        let mut p = packet.get().borrow_mut();
+        p._type = packet.read_with_string(reader, Reader::_read16_be, SSL::_type);
+        p.ltype = packet.read_with_string(reader, Reader::_read16_be, SSL::ltype);
+        p.len = packet.read_with_string(reader, Reader::_read16_be, SSL::len_str);
+        p.source = packet.read_with_string(reader, Reader::_read_mac, SSL::source_str);
+        reader._move(2);
+        p.ptype = packet.read_with_string(reader, Reader::_read16_be, SSL::ptype_str);
+        let ptype = p.ptype;
+        drop(p);
+        frame.add_element(Box::new(packet));
+        excute(ptype, frame, reader);
     }
 }
 
