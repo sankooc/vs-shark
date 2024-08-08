@@ -1,6 +1,7 @@
 use crate::constants::{etype_mapper, ip_protocol_type_mapper};
 use std::cell::Cell;
 use std::fmt;
+use std::rc::Rc;
 use std::str;
 use std::str::from_utf8;
 
@@ -111,22 +112,38 @@ impl IO {
 }
 #[derive(Clone)]
 pub struct Reader<'a> {
-    data: &'a [u8],
+    _data: Option<&'a [u8]>,
+    _raw: Rc<Vec<u8>>,
     cursor: Cell<usize>,
 }
 impl Reader<'_> {
     pub fn _get_data(&self) -> &[u8] {
-        &self.data
+        match self._data {
+            Some(data) => return data,
+            _ => (),
+        }
+        return self._raw.as_ref();
     }
     pub fn cursor(&self) -> usize {
         return self.cursor.get();
+    }
+    pub fn get_raw(&self) -> Rc<Vec<u8>> {
+        self._raw.clone()
     }
 }
 
 impl Reader<'_> {
     pub fn new(data: &[u8]) -> Reader {
         Reader {
-            data,
+            _data: Some(data),
+            _raw: Rc::new(Vec::new()),
+            cursor: Cell::new(0),
+        }
+    }
+    pub fn new_raw(raw: Rc<Vec<u8>>) -> Reader<'static> {
+        Reader {
+            _data: None,
+            _raw: raw,
             cursor: Cell::new(0),
         }
     }
@@ -141,7 +158,7 @@ impl Reader<'_> {
         self.cursor.set(self.cursor.get() - len);
     }
     pub fn _slice(&self, len: usize) -> &[u8] {
-        &self.data[self.cursor.get()..self.cursor.get() + len]
+        &self._get_data()[self.cursor.get()..self.cursor.get() + len]
     }
     pub fn slice(&self, len: usize) -> &[u8] {
         // let c = self.cursor;
@@ -150,7 +167,7 @@ impl Reader<'_> {
         _tmp
     }
     pub fn read8(&self) -> u8 {
-        let a = self.data[self.cursor.get()];
+        let a = self._get_data()[self.cursor.get()];
         self._move(1);
         u8::from_be_bytes([a])
     }
@@ -184,7 +201,7 @@ impl Reader<'_> {
                 let str = self.read_string(_size as usize);
                 list.push(str);
             }
-            let next = self.data[self.cursor.get()];
+            let next = self._get_data()[self.cursor.get()];
             if next == 0 {
                 return (list.into_iter().collect::<Vec<_>>().join("."), 0);
             }
@@ -248,10 +265,10 @@ impl Reader<'_> {
         Some(IPv4Address { data })
     }
     pub fn left(&self) -> usize {
-        self.data.len() - self.cursor.get()
+        self._get_data().len() - self.cursor.get()
     }
     pub fn has(&self) -> bool {
-        return self.cursor.get() < self.data.len();
+        return self.cursor.get() < self._get_data().len();
     }
 
     pub fn _read_mac(reader: &Reader) -> Option<MacAddress> {

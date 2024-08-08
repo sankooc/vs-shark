@@ -75,7 +75,7 @@ impl Visitor for UDPVisitor {
         let len = packet.read_with_string(reader, Reader::_read16_be, Description::packet_length);
         let crc = reader.read16(false);
         let playload_size = len - 8;
-        packet.append_string(format!("UDP payload ({} bytes)", playload_size));
+        packet.append_string(format!("UDP payload ({} bytes)", playload_size), reader.get_raw());
         let mut p = packet.get().borrow_mut();
         p.source_port = source;
         p.target_port = target;

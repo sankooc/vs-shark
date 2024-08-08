@@ -1,7 +1,6 @@
-use std::{default, fmt::Display};
+use std::fmt::Display;
 
 use pcap_derive::Packet;
-use syn::{parse::Parse, DeriveInput};
 
 #[derive(Default, Packet)]
 struct Ethernet {
