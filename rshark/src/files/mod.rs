@@ -1,7 +1,7 @@
 pub mod pcap;
 pub mod pcapng;
 
-use crate::{constants::link_type_mapper, specs::application::RecordResource};
+use crate::{constants::link_type_mapper, nshark::DNSRecord, specs::dns::RecordResource};
 use std::{
     cell::{Cell, Ref, RefCell},
     rc::Rc,
@@ -381,7 +381,7 @@ pub struct Frame {
     pub capture_size: u32,
     pub origin_size: u32,
     pub summary: RefCell<FrameSummary>,
-    pub data: Rc<Vec<u8>>,
+    data: Rc<Vec<u8>>,
     pub ctx: Rc<Context>,
     pub eles: RefCell<Vec<Box<dyn Element>>>,
 }
@@ -501,6 +501,13 @@ impl Context {
     pub fn get_info(&self)-> FileInfo{
         self.info.borrow().clone()
     }
+    pub fn get_dns(&self) -> Vec<DNSRecord> {
+        let mut rs = Vec::new();
+        for d in self.dns.borrow().iter() {
+            rs.push(DNSRecord::create(d.borrow()));
+        }
+        rs
+    }
 }
 pub struct Instance {
     ctx: Rc<Context>,
@@ -539,7 +546,7 @@ impl Instance {
         self.frames.borrow_mut().push(f);
         ctx.count.set(count + 1);
     }
-    fn context(&self) -> Rc<Context> {
+    pub fn context(&self) -> Rc<Context> {
         self.ctx.clone()
     }
     pub fn get_frames(&self) -> Ref<Vec<Frame>> {

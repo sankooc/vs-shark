@@ -1,6 +1,8 @@
+use std::cell::Ref;
+
 use crate::common::FileInfo;
 use crate::entry::*;
-use crate::files::{Instance, Field};
+use crate::files::{DomainService, Field, Instance};
 use js_sys::Uint8Array;
 use wasm_bindgen::prelude::*;
 
@@ -8,6 +10,52 @@ use wasm_bindgen::prelude::*;
 pub struct WContext {
     ctx: Box<Instance>,
 }
+
+
+#[wasm_bindgen]
+pub struct DNSRecord {
+    name: String,
+    _type: String,
+    proto: String,
+    class: String,
+    content: String,
+    pub ttl: u32,
+}
+
+impl DNSRecord {
+    pub fn create(data: Ref<impl DomainService>) -> DNSRecord {
+        DNSRecord{ name: data.name(), _type:data._type(), proto: data.proto(), class: data.class(), content: data.content(), ttl: data.ttl()}
+    }
+}
+
+#[wasm_bindgen]
+impl DNSRecord {
+    #[wasm_bindgen(getter)]
+    pub fn name(&self) -> String {
+        self.name.clone()
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn _type(&self) -> String {
+        self._type.clone()
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn proto(&self) -> String {
+        self.proto.clone()
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn content(&self) -> String {
+        self.content.clone()
+    }
+    #[wasm_bindgen(getter)]
+    pub fn class(&self) -> String {
+        self.class.clone()
+    }
+}
+
+
 
 
 #[wasm_bindgen]
@@ -118,12 +166,16 @@ impl WContext {
         let f = binding.get(index as usize).unwrap();
         f.get_fields()
     }
-    #[wasm_bindgen]
-    pub fn get_frame_data(&self, index: u32) -> Uint8Array {
-        let binding = self.ctx.get_frames();
-        let f = binding.get(index as usize).unwrap();
-        let data: &[u8] = &f.data;
-        data.into()
+    // #[wasm_bindgen]
+    // pub fn get_frame_data(&self, index: u32) -> Uint8Array {
+    //     let binding = self.ctx.get_frames();
+    //     let f = binding.get(index as usize).unwrap();
+    //     let data: &[u8] = &f.data();
+    //     data.into()
+    // }
+
+    pub fn get_dns_record(&self)-> Vec<DNSRecord>{
+        self.ctx.context().get_dns()
     }
 }
 

@@ -17,6 +17,7 @@ pub fn parse(data: &[u8]) -> Instance {
     reader._move(2);
     let linktype = reader.read16(true);
     info.link_type = linktype;
+    drop(info);
     while reader.has() {
         let h_ts: u64 = reader.read32(false).into();
         let l_ts: u64 = reader.read32(false).into();

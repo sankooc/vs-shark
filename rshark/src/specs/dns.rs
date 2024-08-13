@@ -3,7 +3,7 @@ use std::fmt::Display;
 use std::rc::Rc;
 
 // use log::info;
-
+//https://www.rfc-editor.org/rfc/rfc1035
 use pcap_derive::Packet;
 
 use crate::common::{ContainProtocol, Protocol, Reader};
@@ -189,13 +189,6 @@ impl DomainService for RecordResource {
         dns_class_mapper(self.class)
     }
 }
-// pub enum RecordResourceType {
-//     NONE,
-//     A,
-//     CNAME,
-//     SOA,
-//     RPT,
-// }
 
 pub struct DNSVisitor;
 
@@ -270,17 +263,26 @@ impl Visitor for DNSVisitor {
         p.opcode = (flag >> 11) & 0xf;
         if questions > 0 {
             let read_question = |reader: &Reader| DNSVisitor::read_questions(reader, questions);
-            p.questions_ref =
-                Some(packet.read_with_field(reader, read_question, Some("Questions".into())));
+            let qs = packet.read_with_field(reader, read_question, Some("Questions".into()));
+            p.questions_ref = Some(qs);
         }
         if answer_rr > 0 {
             let _read = |reader: &Reader| DNSVisitor::read_rrs(frame,reader, answer_rr, _cur);
-            p.answers_ref = Some(packet.read_with_field(reader, _read, Some("Answers".into())));
+            let qs: Rc<RefCell<Vec<Rc<RefCell<RecordResource>>>>> = packet.read_with_field(reader, _read, Some("Answers".into()));
+            for r in qs.as_ref().borrow().iter() {
+                frame.ctx.add_dns_record(r.clone());
+            }
+            p.answers_ref = Some(qs);
         }
         if authority_rr > 0 {
             let _read = |reader: &Reader| DNSVisitor::read_rrs(frame,reader, authority_rr, _cur);
             p.authorities_ref = Some(packet.read_with_field(reader, _read, Some("Authorities".into())));
         }
+        // if additional_rr > 0 {
+        //     let _read = |reader: &Reader| DNSVisitor::read_rrs(frame,reader, additional_rr, _cur);
+        //     p.authorities_ref = Some(packet.read_with_field(reader, _read, Some("Additionals".into())));
+        // }
+
         // p.transaction_id = transaction_id;
         p.flag = flag;
         p.questions = questions;

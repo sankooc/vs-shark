@@ -20,7 +20,7 @@ export default function Stack(props:StackProps) {
         const rs = {
             key,
             label: it.summary,
-            // data: it,
+            data: it,
             className: store.key === key ? className +' active' : className,
             children: [],
             selectable: true,
@@ -35,8 +35,8 @@ export default function Stack(props:StackProps) {
     const stacks: TreeNode[] = props.items.map(mapper);
     const onSelect = (e: TreeNodeClickEvent) => {
         const { node } = e;
+        console.log(e);
         props.onSelect(node.data);
-        // emitMessage(new ComMessage('hex-data', node.data));
         setStore({...store, key: node.key + ''})
     }
     return (

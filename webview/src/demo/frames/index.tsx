@@ -1,15 +1,11 @@
 import React, { useEffect, useState } from "react";
-import { emitMessage, trace } from "../../connect";
-import { ColumnItem, ComMessage, Frame, HexV } from "../../common";
+import { ColumnItem, HexV } from "../../common";
 import { Splitter, SplitterPanel } from 'primereact/splitter';
 import DTable from '../dataTable';
 import Stack from '../tree';
 import HexView from '../detail';
 import { IconField } from 'primereact/iconfield';
-import { InputIcon } from 'primereact/inputicon';
-import { InputText } from 'primereact/inputtext';
 import { MultiSelect } from 'primereact/multiselect';
-import { Context, Packet } from "nshark";
 import { WContext, FrameInfo, Field } from 'rshark';
 
 class FrameListProps {
@@ -83,14 +79,13 @@ function FrameList(props: FrameListProps) {
     protos.push({ name: `${code.toUpperCase()} (${_map[code]})`, code});
   }
   const onSelect = (item: ColumnItem): void => {
-    console.log(props.ctx);
-    const items = props.ctx.get_fields(item.no - 1);
-    const data = props.ctx.get_frame_data(item.no - 1);
-    const stackProps = {
-      items,
-      data,
-    };
-    setStack(items);
+    setStack(props.ctx.get_fields(item.no - 1));
+  };
+  const onStackSelect = (f) => {
+    const { data, start, size } = f;
+    const h = new HexV(data);
+    h.index = [start, size];
+    setHex(h);
   };
   return (<div className="flex flex-nowrap h-full w-full" id="frame-page">
     <Splitter layout="vertical" className="h-full w-full">
@@ -104,14 +99,7 @@ function FrameList(props: FrameListProps) {
       <SplitterPanel className="flex align-items-center justify-content-center" size={30} minSize={20}>
         <Splitter className="w-full">
           <SplitterPanel className="flex align-items-center" size={50} minSize={50} style={{ height: '28vh', overflow: 'auto' }}>
-            <Stack items={stacks} onSelect={(f) => {
-              // const data = f.getSource();
-              // const start = f.getStartIndex();
-              // const size = f.getSize();
-              // const h = new HexV(data);
-              // h.index = [start, size];
-              // setHex(h);
-            }}/>
+            <Stack items={stacks} onSelect={onStackSelect}/>
           </SplitterPanel>
           <SplitterPanel className="flex align-items-center" size={50} minSize={50} style={{ height: '28vh', overflow: 'auto' }}>
             <HexView data={hex}/>

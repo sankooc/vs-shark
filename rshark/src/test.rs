@@ -23,16 +23,16 @@ mod tests {
         env_logger::builder().is_test(true).try_init().unwrap();
         // let fname = "../sandbox/demo.pcap";
         // let fname = "../sandbox/11.pcapng";
-        // let fname = "../sandbox/dns.pcapng";
-        let fname = "../sandbox/creden.pcapng";
+        let fname = "../sandbox/dns.pcapng";
+        // let fname = "../sandbox/creden.pcapng";
         let data: Vec<u8> = fs::read(fname)?;
         let _ctx = load_data(&data).unwrap();
         let frames = _ctx.get_frames();
         for f in frames.iter() {
-            // match f.summary.borrow().protocol {
-            //     Protocol::DNS => (),
-            //     _ => continue,
-            // }
+            match f.summary.borrow().protocol {
+                Protocol::DNS => (),
+                _ => continue,
+            }
             info!(
                 "inx:{} protocol: {:?} size:{}",
                 f.summary.borrow().index,

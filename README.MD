@@ -27,5 +27,7 @@
 - PCAP
 - PCAPNG
 - ETHERNET II
+- PPPOE
+- SSL
 - IPv4
 - UDP

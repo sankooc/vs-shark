@@ -11,11 +11,11 @@ use crate::{
 
 fn execute(source: u16, target: u16, frame: &Frame, reader: &Reader) {
     match source {
-        53 => return super::application::DNSVisitor.visit(frame, reader),
+        53 => return super::dns::DNSVisitor.visit(frame, reader),
         _ => (),
     }
     match target {
-        53 => return super::application::DNSVisitor.visit(frame, reader),
+        53 => return super::dns::DNSVisitor.visit(frame, reader),
         _ => (),
     }
 }
