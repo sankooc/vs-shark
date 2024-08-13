@@ -1,11 +1,10 @@
-
-import { DNSRecord } from 'nshark/built/src/common';
+import { DNSRecord, WContext } from 'rshark';
 
 export class ComMessage<T> {
     type: string;
     body: T;
     id!: string;
-    constructor(type: string, body: T){
+    constructor(type: string, body: T) {
         this.type = type;
         this.body = body;
     }
@@ -14,7 +13,7 @@ export class ComMessage<T> {
 export class ComLog {
     level: string;
     msg: any;
-    constructor(level: string, msg: any){
+    constructor(level: string, msg: any) {
         this.level = level;
         this.msg = msg;
     }
@@ -30,7 +29,7 @@ export enum Panel {
 export abstract class PCAPClient {
     level: string = 'trace';
     data!: Uint8Array;
-    initData(data: Uint8Array): void{
+    initData(data: Uint8Array): void {
         this.data = data;
     };
     abstract emitMessage(panel: Panel, msg: ComMessage<any>): void;
@@ -40,15 +39,15 @@ export abstract class PCAPClient {
     abstract renderHexView(data: HexV): void;
     abstract init(): MainProps;
 
-    handle(msg: ComMessage<any>){
-        if(!msg) return;
+    handle(msg: ComMessage<any>) {
+        if (!msg) return;
         const { type, body } = msg
         try {
-            switch(type){
+            switch (type) {
                 case 'ready':
-                    try{
+                    try {
                         this.init();
-                    } catch(e) {
+                    } catch (e) {
                         console.error(e);
                         this.printLog(new ComLog('error', 'failed to open file'));
                     }
@@ -67,11 +66,11 @@ export abstract class PCAPClient {
                 default:
                     console.log('unknown type', msg.type);
             }
-        }catch(e){
+        } catch (e) {
             console.error(e);
         }
     }
-    
+
 }
 
 export interface ColumnItem {
@@ -81,18 +80,18 @@ export interface ColumnItem {
     getStyle(inx: number): string;
 }
 
-export class IDNSRecord implements ColumnItem {
-    constructor(public readonly record: DNSRecord){}
-    style?: string;
-    no?: number;
-    getIndex(): number {
-        return 0;
-    };
-    getStyle(inx: number): string {
-        return '';
-    }
+// export class IDNSRecord implements ColumnItem {
+//     constructor(public readonly record: DNSRecord) { }
+//     style?: string;
+//     no?: number;
+//     getIndex(): number {
+//         return 0;
+//     };
+//     getStyle(inx: number): string {
+//         return '';
+//     }
 
-}
+// }
 
 export class TCPCol implements ColumnItem {
     no!: number;
@@ -115,13 +114,13 @@ export class TCPCol implements ColumnItem {
 export class Category {
     name: string;
     index: number = 0;
-    constructor(name: string){
+    constructor(name: string) {
         this.name = name;
     }
 }
 export class GrapNode {
-    private static index:number = 0;
-    public static create(name: string, category: number): GrapNode{
+    private static index: number = 0;
+    public static create(name: string, category: number): GrapNode {
         const instance = new GrapNode(name);
         instance.category = category;
         instance.id = GrapNode.index;
@@ -132,14 +131,14 @@ export class GrapNode {
     category!: number;
     name: string;
     extra!: string;
-    constructor(name: string){
+    constructor(name: string) {
         this.name = name;
     }
 }
 export class GrapLink {
     readonly source: number;
     readonly target: number;
-    constructor(source: number, target: number){
+    constructor(source: number, target: number) {
         this.source = source;
         this.target = target;
     }
@@ -160,13 +159,13 @@ export class Frame implements ColumnItem {
     protocol!: string;
     iRtt: number = 0;
     len: number = 0;
-    style: string='';
+    style: string = '';
     info!: string;
     public getIndex(): number {
         return this.no;
     }
     public getStyle(inx: number): string {
-        if(this.no === inx){
+        if (this.no === inx) {
             return 'active';
         }
         return this.style;
@@ -180,16 +179,16 @@ export class CTreeItem {
     label: string;
     index?: [number, number];
     children: CTreeItem[] = [];
-    constructor(label: string){
+    constructor(label: string) {
         this.label = label;
     }
-    append(label:string): CTreeItem {
+    append(label: string): CTreeItem {
         const item = new CTreeItem(label);
         this.children.push(item);
         return item;
     }
-    addIndex(label:string, start: number, size: number): CTreeItem{
-        if(!size){
+    addIndex(label: string, start: number, size: number): CTreeItem {
+        if (!size) {
             return this.append(label);
         }
         const item = new CTreeItem(label);
@@ -202,7 +201,7 @@ export class CTreeItem {
 export class HexV {
     data: Uint8Array;
     index!: [number, number];
-    constructor(data: Uint8Array){
+    constructor(data: Uint8Array) {
         this.data = data;
     }
 }
@@ -220,4 +219,20 @@ export class MainProps {
     arpGraph?: Grap;
     overview?: OverviewSource;
     dnsRecords?: DNSRecord[];
+}
+
+export class IDNSRecord implements ColumnItem {
+    constructor(public readonly record: DNSRecord) { }
+    style?: string;
+    no?: number;
+    getIndex(): number {
+        return 0;
+    };
+    getStyle(inx: number): string {
+        return '';
+    }
+
+}
+export class DNSProps {
+    constructor(public ctx: WContext, public dnsRecords: IDNSRecord[]) { }
 }

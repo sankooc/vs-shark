@@ -3,10 +3,10 @@ import { DataPacket, IPPacket, IPv6, Context, TCP, readBuffers, IPPack, ARP, Htt
 import { protocolList } from 'nshark/built/src/common/constant';
 import { TLSClientHello, TLSServerHello, TLSHandshake, TLSHandshakeMessage } from 'nshark/built/src/specs/tls';
 import { RR, RR_A, RR_CNAME, RR_SOA, RR_PRT, DHCP } from 'nshark/built/src/specs/application';
-import { DNSRecord } from 'nshark/built/src/common';
 import { Protocol, IPv4 } from "nshark"
 import { PPPoESS } from "nshark/built/src/specs/dataLinkLayer";
 import { WContext } from 'rshark';
+import { DNSRecord } from 'rshark';
 
 const _map: string[] = protocolList;
 
@@ -203,7 +203,7 @@ export abstract class Client extends PCAPClient {
       overview.counts = countlist;
       overview.valMap = map;
       const dnsRecords = this.root.getDNSRecord();
-      return { client: this, items, tcps: cts, arpGraph: graph, overview, dnsRecords };
+      return { client: this, items, tcps: cts, arpGraph: graph, overview, dnsRecords:[] };
     }
     return null;
   }
