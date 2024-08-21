@@ -430,6 +430,81 @@ lazy_static! {
 		m.insert(28, "AAAA");
 		m
 	};
+	pub static ref arp_hardware_type_map: HashMap<u16, &'static str> = {
+		let mut m = HashMap::new();
+		m.insert(0, "Reserved");
+		m.insert(1, "Ethernet (10Mb)");
+		m.insert(2, "Experimental Ethernet (3Mb)");
+		m.insert(3, "Amateur Radio AX.25");
+		m.insert(4, "Proteon ProNET Token Ring");
+		m.insert(5, "Chaos");
+		m.insert(6, "IEEE 802 Networks");
+		m.insert(7, "ARCNET");
+		m.insert(8, "Hyperchannel");
+		m.insert(9, "Lanstar");
+		m.insert(10, "Autonet Short Address");
+		m.insert(11, "LocalTalk");
+		m.insert(12, "LocalNet (IBM PCNet or SYTEK LocalNET)");
+		m.insert(13, "Ultra link");
+		m.insert(14, "SMDS");
+		m.insert(15, "Frame Relay");
+		m.insert(16, "Asynchronous Transmission Mode (ATM)");
+		m.insert(17, "HDLC");
+		m.insert(18, "Fibre Channel");
+		m.insert(19, "Asynchronous Transmission Mode (ATM)");
+		m.insert(20, "Serial Line");
+		m.insert(21, "Asynchronous Transmission Mode (ATM)");
+		m.insert(22, "MIL-STD-188-220");
+		m.insert(23, "Metricom");
+		m.insert(24, "IEEE 1394.1995");
+		m.insert(25, "MAPOS");
+		m.insert(26, "Twinaxial");
+		m.insert(27, "EUI-64");
+		m.insert(28, "HIPARP");
+		m.insert(29, "IP and ARP over ISO 7816-3");
+		m.insert(30, "ARPSec");
+		m.insert(31, "IPsec tunnel");
+		m.insert(32, "InfiniBand (TM)");
+		m.insert(33, "CAI");
+		m.insert(34, "Wiegand Interface");
+		m.insert(35, "Pure IP");
+		m.insert(36, "HW_EXP1");
+		m.insert(37, "HFI");
+		m.insert(38, "Unified Bus (UB)");
+		m.insert(256, "HW_EXP2");
+		m.insert(257, "AEthernet");
+		m.insert(65535, "Reserved");
+		m
+	};
+	pub static ref arp_oper_type_map: HashMap<u16, &'static str> = {
+		let mut m = HashMap::new();
+		m.insert(1, "REQUEST");
+		m.insert(2, "REPLY");
+		m.insert(3, "request Reverse");
+		m.insert(4, "reply Reverse");
+		m.insert(5, "DRARP-Request");
+		m.insert(6, "DRARP-Reply");
+		m.insert(7, "DRARP-Error");
+		m.insert(8, "InARP-Request");
+		m.insert(9, "InARP-Reply");
+		m.insert(10, "ARP-NAK");
+		m.insert(11, "MARS-Request");
+		m.insert(12, "MARS-Multi");
+		m.insert(13, "MARS-MServ");
+		m.insert(14, "MARS-Join");
+		m.insert(15, "MARS-Leave");
+		m.insert(16, "MARS-NAK");
+		m.insert(17, "MARS-Unserv");
+		m.insert(18, "MARS-SJoin");
+		m.insert(19, "MARS-SLeave");
+		m.insert(20, "MARS-Grouplist-Request");
+		m.insert(21, "MARS-Grouplist-Reply");
+		m.insert(22, "MARS-Redirect-Map");
+		m.insert(23, "MAPOS-UNARP");
+		m.insert(24, "OP_EXP1");
+		m.insert(25, "OP_EXP2");
+		m
+	};
 }pub fn link_type_mapper(code:u16) -> String {
     (*link_type_map.get(&code).unwrap_or(&"unknown")).into()
   }
@@ -447,4 +522,10 @@ pub fn dns_class_mapper(code:u16) -> String {
   }
 pub fn dns_type_mapper(code:u16) -> String {
     (*dns_type_map.get(&code).unwrap_or(&"unknown")).into()
+  }
+pub fn arp_hardware_type_mapper(code:u16) -> String {
+    (*arp_hardware_type_map.get(&code).unwrap_or(&"unknown")).into()
+  }
+pub fn arp_oper_type_mapper(code:u16) -> String {
+    (*arp_oper_type_map.get(&code).unwrap_or(&"unknown")).into()
   }

@@ -1,6 +1,7 @@
 use std::fmt::Display;
 
 use pcap_derive::Packet;
+use anyhow::Result;
 
 use crate::common::{ContainProtocol, Description, PlayloadPacket, PortablePacket};
 use crate::files::Visitor;
@@ -9,7 +10,7 @@ use crate::{
     files::{Frame, Initer, PacketContext},
 };
 
-fn execute(source: u16, target: u16, frame: &Frame, reader: &Reader) {
+fn execute(source: u16, target: u16, frame: &Frame, reader: &Reader)  -> Result<()>{
     match source {
         53 => return super::dns::DNSVisitor.visit(frame, reader),
         _ => (),
@@ -18,6 +19,7 @@ fn execute(source: u16, target: u16, frame: &Frame, reader: &Reader) {
         53 => return super::dns::DNSVisitor.visit(frame, reader),
         _ => (),
     }
+    Ok(())
 }
 
 #[derive(Default, Packet)]
@@ -68,12 +70,12 @@ impl UDP {
 pub struct UDPVisitor;
 
 impl Visitor for UDPVisitor {
-    fn visit(&self, frame: &Frame, reader: &Reader) {
+    fn visit(&self, frame: &Frame, reader: &Reader) -> Result<()> {
         let packet: PacketContext<UDP> = Frame::create_packet(Protocol::UDP);
-        let source = packet.read_with_string(reader, Reader::_read16_be, Description::source_port);
-        let target = packet.read_with_string(reader, Reader::_read16_be, Description::target_port);
-        let len = packet.read_with_string(reader, Reader::_read16_be, Description::packet_length);
-        let crc = reader.read16(false);
+        let source = packet.read_with_string(reader, Reader::_read16_be, Description::source_port)?;
+        let target = packet.read_with_string(reader, Reader::_read16_be, Description::target_port)?;
+        let len = packet.read_with_string(reader, Reader::_read16_be, Description::packet_length)?;
+        let crc = reader.read16(false)?;
         let playload_size = len - 8;
         packet.append_string(format!("UDP payload ({} bytes)", playload_size), reader.get_raw());
         let mut p = packet.get().borrow_mut();
@@ -83,6 +85,6 @@ impl Visitor for UDPVisitor {
         p.crc = crc;
         drop(p);
         frame.add_element(Box::new(packet));
-        execute(source, target, frame, reader);
+        execute(source, target, frame, reader)
     }
 }

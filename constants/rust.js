@@ -1,4 +1,4 @@
-import { linktypeMap, SLL_TYPE, ipProtocolMap, etypeMap, DNS_CLASS_MAP, DNS_TYPE_MAP } from  './index.js';
+import { linktypeMap, SLL_TYPE, ipProtocolMap, etypeMap, DNS_CLASS_MAP, DNS_TYPE_MAP, ARP_HARDWARE_TYPE_MAP, ARP_OPER_TYPE_MAP } from  './index.js';
 import fs from 'node:fs';
 
 const str = `use lazy_static::lazy_static;
@@ -25,6 +25,8 @@ const items = [
   ['etype', etypeMap,  k => parseInt(k, 16), 'u16'],
   ['dns_class', DNS_CLASS_MAP,  k => parseInt(k, 10), 'u16'],
   ['dns_type', DNS_TYPE_MAP,  k => parseInt(k, 10), 'u16'],
+  ['arp_hardware_type', ARP_HARDWARE_TYPE_MAP, k => parseInt(k, 10), 'u16'],
+  ['arp_oper_type', ARP_OPER_TYPE_MAP, k => parseInt(k, 10), 'u16'],
 ];
 
 const conts = items.map((item) => buildConstants(item[0]+'_map', item[1], item[2], item[3]));

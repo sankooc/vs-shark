@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use pcap_derive::Packet;
+use pcap_derive::{ Packet};
 
 #[derive(Default, Packet)]
 struct Ethernet {
@@ -17,6 +17,7 @@ impl Ethernet {
         return self.to_string()
     }
 }
+
 impl Display for Ethernet {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         f.write_str("ousize")?;
@@ -51,6 +52,10 @@ pub trait Initer {
     fn new(protocol: Protocol) -> Self;
     fn summary(&self) -> String;
 }
+
+
+// #[show_streams(bar)]
+// fn invoke2() {}
 
 // #[derive(Default, Packet)]
 // struct Pancakes {

@@ -1,10 +1,24 @@
+use thiserror::Error;
+
 use crate::constants::{etype_mapper, ip_protocol_type_mapper};
 use std::cell::Cell;
-use std::fmt;
 use std::rc::Rc;
-use std::str;
+use std::{fmt, str};
 use std::str::from_utf8;
+use anyhow::bail;
+use anyhow::Result;
+// use core::error::Error;
 
+
+#[derive(Error, Debug)]
+pub enum DataError {
+    #[error("unsupport file type")]
+    UnsupportFileType,
+    #[error("bit error")]
+    BitSize,
+    #[error("unknown data store error")]
+    Unknown,
+}
 pub trait ContainProtocol {
     fn get_protocol(&self) -> Protocol;
     // fn info(&self) -> String;
@@ -90,26 +104,30 @@ pub struct FileInfo {
 pub struct IO;
 
 impl IO {
-    pub fn _read64(data: &[u8], endian: bool) -> u64 {
+    pub fn _read64(data: &[u8], endian: bool) -> Result<u64> {
+        let _data = data.try_into()?;
         if endian {
-            return u64::from_be_bytes(data.try_into().unwrap());
+            return Ok(u64::from_be_bytes(_data));
         }
-        u64::from_ne_bytes(data.try_into().unwrap())
+        Ok(u64::from_ne_bytes(_data))
     }
-    pub fn read32(data: &[u8], endian: bool) -> u32 {
+    pub fn read32(data: &[u8], endian: bool) -> Result<u32> {
+        let _data = data.try_into()?;
         if endian {
-            return u32::from_be_bytes(data.try_into().unwrap());
+            return Ok(u32::from_be_bytes(_data));
         }
-        u32::from_ne_bytes(data.try_into().unwrap())
+        Ok(u32::from_ne_bytes(_data))
     }
-
-    pub fn read16(data: &[u8], endian: bool) -> u16 {
+    pub fn read16(data: &[u8], endian: bool) -> Result<u16> {
+        let _data = data.try_into()?;
         if endian {
-            return u16::from_be_bytes(data.try_into().unwrap());
+            return Ok(u16::from_be_bytes(_data));
         }
-        u16::from_ne_bytes(data.try_into().unwrap())
+        Ok(u16::from_ne_bytes(_data))
     }
 }
+
+
 #[derive(Clone)]
 pub struct Reader<'a> {
     _data: Option<&'a [u8]>,
@@ -166,54 +184,60 @@ impl Reader<'_> {
         self._move(len);
         _tmp
     }
-    pub fn read8(&self) -> u8 {
+    pub fn read8(&self) -> Result<u8> {
         let a = self._get_data()[self.cursor.get()];
         self._move(1);
-        u8::from_be_bytes([a])
+        Ok(u8::from_be_bytes([a]))
     }
 
-    pub fn read_string(&self, size: usize) -> String{
+    pub fn read_string(&self, size: usize) -> Result<String>{
         let _data = self.slice(size);
-        from_utf8(_data).unwrap().into()
+        let str = from_utf8(_data)?;
+        Ok(str.into())
     }
-    pub fn read_dns_query(&self) -> String {
+    pub fn read_dns_query(&self) -> Result<String> {
         let mut list = Vec::new();
         loop {
-            let len = self.read8() as usize;
+            let len = self.read8()? as usize;
             if len > 0 {
-                let st = str::from_utf8(self.slice(len)).unwrap();
+                let st = str::from_utf8(self.slice(len))?;
                 list.push(st);
             } else {
                 break;
             }
         }
-        list.into_iter().collect::<Vec<_>>().join(".")
+        Ok(list.into_iter().collect::<Vec<_>>().join("."))
     }
-    pub fn read_compress_string(&self) -> (String, u16){
+    pub fn read_compress_string(&self) -> Result<(String, u16)>{
         let mut list:Vec<String> = Vec::new();
-        // let _join = || list.into_iter().collect::<Vec<_>>().join(".");
         loop {
-            if self.left() == 2 {
-                return (list.into_iter().collect::<Vec<_>>().join("."), self.read16(true));
+            if self.left()? == 2 {
+                return Ok((list.into_iter().collect::<Vec<_>>().join("."), self.read16(true)?));
             }
-            let _size = self.read8();
+            let _size = self.read8()?;
             if _size > 0 {
-                let str = self.read_string(_size as usize);
+                let str = self.read_string(_size as usize)?;
                 list.push(str);
             }
+            
             let next = self._get_data()[self.cursor.get()];
             if next == 0 {
-                return (list.into_iter().collect::<Vec<_>>().join("."), 0);
+                self._move(1);
+                return Ok((list.into_iter().collect::<Vec<_>>().join("."), 0));
             }
             if next >= 0xc0 {
-                return (list.into_iter().collect::<Vec<_>>().join("."), self.read16(true));
+                return Ok((list.into_iter().collect::<Vec<_>>().join("."), self.read16(true)?));
             }
-            if next > self.left() as u8 {
-                return (list.into_iter().collect::<Vec<_>>().join("."), 0);
+            if next > self.left()? as u8 {
+                return Ok((list.into_iter().collect::<Vec<_>>().join("."), 0));
             }
         }
     }
-    pub fn read_dns_compress_string(&self, archor: usize, def: &str, refer: u16) -> String {
+    pub fn read_dns_compress_string(&self, archor: usize, def: &str, refer: u16) -> Result<String> {
+        if refer == 0 {
+            // self._move(1);
+            return Ok(def.into());
+        }
         let inx = (refer & 0x3fff) as usize;
         let from = archor + inx;
         let _reader = self.clone();
@@ -222,83 +246,103 @@ impl Reader<'_> {
         if def.len() > 0 {
             rs.push_str(".");
         }
-        let (str, refer2) = _reader.read_compress_string();
+        let (str, refer2) = _reader.read_compress_string()?;
         rs.push_str(str.as_str());
         if refer2 > 0 {
-            self.read_dns_compress_string(archor, rs.as_str(), refer2)
+            Ok(self.read_dns_compress_string(archor, rs.as_str(), refer2)?)
         } else {
-            rs
+            Ok(rs)
         }
     }
-    pub fn read16(&self, endian: bool) -> u16 {
+    pub fn _read_compress(&self, archor: usize) -> Result<String> {
+        let (pre, str_ref) = self.read_compress_string()?;
+        self.read_dns_compress_string(archor, &pre, str_ref)
+    }
+    pub fn read16(&self, endian: bool) -> Result<u16> {
         let len = 2;
         let data: &[u8] = self._slice(len);
         self._move(len);
         IO::read16(data, endian)
     }
 
-    pub fn read32(&self, endian: bool) -> u32 {
+    pub fn read32(&self, endian: bool) -> Result<u32> {
         let len = 4;
         let data: &[u8] = self._slice(len);
         self._move(len);
         IO::read32(data, endian)
     }
 
-    pub fn read_mac(&self) -> Option<MacAddress> {
+    pub fn read_mac(&self) -> Result<MacAddress> {
         let len = 6;
-        if self.left() < len {
-            return None;
+        if self.left()? < len {
+            bail!(DataError::BitSize)
         }
         let mut data: [u8; 6] = [0; 6];
         data.copy_from_slice(self._slice(len));
         self._move(len);
-        Some(MacAddress { data })
+        Ok(MacAddress { data })
     }
-    pub fn read_ipv4(&self) -> Option<IPv4Address> {
+    pub fn read_ipv4(&self) -> Result<IPv4Address> {
         let len = 4;
-        if self.left() < len {
-            return None;
+        if self.left()? < len {
+            bail!("sized")
         }
         let mut data: [u8; 4] = [0; 4];
         data.copy_from_slice(self._slice(len));
         self._move(len);
-        Some(IPv4Address { data })
+        Ok(IPv4Address { data })
     }
-    pub fn left(&self) -> usize {
-        self._get_data().len() - self.cursor.get()
+    pub fn read_ipv6(&self) -> Result<IPv6Address> {
+        let len = 16;
+        if self.left()? < len {
+            bail!("sized")
+        }
+        let mut data: [u8; 16] = [0; 16];
+        data.copy_from_slice(self._slice(len));
+        self._move(len);
+        Ok(IPv6Address::new(data))
+    }
+    pub fn left(&self) -> Result<usize> {
+        if self._get_data().len() <= self.cursor.get(){
+            bail!("outbound")
+        }
+        Ok(self._get_data().len() - self.cursor.get())
     }
     pub fn has(&self) -> bool {
         return self.cursor.get() < self._get_data().len();
     }
 
-    pub fn _read_mac(reader: &Reader) -> Option<MacAddress> {
+    pub fn _read_mac(reader: &Reader) -> Result<MacAddress> {
         reader.read_mac()
     }
 
-    pub fn _read_ipv4(reader: &Reader) -> Option<IPv4Address> {
+    pub fn _read_ipv4(reader: &Reader) -> Result<IPv4Address> {
         reader.read_ipv4()
     }
-    pub fn _read8(reader: &Reader) -> u8 {
+    pub fn _read_ipv6(reader: &Reader) -> Result<IPv6Address> {
+        reader.read_ipv6()
+    }
+    pub fn _read8(reader: &Reader) -> Result<u8> {
         reader.read8()
     }
 
-    pub fn _read16_be(reader: &Reader) -> u16 {
+    pub fn _read16_be(reader: &Reader) -> Result<u16> {
         reader.read16(true)
     }
 
-    pub fn _read16_ne(reader: &Reader) -> u16 {
+    pub fn _read16_ne(reader: &Reader) -> Result<u16> {
         reader.read16(false)
     }
     
-    pub fn _read32_be(reader: &Reader) -> u32 {
+    pub fn _read32_be(reader: &Reader) -> Result<u32> {
         reader.read32(true)
     }
 
-    pub fn _read32_ne(reader: &Reader) -> u32 {
+    pub fn _read32_ne(reader: &Reader) -> Result<u32> {
         reader.read32(false)
     }
 
-    pub fn _read_dns_query(reader: &Reader) -> String {
+    pub fn _read_dns_query(reader: &Reader) -> Result<String> {
         reader.read_dns_query()
     }
 }
@@ -343,6 +387,77 @@ impl fmt::Display for IPv4Address {
     }
 }
 
+pub struct Sou {
+    inx: usize,
+    cur: usize,
+    count: usize,
+    _count: usize,
+}
+impl Sou {
+    fn new() -> Self {
+        Sou {
+            inx: 0,
+            cur: 0,
+            count: 0,
+            _count: 0,
+        }
+    }
+    fn inc(&mut self) {
+        self._count += 1;
+        self.cur += 1;
+    }
+    fn end(&mut self) {
+        if self.count < self._count {
+            self.inx = self.cur;
+            self.count = self._count;
+        }
+        self._count = 0;
+        self.cur += 1;
+    }
+}
+pub struct IPv6Address {
+    _data: [u8; 16],
+    _str: String,
+}
+
+impl IPv6Address {
+    fn to_str(data: &[u8; 16]) -> String {
+        let mut list = Vec::new();
+        let mut tmp = String::from("");
+        let mut s = Sou::new();
+        for inx in 0..data.len() {
+            if inx % 2 == 0 {
+                tmp = format!("{:x}", data[inx]);
+            } else {
+                let tok = format!("{}{:02x}", tmp, data[inx]);
+                match tok.as_str() {
+                    "000" => s.inc(),
+                    _ => s.end(),
+                }
+                list.push(tok);
+            }
+        }
+        s.end();
+        if s.count > 0 {
+            let fr = s.inx - s.count;
+            list.splice(fr..s.inx as usize, ["".into()]);
+            list.join(":")
+        } else {
+            list.join(":")
+        }
+    }
+    fn new(data: [u8; 16]) -> Self{
+        let str = IPv6Address::to_str(&data);
+        Self{_data: data, _str: str}
+    }
+}
+impl std::fmt::Display for IPv6Address {
+    fn fmt(&self, fmt: &mut std::fmt::Formatter) -> std::fmt::Result {
+        fmt.write_str(self._str.as_str())?;
+        Ok(())
+    }
+}
+
 #[derive(Default, Debug, Copy, Clone)]
 pub enum FileType {
     PCAP,
@@ -357,8 +472,8 @@ pub enum Protocol {
     PPPoESS,
     SSL,
     IPV4,
-    // IPV6,
-    // ARP,
+    IPV6,
+    ARP,
     // TCP,
     UDP,
     // ICMP,

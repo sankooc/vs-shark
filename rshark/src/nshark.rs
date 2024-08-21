@@ -55,9 +55,6 @@ impl DNSRecord {
     }
 }
 
-
-
-
 #[wasm_bindgen]
 pub struct WFileInfo {
     pub link_type: u16,
@@ -166,16 +163,14 @@ impl WContext {
         let f = binding.get(index as usize).unwrap();
         f.get_fields()
     }
-    // #[wasm_bindgen]
-    // pub fn get_frame_data(&self, index: u32) -> Uint8Array {
-    //     let binding = self.ctx.get_frames();
-    //     let f = binding.get(index as usize).unwrap();
-    //     let data: &[u8] = &f.data();
-    //     data.into()
-    // }
-
+    
+    #[wasm_bindgen]
     pub fn get_dns_record(&self)-> Vec<DNSRecord>{
         self.ctx.context().get_dns()
+    }
+    #[wasm_bindgen]
+    pub fn get_dns_count(&self) -> usize {
+        self.ctx.context().get_dns_count()
     }
 }
 

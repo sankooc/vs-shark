@@ -1,17 +1,17 @@
 pub mod pcap;
 pub mod pcapng;
 
-use crate::{constants::link_type_mapper, nshark::DNSRecord, specs::dns::RecordResource};
+use crate::{common::IPPacket, constants::link_type_mapper, nshark::DNSRecord, specs::{dns::RecordResource, ethernet::Ethernet, ip4::IPv4}};
 use std::{
-    cell::{Cell, Ref, RefCell},
-    rc::Rc,
-    time::{Duration, UNIX_EPOCH},
+    cell::{Cell, Ref, RefCell}, rc::Rc, time::{Duration, UNIX_EPOCH}
 };
 
 use chrono::{DateTime, Utc};
 use js_sys::Uint8Array;
+use log::error;
 use wasm_bindgen::prelude::*;
 
+use anyhow::Result;
 // pub mod pcapng;
 use crate::common::{ContainProtocol, FileInfo, FileType, Protocol, Reader};
 
@@ -97,28 +97,8 @@ pub trait Element {
 // }
 
 pub trait Visitor {
-    fn visit(&self, frame: &Frame, reader: &Reader);
+    fn visit(&self, frame: &Frame, reader: &Reader) -> Result<()>;
 }
-
-// pub struct FramePacket {
-// }
-
-// pub struct FolderOption<T> {
-//     field: Field,
-//     obj: T,
-//     // reader: &'a Reader<'a>,
-//     // name: String,
-
-// }
-
-// impl FolderOption {
-// pub fn read<K>(&self, reader: &Reader, opt: fn(&Reader) -> K) -> (K, Field) {
-//     let start = reader.cursor();
-//     let val: K = opt(reader);
-//     let end = reader.cursor();
-//     let size = end - start;
-// }
-// }
 
 pub trait FieldBuilder<T> {
     fn build(&self, t: &T) -> Field;
@@ -138,16 +118,12 @@ impl<T> Initer for MultiBlock<T> {
 }
 
 pub struct PacketContext<T>
-where
-    T: Initer,
 {
     val: Rc<RefCell<T>>,
     fields: RefCell<Vec<Box<dyn FieldBuilder<T>>>>,
 }
 
 impl<T> PacketContext<T>
-where
-    T: Initer,
 {
     pub fn _clone_obj(&self) -> Rc<RefCell<T>> {
         self.val.clone()
@@ -165,6 +141,20 @@ where
     }
 }
 
+pub enum ProtocolData {
+    ETHERNET(Ethernet),
+    IPV4(IPv4),
+}
+
+impl ProtocolData {
+    fn getp(&self) -> Protocol {
+        match self {
+            ProtocolData::ETHERNET(e) => e.get_protocol(),
+            _ => Protocol::UNKNOWN,
+        }
+    }
+}
+
 impl<T> Element for PacketContext<T>
 where
     T: Initer + ContainProtocol,
@@ -174,12 +164,6 @@ where
     }
     fn get_fields(&self) -> Vec<Field> {
         self.get_fields()
-        // let t = &self.val;
-        // let mut rs: Vec<Field> = Vec::new();
-        // for pos in self.fields.iter() {
-        //     rs.push(pos.build(t));
-        // }
-        // rs
     }
     fn get_protocol(&self) -> Protocol {
         self.get().borrow().get_protocol()
@@ -196,11 +180,11 @@ where
     pub fn read_with_string<K>(
         &self,
         reader: &Reader,
-        opt: impl Fn(&Reader) -> K,
+        opt: impl Fn(&Reader) -> Result<K>,
         render: fn(&T) -> String,
-    ) -> K {
+    ) -> Result<K> {
         let start = reader.cursor();
-        let val: K = opt(reader);
+        let val: K = opt(reader)?;
         let end = reader.cursor();
         let size = end - start;
         self.fields.borrow_mut().push(Box::new(StringPosition {
@@ -209,7 +193,7 @@ where
             data: reader.get_raw(),
             render,
         }));
-        val
+        Ok(val)
     }
     pub fn append_string(&self, content: String, data: Rc<Vec<u8>>) {
         self.fields.borrow_mut().push(Box::new(TXTPosition {
@@ -237,18 +221,75 @@ where
         }));
         val
     }
+    pub fn _readoption_with_format_string<K>(
+        &self,
+        reader: &Reader,
+        opt: impl Fn(&Reader) -> Result<K>,
+        tmp: &str,
+    ) -> Result<K> where K:ToString {
+        let start = reader.cursor();
+        let val: K = opt(reader)?;
+        let end = reader.cursor();
+        let size = end - start;
+        let content = tmp.replace("{}", val.to_string().as_str());
+        self.fields.borrow_mut().push(Box::new(TXTPosition {
+            start,
+            size,
+            data: reader.get_raw(),
+            content,
+        }));
+        Ok(val)
+    }
+    pub fn _read_with_format_string_rs<K>(
+        &self,
+        reader: &Reader,
+        opt: impl Fn(&Reader) -> Result<K>,
+        tmp: &str,
+    ) -> Result<K> where K:ToString {
+        let start = reader.cursor();
+        let val: K = opt(reader)?;
+        let end = reader.cursor();
+        let size = end - start;
+        let content = tmp.replace("{}", val.to_string().as_str());
+        self.fields.borrow_mut().push(Box::new(TXTPosition {
+            start,
+            size,
+            data: reader.get_raw(),
+            content,
+        }));
+        Ok(val)
+    }
+    pub fn _read_with_format_string<K>(
+        &self,
+        reader: &Reader,
+        opt: impl Fn(&Reader) -> K,
+        tmp: &str,
+    ) -> K where K:ToString {
+        let start = reader.cursor();
+        let val: K = opt(reader);
+        let end = reader.cursor();
+        let size = end - start;
+        let content = tmp.replace("{}", val.to_string().as_str());
+        self.fields.borrow_mut().push(Box::new(TXTPosition {
+            start,
+            size,
+            data: reader.get_raw(),
+            content,
+        }));
+        val
+    }
     pub fn read_with_field<K>(
         &self,
         reader: &Reader,
-        opt: impl Fn(&Reader) -> PacketContext<K>,
+        opt: impl Fn(&Reader) -> Result<PacketContext<K>>,
         head: Option<String>,
-    ) -> Rc<RefCell<K>>
+    ) -> Result<Rc<RefCell<K>>>
     where
         K: Initer + 'static,
         FieldPosition<K>: FieldBuilder<T>,
     {
         let start = reader.cursor();
-        let packet = opt(reader);
+        let packet = opt(reader)?;
         let rs = packet._clone_obj();
         let end = reader.cursor();
         let size = end - start;
@@ -259,20 +300,8 @@ where
             head,
             packet,
         }));
-        rs
+        Ok(rs)
     }
-    // fn add_pos(&self, start:usize, size: usize, render: fn(usize, usize,&T) -> Field){
-    //     self.fields.borrow_mut().push(Box::new(Position {start, size, render}));
-    // }
-    // pub fn iter(&self) {
-    //     let v = &self.val;
-    //     // for pos in &self.fields {
-    //     //     let str = pos.render.unwrap()(v);
-    //     // }
-    // }
-    // pub fn get_val(&self) -> &T {
-    //     &self.val
-    // }
 }
 
 pub struct Position<T> {
@@ -427,7 +456,10 @@ impl Frame {
         }
         self.to_string()
     }
-
+    pub fn update_host(&self, packet: Ref<impl IPPacket>){
+        self.summary.borrow_mut().source = packet.source_ip_address();
+        self.summary.borrow_mut().target = packet.target_ip_address();
+    }
     pub fn get_fields(&self) -> Vec<Field> {
         let mut rs = Vec::new();
         let mut lists = Vec::new();
@@ -467,7 +499,7 @@ impl Frame {
         self.data.clone()
     }
     pub fn get_reader(&self) -> Reader {
-        return Reader::new_raw(self.data.clone());
+        return Reader::new_raw(self.data());
     }
     pub fn create_packet<K>(protocol: Protocol) -> PacketContext<K>
     where
@@ -500,6 +532,9 @@ impl Context {
     }
     pub fn get_info(&self)-> FileInfo{
         self.info.borrow().clone()
+    }
+    pub fn get_dns_count(&self) -> usize {
+        self.dns.borrow().len()
     }
     pub fn get_dns(&self) -> Vec<DNSRecord> {
         let mut rs = Vec::new();
@@ -542,8 +577,17 @@ impl Instance {
             link_type,
         );
         let reader = f.get_reader();
-        crate::specs::execute(link_type, &f, &reader);
-        self.frames.borrow_mut().push(f);
+        let rs = crate::specs::execute(link_type, &f, &reader);
+        match rs {
+            Ok(_) => {
+                self.frames.borrow_mut().push(f);
+            },
+            Err(e) => {
+                error!("parse_frame_failed index:[{}]", count);
+                error!("msg:[{}]", e.to_string());
+                panic!("parse_failed");
+            },
+        }
         ctx.count.set(count + 1);
     }
     pub fn context(&self) -> Rc<Context> {

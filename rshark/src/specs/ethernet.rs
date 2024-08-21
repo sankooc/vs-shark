@@ -8,6 +8,7 @@ use crate::{
     files::{Frame, Initer, PacketContext},
 };
 use std::fmt::Display;
+use anyhow::Result;
 
 #[derive(Default, Packet)]
 pub struct Ethernet {
@@ -67,22 +68,22 @@ impl PtypePacket for Ethernet {
 pub struct EthernetVisitor;
 
 impl Visitor for EthernetVisitor {
-    fn visit(&self, frame: &Frame, reader: &Reader) {
+    fn visit(&self, frame: &Frame, reader: &Reader) -> Result<()> {
         let packet: PacketContext<Ethernet> = Frame::create_packet(Protocol::ETHERNET);
 
         let mut p = packet.get().borrow_mut();
-        p.source_mac = packet.read_with_string(reader, Reader::_read_mac, Description::source_mac);
-        p.target_mac = packet.read_with_string(reader, Reader::_read_mac, Description::target_mac);
-        let ptype = packet.read_with_string(reader, Reader::_read16_be, Description::ptype);
-        if reader.left() == ptype as usize {
+        p.source_mac = packet.read_with_string(reader, Reader::_read_mac, Description::source_mac).ok();
+        p.target_mac = packet.read_with_string(reader, Reader::_read_mac, Description::target_mac).ok();
+        let ptype = packet.read_with_string(reader, Reader::_read16_be, Description::ptype)?;
+        if reader.left()? == ptype as usize {
             p.len = ptype;
             // info!("{}", ptype); // IEEE 802.3
-            return;
+            return Ok(());
         }
         p.ptype = ptype;
         drop(p);
         frame.add_element(Box::new(packet));
-        excute(ptype, frame, reader);
+        excute(ptype, frame, reader)
     }
 }
 #[derive(Default, Packet)]
@@ -127,26 +128,29 @@ impl PPPoESS{
 }
 struct PPPoESSVisitor;
 impl Visitor for PPPoESSVisitor {
-    fn visit(&self, frame: &Frame, reader: &Reader) {
+    fn visit(&self, frame: &Frame, reader: &Reader) -> Result<()> {
         let packet: PacketContext<PPPoESS> = Frame::create_packet(Protocol::PPPoESS);
         let mut p = packet.get().borrow_mut();
-        let head = reader.read8();
+        let head = reader.read8()?;
         p.version = head >> 4;
         p._type = head & 0x0f;
-        p.code = packet.read_with_string(reader, Reader::_read8, PPPoESS::code);
-        p.session_id = packet.read_with_string(reader, Reader::_read16_be, PPPoESS::session_id);
-        p.payload = packet.read_with_string(reader, Reader::_read16_be, PPPoESS::payload);
-        p.ptype = packet.read_with_string(reader, Reader::_read16_be, PPPoESS::ptype);
+        p.code = packet.read_with_string(reader, Reader::_read8, PPPoESS::code)?;
+        p.session_id = packet.read_with_string(reader, Reader::_read16_be, PPPoESS::session_id)?;
+        p.payload = packet.read_with_string(reader, Reader::_read16_be, PPPoESS::payload)?;
+        p.ptype = packet.read_with_string(reader, Reader::_read16_be, PPPoESS::ptype)?;
         let code = p.code;
         let ptype = p.ptype;
         drop(p);
         frame.add_element(Box::new(packet));
         if code == 0 {
-            match ptype {
-                33 => super::network::IP4Visitor.visit(frame, reader),
-                _ =>(),
+            return match ptype {
+                33 => {
+                    return super::ip4::IP4Visitor.visit(frame, reader);
+                },
+                _ => Ok(()),
             }
         }
+        Ok(())
     }
 }
 #[derive(Default, Packet)]
@@ -189,30 +193,36 @@ impl SSL {
 
 pub struct SSLVisitor;
 impl Visitor for SSLVisitor {
-    fn visit(&self, frame: &Frame, reader: &Reader) {
+    fn visit(&self, frame: &Frame, reader: &Reader) -> Result<()>{
         let packet:PacketContext<SSL> = Frame::create_packet(Protocol::SSL);
         let mut p = packet.get().borrow_mut();
-        p._type = packet.read_with_string(reader, Reader::_read16_be, SSL::_type);
-        p.ltype = packet.read_with_string(reader, Reader::_read16_be, SSL::ltype);
-        p.len = packet.read_with_string(reader, Reader::_read16_be, SSL::len_str);
-        p.source = packet.read_with_string(reader, Reader::_read_mac, SSL::source_str);
+        p._type = packet.read_with_string(reader, Reader::_read16_be, SSL::_type)?;
+        p.ltype = packet.read_with_string(reader, Reader::_read16_be, SSL::ltype)?;
+        p.len = packet.read_with_string(reader, Reader::_read16_be, SSL::len_str)?;
+        p.source = packet.read_with_string(reader, Reader::_read_mac, SSL::source_str).ok();
         reader._move(2);
-        p.ptype = packet.read_with_string(reader, Reader::_read16_be, SSL::ptype_str);
+        p.ptype = packet.read_with_string(reader, Reader::_read16_be, SSL::ptype_str)?;
         let ptype = p.ptype;
         drop(p);
         frame.add_element(Box::new(packet));
-        excute(ptype, frame, reader);
+        excute(ptype, frame, reader)
     }
 }
 
-pub fn excute(etype: u16, frame: &Frame, reader: &Reader) {
+pub fn excute(etype: u16, frame: &Frame, reader: &Reader) -> Result<()>{
     match etype {
         2048 => {
-            super::network::IP4Visitor.visit(frame, reader);
+            return super::ip4::IP4Visitor.visit(frame, reader);
+        }
+        34525 => {
+            return super::ip6::IP6Visitor.visit(frame, reader);
+        }
+        0x0806 => {
+            return super::arp::ARPVisitor.visit(frame, reader);
         }
         34916 => {
-            PPPoESSVisitor.visit(frame, reader);
+            return PPPoESSVisitor.visit(frame, reader);
         }
-        _ => (),
+        _ => Ok(()),
     }
 }
