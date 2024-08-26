@@ -3,7 +3,7 @@ use std::fmt::Display;
 use pcap_derive::Packet;
 use anyhow::Result;
 
-use crate::common::{ContainProtocol, Description, PlayloadPacket, PortablePacket};
+use crate::common::{ContainProtocol, Description, PlayloadPacket, PortPacket};
 use crate::files::Visitor;
 use crate::{
     common::{Protocol, Reader},
@@ -31,7 +31,7 @@ pub struct UDP {
     crc: u16,
 }
 
-impl PortablePacket for UDP {
+impl PortPacket for UDP {
     fn source_port(&self) -> u16 {
         self.source_port
     }

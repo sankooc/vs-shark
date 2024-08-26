@@ -9,9 +9,8 @@ use crate::{
 
 pub fn excute(ipprototype: u8, frame: &Frame, reader: &Reader) -> Result<()> {
     match ipprototype {
-        17 => {
-            return super::transport::UDPVisitor.visit(frame, reader);
-        }
+        17 => super::udp::UDPVisitor.visit(frame, reader),
+        6 => super::tcp::TCPVisitor.visit(frame, reader),
         _ => Ok(()),
     }
 }

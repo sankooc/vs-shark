@@ -98,6 +98,7 @@ pub trait Element {
 
 pub trait Visitor {
     fn visit(&self, frame: &Frame, reader: &Reader) -> Result<()>;
+    // fn from() -> Vec<Protocol>;
 }
 
 pub trait FieldBuilder<T> {
@@ -221,6 +222,14 @@ where
         }));
         val
     }
+    pub fn read_txt (&self, reader: &Reader, start: usize, size: usize, content: String){
+        self.fields.borrow_mut().push(Box::new(TXTPosition {
+            start,
+            size,
+            data: reader.get_raw(),
+            content,
+        }));
+    }
     pub fn _readoption_with_format_string<K>(
         &self,
         reader: &Reader,
@@ -232,12 +241,13 @@ where
         let end = reader.cursor();
         let size = end - start;
         let content = tmp.replace("{}", val.to_string().as_str());
-        self.fields.borrow_mut().push(Box::new(TXTPosition {
-            start,
-            size,
-            data: reader.get_raw(),
-            content,
-        }));
+        self.read_txt(reader, start, size, content);
+        // self.fields.borrow_mut().push(Box::new(TXTPosition {
+        //     start,
+        //     size,
+        //     data: reader.get_raw(),
+        //     content,
+        // }));
         Ok(val)
     }
     pub fn _read_with_format_string_rs<K>(

@@ -33,3 +33,5 @@
 - IPv6
 - ARP
 - UDP
+- TCP
+- HTTP

@@ -401,6 +401,20 @@ lazy_static! {
 		m.insert(35085, "TDLS");
 		m
 	};
+	pub static ref tcp_option_kind_map: HashMap<u16, &'static str> = {
+		let mut m = HashMap::new();
+		m.insert(0, "End OF LIST");
+		m.insert(1, "No Operation");
+		m.insert(2, "Max segment size");
+		m.insert(3, "Window scale");
+		m.insert(4, "Selective Acknowledgement permitted");
+		m.insert(5, "Selective ACKnowledgement SACK");
+		m.insert(8, "echo of previous timestamp");
+		m.insert(28, "User Timeout Option");
+		m.insert(29, "TCP Authentication");
+		m.insert(30, "MPTCP");
+		m
+	};
 	pub static ref dns_class_map: HashMap<u16, &'static str> = {
 		let mut m = HashMap::new();
 		m.insert(1, "IN");
@@ -516,6 +530,9 @@ pub fn ssl_type_mapper(code:u16) -> String {
   }
 pub fn etype_mapper(code:u16) -> String {
     (*etype_map.get(&code).unwrap_or(&"unknown")).into()
+  }
+pub fn tcp_option_kind_mapper(code:u16) -> String {
+    (*tcp_option_kind_map.get(&code).unwrap_or(&"unknown")).into()
   }
 pub fn dns_class_mapper(code:u16) -> String {
     (*dns_class_map.get(&code).unwrap_or(&"unknown")).into()

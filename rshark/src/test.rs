@@ -1,5 +1,7 @@
 #[cfg(test)]
 mod tests {
+    use std::time::{SystemTime, UNIX_EPOCH};
+
     use log::info;
     use crate::{
         common::{IPv4Address, Protocol},
@@ -26,7 +28,9 @@ mod tests {
         let fname = "../sandbox/dns.pcapng";
         // let fname = "../sandbox/creden.pcapng";
         let data: Vec<u8> = fs::read(fname)?;
+        let start = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis();
         let _ctx = load_data(&data).unwrap();
+        let end = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis();
         let _frames = _ctx.get_frames();
         // for f in frames.iter() {
         //     match f.summary.borrow().protocol {
@@ -48,6 +52,7 @@ mod tests {
         //         }
         //     }
         // }
+        println!("finish cost {}", end -start);
         Ok(())
     }
 

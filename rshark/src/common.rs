@@ -24,7 +24,7 @@ pub trait ContainProtocol {
     // fn info(&self) -> String;
 }
 
-pub trait PortablePacket {
+pub trait PortPacket {
     fn source_port(&self) -> u16;
     fn target_port(&self) -> u16;
 }
@@ -82,10 +82,10 @@ impl Description {
         let ttype = packet.t_protocol_type();
         format!("Protocol: {} ({:#06x})", ip_protocol_type_mapper(ttype), ttype)
     }
-    pub fn source_port(packet: &impl PortablePacket) -> String {
+    pub fn source_port(packet: &impl PortPacket) -> String {
         format!("Source Port: {}", packet.source_port())
     }
-    pub fn target_port(packet: &impl PortablePacket) -> String {
+    pub fn target_port(packet: &impl PortPacket) -> String {
         format!("Destination Port: {}", packet.target_port())
     }
     pub fn packet_length(packet: &impl PlayloadPacket) -> String {
@@ -303,7 +303,7 @@ impl Reader<'_> {
         Ok(IPv6Address::new(data))
     }
     pub fn left(&self) -> Result<usize> {
-        if self._get_data().len() <= self.cursor.get(){
+        if self._get_data().len() < self.cursor.get(){
             bail!("outbound")
         }
         Ok(self._get_data().len() - self.cursor.get())
@@ -311,7 +311,54 @@ impl Reader<'_> {
     pub fn has(&self) -> bool {
         return self.cursor.get() < self._get_data().len();
     }
-
+    pub fn _read_space(&self, limit: usize) -> Option<String>{
+        if self.left().unwrap() < limit {
+            return None;
+        }
+        for inx in 0..limit {
+            let a = self._get_data()[self.cursor.get() + inx];
+            if a == 32{
+                return from_utf8(self._slice(inx)).ok().map(|f|f.into());
+            }
+        }
+        None
+    }
+    pub fn read_space(&self, limit: usize) -> Option<String>{
+        if self.left().unwrap() < limit {
+            return None;
+        }
+        for inx in 0..limit {
+            let a = self._get_data()[self.cursor.get() + inx];
+            if a == 32 {
+                let rs:Option<String> = from_utf8(self.slice(inx)).ok().map(|f|f.into());
+                self._move(1);
+                return rs;
+            }
+        }
+        None
+    }
+    pub fn enter_flag(&self, inx: usize) -> bool {
+        let a = self._get_data()[self.cursor.get() + inx];
+        let b = self._get_data()[self.cursor.get() + inx + 1];
+        if a == 0x0d && b == 0x0a {
+            return true;
+        }
+        false
+    }
+    pub fn read_enter(&self) -> Result<String>{
+        let end = self.left().unwrap() - 2;
+        for inx in 0..end {
+            if self.enter_flag(inx) {
+                let rs = from_utf8(self.slice(inx))?;
+                self._move(2);
+                return Ok(rs.into());
+            }
+        }
+        bail!("out_index")
+    }
+    pub fn _read_enter(reader: &Reader) -> Result<String>{
+        reader.read_enter()
+    }
     pub fn _read_mac(reader: &Reader) -> Result<MacAddress> {
         reader.read_mac()
     }
@@ -325,7 +372,6 @@ impl Reader<'_> {
     pub fn _read8(reader: &Reader) -> Result<u8> {
         reader.read8()
     }
-
     pub fn _read16_be(reader: &Reader) -> Result<u16> {
         reader.read16(true)
     }
@@ -337,11 +383,9 @@ impl Reader<'_> {
     pub fn _read32_be(reader: &Reader) -> Result<u32> {
         reader.read32(true)
     }
-
     pub fn _read32_ne(reader: &Reader) -> Result<u32> {
         reader.read32(false)
     }
-
     pub fn _read_dns_query(reader: &Reader) -> Result<String> {
         reader.read_dns_query()
     }
@@ -474,7 +518,7 @@ pub enum Protocol {
     IPV4,
     IPV6,
     ARP,
-    // TCP,
+    TCP,
     UDP,
     // ICMP,
     // ICMPV6,
@@ -482,7 +526,7 @@ pub enum Protocol {
     DNS,
     // DHCP,
     // TLS,
-    // HTTP,
+    HTTP,
     #[default]
     UNKNOWN,
 }
