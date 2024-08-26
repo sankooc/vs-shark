@@ -4,6 +4,7 @@ pub mod ethernet;
 pub mod ip4;
 pub mod ip6;
 pub mod arp;
+pub mod icmp;
 pub mod udp;
 pub mod dns;
 pub mod tcp;

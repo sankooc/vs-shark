@@ -519,6 +519,38 @@ lazy_static! {
 		m.insert(25, "OP_EXP2");
 		m
 	};
+	pub static ref icmpv6_type_map: HashMap<u16, &'static str> = {
+		let mut m = HashMap::new();
+		m.insert(1, "Destination unreachable");
+		m.insert(2, "Packet too big");
+		m.insert(3, "Time exceeded");
+		m.insert(4, "Parameter problem");
+		m.insert(127, "Reserved for expansion of ICMPv6 error messages");
+		m.insert(128, "Echo Request");
+		m.insert(129, "Echo Reply");
+		m.insert(130, "Multicast Listener Query");
+		m.insert(131, "Multicast Listener Report");
+		m.insert(132, "Multicast Listener Done");
+		m.insert(133, "Router Solicitation");
+		m.insert(134, "Router Advertisement");
+		m.insert(135, "Neighbor Solicitation");
+		m.insert(136, "Neighbor Advertisement");
+		m.insert(137, "Redirect Message");
+		m.insert(138, "Router Renumbering");
+		m.insert(139, "ICMP Node Information Query");
+		m.insert(140, "ICMP Node Information Response");
+		m.insert(141, "Inverse Neighbor Discovery Solicitation Message	");
+		m.insert(142, "Inverse Neighbor Discovery Advertisement Message");
+		m.insert(143, "Multicast Listener Discovery");
+		m.insert(144, "Home Agent Address Discovery Request Message	");
+		m.insert(145, "Home Agent Address Discovery Reply Message");
+		m.insert(146, "Mobile Prefix Solicitation");
+		m.insert(147, "Mobile Prefix Advertisement");
+		m.insert(148, "Certification Path Solicitation");
+		m.insert(149, "Certification Path Advertisement");
+		m.insert(151, "Multicast Router Advertisement");
+		m
+	};
 }pub fn link_type_mapper(code:u16) -> String {
     (*link_type_map.get(&code).unwrap_or(&"unknown")).into()
   }
@@ -545,4 +577,7 @@ pub fn arp_hardware_type_mapper(code:u16) -> String {
   }
 pub fn arp_oper_type_mapper(code:u16) -> String {
     (*arp_oper_type_map.get(&code).unwrap_or(&"unknown")).into()
+  }
+pub fn icmpv6_type_mapper(code:u16) -> String {
+    (*icmpv6_type_map.get(&code).unwrap_or(&"unknown")).into()
   }

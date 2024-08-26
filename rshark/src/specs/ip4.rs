@@ -15,6 +15,9 @@ pub fn excute(ipprototype: u8, frame: &Frame, reader: &Reader) -> Result<()> {
         6 => {
             return super::tcp::TCPVisitor.visit(frame, reader);
         },
+        1 => {
+            return super::icmp::ICMPVisitor.visit(frame, reader);
+        },
         _ => Ok(()),
     }
 }

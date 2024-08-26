@@ -11,6 +11,7 @@ pub fn excute(ipprototype: u8, frame: &Frame, reader: &Reader) -> Result<()> {
     match ipprototype {
         17 => super::udp::UDPVisitor.visit(frame, reader),
         6 => super::tcp::TCPVisitor.visit(frame, reader),
+        58 => super::icmp::ICMPv6Visitor.visit(frame, reader),
         _ => Ok(()),
     }
 }

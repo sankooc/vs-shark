@@ -1,6 +1,5 @@
 use std::fmt::Formatter;
 
-use log::info;
 use pcap_derive::Packet;
 
 use crate::{
