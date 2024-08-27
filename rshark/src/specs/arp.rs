@@ -4,12 +4,13 @@ use pcap_derive::Packet;
 use anyhow::Result;
 
 use crate::{
-    common::{ContainProtocol, IPPacket, IPv4Address, MacAddress, Protocol, Reader}, constants::{arp_hardware_type_mapper, arp_oper_type_mapper, etype_mapper}, files::{Frame, Initer, PacketContext}
+    common::{IPPacket, IPv4Address, MacAddress, Reader}, constants::{arp_hardware_type_mapper, arp_oper_type_mapper, etype_mapper}, files::{Frame, Initer, PacketContext}
 };
+
+use super::ProtocolData;
 
 #[derive(Default, Packet)]
 pub struct ARP {
-    protocol: Protocol,
     hardware_type: u16,
     protocol_type: u16,
     hardware_size: u8,
@@ -44,13 +45,18 @@ impl std::fmt::Display for ARP {
         }
     }
 }
+impl crate::files::InfoPacket for ARP {
+    fn info(&self) -> String {
+        self.to_string()
+    }
+}
 impl ARP {
-    fn _info(&self) -> String {
-        return self.to_string()
-    }
-    fn _summary(&self) -> String {
-        format!("Address Resolution Protocol ({})", self._operation_type())
-    }
+    // fn _info(&self) -> String {
+    //     return self.to_string()
+    // }
+    // fn _summary(&self) -> String {
+    //     format!("Address Resolution Protocol ({})", self._operation_type())
+    // }
     fn protocol_type_desc(&self) -> String {
         format!("Protocol type: {} ({})", etype_mapper(self.protocol_type),self.protocol_type)
     }
@@ -72,7 +78,7 @@ pub struct ARPVisitor;
 
 impl crate::files::Visitor for ARPVisitor {
     fn visit(&self, frame: &Frame, reader: &Reader) -> Result<()> {
-        let packet: PacketContext<ARP> = Frame::create_packet(Protocol::ARP);
+        let packet: PacketContext<ARP> = Frame::create_packet();
         let mut p = packet.get().borrow_mut();
         p.hardware_type = packet.read_with_string(reader, Reader::_read16_be, ARP::hardware_type_desc)?;
         p.protocol_type = packet.read_with_string(reader, Reader::_read16_be, ARP::protocol_type_desc)?;
@@ -85,7 +91,7 @@ impl crate::files::Visitor for ARPVisitor {
         p.target_ip = packet._read_with_format_string_rs(reader, Reader::_read_ipv4, "Target IP address: {}").ok();
         drop(p);
         frame.update_host(packet.get().borrow());
-        frame.add_element(Box::new(packet));
+        frame.add_element(ProtocolData::ARP(packet));
         Ok(())
     }
 }

@@ -136,10 +136,10 @@ impl WContext {
         let start_ts = self.get_info().start_time;
         let mut rs = Vec::new();
         for frame in self.ctx.get_frames().iter() {
-            let proto = match frame.eles.borrow().last() {
-                Some(ele) => format!("{:?}", ele.get_protocol()),
-                None => "none".into(),
-            };
+            // let proto = match frame.eles.borrow().last() {
+            //     Some(ele) => format!("{:?}", ele.get_protocol()),
+            //     None => "none".into(),
+            // };
             // last.get_protocol();
             let mut item = FrameInfo {
                 ..Default::default()
@@ -150,7 +150,7 @@ impl WContext {
             item.len = frame.capture_size;
             item.source = sum.source.clone();
             item.dest = sum.target.clone();
-            item.protocol = proto;
+            // item.protocol = proto;
             item.info = frame.info();
             item.irtt = 1;
             rs.push(item);

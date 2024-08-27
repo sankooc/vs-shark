@@ -4,12 +4,12 @@ use anyhow::Result;
 use pcap_derive::Packet;
 
 use crate::{
-    common::{ContainProtocol, Protocol, Reader}, constants::icmpv6_type_mapper, files::{Frame, Initer, PacketContext}
+    common::Reader, constants::icmpv6_type_mapper, files::{Frame, Initer, PacketContext}
 };
 //https://datatracker.ietf.org/doc/html/rfc792
 #[derive(Default, Packet)]
 pub struct ICMP {
-    protocol: Protocol,
+    
     _type: u8,
     code: u8,
     checksum: u16,
@@ -20,13 +20,18 @@ impl std::fmt::Display for ICMP {
         Ok(())
     }
 }
-impl ICMP {
-    fn _info(&self) -> String {
+impl crate::files::InfoPacket for ICMP {
+    fn info(&self) -> String {
         self.to_string()
     }
-    fn _summary(&self) -> String {
-        "Internet Control Message Protocol".into()
-    }
+}
+impl ICMP {
+    // fn _info(&self) -> String {
+    //     self.to_string()
+    // }
+    // fn _summary(&self) -> String {
+    //     "Internet Control Message Protocol".into()
+    // }
     fn _type(&self) -> String {
         let _t = self._type;
         let code = self.code;
@@ -98,14 +103,14 @@ pub struct ICMPVisitor;
 
 impl crate::files::Visitor for ICMPVisitor {
     fn visit(&self, frame: &Frame, reader: &Reader) -> Result<()> {
-        let packet: PacketContext<ICMP> = Frame::create_packet(Protocol::ICMP);
+        let packet: PacketContext<ICMP> = Frame::create_packet();
         let mut p = packet.get().borrow_mut();
         p._type = packet.read_with_string(reader, Reader::_read8, ICMP::type_desc)?;
         p.code = packet._read_with_format_string_rs(reader, Reader::_read8, "Code {}")?;
         p.checksum = reader.read16(false)?;
         packet.read_txt(reader, reader.cursor() - 2, 2, format!("Checksum: {:#06x}",p.checksum));
         drop(p);
-        frame.add_element(Box::new(packet));
+        frame.add_element(super::ProtocolData::ICMP(packet));
         Ok(())
     }
 }
@@ -113,7 +118,7 @@ impl crate::files::Visitor for ICMPVisitor {
 
 #[derive(Default, Packet)]
 pub struct ICMP6 {
-    protocol: Protocol,
+    
     _type: u8,
     code: u8,
     checksum: u16,
@@ -123,13 +128,18 @@ impl std::fmt::Display for ICMP6 {
         Ok(())
     }
 }
-impl ICMP6 {
-    fn _info(&self) -> String {
+impl crate::files::InfoPacket for ICMP6 {
+    fn info(&self) -> String {
         self.to_string()
     }
-    fn _summary(&self) -> String {
-        "Internet Control Message Protocol v6".into()
-    }
+}
+impl ICMP6 {
+    // fn _info(&self) -> String {
+    //     self.to_string()
+    // }
+    // fn _summary(&self) -> String {
+    //     "Internet Control Message Protocol v6".into()
+    // }
     fn _type(&self) -> String {
         icmpv6_type_mapper(self._type as u16)
     }
@@ -147,13 +157,13 @@ pub struct ICMPv6Visitor;
 
 impl crate::files::Visitor for ICMPv6Visitor {
     fn visit(&self, frame: &Frame, reader: &Reader) -> Result<()> {
-        let packet: PacketContext<ICMP6> = Frame::create_packet(Protocol::ICMPv6);
+        let packet: PacketContext<ICMP6> = Frame::create_packet();
         let mut p = packet.get().borrow_mut();
         p._type = packet.read_with_string(reader, Reader::_read8, ICMP6::type_desc)?;
         p.code = packet._read_with_format_string_rs(reader, Reader::_read8, "Code {}")?;
         p.checksum = packet.read_with_string(reader, Reader::_read16_be, ICMP6::checksum)?;
         drop(p);
-        frame.add_element(Box::new(packet));
+        frame.add_element(super::ProtocolData::ICMPv6(packet));
         Ok(())
     }
 }

@@ -1,29 +1,28 @@
 use pcap_derive::Packet;
 
-use crate::common::{ContainProtocol, Description, MacAddress, MacPacket, PtypePacket, DEF_EMPTY_MAC};
+use crate::common::{Description, MacAddress, MacPacket, PtypePacket, DEF_EMPTY_MAC};
 use crate::constants::{etype_mapper, link_type_mapper, ssl_type_mapper};
-use crate::files::Visitor;
+use crate::files::{InfoPacket, Visitor};
 use crate::{
-    common::{Protocol, Reader},
+    common::Reader,
     files::{Frame, Initer, PacketContext},
 };
 use std::fmt::Display;
 use anyhow::Result;
 
+use super::ProtocolData;
+
 #[derive(Default, Packet)]
 pub struct Ethernet {
-    protocol: Protocol,
     source_mac: Option<MacAddress>,
     target_mac: Option<MacAddress>,
     len: u16,
     ptype: u16,
 }
-impl Ethernet {
-    fn _info(&self) -> String {
-        return self.to_string()
-    }
-    fn _summary(&self) -> String {
-        return self.to_string()
+
+impl InfoPacket for Ethernet {
+    fn info(&self) -> String {
+        self.to_string()
     }
 }
 
@@ -69,7 +68,7 @@ pub struct EthernetVisitor;
 
 impl Visitor for EthernetVisitor {
     fn visit(&self, frame: &Frame, reader: &Reader) -> Result<()> {
-        let packet: PacketContext<Ethernet> = Frame::create_packet(Protocol::ETHERNET);
+        let packet: PacketContext<Ethernet> = Frame::create_packet();
 
         let mut p = packet.get().borrow_mut();
         p.source_mac = packet.read_with_string(reader, Reader::_read_mac, Description::source_mac).ok();
@@ -82,13 +81,12 @@ impl Visitor for EthernetVisitor {
         }
         p.ptype = ptype;
         drop(p);
-        frame.add_element(Box::new(packet));
+        frame.add_element(ProtocolData::ETHERNET(packet));
         excute(ptype, frame, reader)
     }
 }
 #[derive(Default, Packet)]
 pub struct PPPoESS {
-    protocol: Protocol,
     version: u8,
     _type: u8,
     code: u8,
@@ -102,13 +100,13 @@ impl Display for PPPoESS {
     }
 }
 
+impl InfoPacket for PPPoESS {
+    fn info(&self) -> String {
+        self.to_string()
+    }
+}
+
 impl PPPoESS{
-    fn _info(&self) -> String {
-        return self.to_string()
-    }
-    fn _summary(&self) -> String {
-        return self.to_string()
-    }
     fn code(&self) -> String{
         format!("Code: Session Data ({:#04x})", self.code)
     }
@@ -129,7 +127,7 @@ impl PPPoESS{
 struct PPPoESSVisitor;
 impl Visitor for PPPoESSVisitor {
     fn visit(&self, frame: &Frame, reader: &Reader) -> Result<()> {
-        let packet: PacketContext<PPPoESS> = Frame::create_packet(Protocol::PPPoESS);
+        let packet: PacketContext<PPPoESS> = Frame::create_packet();
         let mut p = packet.get().borrow_mut();
         let head = reader.read8()?;
         p.version = head >> 4;
@@ -141,7 +139,7 @@ impl Visitor for PPPoESSVisitor {
         let code = p.code;
         let ptype = p.ptype;
         drop(p);
-        frame.add_element(Box::new(packet));
+        frame.add_element(ProtocolData::PPPoESS(packet));
         if code == 0 {
             return match ptype {
                 33 => {
@@ -155,21 +153,23 @@ impl Visitor for PPPoESSVisitor {
 }
 #[derive(Default, Packet)]
 pub struct SSL {
-    protocol: Protocol,
     _type: u16,
     ltype: u16,
     len: u16,
     source: Option<MacAddress>,
     ptype: u16,
 }
-
+impl Display for SSL {
+    fn fmt(&self, _f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        _f.write_str("Linux cooked capture v1")
+    }
+}
+impl InfoPacket for SSL {
+    fn info(&self) -> String {
+        self.to_string()
+    }
+}
 impl SSL {
-    fn _summary(&self) -> String{
-        "Linux cooked capture v1".into()
-    }
-    fn _info(&self) -> String{
-        self._summary()
-    }
     fn _type(&self) -> String{
         format!("Packet Type: {}", ssl_type_mapper(self._type))
     }
@@ -194,7 +194,7 @@ impl SSL {
 pub struct SSLVisitor;
 impl Visitor for SSLVisitor {
     fn visit(&self, frame: &Frame, reader: &Reader) -> Result<()>{
-        let packet:PacketContext<SSL> = Frame::create_packet(Protocol::SSL);
+        let packet:PacketContext<SSL> = Frame::create_packet();
         let mut p = packet.get().borrow_mut();
         p._type = packet.read_with_string(reader, Reader::_read16_be, SSL::_type)?;
         p.ltype = packet.read_with_string(reader, Reader::_read16_be, SSL::ltype)?;
@@ -204,7 +204,7 @@ impl Visitor for SSLVisitor {
         p.ptype = packet.read_with_string(reader, Reader::_read16_be, SSL::ptype_str)?;
         let ptype = p.ptype;
         drop(p);
-        frame.add_element(Box::new(packet));
+        frame.add_element(ProtocolData::SSL(packet));
         excute(ptype, frame, reader)
     }
 }

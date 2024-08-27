@@ -5,7 +5,7 @@ use pcap_derive::Packet;
 use anyhow::Result;
 
 use crate::{
-    common::{ContainProtocol, Description, IPPacket, IPv4Address, MacAddress, PortPacket, Protocol, Reader}, constants::{tcp_option_kind_mapper}, files::{Frame, Initer, MultiBlock, PacketContext}
+    common::{Description, IPPacket, IPv4Address, MacAddress, PortPacket, Reader}, constants::{tcp_option_kind_mapper}, files::{Frame, Initer, MultiBlock, PacketContext}
 };
 
 #[derive(Default)]
@@ -44,7 +44,7 @@ struct TCPOption{
     data: TCPOptionKind,
 }
 impl Initer for TCPOption {
-    fn new(_p:Protocol) -> TCPOption {
+    fn new() -> TCPOption {
         TCPOption {
             ..Default::default()
         }
@@ -81,7 +81,7 @@ impl TCPOption {
 type TCPOptions = Rc<RefCell<MultiBlock<TCPOption>>>;
 #[derive(Default, Packet)]
 pub struct TCP {
-    protocol: Protocol,
+    
     sequence: u32,
     acknowledge: u32,
     source_port: u16,
@@ -118,13 +118,12 @@ impl PortPacket for TCP {
         self.target_port
     }
 }
-impl TCP {
-    fn _info(&self) -> String {
-        return self.to_string()
-    }
-    fn _summary(&self) -> String {
+impl crate::files::InfoPacket for TCP {
+    fn info(&self) -> String {
         self.to_string()
     }
+}
+impl TCP {
     fn set_head(&mut self, head: u16){
         self.head = head;
         self.len = (head >> 12) & 0x0f;
@@ -162,7 +161,7 @@ pub struct TCPVisitor;
 
 impl TCPVisitor {
     fn read_option(reader: &Reader) -> Result<PacketContext<TCPOption>>{
-        let packet: PacketContext<TCPOption> = Frame::create_packet(Protocol::UNKNOWN);
+        let packet: PacketContext<TCPOption> = Frame::create_packet();
         let mut option = packet.get().borrow_mut();
         option.kind = packet.read_with_string(reader,Reader::_read8, TCPOption::kind)?;
         match option.kind {
@@ -181,7 +180,7 @@ impl TCPVisitor {
         Ok(packet)
     }
     fn read_options(reader: &Reader, len: usize) -> Result<PacketContext<MultiBlock<TCPOption>>>{
-        let packet: PacketContext<MultiBlock<TCPOption>> = Frame::create_packet(Protocol::UNKNOWN);
+        let packet: PacketContext<MultiBlock<TCPOption>> = Frame::create_packet();
         let mut p = packet.get().borrow_mut();
         let start = reader.cursor();
         let end = start + len;
@@ -196,7 +195,7 @@ impl TCPVisitor {
 
 impl crate::files::Visitor for TCPVisitor {
     fn visit(&self, frame: &Frame, reader: &Reader) -> Result<()> {
-        let packet: PacketContext<TCP> = Frame::create_packet(Protocol::TCP);
+        let packet: PacketContext<TCP> = Frame::create_packet();
         let mut p = packet.get().borrow_mut();
         p.source_port = packet.read_with_string(reader, Reader::_read16_be, Description::source_port)?;
         p.target_port = packet.read_with_string(reader, Reader::_read16_be, Description::target_port)?;
@@ -216,7 +215,7 @@ impl crate::files::Visitor for TCPVisitor {
         let left_size = reader.left().unwrap_or(0);
         packet.read_txt(reader, reader.cursor(), left_size, format!("TCP payload ({} bytes)",left_size));
         drop(p);
-        frame.add_element(Box::new(packet));
+        frame.add_element(super::ProtocolData::TCP(packet));
 
 
 

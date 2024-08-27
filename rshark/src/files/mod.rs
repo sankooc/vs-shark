@@ -1,19 +1,20 @@
 pub mod pcap;
 pub mod pcapng;
 
-use crate::{common::IPPacket, constants::link_type_mapper, nshark::DNSRecord, specs::{dns::RecordResource, ethernet::Ethernet, ip4::IPv4}};
+use crate::{common::IPPacket, constants::link_type_mapper, nshark::DNSRecord, specs::{dns::RecordResource, ProtocolData}};
 use std::{
-    cell::{Cell, Ref, RefCell}, rc::Rc, time::{Duration, UNIX_EPOCH}
+    borrow::Borrow, cell::{Cell, Ref, RefCell}, rc::Rc, time::{Duration, UNIX_EPOCH}
 };
 
 use chrono::{DateTime, Utc};
+use enum_dispatch::enum_dispatch;
 use js_sys::Uint8Array;
 use log::error;
 use wasm_bindgen::prelude::*;
 
 use anyhow::Result;
 // pub mod pcapng;
-use crate::common::{ContainProtocol, FileInfo, FileType, Protocol, Reader};
+use crate::common::{FileInfo, FileType, Reader};
 
 #[derive(Default, Clone)]
 #[wasm_bindgen]
@@ -82,19 +83,14 @@ pub fn date_str(ts: u64) -> String {
     datetime.format("%Y-%m-%d %H:%M:%S").to_string()
 }
 
+#[enum_dispatch(ProtocolData)]
 pub trait Element {
     fn summary(&self) -> String;
     fn get_fields(&self) -> Vec<Field>;
     // fn add_next(&mut self, ele: Box<dyn Element>);
-    fn get_protocol(&self) -> Protocol;
+    // fn get_protocol(&self) -> Protocol;
     fn info(&self) -> String;
 }
-
-// impl ToString for dyn Element{
-//     fn to_string(&self) -> String {
-//         self.to_string()
-//     }
-// }
 
 pub trait Visitor {
     fn visit(&self, frame: &Frame, reader: &Reader) -> Result<()>;
@@ -109,7 +105,7 @@ pub trait FieldBuilder<T> {
 pub type MultiBlock<T> = Vec<Rc<RefCell<T>>>;
 
 impl<T> Initer for MultiBlock<T> {
-    fn new(_p: Protocol) -> MultiBlock<T> {
+    fn new() -> MultiBlock<T> {
         Vec::new()
     }
 
@@ -142,23 +138,9 @@ impl<T> PacketContext<T>
     }
 }
 
-pub enum ProtocolData {
-    ETHERNET(PacketContext<Ethernet>),
-    IPV4(PacketContext<IPv4>),
-}
-
-impl ProtocolData {
-    fn getp(&self) -> Protocol {
-        match self {
-            ProtocolData::ETHERNET(e) => e.get_protocol(),
-            _ => Protocol::UNKNOWN,
-        }
-    }
-}
-
 impl<T> Element for PacketContext<T>
 where
-    T: Initer + ContainProtocol,
+    T: Initer + InfoPacket,
 {
     fn summary(&self) -> String {
         self.get().borrow().summary()
@@ -166,12 +148,11 @@ where
     fn get_fields(&self) -> Vec<Field> {
         self.get_fields()
     }
-    fn get_protocol(&self) -> Protocol {
-        self.get().borrow().get_protocol()
-    }
-
+    // fn get_protocol(&self) -> Protocol {
+    //     self.get().borrow().get_protocol()
+    // }
     fn info(&self) -> String {
-        self.get().borrow().summary()
+        self.get().borrow().info()
     }
 }
 impl<T> PacketContext<T>
@@ -403,15 +384,19 @@ pub trait DomainService {
 
 
 pub trait Initer {
-    fn new(protocol: Protocol) -> Self;
+    fn new() -> Self;
     fn summary(&self) -> String;
 }
+pub trait InfoPacket{
+    fn info(&self) -> String;
+}
+
 #[derive(Default, Clone)]
 pub struct FrameSummary {
     pub index: u32,
     pub source: String,
     pub target: String,
-    pub protocol: Protocol,
+    pub protocol: String,
     pub link_type: u16,
 }
 
@@ -422,7 +407,7 @@ pub struct Frame {
     pub summary: RefCell<FrameSummary>,
     data: Rc<Vec<u8>>,
     pub ctx: Rc<Context>,
-    pub eles: RefCell<Vec<Box<dyn Element>>>,
+    pub eles: RefCell<Vec<ProtocolData>>,
 }
 impl Frame {
     pub fn new(
@@ -462,7 +447,7 @@ impl Frame {
 
     pub fn info(&self) -> String {
         for e in self.eles.borrow().iter() {
-            return e.as_ref().info();
+            return e.borrow().to_string();
         }
         self.to_string()
     }
@@ -511,11 +496,11 @@ impl Frame {
     pub fn get_reader(&self) -> Reader {
         return Reader::new_raw(self.data());
     }
-    pub fn create_packet<K>(protocol: Protocol) -> PacketContext<K>
+    pub fn create_packet<K>() -> PacketContext<K>
     where
         K: Initer,
     {
-        let val = K::new(protocol);
+        let val = K::new();
         PacketContext {
             val: Rc::new(RefCell::new(val)),
             fields: RefCell::new(Vec::new()),
@@ -527,9 +512,18 @@ impl Frame {
             fields: RefCell::new(Vec::new()),
         }
     }
-    pub fn add_element(&self, ele: Box<dyn Element>) {
+    pub fn add_element(&self, ele: ProtocolData) {
         let mut mref = self.summary.borrow_mut();
-        mref.protocol = ele.get_protocol();
+        mref.protocol = format!("{}", ele);
+        match &ele {
+            ProtocolData::IPV4(packet) => {
+                self.update_host(packet.get().borrow());
+            },
+            ProtocolData::IPV6(packet) => {
+                self.update_host(packet.get().borrow());
+            },
+            _ => {},
+        }
         self.eles.borrow_mut().push(ele);
     }
 }
@@ -555,7 +549,8 @@ impl Context {
     pub fn get_dns(&self) -> Vec<DNSRecord> {
         let mut rs = Vec::new();
         for d in self.dns.borrow().iter() {
-            rs.push(DNSRecord::create(d.borrow()));
+            let aa = d.as_ref().borrow();
+            rs.push(DNSRecord::create(aa));
         }
         rs
     }

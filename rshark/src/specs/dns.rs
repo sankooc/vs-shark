@@ -7,16 +7,18 @@ use std::rc::Rc;
 use pcap_derive::Packet;
 use anyhow::Result;
 
-use crate::common::{ContainProtocol, IPv4Address, Protocol, Reader};
+use crate::common::{IPv4Address, Reader};
 use crate::constants::{dns_class_mapper, dns_type_mapper};
 use crate::files::{DomainService, Frame, Initer, MultiBlock, PacketContext, Visitor};
+
+use super::ProtocolData;
 
 type Questions = Rc<RefCell<MultiBlock<Question>>>;
 type Answers = Rc<RefCell<MultiBlock<RecordResource>>>;
 type Authority = Rc<RefCell<MultiBlock<RecordResource>>>;
 #[derive(Default, Packet)]
 pub struct DNS {
-    protocol: Protocol,
+    
     transaction_id: u16,
     flag: u16,
     questions: u16,
@@ -39,14 +41,13 @@ impl Display for DNS {
         Ok(())
     }
 }
+impl crate::files::InfoPacket for DNS {
+    fn info(&self) -> String {
+        self.to_string()
+    }
+}
 
 impl DNS {
-    fn _info(&self) -> String {
-        return self.to_string()
-    }
-    fn _summary(&self) -> String {
-        return self.to_string()
-    }
     fn transaction_id(packet: &DNS) -> String {
         format!("Transaction ID: {:#06x}", packet.transaction_id)
     }
@@ -89,7 +90,7 @@ impl Display for Question {
     }
 }
 impl Initer for Question {
-    fn new(_p:Protocol) -> Question {
+    fn new() -> Question {
         Question {
             ..Default::default()
         }
@@ -161,7 +162,7 @@ impl RecordResource {
     // }
 }
 impl Initer for RecordResource {
-    fn new(_p:Protocol) -> RecordResource {
+    fn new() -> RecordResource {
         RecordResource {
             ..Default::default()
         }
@@ -198,7 +199,7 @@ impl DomainService for RecordResource {
     }
 
     fn proto(&self) -> String {
-        format!("{:?}", Protocol::DNS)
+        "dns".into()
     }
 
     fn content(&self) -> String {
@@ -218,7 +219,7 @@ pub struct DNSVisitor;
 
 impl DNSVisitor {
     fn read_question(reader: &Reader) -> Result<PacketContext<Question>> {
-        let packet: PacketContext<Question> = Frame::create_packet(Protocol::UNKNOWN);
+        let packet: PacketContext<Question> = Frame::create_packet();
         let mut p = packet.get().borrow_mut();
         p.name = packet.read_with_string(reader, Reader::_read_dns_query, Question::name)?;
         p._type = packet.read_with_string(reader, Reader::_read16_be, Question::_type)?;
@@ -227,7 +228,7 @@ impl DNSVisitor {
         Ok(packet)
     }
     fn read_questions(reader: &Reader, count: u16) -> Result<PacketContext<MultiBlock<Question>>> {
-        let packet: PacketContext<MultiBlock<Question>> = Frame::create_packet(Protocol::UNKNOWN);
+        let packet: PacketContext<MultiBlock<Question>> = Frame::create_packet();
         let mut p = packet.get().borrow_mut();
         for _ in 0..count {
             let item = packet.read_with_field(reader, DNSVisitor::read_question, None)?;
@@ -237,7 +238,7 @@ impl DNSVisitor {
         Ok(packet)
     }
     fn read_rr(reader: &Reader, archor: usize) -> Result<PacketContext<RecordResource>> {
-        let packet: PacketContext<RecordResource> = Frame::create_packet(Protocol::UNKNOWN);
+        let packet: PacketContext<RecordResource> = Frame::create_packet();
         let mut p: std::cell::RefMut<RecordResource> = packet.get().borrow_mut();
         let name_ref = reader.read16(true)?;
         let _read = |reader: &Reader| reader.read_dns_compress_string(archor, "", name_ref);
@@ -270,7 +271,7 @@ impl DNSVisitor {
         count: u16,
         archor: usize,
     ) -> Result<PacketContext<MultiBlock<RecordResource>>> {
-        let packet: PacketContext<MultiBlock<RecordResource>> = Frame::create_packet(Protocol::UNKNOWN);
+        let packet: PacketContext<MultiBlock<RecordResource>> = Frame::create_packet();
         let mut p = packet.get().borrow_mut();
         let _resource = |reader: &Reader| DNSVisitor::read_rr(reader, archor);
 
@@ -287,7 +288,7 @@ impl DNSVisitor {
 
 impl Visitor for DNSVisitor {
     fn visit(&self, frame: &Frame, reader: &Reader)  -> Result<()>{
-        let packet: PacketContext<DNS> = Frame::create_packet(Protocol::DNS);
+        let packet: PacketContext<DNS> = Frame::create_packet();
         let mut p = packet.get().borrow_mut();
         let _cur = reader.cursor();
         // if frame.summary.borrow().index > 15475 {
@@ -331,7 +332,7 @@ impl Visitor for DNSVisitor {
         p.authority_rr = authority_rr;
         p.additional_rr = additional_rr;
         drop(p);
-        frame.add_element(Box::new(packet));
+        frame.add_element(ProtocolData::DNS(packet));
         Ok(())
     }
 }

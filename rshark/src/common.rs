@@ -19,10 +19,10 @@ pub enum DataError {
     #[error("unknown data store error")]
     Unknown,
 }
-pub trait ContainProtocol {
-    fn get_protocol(&self) -> Protocol;
-    // fn info(&self) -> String;
-}
+// pub trait ContainProtocol {
+//     fn get_protocol(&self) -> Protocol;
+//     // fn info(&self) -> String;
+// }
 
 pub trait PortPacket {
     fn source_port(&self) -> u16;
@@ -510,23 +510,23 @@ pub enum FileType {
     NONE,
 }
 
-#[derive(Default, Debug, Copy, Clone)]
-pub enum Protocol {
-    ETHERNET,
-    PPPoESS,
-    SSL,
-    IPV4,
-    IPV6,
-    ARP,
-    TCP,
-    UDP,
-    ICMP,
-    ICMPv6,
-    // IGMP,
-    DNS,
-    DHCP,
-    // TLS,
-    HTTP,
-    #[default]
-    UNKNOWN,
-}
+// #[derive(Default, Debug, Copy, Clone)]
+// pub enum Protocol {
+//     ETHERNET,
+//     PPPoESS,
+//     SSL,
+//     IPV4,
+//     IPV6,
+//     ARP,
+//     TCP,
+//     UDP,
+//     ICMP,
+//     ICMPv6,
+//     // IGMP,
+//     DNS,
+//     DHCP,
+//     // TLS,
+//     HTTP,
+//     #[default]
+//     UNKNOWN,
+// }

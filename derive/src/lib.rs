@@ -12,20 +12,14 @@ fn impl_packet_macro(ast: &syn::DeriveInput) -> TokenStream {
     // print!("len {}", attr.len());
     let gen = quote! {
         impl Initer for #name {
-            fn new(protocol: Protocol) -> Self {
+            fn new() -> Self {
                 Self {
-                    protocol,
                     ..Default::default()
                 }
             }
 
             fn summary(&self) -> String {
-                self._summary()
-            }
-        }
-        impl ContainProtocol for #name {
-            fn get_protocol(&self) -> Protocol {
-              self.protocol.clone()
+                self.to_string()
             }
         }
     };

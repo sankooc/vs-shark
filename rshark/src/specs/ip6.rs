@@ -4,7 +4,7 @@ use pcap_derive::Packet;
 use anyhow::Result;
 
 use crate::{
-    common::{ContainProtocol, Description, IPPacket, IPv6Address, Protocol, Reader, TtypePacket}, files::{Frame, Initer, PacketContext, Visitor}
+    common::{Description, IPPacket, IPv6Address, Reader, TtypePacket}, files::{Frame, Initer, PacketContext, Visitor}
 };
 
 pub fn excute(ipprototype: u8, frame: &Frame, reader: &Reader) -> Result<()> {
@@ -19,7 +19,7 @@ pub fn excute(ipprototype: u8, frame: &Frame, reader: &Reader) -> Result<()> {
 
 #[derive(Default, Packet)]
 pub struct IPv6 {
-    protocol: Protocol,
+    
     source_ip: Option<IPv6Address>,
     target_ip: Option<IPv6Address>,
     total_len: u16,
@@ -61,19 +61,16 @@ impl std::fmt::Display for IPv6 {
         Ok(())
     }
 }
-impl IPv6 {
-    fn _info(&self) -> String {
-        return self.to_string()
-    }
-    fn _summary(&self) -> String {
-        return self.to_string()
+impl crate::files::InfoPacket for IPv6 {
+    fn info(&self) -> String {
+        self.to_string()
     }
 }
 pub struct IP6Visitor;
 
 impl crate::files::Visitor for IP6Visitor {
     fn visit(&self, frame: &Frame, reader: &Reader) -> Result<()> {
-        let packet: PacketContext<IPv6> = Frame::create_packet(Protocol::IPV6);
+        let packet: PacketContext<IPv6> = Frame::create_packet();
         let _ = reader.read32(true);
         let plen = packet._read_with_format_string_rs(reader, Reader::_read16_be, "Payload Length: {}")?;
         let ipproto = packet.read_with_string(reader, Reader::_read8, Description::t_protocol)?;
@@ -87,8 +84,8 @@ impl crate::files::Visitor for IP6Visitor {
         p.total_len = plen;
         p.hop_limit = hop_limit;
         drop(p);
-        frame.update_host(packet.get().borrow());
-        frame.add_element(Box::new(packet));
+        // frame.update_host(packet.get().borrow());
+        frame.add_element(super::ProtocolData::IPV6(packet));
         excute(ipproto,frame, reader)
     }
 }

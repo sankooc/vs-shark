@@ -4,7 +4,7 @@ mod tests {
 
     use log::info;
     use crate::{
-        common::{IPv4Address, Protocol},
+        common::IPv4Address,
         files::Field,
     };
 

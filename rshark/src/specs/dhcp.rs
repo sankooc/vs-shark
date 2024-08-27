@@ -4,12 +4,14 @@ use pcap_derive::Packet;
 use anyhow::Result;
 
 use crate::{
-    common::{ContainProtocol, IPv4Address, MacAddress, Protocol, Reader}, constants::arp_hardware_type_mapper, files::{Frame, Initer, PacketContext}
+    common::{IPv4Address, MacAddress, Reader}, constants::arp_hardware_type_mapper, files::{Frame, Initer, PacketContext}
 };
+
+use super::ProtocolData;
 
 #[derive(Default, Packet)]
 pub struct DHCP {
-    protocol: Protocol,
+    
     op: u8,
     _type: u8,
     hardware_type: u8,
@@ -28,7 +30,12 @@ pub struct DHCP {
 
 impl std::fmt::Display for DHCP {
     fn fmt(&self, fmt: &mut Formatter) -> std::fmt::Result {
-        Ok(())
+        fmt.write_str("Address Resolution Protocol")
+    }
+}
+impl crate::files::InfoPacket for DHCP {
+    fn info(&self) -> String {
+        self.to_string()
     }
 }
 impl DHCP {
@@ -49,8 +56,7 @@ impl DHCP {
     }
 }
 //https://www.rfc-editor.org/rfc/rfc1497.txt
-
-#[derive(Default)]
+#[derive(Default, Packet)]
 struct DHCPOption {
     code: u8,
     len: u8,
@@ -102,21 +108,12 @@ impl std::fmt::Display for DHCPOption {
         fmt.write_fmt(format_args!("OPTION ({})", code))
     }
 }
-impl Initer for DHCPOption {
-    fn new(_p:Protocol) -> DHCPOption {
-        DHCPOption {
-            ..Default::default()
-        }
-    }
-    fn summary(&self) -> String {
-        self.to_string()
-    }
-}
+
 pub struct DHCPVisitor;
 
 impl crate::files::Visitor for DHCPVisitor {
     fn visit(&self, frame: &Frame, reader: &Reader) -> Result<()> {
-        let packet: PacketContext<DHCP> = Frame::create_packet(Protocol::DHCP);
+        let packet: PacketContext<DHCP> = Frame::create_packet();
         let mut p = packet.get().borrow_mut();
         p.op = packet.read_with_string(reader, Reader::_read8, DHCP::op)?;
         p.hardware_type = packet.read_with_string(reader, Reader::_read8, DHCP::hardware_type_desc)?;
@@ -136,13 +133,13 @@ impl crate::files::Visitor for DHCPVisitor {
         reader._move(64);//sname
         reader._move(128);//file
         reader.read32(false);// magic cookie
-        loop {
-            let option: PacketContext<DHCPOption> = Frame::create_packet(Protocol::UNKNOWN);
+        // loop {
+        //     let option: PacketContext<DHCPOption> = Frame::create_packet();
             
-        }
+        // }
         // p.target_ip = packet._read_with_format_string_rs(reader, Reader::_read_ipv4, "Target IP address: {}").ok();
         drop(p);
-        frame.add_element(Box::new(packet));
+        frame.add_element(ProtocolData::DHCP(packet));
         Ok(())
     }
 }

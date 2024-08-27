@@ -21,6 +21,8 @@ wasm-bindgen = "0.2.92"
 pcap_derive = { path = "../derive" }
 thiserror = "1.0.63"
 anyhow = "1.0.86"
+enum_dispatch = "0.3.13"
+strum_macros = "0.26.4"
 
 [dev-dependencies]
 env_logger = "0.11.3"

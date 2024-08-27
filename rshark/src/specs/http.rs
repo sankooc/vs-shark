@@ -3,7 +3,7 @@ use std::fmt::Formatter;
 use pcap_derive::Packet;
 
 use crate::{
-    common::{ContainProtocol, IPPacket, IPv4Address, MacAddress, Protocol, Reader},
+    common::Reader,
     constants::{arp_hardware_type_mapper, arp_oper_type_mapper, etype_mapper},
     files::{Frame, Initer, PacketContext},
 };
@@ -29,11 +29,14 @@ enum HttpType {
 
 #[derive(Default, Packet)]
 pub struct HTTP {
-    protocol: Protocol,
     header: Vec<String>,
     _type: HttpType,
 }
-
+impl crate::files::InfoPacket for HTTP {
+    fn info(&self) -> String {
+        self.to_string()
+    }
+}
 impl std::fmt::Display for HTTP {
     fn fmt(&self, fmt: &mut Formatter) -> std::fmt::Result {
         // if self.operation == 1 {
@@ -49,12 +52,12 @@ impl std::fmt::Display for HTTP {
     }
 }
 impl HTTP {
-    fn _info(&self) -> String {
-        self.to_string()
-    }
-    fn _summary(&self) -> String {
-        self.to_string()
-    }
+    // fn _info(&self) -> String {
+    //     self.to_string()
+    // }
+    // fn _summary(&self) -> String {
+    //     self.to_string()
+    // }
     // fn protocol_type_desc(&self) -> String {
     //     format!("Protocol type: {} ({})", etype_mapper(self.protocol_type),self.protocol_type)
     // }
@@ -93,7 +96,7 @@ impl HTTPVisitor {
 
 impl crate::files::Visitor for HTTPVisitor {
     fn visit(&self, frame: &Frame, reader: &Reader) -> Result<()> {
-        let packet: PacketContext<HTTP> = Frame::create_packet(Protocol::HTTP);
+        let packet: PacketContext<HTTP> = Frame::create_packet();
         let mut p = packet.get().borrow_mut();
         let v = packet._read_with_format_string_rs(reader, Reader::_read_enter, "{}")?;
         let spl: Vec<_> = v.split(" ").collect();
@@ -129,7 +132,7 @@ impl crate::files::Visitor for HTTPVisitor {
         let dlen = reader.left()?;
         packet.read_txt(reader, reader.cursor(), dlen, format!("File Data: {} bytes",dlen));
         drop(p);
-        frame.add_element(Box::new(packet));
+        frame.add_element(super::ProtocolData::HTTP(packet));
         Ok(())
     }
 }

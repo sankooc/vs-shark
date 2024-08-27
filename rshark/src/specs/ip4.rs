@@ -4,7 +4,7 @@ use pcap_derive::Packet;
 use anyhow::Result;
 
 use crate::{
-    common::{ContainProtocol, Description, IPPacket, IPv4Address, Protocol, Reader, TtypePacket}, files::{Frame, Initer, PacketContext, Visitor}
+    common::{Description, IPPacket, IPv4Address, Reader, TtypePacket}, files::{Frame, Initer, PacketContext, Visitor}
 };
 
 pub fn excute(ipprototype: u8, frame: &Frame, reader: &Reader) -> Result<()> {
@@ -25,7 +25,7 @@ pub fn excute(ipprototype: u8, frame: &Frame, reader: &Reader) -> Result<()> {
 
 #[derive(Default, Packet)]
 pub struct IPv4 {
-    protocol: Protocol,
+    
     source_ip: Option<IPv4Address>,
     target_ip: Option<IPv4Address>,
     total_len: u16,
@@ -34,6 +34,12 @@ pub struct IPv4 {
     ttl: u8,
     t_protocol: u8,
     crc: u16,
+}
+
+impl crate::files::InfoPacket for IPv4 {
+    fn info(&self) -> String {
+        self.to_string()
+    }
 }
 
 impl IPPacket for IPv4 {
@@ -82,7 +88,7 @@ pub struct IP4Visitor;
 
 impl crate::files::Visitor for IP4Visitor {
     fn visit(&self, frame: &Frame, reader: &Reader) -> Result<()> {
-        let packet: PacketContext<IPv4> = Frame::create_packet(Protocol::IPV4);
+        let packet: PacketContext<IPv4> = Frame::create_packet();
         let head = reader.read8()?;
         let head_len = head & 0x0f;
         let _ = reader.read8();//tos
@@ -109,8 +115,8 @@ impl crate::files::Visitor for IP4Visitor {
             reader.slice((ext * 4) as usize);
         }
         drop(p);
-        frame.update_host(packet.get().borrow());
-        frame.add_element(Box::new(packet));
+        // frame.update_host(packet.get().borrow());
+        frame.add_element(super::ProtocolData::IPV4(packet));
         excute(ipproto,frame, reader)
     }
 }

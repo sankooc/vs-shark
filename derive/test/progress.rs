@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use pcap_derive::{ Packet};
+use pcap_derive::Packet;
 
 #[derive(Default, Packet)]
 struct Ethernet {
@@ -49,7 +49,7 @@ pub trait ContainProtocol {
     // fn info(&self) -> String;
 }
 pub trait Initer {
-    fn new(protocol: Protocol) -> Self;
+    fn new() -> Self;
     fn summary(&self) -> String;
 }
 
