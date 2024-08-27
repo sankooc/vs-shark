@@ -524,7 +524,7 @@ pub enum Protocol {
     ICMPv6,
     // IGMP,
     DNS,
-    // DHCP,
+    DHCP,
     // TLS,
     HTTP,
     #[default]

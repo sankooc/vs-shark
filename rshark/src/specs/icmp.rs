@@ -6,7 +6,7 @@ use pcap_derive::Packet;
 use crate::{
     common::{ContainProtocol, Protocol, Reader}, constants::icmpv6_type_mapper, files::{Frame, Initer, PacketContext}
 };
-
+//https://datatracker.ietf.org/doc/html/rfc792
 #[derive(Default, Packet)]
 pub struct ICMP {
     protocol: Protocol,
@@ -16,7 +16,7 @@ pub struct ICMP {
 }
 
 impl std::fmt::Display for ICMP {
-    fn fmt(&self, fmt: &mut Formatter) -> std::fmt::Result {
+    fn fmt(&self, _fmt: &mut Formatter) -> std::fmt::Result {
         Ok(())
     }
 }
@@ -119,7 +119,7 @@ pub struct ICMP6 {
     checksum: u16,
 }
 impl std::fmt::Display for ICMP6 {
-    fn fmt(&self, fmt: &mut Formatter) -> std::fmt::Result {
+    fn fmt(&self, _fmt: &mut Formatter) -> std::fmt::Result {
         Ok(())
     }
 }

@@ -8,6 +8,7 @@ pub mod icmp;
 pub mod udp;
 pub mod dns;
 pub mod tcp;
+pub mod dhcp;
 pub mod http;
 use anyhow::Result;
 

@@ -143,8 +143,8 @@ impl<T> PacketContext<T>
 }
 
 pub enum ProtocolData {
-    ETHERNET(Ethernet),
-    IPV4(IPv4),
+    ETHERNET(PacketContext<Ethernet>),
+    IPV4(PacketContext<IPv4>),
 }
 
 impl ProtocolData {
@@ -516,6 +516,12 @@ impl Frame {
         K: Initer,
     {
         let val = K::new(protocol);
+        PacketContext {
+            val: Rc::new(RefCell::new(val)),
+            fields: RefCell::new(Vec::new()),
+        }
+    }
+    pub fn create<K>(val: K) -> PacketContext<K>{
         PacketContext {
             val: Rc::new(RefCell::new(val)),
             fields: RefCell::new(Vec::new()),
