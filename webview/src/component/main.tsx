@@ -11,7 +11,6 @@ import FrameList from './frames';
 import TCPList from './tcp';
 import ARPReplies from './arp';
 import DNSList from './dns';
-import { DNSRecord } from "nshark/built/src/common";
 import { Client, CProto } from "../client";
 import { ComLog, Panel, MainProps, HexV } from "../common";
 import init, { load, WContext,FrameInfo } from 'rshark';
@@ -49,16 +48,9 @@ const Main = () => {
         case 'raw-data': {
           initPro.then(() => {
             const ctx = load(body as Uint8Array);
+            const dns = ctx.get_dns_record();
+            console.log(dns);
             setData({ctx})
-            // const client = new BrowserClient();
-            // client.initData(body);
-            // try {
-            //   const ret = client.init();
-            //   setData(ret);
-            // } catch (e) {
-            //   console.error(e);
-            //   emitMessage(new ComMessage<ComLog>('log', new ComLog('error', 'invalid_file_format')));
-            // }
           });
         }
       }
@@ -68,7 +60,6 @@ const Main = () => {
 
   const convert = (props: CProto): MenuItem[] => {
     const mitems: MenuItem[] = [];
-    // if (!props) return [];
     const addPanel = (id: string, label: string, extra: string, icon: string = ''): void => {
       mitems.push({
         id, data: extra, template: itemRenderer, label, icon, className: select === id ? 'active' : '', command: (env) => {
@@ -80,7 +71,7 @@ const Main = () => {
     addPanel('frame', 'Frame', '', 'pi pi-list');
     // if (props.tcps?.length) addPanel('tcp', 'TCP', props.tcps.length + '', 'pi pi-server');
     // if (props.arpGraph?.nodes?.length) addPanel('arp', 'ARP', props.arpGraph?.nodes?.length + '', 'pi pi-chart-pie');
-    // if (props.dnsRecords?.length) addPanel('dns', 'DNS', props.dnsRecords?.length + '', 'pi pi-address-book');
+    addPanel('dns', 'DNS', 12 + '', 'pi pi-address-book');
     return mitems;
   };
   const buildPage = (): ReactElement => {

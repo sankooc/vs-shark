@@ -168,7 +168,6 @@ export class IPv4Visitor implements PVisitor {
         if (headLenth > 5) {
             reader.skip((headLenth - 5) * 4)
         }
-
         data.extra = { cv, headLenth, tos, flag, headCRC }
 
         return data.accept(this.mapper.get(data.ipprotocol));

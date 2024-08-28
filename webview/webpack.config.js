@@ -1,7 +1,7 @@
 module.exports = {
     entry: { 
         // app: "./src/editor/index.tsx",
-        app: './src/demo/index.tsx',
+        app: './src/component/index.tsx',
         // main: './src/nav/index.tsx',
         // tree: './src/tree/index.tsx',
         // hex: './src/hex/index.tsx',

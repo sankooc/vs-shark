@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "reset": "rm -rf node_modules/nshark && pnpm install",
+    "reset": "rm -rf node_modules/rshark && pnpm install",
     "watch": "npx webpack -c webpack.dev.config.js",
     "serve": "npx webpack serve -c webpack.dev.config.js",
     "css": "npx sass src --no-source-map",
@@ -17,6 +17,7 @@
     "primeicons": "^7.0.0",
     "primereact": "^10.7.0",
     "nshark": "file:../nshark",
+    "rshark": "file:../rshark/pkg",
     "react": "^18.3.0",
     "react-dom": "^18.3.0"
   },
