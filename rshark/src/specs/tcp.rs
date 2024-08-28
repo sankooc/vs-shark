@@ -37,22 +37,11 @@ impl TCPState {
 struct TCPExtra {
     dump: bool,
 }
-#[derive(Default)]
+#[derive(Default, Packet)]
 struct TCPOption{
     kind: u8,
     len: u8,
     data: TCPOptionKind,
-}
-impl Initer for TCPOption {
-    fn new() -> TCPOption {
-        TCPOption {
-            ..Default::default()
-        }
-    }
-
-    fn summary(&self) -> String {
-        self.to_string()
-    }
 }
 
 struct TCPOptionKindBlock {

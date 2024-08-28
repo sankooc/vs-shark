@@ -69,7 +69,7 @@ impl DNS {
 }
 
 
-#[derive(Default, Clone)]
+#[derive(Default, Clone, Packet)]
 pub struct Question {
     name: String,
     _type: u16,
@@ -89,16 +89,7 @@ impl Display for Question {
         Ok(())
     }
 }
-impl Initer for Question {
-    fn new() -> Question {
-        Question {
-            ..Default::default()
-        }
-    }
-    fn summary(&self) -> String {
-        self.to_string()
-    }
-}
+
 impl Question {
     fn name(q: &Question) -> String {
         format!("Name: {}", q.name)
@@ -132,7 +123,7 @@ impl ToString for ResourceType {
     }
 }
 
-#[derive(Default)]
+#[derive(Default, Packet)]
 pub struct RecordResource {
     name: String,
     _type: u16,
@@ -160,17 +151,6 @@ impl RecordResource {
     // fn address(&self) -> String {
     //     format!("Address: {}", p.len)
     // }
-}
-impl Initer for RecordResource {
-    fn new() -> RecordResource {
-        RecordResource {
-            ..Default::default()
-        }
-    }
-
-    fn summary(&self) -> String {
-        self.to_string()
-    }
 }
 impl Display for RecordResource {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {

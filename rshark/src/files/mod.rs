@@ -3,7 +3,7 @@ pub mod pcapng;
 
 use crate::{common::IPPacket, constants::link_type_mapper, nshark::DNSRecord, specs::{dns::RecordResource, ProtocolData}};
 use std::{
-    borrow::Borrow, cell::{Cell, Ref, RefCell}, rc::Rc, time::{Duration, UNIX_EPOCH}
+    borrow::Borrow, cell::{Cell, Ref, RefCell}, fmt::Display, rc::Rc, time::{Duration, UNIX_EPOCH}
 };
 
 use chrono::{DateTime, Utc};
@@ -269,6 +269,25 @@ where
         }));
         val
     }
+    pub fn _read_with_mapper<K>(
+        &self,
+        reader: &Reader,
+        opt: impl Fn(&Reader) -> Result<K>,
+        mapper: impl Fn(K) -> String,
+    ) -> Result<K> where K: Clone {
+        let start = reader.cursor();
+        let val: K = opt(reader)?;
+        let end = reader.cursor();
+        let size = end - start;
+        let content = mapper(val.clone());
+        self.fields.borrow_mut().push(Box::new(TXTPosition {
+            start,
+            size,
+            data: reader.get_raw(),
+            content,
+        }));
+        Ok(val)
+    }
     pub fn read_with_field<K>(
         &self,
         reader: &Reader,
@@ -452,8 +471,10 @@ impl Frame {
         self.to_string()
     }
     pub fn update_host(&self, packet: Ref<impl IPPacket>){
-        self.summary.borrow_mut().source = packet.source_ip_address();
-        self.summary.borrow_mut().target = packet.target_ip_address();
+        let mut s = self.summary.borrow_mut();
+        s.source = packet.source_ip_address();
+        s.target = packet.target_ip_address();
+        drop(s);
     }
     pub fn get_fields(&self) -> Vec<Field> {
         let mut rs = Vec::new();
@@ -515,6 +536,7 @@ impl Frame {
     pub fn add_element(&self, ele: ProtocolData) {
         let mut mref = self.summary.borrow_mut();
         mref.protocol = format!("{}", ele);
+        drop(mref);
         match &ele {
             ProtocolData::IPV4(packet) => {
                 self.update_host(packet.get().borrow());
@@ -529,7 +551,7 @@ impl Frame {
 }
 
 
-type Ref2<T> = Rc<RefCell<T>>;
+pub type Ref2<T> = Rc<RefCell<T>>;
 pub struct Context {
     count: Cell<u32>,
     info: RefCell<FileInfo>,

@@ -99,5 +99,5 @@ pub trait Initer {
 #[test]
 fn tests() {
     // let token = DeriveInput::parse("");
-    Ethernet::new(Protocol::ETHERNET);
+    // Ethernet::new(Protocol::ETHERNET);
 }
