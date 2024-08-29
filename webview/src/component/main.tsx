@@ -8,25 +8,12 @@ import { onMessage, emitMessage } from '../connect';
 import Overview from './overview';
 
 import FrameList from './frames';
-import TCPList from './tcp';
-import ARPReplies from './arp';
-import DNSList from './dns';
-import { Client, CProto } from "../client";
+// import TCPList from './tcp';
+// import ARPReplies from './arp';
+// import DNSList from './dns';
+import { CProto } from "../wasm";
 import { ComLog, Panel, MainProps, HexV } from "../common";
 import init, { load, WContext,FrameInfo } from 'rshark';
-
-class BrowserClient extends Client {
-  selectFrame(no: number): void {
-  }
-  renderHexView(data: HexV): void {
-  }
-  emitMessage(panel: Panel, msg: ComMessage<any>): void {
-  }
-  printLog(log: ComLog): void {
-
-  }
-
-}
 
 
 const itemRenderer = (item, options) => {
@@ -48,9 +35,7 @@ const Main = () => {
         case 'raw-data': {
           initPro.then(() => {
             const ctx = load(body as Uint8Array);
-            const dns = ctx.get_dns_record();
-            console.log(dns);
-            setData({ctx})
+            setData(new CProto(ctx))
           });
         }
       }
@@ -60,6 +45,7 @@ const Main = () => {
 
   const convert = (props: CProto): MenuItem[] => {
     const mitems: MenuItem[] = [];
+    // if (!props) return [];
     const addPanel = (id: string, label: string, extra: string, icon: string = ''): void => {
       mitems.push({
         id, data: extra, template: itemRenderer, label, icon, className: select === id ? 'active' : '', command: (env) => {
@@ -67,18 +53,19 @@ const Main = () => {
         }
       });
     };
-    // addPanel('overview', 'Overview', '', 'pi pi-chart-bar');
-    addPanel('frame', 'Frame', '', 'pi pi-list');
+    const frameCount = props.getFrames().length;
+    addPanel('overview', 'Overview', '', 'pi pi-chart-bar');
+    addPanel('frame', 'Frame', frameCount + '', 'pi pi-list');
     // if (props.tcps?.length) addPanel('tcp', 'TCP', props.tcps.length + '', 'pi pi-server');
     // if (props.arpGraph?.nodes?.length) addPanel('arp', 'ARP', props.arpGraph?.nodes?.length + '', 'pi pi-chart-pie');
-    addPanel('dns', 'DNS', 12 + '', 'pi pi-address-book');
+    // if (props.dnsRecords?.length) addPanel('dns', 'DNS', props.dnsRecords?.length + '', 'pi pi-address-book');
     return mitems;
   };
   const buildPage = (): ReactElement => {
-    // switch (select) {
-    //   case 'frame':
-    //     const items: FrameInfo[] = data.ctx.get_frames();
-    //     return <FrameList items={items} ctx={data.ctx} />;
+    switch (select) {
+      case 'frame':
+        const items: FrameInfo[] = data.ctx.get_frames();
+        return <FrameList instance={data}/>;
       // case 'tcp':
       //   return <TCPList items={data.tcps} />
 
@@ -90,10 +77,10 @@ const Main = () => {
       //     r.no = inx + 1;
       //     return r;
       //   })} />
-    // }
-    const items: FrameInfo[] = data.ctx.get_frames();
-    return <FrameList items={items} ctx={data.ctx} />;
-    // return <Overview data={data.overview} />;
+    }
+    // const items: FrameInfo[] = data.ctx.get_frames();
+    // return <FrameList items={items} ctx={data.ctx} />;
+    return <Overview instance={data}/>;
   };
   if (!data || !data.ctx) {
     return <Loading />

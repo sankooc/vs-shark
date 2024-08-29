@@ -172,8 +172,6 @@ export class Frame implements ColumnItem {
     }
 
 }
-
-
 export class CTreeItem {
     key?: string;
     label: string;
@@ -212,13 +210,23 @@ export class OverviewSource {
     counts!: number[];
     valMap: any;
 }
-export class MainProps {
-    client?: PCAPClient;
+
+
+export abstract class MainProps {
+    // client?: PCAPClient;
     items?: Frame[];
-    tcps?: TCPCol[];
-    arpGraph?: Grap;
-    overview?: OverviewSource;
-    dnsRecords?: DNSRecord[];
+    // tcps?: TCPCol[];
+    // arpGraph?: Grap;
+    // overview?: OverviewSource;
+    // dnsRecords?: DNSRecord[];
+    abstract _frames(): Frame[];
+    public getFrames():  Frame[]{
+        if(this.items){
+            return this.items;
+        }
+        this.items = this._frames();
+        return this.items;
+    }
 }
 
 export class IDNSRecord implements ColumnItem {

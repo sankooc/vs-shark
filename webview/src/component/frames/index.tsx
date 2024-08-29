@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { ColumnItem, HexV } from "../../common";
+import { MainProto } from '../../wasm';
 import { Splitter, SplitterPanel } from 'primereact/splitter';
 import DTable from '../dataTable';
 import Stack from '../tree';
@@ -45,18 +46,19 @@ export class FrameItem implements ColumnItem {
   }
 
 }
-function FrameList(props: FrameListProps) {
+function FrameList(props: MainProto) {
   const [filters, setFilter] = useState(null);
   const [stacks, setStack] = useState<Field[]>([]);
   const [hex, setHex] = useState<HexV>(null);
+  const frames = props.instance.getFrames().map((item) => new FrameItem(item));
   const getData = (): ColumnItem[] => {
-    return props.items.map((item) => new FrameItem(item));
-    // if(!filters || !filters.length) return props.items;
-    // const maps = {};
-    // for(const f of filters){
-    //   maps[f.code] = 1;
-    // }
-    // return props.items.filter((it: FrameInfo) => { return !!maps[it.protocol]});
+    // return frames.map((item) => new FrameItem(item));
+    if(!filters || !filters.length) return frames;
+    const maps = {};
+    for(const f of filters){
+      maps[f.code] = 1;
+    }
+    return frames.filter((it: FrameItem) => { return !!maps[it.protocol]});
   };
   const items = getData();
   const columes = [
@@ -71,7 +73,7 @@ function FrameList(props: FrameListProps) {
   const protos = [
   ];
   const _map = {};
-  for(const f of props.items){
+  for(const f of frames){
     _map[f.protocol] = _map[f.protocol] || 0;
     _map[f.protocol] = _map[f.protocol] += 1;
   }
@@ -79,7 +81,8 @@ function FrameList(props: FrameListProps) {
     protos.push({ name: `${code.toUpperCase()} (${_map[code]})`, code});
   }
   const onSelect = (item: ColumnItem): void => {
-    setStack(props.ctx.get_fields(item.no - 1));
+    // props.instance.ctx.get_fields(item.no - 1);
+    setStack(props.instance.ctx.get_fields(item.no - 1));
   };
   const onStackSelect = (f) => {
     const { data, start, size } = f;

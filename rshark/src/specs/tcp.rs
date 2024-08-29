@@ -1,11 +1,17 @@
-use std::{cell::RefCell, fmt::{Display, Formatter}, rc::Rc};
+use std::{
+    cell::RefCell,
+    fmt::{Display, Formatter, Write},
+    rc::Rc,
+};
 
+use anyhow::Result;
 use log::info;
 use pcap_derive::Packet;
-use anyhow::Result;
 
 use crate::{
-    common::{Description, IPPacket, IPv4Address, MacAddress, PortPacket, Reader}, constants::{tcp_option_kind_mapper}, files::{Frame, Initer, MultiBlock, PacketContext}
+    common::{Description, IPPacket, IPv4Address, MacAddress, PortPacket, Reader},
+    constants::tcp_option_kind_mapper,
+    files::{Frame, Initer, MultiBlock, PacketContext},
 };
 
 #[derive(Default)]
@@ -19,11 +25,14 @@ struct TCPState {
     sync: bool,
     fin: bool,
 }
+const C_ACK: &str = "ACK";
+const C_PUSH: &str = "PUSH";
+const C_RESET: &str = "RESET";
+const C_SYN: &str = "SYN";
+const C_FIN: &str = "FIN";
 impl TCPState {
     fn update(&mut self, head: u16) {
-        let lann = |off: u8| -> bool {
-            1 == (head >> off) & 0x01
-        };
+        let lann = |off: u8| -> bool { 1 == (head >> off) & 0x01 };
         self.cwr = lann(7);
         self.ece = lann(6);
         self.urg = lann(5);
@@ -33,19 +42,41 @@ impl TCPState {
         self.sync = lann(1);
         self.fin = lann(0);
     }
+    fn to_string(&self) -> String {
+        let mut str = String::from("[");
+        let mut list = Vec::new();
+        if self.ack {
+            list.push(C_ACK)
+        };
+        if self.push {
+            list.push(C_PUSH);
+        }
+        if self.reset {
+            list.push(C_RESET);
+        }
+        if self.sync {
+            list.push(C_SYN);
+        }
+        if self.fin {
+            list.push(C_FIN);
+        }
+        str.write_str(list.join(",").as_str());
+        str.write_str("]");
+        str
+    }
 }
 struct TCPExtra {
     dump: bool,
 }
 #[derive(Default, Packet)]
-struct TCPOption{
+struct TCPOption {
     kind: u8,
     len: u8,
     data: TCPOptionKind,
 }
 
 struct TCPOptionKindBlock {
-    data: Vec<u8>
+    data: Vec<u8>,
 }
 #[derive(Default)]
 enum TCPOptionKind {
@@ -55,22 +86,22 @@ enum TCPOptionKind {
 }
 impl Display for TCPOption {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        f.write_str(
-            format!("TCP Option - {}", self.kind())
-            .as_str(),
-        )
+        f.write_str(format!("TCP Option - {}", self.kind()).as_str())
     }
 }
 impl TCPOption {
-    fn kind(&self) -> String{
-        format!("Kind: {} ({})", tcp_option_kind_mapper(self.kind as u16), self.kind)
+    fn kind(&self) -> String {
+        format!(
+            "Kind: {} ({})",
+            tcp_option_kind_mapper(self.kind as u16),
+            self.kind
+        )
     }
 }
 
 type TCPOptions = Rc<RefCell<MultiBlock<TCPOption>>>;
 #[derive(Default, Packet)]
 pub struct TCP {
-    
     sequence: u32,
     acknowledge: u32,
     source_port: u16,
@@ -81,21 +112,15 @@ pub struct TCP {
     crc: u16,
     urgent: u16,
     options: Option<TCPOptions>,
-    state: TCPState
+    state: TCPState,
 }
 
 impl std::fmt::Display for TCP {
     fn fmt(&self, fmt: &mut Formatter) -> std::fmt::Result {
-        // if self.operation == 1 {
-        //     if self.source_ip_address() == self.target_ip_address(){
-        //         fmt.write_fmt(format_args!("TCP Announcement for {}", self.source_ip_address()))
-        //     } else {
-        //         fmt.write_fmt(format_args!("who has {}? tell {}", self.target_ip_address(), self.source_ip_address()))
-        //     }
-        // } else {
-        //     fmt.write_fmt(format_args!("{} at {}", self.target_ip_address(), self.source_ip_address()))
-        // }
-        Ok(())
+        fmt.write_fmt(format_args!(
+            "Transmission Control Protocol, Src Port: {}, Dst Port: {}, Seq: {}, Ack: {}, Len: {}",
+            self.source_port, self.target_port, self.sequence, self.acknowledge, self.len
+        ))
     }
 }
 impl PortPacket for TCP {
@@ -109,26 +134,37 @@ impl PortPacket for TCP {
 }
 impl crate::files::InfoPacket for TCP {
     fn info(&self) -> String {
-        self.to_string()
+        format!(
+            "{} → {} {} Seq={} Ack={} Win={} Len={}",
+            self.source_port,
+            self.target_port,
+            self.state.to_string(),
+            self.sequence,
+            self.acknowledge,
+            self.window,
+            self.len
+        )
     }
 }
 impl TCP {
-    fn set_head(&mut self, head: u16){
+    fn set_head(&mut self, head: u16) {
         self.head = head;
         self.len = (head >> 12) & 0x0f;
         self.state.update(head);
-        
     }
     fn sequence_desc(&self) -> String {
-        format!("Sequence Number (raw): {}", "")
+        format!("Sequence Number (raw): {}", self.sequence)
     }
     fn acknowledge_desc(&self) -> String {
-        format!("Acknowlagde Number (raw): {}", "")
+        format!("Acknowlagde Number (raw): {}", self.acknowledge)
     }
-    fn len_desc(&self) -> String{
-        format!("{:b} .... = Header Length: 32 bytes ({})", self.len, self.len)
+    fn len_desc(&self) -> String {
+        format!(
+            "{:04b} .... = Header Length: 32 bytes ({})",
+            self.len, self.len
+        )
     }
-    
+
     // fn protocol_type_desc(&self) -> String {
     //     format!("Protocol type: {} ({})", etype_mapper(self.protocol_type),self.protocol_type)
     // }
@@ -141,7 +177,7 @@ impl TCP {
     // fn _hardware_type(&self) -> String {
     //     arp_hardware_type_mapper(self.hardware_type)
     // }
-    
+
     // fn _operation_type(&self) -> String {
     //     arp_oper_type_mapper(self.operation)
     // }
@@ -149,32 +185,33 @@ impl TCP {
 pub struct TCPVisitor;
 
 impl TCPVisitor {
-    fn read_option(reader: &Reader) -> Result<PacketContext<TCPOption>>{
+    fn read_option(reader: &Reader) -> Result<PacketContext<TCPOption>> {
         let packet: PacketContext<TCPOption> = Frame::create_packet();
         let mut option = packet.get().borrow_mut();
-        option.kind = packet.read_with_string(reader,Reader::_read8, TCPOption::kind)?;
+        option.kind = packet.read_with_string(reader, Reader::_read8, TCPOption::kind)?;
         match option.kind {
-            2 | 3 | 4| 5 | 8 | 28 | 29 | 30 => {
-                let len = packet._read_with_format_string_rs(reader,Reader::_read8, "Length: {}")?;
+            2 | 3 | 4 | 5 | 8 | 28 | 29 | 30 => {
+                let len =
+                    packet._read_with_format_string_rs(reader, Reader::_read8, "Length: {}")?;
                 option.len = len;
                 // let read = |reader: &Reader|  TCPOptionKind::BLOCK(TCPOptionKindBlock{data: reader.slice((len-2) as usize).to_vec()});
                 // option.data = packet._read_with_format_string_rs(reader,Reader::_read8, "Length: {}")?;
-                let raw = reader.slice((len-2) as usize);
-                let block = TCPOptionKindBlock{data: raw.to_vec()};
+                let raw = reader.slice((len - 2) as usize);
+                let block = TCPOptionKindBlock { data: raw.to_vec() };
                 option.data = TCPOptionKind::BLOCK(block);
-            },
+            }
             _ => {}
         }
         drop(option);
         Ok(packet)
     }
-    fn read_options(reader: &Reader, len: usize) -> Result<PacketContext<MultiBlock<TCPOption>>>{
+    fn read_options(reader: &Reader, len: usize) -> Result<PacketContext<MultiBlock<TCPOption>>> {
         let packet: PacketContext<MultiBlock<TCPOption>> = Frame::create_packet();
         let mut p = packet.get().borrow_mut();
         let start = reader.cursor();
         let end = start + len;
         while reader.cursor() < end {
-            let item = packet.read_with_field(reader,TCPVisitor::read_option,None)?;
+            let item = packet.read_with_field(reader, TCPVisitor::read_option, None)?;
             p.push(item);
         }
         drop(p);
@@ -186,14 +223,18 @@ impl crate::files::Visitor for TCPVisitor {
     fn visit(&self, frame: &Frame, reader: &Reader) -> Result<()> {
         let packet: PacketContext<TCP> = Frame::create_packet();
         let mut p = packet.get().borrow_mut();
-        p.source_port = packet.read_with_string(reader, Reader::_read16_be, Description::source_port)?;
-        p.target_port = packet.read_with_string(reader, Reader::_read16_be, Description::target_port)?;
+        p.source_port =
+            packet.read_with_string(reader, Reader::_read16_be, Description::source_port)?;
+        p.target_port =
+            packet.read_with_string(reader, Reader::_read16_be, Description::target_port)?;
         p.sequence = packet.read_with_string(reader, Reader::_read32_be, TCP::sequence_desc)?;
-        p.acknowledge = packet.read_with_string(reader, Reader::_read32_be, TCP::acknowledge_desc)?;
+        p.acknowledge =
+            packet.read_with_string(reader, Reader::_read32_be, TCP::acknowledge_desc)?;
         let head = packet.read_with_string(reader, Reader::_read16_be, TCP::len_desc)?;
         p.window = packet._read_with_format_string_rs(reader, Reader::_read16_be, "Window: {}")?;
         p.crc = packet._read_with_format_string_rs(reader, Reader::_read16_be, "Checksum: {}")?;
-        p.urgent = packet._read_with_format_string_rs(reader, Reader::_read16_be, "Urgent Pointer: {}")?;
+        p.urgent =
+            packet._read_with_format_string_rs(reader, Reader::_read16_be, "Urgent Pointer: {}")?;
         p.set_head(head);
         let len = p.len;
         if len > 5 {
@@ -202,11 +243,14 @@ impl crate::files::Visitor for TCPVisitor {
             p.options = Some(options);
         }
         let left_size = reader.left().unwrap_or(0);
-        packet.read_txt(reader, reader.cursor(), left_size, format!("TCP payload ({} bytes)",left_size));
+        packet.read_txt(
+            reader,
+            reader.cursor(),
+            left_size,
+            format!("TCP payload ({} bytes)", left_size),
+        );
         drop(p);
         frame.add_element(super::ProtocolData::TCP(packet));
-
-
 
         let is_http = super::http::HTTPVisitor::check(reader);
         if is_http {

@@ -34,29 +34,23 @@ impl IPPacket for ARP {
 
 impl std::fmt::Display for ARP {
     fn fmt(&self, fmt: &mut Formatter) -> std::fmt::Result {
-        if self.operation == 1 {
-            if self.source_ip_address() == self.target_ip_address(){
-                fmt.write_fmt(format_args!("ARP Announcement for {}", self.source_ip_address()))
-            } else {
-                fmt.write_fmt(format_args!("who has {}? tell {}", self.target_ip_address(), self.source_ip_address()))
-            }
-        } else {
-            fmt.write_fmt(format_args!("{} at {}", self.target_ip_address(), self.source_ip_address()))
-        }
+        fmt.write_fmt(format_args!("Address Resolution Protocol ({})", self._operation_type()))
     }
 }
 impl crate::files::InfoPacket for ARP {
     fn info(&self) -> String {
-        self.to_string()
+        if self.operation == 1 {
+            if self.source_ip_address() == self.target_ip_address(){
+                format!("ARP Announcement for {}", self.source_ip_address())
+            } else {
+                format!("who has {}? tell {}", self.target_ip_address(), self.source_ip_address())
+            }
+        } else {
+            format!("{} at {}", self.target_ip_address(), self.source_ip_address())
+        }
     }
 }
 impl ARP {
-    // fn _info(&self) -> String {
-    //     return self.to_string()
-    // }
-    // fn _summary(&self) -> String {
-    //     format!("Address Resolution Protocol ({})", self._operation_type())
-    // }
     fn protocol_type_desc(&self) -> String {
         format!("Protocol type: {} ({})", etype_mapper(self.protocol_type),self.protocol_type)
     }
@@ -84,7 +78,7 @@ impl crate::files::Visitor for ARPVisitor {
         p.protocol_type = packet.read_with_string(reader, Reader::_read16_be, ARP::protocol_type_desc)?;
         p.hardware_size = packet._read_with_format_string_rs(reader, Reader::_read8, "Hardware size: {}")?;
         p.protocol_size = packet._read_with_format_string_rs(reader, Reader::_read8, "Protocol size: {}")?;
-        p.protocol_type = packet.read_with_string(reader, Reader::_read16_be, ARP::operation_type_desc)?;
+        p.operation = packet.read_with_string(reader, Reader::_read16_be, ARP::operation_type_desc)?;
         p.sender_mac = packet._read_with_format_string_rs(reader, Reader::_read_mac, "Sender MAC address: ({})").ok();
         p.sender_ip = packet._read_with_format_string_rs(reader, Reader::_read_ipv4, "Sender IP address: {}").ok();
         p.target_mac = packet._read_with_format_string_rs(reader, Reader::_read_mac, "Target MAC address: ({})").ok();

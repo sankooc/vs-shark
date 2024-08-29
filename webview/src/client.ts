@@ -5,7 +5,7 @@ import { TLSClientHello, TLSServerHello, TLSHandshake, TLSHandshakeMessage } fro
 import { RR, RR_A, RR_CNAME, RR_SOA, RR_PRT, DHCP } from 'nshark/built/src/specs/application';
 import { Protocol, IPv4 } from "nshark"
 import { PPPoESS } from "nshark/built/src/specs/dataLinkLayer";
-import { WContext } from 'rshark';
+import { WContext, FrameInfo } from 'rshark';
 import { DNSRecord } from 'rshark';
 
 const _map: string[] = protocolList;
@@ -16,9 +16,9 @@ export class Statc {
   start!: number;
   end!: number;
   stc: Map<string, number> = new Map();
-  public addLable(label: string, packet: IPPacket): void {
+  public addLable(label: string, packet: FrameInfo): void {
     const count = this.stc.get(label) || 0;
-    const size = packet.getPacketSize() || 0;
+    const size = packet.len || 0;
     this.stc.set(label, count + size);
   }
   public static create(ts: number, per: number) {
@@ -139,78 +139,72 @@ export abstract class Client extends PCAPClient {
     return graph;
   }
   init(): MainProps {
-    if (this.data) {
-      this.root = readBuffers(this.data);
-      const frames = this.root.getFrames();
-      const items: Frame[] = frames.map(this.convertTo.bind(this));
-      const connections: TCPConnect[] = this.root.getTCPConnections();
-      const cts = connections.map(this.convertToConnect);
-      const arpreplies = this.root.getARPReplies();
-      const graph = this.convertARPReplies(arpreplies);
+    // if (this.data) {
+    //   this.root = readBuffers(this.data);
+    //   const frames = this.root.getFrames();
+    //   const items: Frame[] = frames.map(this.convertTo.bind(this));
+    //   const connections: TCPConnect[] = this.root.getTCPConnections();
+    //   const cts = connections.map(this.convertToConnect);
+    //   const arpreplies = this.root.getARPReplies();
+    //   const graph = this.convertARPReplies(arpreplies);
 
-      const scale = 24;
-      const start = getNanoDate(frames[0]);
-      const end = getNanoDate(frames[frames.length - 1]);
-      const duration = end - start;
-      const per = Math.floor(duration / scale);
-      const result: Statc[] = [];
-      let cur = start;
-      let limit = cur + per;
-      let rs = Statc.create(start, per);
-      const ps = new Set<string>();
-      const getArray = (num: number): Statc => {
-        if (num < limit) {
-          return rs;
-        }
-        result.push(rs);
-        rs = Statc.create(limit, per);
-        limit = limit + per;
-        return getArray(num);
-      }
-      for (const item of frames) {
-        const packet = item.getProtocol(Protocol.ETHER) as EtherPacket;
-        const { nano, origin } = packet;
-        const it = getArray(nano);
-        it.size += origin;
-        it.count += 1;
-        const pname = _map[item.protocol]?.toLowerCase() || '';
-        it.addLable(pname, item);
-        ps.add(pname);
-      }
+    //   const scale = 24;
+    //   const start = getNanoDate(frames[0]);
+    //   const end = getNanoDate(frames[frames.length - 1]);
+    //   const duration = end - start;
+    //   const per = Math.floor(duration / scale);
+    //   const result: Statc[] = [];
+    //   let cur = start;
+    //   let limit = cur + per;
+    //   let rs = Statc.create(start, per);
+    //   const ps = new Set<string>();
+    //   const getArray = (num: number): Statc => {
+    //     if (num < limit) {
+    //       return rs;
+    //     }
+    //     result.push(rs);
+    //     rs = Statc.create(limit, per);
+    //     limit = limit + per;
+    //     return getArray(num);
+    //   }
+    //   for (const item of frames) {
+    //     const packet = item.getProtocol(Protocol.ETHER) as EtherPacket;
+    //     const { nano, origin } = packet;
+    //     const it = getArray(nano);
+    //     it.size += origin;
+    //     it.count += 1;
+    //     const pname = _map[item.protocol]?.toLowerCase() || '';
+    //     it.addLable(pname, item);
+    //     ps.add(pname);
+    //   }
 
-      const categories = ['total'];
-      const map: any = {
-        total: []
-      };
-      ps.forEach((c) => {
-        categories.push(c);
-        map[c] = [];
-      });
-      const labels = [];
-      const countlist = [];
-      for (const rs of result) {
-        const { size, count, stc, start } = rs;
-        labels.push(start);
-        countlist.push(count);
-        map.total.push(size)
-        ps.forEach((c) => {
-          map[c].push(stc.get(c) || 0);
-        });
-      }
-      const overview = new OverviewSource();
-      overview.legends = categories;
-      overview.labels = labels;
-      overview.counts = countlist;
-      overview.valMap = map;
-      const dnsRecords = this.root.getDNSRecord();
-      return { client: this, items, tcps: cts, arpGraph: graph, overview, dnsRecords:[] };
-    }
+    //   const categories = ['total'];
+    //   const map: any = {
+    //     total: []
+    //   };
+    //   ps.forEach((c) => {
+    //     categories.push(c);
+    //     map[c] = [];
+    //   });
+    //   const labels = [];
+    //   const countlist = [];
+    //   for (const rs of result) {
+    //     const { size, count, stc, start } = rs;
+    //     labels.push(start);
+    //     countlist.push(count);
+    //     map.total.push(size)
+    //     ps.forEach((c) => {
+    //       map[c].push(stc.get(c) || 0);
+    //     });
+    //   }
+    //   const overview = new OverviewSource();
+    //   overview.legends = categories;
+    //   overview.labels = labels;
+    //   overview.counts = countlist;
+    //   overview.valMap = map;
+    //   const dnsRecords = this.root.getDNSRecord();
+    //   return { client: this, items, tcps: cts, arpGraph: graph, overview, dnsRecords:[] };
+    // }
     return null;
   }
 }
-
-export class CProto {
-  constructor(public ctx: WContext){}
-}
-
-export { DNSRecord }

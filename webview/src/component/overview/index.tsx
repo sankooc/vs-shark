@@ -1,7 +1,10 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import ReactECharts from 'echarts-for-react';
 import { OverviewSource } from "../../common";
+import { MainProto } from '../../wasm';
+import { FrameInfo } from 'rshark';
 import { TabView, TabPanel } from 'primereact/tabview';
+import { Statc } from '../../client';
 import './index.css';
 
 const bytesFormater = (v) => {
@@ -24,13 +27,69 @@ const bytesFormater = (v) => {
   return `${h}.${l}gB`
 };
 
-class OverviewProps {
-  data: OverviewSource
-}
-function Overview(props: OverviewProps) {
-  const title = 'Network Traffic';
+function convert(frames: FrameInfo[]) {
+  const scale = 24;
+  const start = frames[0].time;
+  const end = frames[frames.length - 1].time;
+  const duration = end - start;
+  const per = Math.floor(duration / scale);
+  const result: Statc[] = [];
+  let cur = start;
+  let limit = cur + per;
+  let rs = Statc.create(start, per);
+  const ps = new Set<string>();
+  const getArray = (num: number): Statc => {
+    if (num < limit) {
+      return rs;
+    }
+    result.push(rs);
+    rs = Statc.create(limit, per);
+    limit = limit + per;
+    return getArray(num);
+  }
+  let _total = 0;
+  for (const item of frames) {
+    const origin = item.len;
+    _total += item.len;
+    const it = getArray(item.time);
+    it.size += origin;
+    it.count += 1;
+    const pname = item.protocol?.toLowerCase() || '';
+    it.addLable(pname, item);
+    ps.add(pname);
+  }
+  console.log('total', _total);
 
-  const { legends, labels, counts, valMap } = props.data;
+  const categories = ['total'];
+  const map: any = {
+    total: []
+  };
+  ps.forEach((c) => {
+    categories.push(c);
+    map[c] = [];
+  });
+  const labels = [];
+  const countlist = [];
+  for (const rs of result) {
+    const { size, count, stc, start } = rs;
+    labels.push(start);
+    countlist.push(count);
+    map.total.push(size)
+    ps.forEach((c) => {
+      map[c].push(stc.get(c) || 0);
+    });
+  }
+  const overview = new OverviewSource();
+  overview.legends = categories;
+  overview.labels = labels;
+  overview.counts = countlist;
+  overview.valMap = map;
+  return overview;
+}
+
+function Overview(props: MainProto) {
+  const title = 'Network Traffic';
+  const { legends, labels, counts, valMap } = convert(props.instance.getFrames());
   const labelFormater = (v) => {
     const ts = Math.floor(v);
     const date = new Date(ts);
