@@ -1,8 +1,11 @@
-use std::cell::Ref;
+use std::borrow::Borrow;
+use std::cell::{Ref, RefCell};
+use std::ops::Deref;
+use std::rc::Rc;
 
 use crate::common::FileInfo;
-use crate::entry::*;
-use crate::files::{DomainService, Field, Instance};
+use crate::{entry::*, files};
+use crate::files::{DomainService, Instance};
 use js_sys::Uint8Array;
 use wasm_bindgen::prelude::*;
 
@@ -11,6 +14,46 @@ pub struct WContext {
     ctx: Box<Instance>,
 }
 
+#[derive(Default, Clone)]
+#[wasm_bindgen]
+pub struct Field {
+    pub start: usize,
+    pub size: usize,
+    summary: String,
+    children: RefCell<Vec<files::Field>>,
+    data: Uint8Array,
+    // children: Vec<Field>,
+}
+impl Field {
+    pub fn convert(embed: &files::Field) -> Self {
+        let (start, size);
+        files::Field {start, size, ..} = *embed;
+        let summary = embed.summary.clone();
+        let a:&[u8] = embed.borrow().data.deref();
+        let data: Uint8Array = a.into();
+        let children = embed.children.clone();
+        Field{ start, size, summary, data, children }
+    }
+}
+#[wasm_bindgen]
+impl Field {
+    #[wasm_bindgen(getter)]
+    pub fn summary(&self) -> String {
+        self.summary.clone()
+    }
+    #[wasm_bindgen(getter)]
+    pub fn children(&self) -> Vec<Field> {
+        let mut children = Vec::new();
+        for c in self.children.borrow().iter() {
+            children.push(Field::convert(c));
+        }
+        children
+    }
+    #[wasm_bindgen(getter)]
+    pub fn data(&self) -> Uint8Array {
+        self.data.clone()
+    }
+}
 
 #[wasm_bindgen]
 pub struct DNSRecord {
@@ -156,7 +199,7 @@ impl WContext {
     pub fn get_fields(&self, index: u32) -> Vec<Field> {
         let binding = self.ctx.get_frames();
         let f = binding.get(index as usize).unwrap();
-        f.get_fields()
+        f.get_fields().iter().map(|f| Field::convert(&f)).collect()
     }
     
     #[wasm_bindgen]

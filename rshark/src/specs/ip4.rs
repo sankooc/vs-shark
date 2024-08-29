@@ -67,8 +67,7 @@ impl std::fmt::Display for IPv4 {
             "Internet Protocol Version 4, Src: {}, Dst: {}",
             source, target
         );
-        fmt.write_str(mn.as_str())?;
-        Ok(())
+        fmt.write_str(mn.as_str())
     }
 }
 impl IPv4 {

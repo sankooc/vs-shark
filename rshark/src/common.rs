@@ -16,8 +16,8 @@ pub enum DataError {
     UnsupportFileType,
     #[error("bit error")]
     BitSize,
-    #[error("unknown data store error")]
-    Unknown,
+    // #[error("unknown data store error")]
+    // Unknown,
 }
 // pub trait ContainProtocol {
 //     fn get_protocol(&self) -> Protocol;
@@ -322,20 +322,20 @@ impl Reader<'_> {
         }
         None
     }
-    pub fn read_space(&self, limit: usize) -> Option<String>{
-        if self.left().unwrap() < limit {
-            return None;
-        }
-        for inx in 0..limit {
-            let a = self._get_data()[self.cursor.get() + inx];
-            if a == 32 {
-                let rs:Option<String> = from_utf8(self.slice(inx)).ok().map(|f|f.into());
-                self._move(1);
-                return rs;
-            }
-        }
-        None
-    }
+    // pub fn read_space(&self, limit: usize) -> Option<String>{
+    //     if self.left().unwrap() < limit {
+    //         return None;
+    //     }
+    //     for inx in 0..limit {
+    //         let a = self._get_data()[self.cursor.get() + inx];
+    //         if a == 32 {
+    //             let rs:Option<String> = from_utf8(self.slice(inx)).ok().map(|f|f.into());
+    //             self._move(1);
+    //             return rs;
+    //         }
+    //     }
+    //     None
+    // }
     pub fn enter_flag(&self, inx: usize) -> bool {
         let a = self._get_data()[self.cursor.get() + inx];
         let b = self._get_data()[self.cursor.get() + inx + 1];

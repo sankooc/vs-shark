@@ -1,27 +1,24 @@
 pub mod pcap;
 pub mod pcapng;
 
-use crate::{common::IPPacket, constants::link_type_mapper, nshark::DNSRecord, specs::{dns::RecordResource, ProtocolData}};
-use std::{cell::{Cell, Ref, RefCell}, rc::Rc, time::{Duration, UNIX_EPOCH}
+use crate::{common::IPPacket, constants::link_type_mapper, nshark::DNSRecord, specs::{dns::RecordResource, tcp::TCP, ProtocolData}};
+use std::{cell::{Cell, Ref, RefCell, RefMut}, rc::Rc, time::{Duration, UNIX_EPOCH}
 };
 use chrono::{DateTime, Utc};
 use enum_dispatch::enum_dispatch;
-use js_sys::Uint8Array;
 use log::error;
-use wasm_bindgen::prelude::*;
 
 use anyhow::Result;
 // pub mod pcapng;
 use crate::common::{FileInfo, FileType, Reader};
 
 #[derive(Default, Clone)]
-#[wasm_bindgen]
 pub struct Field {
     pub start: usize,
     pub size: usize,
-    summary: String,
-    data: Rc<Vec<u8>>,
-    children: RefCell<Vec<Field>>,
+    pub summary: String,
+    pub data: Rc<Vec<u8>>,
+    pub children: RefCell<Vec<Field>>,
 }
 impl Field {
     pub fn new(start: usize, size: usize, data: Rc<Vec<u8>>,summary: String) -> Field {
@@ -52,25 +49,20 @@ impl Field {
         }
     }
 }
-#[wasm_bindgen]
+
 impl Field {
-    #[wasm_bindgen(getter)]
     pub fn summary(&self) -> String {
         self.summary.clone()
     }
-    #[wasm_bindgen(getter)]
-    pub fn children(&self) -> Vec<Field> {
+    
+    pub fn children(&self) -> Ref<Vec<Field>> {
         let ch: Ref<Vec<Field>> = self.children.borrow();
-        let mut children = Vec::new();
-        for c in ch.iter() {
-            children.push(c.clone());
-        }
-        children
-    }
-    #[wasm_bindgen(getter)]
-    pub fn data(&self) -> Uint8Array {
-        let _data:&[u8] = &self.data;
-        _data.into()
+        ch
+        // let mut children = Vec::new();
+        // for c in ch.iter() {
+        //     children.push(c.clone());
+        // }
+        // children
     }
 }
 pub fn date_str(ts: u64) -> String {
@@ -398,6 +390,10 @@ pub trait DomainService {
     fn ttl(&self) -> u32;
 }
 
+pub struct TCPConnection{
+    count: usize,
+    throughput: usize,    
+}
 
 pub trait Initer {
     fn new() -> Self;
@@ -475,6 +471,13 @@ impl Frame {
         s.target = packet.target_ip_address();
         drop(s);
     }
+    pub fn update_tcp(&self,packet: &TCP){
+        let s = self.summary.borrow();
+        let source = s.source.clone();
+        let target = s.target.clone();
+        if source > target {}
+        
+    }
     pub fn get_fields(&self) -> Vec<Field> {
         let mut rs = Vec::new();
         let mut lists = Vec::new();
@@ -525,7 +528,7 @@ impl Frame {
             fields: RefCell::new(Vec::new()),
         }
     }
-    pub fn create<K>(val: K) -> PacketContext<K>{
+    pub fn _create<K>(val: K) -> PacketContext<K>{
         PacketContext {
             val: Rc::new(RefCell::new(val)),
             fields: RefCell::new(Vec::new()),
@@ -542,6 +545,9 @@ impl Frame {
             ProtocolData::IPV6(packet) => {
                 self.update_host(packet.get().borrow());
             },
+            // ProtocolData::TCP(packet) => {
+            //     self.update_tcp(packet.get().borrow());
+            // },
             _ => {},
         }
         self.eles.borrow_mut().push(ele);

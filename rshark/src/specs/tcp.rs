@@ -1,7 +1,5 @@
 use std::{
-    cell::RefCell,
-    fmt::{Display, Formatter, Write},
-    rc::Rc,
+    cell::RefCell, fmt::{Display, Formatter, Write}, ops::Deref, rc::Rc
 };
 
 use anyhow::Result;
@@ -249,6 +247,7 @@ impl crate::files::Visitor for TCPVisitor {
             left_size,
             format!("TCP payload ({} bytes)", left_size),
         );
+        frame.update_tcp(p.deref());
         drop(p);
         frame.add_element(super::ProtocolData::TCP(packet));
 
