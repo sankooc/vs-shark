@@ -9,7 +9,6 @@ use crate::{
 //https://datatracker.ietf.org/doc/html/rfc792
 #[derive(Default, Packet)]
 pub struct ICMP {
-    
     _type: u8,
     code: u8,
     checksum: u16,
@@ -17,7 +16,7 @@ pub struct ICMP {
 
 impl std::fmt::Display for ICMP {
     fn fmt(&self, _fmt: &mut Formatter) -> std::fmt::Result {
-        Ok(())
+        _fmt.write_str("Internet Control Message Protocol")
     }
 }
 impl crate::files::InfoPacket for ICMP {
@@ -26,12 +25,6 @@ impl crate::files::InfoPacket for ICMP {
     }
 }
 impl ICMP {
-    // fn _info(&self) -> String {
-    //     self.to_string()
-    // }
-    // fn _summary(&self) -> String {
-    //     "Internet Control Message Protocol".into()
-    // }
     fn _type(&self) -> String {
         let _t = self._type;
         let code = self.code;
@@ -125,7 +118,7 @@ pub struct ICMP6 {
 }
 impl std::fmt::Display for ICMP6 {
     fn fmt(&self, _fmt: &mut Formatter) -> std::fmt::Result {
-        Ok(())
+        _fmt.write_str("Internet Control Message Protocol v6")
     }
 }
 impl crate::files::InfoPacket for ICMP6 {
@@ -134,12 +127,6 @@ impl crate::files::InfoPacket for ICMP6 {
     }
 }
 impl ICMP6 {
-    // fn _info(&self) -> String {
-    //     self.to_string()
-    // }
-    // fn _summary(&self) -> String {
-    //     "Internet Control Message Protocol v6".into()
-    // }
     fn _type(&self) -> String {
         icmpv6_type_mapper(self._type as u16)
     }

@@ -7,8 +7,8 @@ use crate::{
     common::Reader,
     files::{Frame, Initer, PacketContext},
 };
-use std::fmt::Display;
-use anyhow::Result;
+use std::fmt::{Display, Write};
+use anyhow::{Ok, Result};
 
 use super::ProtocolData;
 
@@ -38,8 +38,7 @@ impl Display for Ethernet {
             .as_ref()
             .unwrap_or(&DEF_EMPTY_MAC)
             .to_string();
-        f.write_str(format!("Ethernet II, Src: {}, Dst: {}", source, target).as_str())?;
-        Ok(())
+        f.write_str(format!("Ethernet II, Src: {}, Dst: {}", source, target).as_str())
     }
 }
 
@@ -96,7 +95,7 @@ pub struct PPPoESS {
 }
 impl Display for PPPoESS {
     fn fmt(&self, _f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        Ok(())
+        _f.write_str("PPP-over-Ethernet Session")
     }
 }
 
@@ -142,9 +141,8 @@ impl Visitor for PPPoESSVisitor {
         frame.add_element(ProtocolData::PPPoESS(packet));
         if code == 0 {
             return match ptype {
-                33 => {
-                    return super::ip4::IP4Visitor.visit(frame, reader);
-                },
+                33 => super::ip4::IP4Visitor.visit(frame, reader),
+                87 => super::ip6::IP6Visitor.visit(frame, reader),
                 _ => Ok(()),
             }
         }

@@ -9,7 +9,7 @@ use std::{
 use chrono::{DateTime, Utc};
 use enum_dispatch::enum_dispatch;
 use js_sys::Uint8Array;
-use log::error;
+use log::{error, info};
 use wasm_bindgen::prelude::*;
 
 use anyhow::Result;
@@ -465,10 +465,12 @@ impl Frame {
     }
 
     pub fn info(&self) -> String {
-        for e in self.eles.borrow().iter() {
-            return e.borrow().to_string();
+        let list = self.eles.borrow();
+        let the_last = list.last();
+        match the_last {
+            Some(data) => data.info(),
+            None => "N/A".into()
         }
-        self.to_string()
     }
     pub fn update_host(&self, packet: Ref<impl IPPacket>){
         let mut s = self.summary.borrow_mut();
