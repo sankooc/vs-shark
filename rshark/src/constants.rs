@@ -401,6 +401,20 @@ lazy_static! {
 		m.insert(35085, "TDLS");
 		m
 	};
+	pub static ref tcp_option_kind_map: HashMap<u16, &'static str> = {
+		let mut m = HashMap::new();
+		m.insert(0, "End OF LIST");
+		m.insert(1, "No Operation");
+		m.insert(2, "Max segment size");
+		m.insert(3, "Window scale");
+		m.insert(4, "Selective Acknowledgement permitted");
+		m.insert(5, "Selective ACKnowledgement SACK");
+		m.insert(8, "echo of previous timestamp");
+		m.insert(28, "User Timeout Option");
+		m.insert(29, "TCP Authentication");
+		m.insert(30, "MPTCP");
+		m
+	};
 	pub static ref dns_class_map: HashMap<u16, &'static str> = {
 		let mut m = HashMap::new();
 		m.insert(1, "IN");
@@ -430,6 +444,215 @@ lazy_static! {
 		m.insert(28, "AAAA");
 		m
 	};
+	pub static ref arp_hardware_type_map: HashMap<u16, &'static str> = {
+		let mut m = HashMap::new();
+		m.insert(0, "Reserved");
+		m.insert(1, "Ethernet (10Mb)");
+		m.insert(2, "Experimental Ethernet (3Mb)");
+		m.insert(3, "Amateur Radio AX.25");
+		m.insert(4, "Proteon ProNET Token Ring");
+		m.insert(5, "Chaos");
+		m.insert(6, "IEEE 802 Networks");
+		m.insert(7, "ARCNET");
+		m.insert(8, "Hyperchannel");
+		m.insert(9, "Lanstar");
+		m.insert(10, "Autonet Short Address");
+		m.insert(11, "LocalTalk");
+		m.insert(12, "LocalNet (IBM PCNet or SYTEK LocalNET)");
+		m.insert(13, "Ultra link");
+		m.insert(14, "SMDS");
+		m.insert(15, "Frame Relay");
+		m.insert(16, "Asynchronous Transmission Mode (ATM)");
+		m.insert(17, "HDLC");
+		m.insert(18, "Fibre Channel");
+		m.insert(19, "Asynchronous Transmission Mode (ATM)");
+		m.insert(20, "Serial Line");
+		m.insert(21, "Asynchronous Transmission Mode (ATM)");
+		m.insert(22, "MIL-STD-188-220");
+		m.insert(23, "Metricom");
+		m.insert(24, "IEEE 1394.1995");
+		m.insert(25, "MAPOS");
+		m.insert(26, "Twinaxial");
+		m.insert(27, "EUI-64");
+		m.insert(28, "HIPARP");
+		m.insert(29, "IP and ARP over ISO 7816-3");
+		m.insert(30, "ARPSec");
+		m.insert(31, "IPsec tunnel");
+		m.insert(32, "InfiniBand (TM)");
+		m.insert(33, "CAI");
+		m.insert(34, "Wiegand Interface");
+		m.insert(35, "Pure IP");
+		m.insert(36, "HW_EXP1");
+		m.insert(37, "HFI");
+		m.insert(38, "Unified Bus (UB)");
+		m.insert(256, "HW_EXP2");
+		m.insert(257, "AEthernet");
+		m.insert(65535, "Reserved");
+		m
+	};
+	pub static ref arp_oper_type_map: HashMap<u16, &'static str> = {
+		let mut m = HashMap::new();
+		m.insert(1, "REQUEST");
+		m.insert(2, "REPLY");
+		m.insert(3, "request Reverse");
+		m.insert(4, "reply Reverse");
+		m.insert(5, "DRARP-Request");
+		m.insert(6, "DRARP-Reply");
+		m.insert(7, "DRARP-Error");
+		m.insert(8, "InARP-Request");
+		m.insert(9, "InARP-Reply");
+		m.insert(10, "ARP-NAK");
+		m.insert(11, "MARS-Request");
+		m.insert(12, "MARS-Multi");
+		m.insert(13, "MARS-MServ");
+		m.insert(14, "MARS-Join");
+		m.insert(15, "MARS-Leave");
+		m.insert(16, "MARS-NAK");
+		m.insert(17, "MARS-Unserv");
+		m.insert(18, "MARS-SJoin");
+		m.insert(19, "MARS-SLeave");
+		m.insert(20, "MARS-Grouplist-Request");
+		m.insert(21, "MARS-Grouplist-Reply");
+		m.insert(22, "MARS-Redirect-Map");
+		m.insert(23, "MAPOS-UNARP");
+		m.insert(24, "OP_EXP1");
+		m.insert(25, "OP_EXP2");
+		m
+	};
+	pub static ref icmpv6_type_map: HashMap<u16, &'static str> = {
+		let mut m = HashMap::new();
+		m.insert(1, "Destination unreachable");
+		m.insert(2, "Packet too big");
+		m.insert(3, "Time exceeded");
+		m.insert(4, "Parameter problem");
+		m.insert(127, "Reserved for expansion of ICMPv6 error messages");
+		m.insert(128, "Echo Request");
+		m.insert(129, "Echo Reply");
+		m.insert(130, "Multicast Listener Query");
+		m.insert(131, "Multicast Listener Report");
+		m.insert(132, "Multicast Listener Done");
+		m.insert(133, "Router Solicitation");
+		m.insert(134, "Router Advertisement");
+		m.insert(135, "Neighbor Solicitation");
+		m.insert(136, "Neighbor Advertisement");
+		m.insert(137, "Redirect Message");
+		m.insert(138, "Router Renumbering");
+		m.insert(139, "ICMP Node Information Query");
+		m.insert(140, "ICMP Node Information Response");
+		m.insert(141, "Inverse Neighbor Discovery Solicitation Message	");
+		m.insert(142, "Inverse Neighbor Discovery Advertisement Message");
+		m.insert(143, "Multicast Listener Discovery");
+		m.insert(144, "Home Agent Address Discovery Request Message	");
+		m.insert(145, "Home Agent Address Discovery Reply Message");
+		m.insert(146, "Mobile Prefix Solicitation");
+		m.insert(147, "Mobile Prefix Advertisement");
+		m.insert(148, "Certification Path Solicitation");
+		m.insert(149, "Certification Path Advertisement");
+		m.insert(151, "Multicast Router Advertisement");
+		m
+	};
+	pub static ref dhcp_option_type_map: HashMap<u8, &'static str> = {
+		let mut m = HashMap::new();
+		m.insert(0, "Pad");
+		m.insert(1, "Subnet");
+		m.insert(2, "Time");
+		m.insert(3, "Router");
+		m.insert(4, "Time server");
+		m.insert(5, "Name server");
+		m.insert(6, "Domain name server");
+		m.insert(7, "Log server");
+		m.insert(8, "Cookie server");
+		m.insert(9, "LPR Server");
+		m.insert(10, "Impress server");
+		m.insert(11, "Resource location server");
+		m.insert(12, "Host");
+		m.insert(13, "Boot file size");
+		m.insert(14, "Merit dump file");
+		m.insert(15, "Domain");
+		m.insert(16, "Swap server");
+		m.insert(17, "Root path");
+		m.insert(18, "Extensions path");
+		m.insert(19, "IP forwarding enable/disable");
+		m.insert(20, "Non-local source routing enable/disable");
+		m.insert(21, "Policy filter");
+		m.insert(22, "Maximum datagram reassembly size");
+		m.insert(23, "Default IP time-to-live");
+		m.insert(24, "Path MTU aging timeout");
+		m.insert(25, "Path MTU plateau table");
+		m.insert(26, "Interface MTU");
+		m.insert(27, "All subnets are local");
+		m.insert(28, "Broadcast address");
+		m.insert(29, "Perform mask discovery");
+		m.insert(30, "Mask supplier");
+		m.insert(31, "Perform router discovery");
+		m.insert(32, "Router solicitation address");
+		m.insert(33, "Static route");
+		m.insert(34, "Trailer encapsulation option");
+		m.insert(35, "ARP cache timeout");
+		m.insert(36, "Ethernet encapsulation");
+		m.insert(37, "TCP default TTL");
+		m.insert(38, "TCP keepalive interval");
+		m.insert(39, "TCP keepalive garbage");
+		m.insert(40, "Network information service domain");
+		m.insert(41, "Network information servers");
+		m.insert(42, "Network Time Protocol (NTP) servers");
+		m.insert(43, "Vendor-specific information");
+		m.insert(44, "NetBIOS over TCP/IP name server");
+		m.insert(45, "NetBIOS over TCP/IP datagram Distribution Server");
+		m.insert(46, "NetBIOS over TCP/IP node type");
+		m.insert(47, "NetBIOS over TCP/IP scope");
+		m.insert(48, "X Window System font server");
+		m.insert(49, "X Window System display manager");
+		m.insert(50, "Requested IP address");
+		m.insert(51, "IP address lease time");
+		m.insert(52, "Option overload");
+		m.insert(53, "DHCP message type");
+		m.insert(54, "Server identifier");
+		m.insert(55, "Parameter request list");
+		m.insert(56, "Message");
+		m.insert(57, "Maximum DHCP message size");
+		m.insert(58, "Renewal (T1) time value");
+		m.insert(59, "Rebinding (T2) time value");
+		m.insert(60, "Vendor class identifier");
+		m.insert(61, "Client identifier");
+		m.insert(64, "Network Information Service+ domain");
+		m.insert(65, "Network Information Service+ servers");
+		m.insert(66, "TFTP server name");
+		m.insert(67, "Bootfile name");
+		m.insert(68, "Mobile IP home agent");
+		m.insert(69, "Simple Mail Transfer Protocol (SMTP) server");
+		m.insert(70, "Post Office Protocol (POP3) server");
+		m.insert(71, "Network News Transfer Protocol (NNTP) server");
+		m.insert(72, "Default World Wide Web (WWW) server");
+		m.insert(73, "Default Finger protocol server");
+		m.insert(74, "Default Internet Relay Chat (IRC) server");
+		m.insert(75, "StreetTalk server");
+		m.insert(76, "StreetTalk Directory Assistance (STDA) server");
+		m.insert(255, "End");
+		m
+	};
+	pub static ref dhcp_type_map: HashMap<u8, &'static str> = {
+		let mut m = HashMap::new();
+		m.insert(1, "DHCPDISCOVER");
+		m.insert(2, "DHCPOFFER");
+		m.insert(3, "DHCPREQUEST");
+		m.insert(4, "DHCPDECLINE");
+		m.insert(5, "DHCPACK");
+		m.insert(6, "DHCPNAK");
+		m.insert(7, "DHCPRELEASE");
+		m.insert(8, "DHCPINFORM");
+		m.insert(9, "DHCPFORCERENEW");
+		m.insert(10, "DHCPLEASEQUERY");
+		m.insert(11, "DHCPLEASEUNASSIGNED");
+		m.insert(12, "DHCPLEASEUNKNOWN");
+		m.insert(13, "DHCPLEASEACTIVE");
+		m.insert(14, "DHCPBULKLEASEQUERY");
+		m.insert(15, "DHCPLEASEQUERYDONE");
+		m.insert(16, "DHCPACTIVELEASEQUERY");
+		m.insert(17, "DHCPLEASEQUERYSTATUS");
+		m.insert(18, "DHCPTL");
+		m
+	};
 }pub fn link_type_mapper(code:u16) -> String {
     (*link_type_map.get(&code).unwrap_or(&"unknown")).into()
   }
@@ -442,9 +665,27 @@ pub fn ssl_type_mapper(code:u16) -> String {
 pub fn etype_mapper(code:u16) -> String {
     (*etype_map.get(&code).unwrap_or(&"unknown")).into()
   }
+pub fn tcp_option_kind_mapper(code:u16) -> String {
+    (*tcp_option_kind_map.get(&code).unwrap_or(&"unknown")).into()
+  }
 pub fn dns_class_mapper(code:u16) -> String {
     (*dns_class_map.get(&code).unwrap_or(&"unknown")).into()
   }
 pub fn dns_type_mapper(code:u16) -> String {
     (*dns_type_map.get(&code).unwrap_or(&"unknown")).into()
+  }
+pub fn arp_hardware_type_mapper(code:u16) -> String {
+    (*arp_hardware_type_map.get(&code).unwrap_or(&"unknown")).into()
+  }
+pub fn arp_oper_type_mapper(code:u16) -> String {
+    (*arp_oper_type_map.get(&code).unwrap_or(&"unknown")).into()
+  }
+pub fn icmpv6_type_mapper(code:u16) -> String {
+    (*icmpv6_type_map.get(&code).unwrap_or(&"unknown")).into()
+  }
+pub fn dhcp_option_type_mapper(code:u8) -> String {
+    (*dhcp_option_type_map.get(&code).unwrap_or(&"unknown")).into()
+  }
+pub fn dhcp_type_mapper(code:u8) -> String {
+    (*dhcp_type_map.get(&code).unwrap_or(&"unknown")).into()
   }

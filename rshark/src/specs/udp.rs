@@ -1,15 +1,16 @@
 use std::fmt::Display;
 
 use pcap_derive::Packet;
+use anyhow::Result;
 
-use crate::common::{ContainProtocol, Description, PlayloadPacket, PortablePacket};
+use crate::common::{Description, PlayloadPacket, PortPacket};
 use crate::files::Visitor;
 use crate::{
-    common::{Protocol, Reader},
+    common::Reader,
     files::{Frame, Initer, PacketContext},
 };
 
-fn execute(source: u16, target: u16, frame: &Frame, reader: &Reader) {
+fn execute(source: u16, target: u16, frame: &Frame, reader: &Reader)  -> Result<()>{
     match source {
         53 => return super::dns::DNSVisitor.visit(frame, reader),
         _ => (),
@@ -18,18 +19,19 @@ fn execute(source: u16, target: u16, frame: &Frame, reader: &Reader) {
         53 => return super::dns::DNSVisitor.visit(frame, reader),
         _ => (),
     }
+    Ok(())
 }
 
 #[derive(Default, Packet)]
 pub struct UDP {
-    protocol: Protocol,
+    
     source_port: u16,
     target_port: u16,
     len: u16,
     crc: u16,
 }
 
-impl PortablePacket for UDP {
+impl PortPacket for UDP {
     fn source_port(&self) -> u16 {
         self.source_port
     }
@@ -57,23 +59,20 @@ impl Display for UDP {
         Ok(())
     }
 }
-impl UDP {
-    fn _info(&self) -> String {
-        return self.to_string();
-    }
-    fn _summary(&self) -> String {
-        return self.to_string();
+impl crate::files::InfoPacket for UDP {
+    fn info(&self) -> String {
+        self.to_string()
     }
 }
 pub struct UDPVisitor;
 
 impl Visitor for UDPVisitor {
-    fn visit(&self, frame: &Frame, reader: &Reader) {
-        let packet: PacketContext<UDP> = Frame::create_packet(Protocol::UDP);
-        let source = packet.read_with_string(reader, Reader::_read16_be, Description::source_port);
-        let target = packet.read_with_string(reader, Reader::_read16_be, Description::target_port);
-        let len = packet.read_with_string(reader, Reader::_read16_be, Description::packet_length);
-        let crc = reader.read16(false);
+    fn visit(&self, frame: &Frame, reader: &Reader) -> Result<()> {
+        let packet: PacketContext<UDP> = Frame::create_packet();
+        let source = packet.read_with_string(reader, Reader::_read16_be, Description::source_port)?;
+        let target = packet.read_with_string(reader, Reader::_read16_be, Description::target_port)?;
+        let len = packet.read_with_string(reader, Reader::_read16_be, Description::packet_length)?;
+        let crc = reader.read16(false)?;
         let playload_size = len - 8;
         packet.append_string(format!("UDP payload ({} bytes)", playload_size), reader.get_raw());
         let mut p = packet.get().borrow_mut();
@@ -82,7 +81,7 @@ impl Visitor for UDPVisitor {
         p.len = len;
         p.crc = crc;
         drop(p);
-        frame.add_element(Box::new(packet));
-        execute(source, target, frame, reader);
+        frame.add_element(super::ProtocolData::UDP(packet));
+        execute(source, target, frame, reader)
     }
 }

@@ -1,19 +1,20 @@
 pub mod pcap;
 pub mod pcapng;
 
-use crate::{constants::link_type_mapper, nshark::DNSRecord, specs::dns::RecordResource};
+use crate::{common::IPPacket, constants::link_type_mapper, nshark::DNSRecord, specs::{dns::RecordResource, ProtocolData}};
 use std::{
-    cell::{Cell, Ref, RefCell},
-    rc::Rc,
-    time::{Duration, UNIX_EPOCH},
+    borrow::Borrow, cell::{Cell, Ref, RefCell}, fmt::Display, rc::Rc, time::{Duration, UNIX_EPOCH}
 };
 
 use chrono::{DateTime, Utc};
+use enum_dispatch::enum_dispatch;
 use js_sys::Uint8Array;
+use log::error;
 use wasm_bindgen::prelude::*;
 
+use anyhow::Result;
 // pub mod pcapng;
-use crate::common::{ContainProtocol, FileInfo, FileType, Protocol, Reader};
+use crate::common::{FileInfo, FileType, Reader};
 
 #[derive(Default, Clone)]
 #[wasm_bindgen]
@@ -82,43 +83,19 @@ pub fn date_str(ts: u64) -> String {
     datetime.format("%Y-%m-%d %H:%M:%S").to_string()
 }
 
+#[enum_dispatch(ProtocolData)]
 pub trait Element {
     fn summary(&self) -> String;
     fn get_fields(&self) -> Vec<Field>;
     // fn add_next(&mut self, ele: Box<dyn Element>);
-    fn get_protocol(&self) -> Protocol;
+    // fn get_protocol(&self) -> Protocol;
     fn info(&self) -> String;
 }
 
-// impl ToString for dyn Element{
-//     fn to_string(&self) -> String {
-//         self.to_string()
-//     }
-// }
-
 pub trait Visitor {
-    fn visit(&self, frame: &Frame, reader: &Reader);
+    fn visit(&self, frame: &Frame, reader: &Reader) -> Result<()>;
+    // fn from() -> Vec<Protocol>;
 }
-
-// pub struct FramePacket {
-// }
-
-// pub struct FolderOption<T> {
-//     field: Field,
-//     obj: T,
-//     // reader: &'a Reader<'a>,
-//     // name: String,
-
-// }
-
-// impl FolderOption {
-// pub fn read<K>(&self, reader: &Reader, opt: fn(&Reader) -> K) -> (K, Field) {
-//     let start = reader.cursor();
-//     let val: K = opt(reader);
-//     let end = reader.cursor();
-//     let size = end - start;
-// }
-// }
 
 pub trait FieldBuilder<T> {
     fn build(&self, t: &T) -> Field;
@@ -128,7 +105,7 @@ pub trait FieldBuilder<T> {
 pub type MultiBlock<T> = Vec<Rc<RefCell<T>>>;
 
 impl<T> Initer for MultiBlock<T> {
-    fn new(_p: Protocol) -> MultiBlock<T> {
+    fn new() -> MultiBlock<T> {
         Vec::new()
     }
 
@@ -138,16 +115,12 @@ impl<T> Initer for MultiBlock<T> {
 }
 
 pub struct PacketContext<T>
-where
-    T: Initer,
 {
     val: Rc<RefCell<T>>,
     fields: RefCell<Vec<Box<dyn FieldBuilder<T>>>>,
 }
 
 impl<T> PacketContext<T>
-where
-    T: Initer,
 {
     pub fn _clone_obj(&self) -> Rc<RefCell<T>> {
         self.val.clone()
@@ -167,26 +140,19 @@ where
 
 impl<T> Element for PacketContext<T>
 where
-    T: Initer + ContainProtocol,
+    T: Initer + InfoPacket,
 {
     fn summary(&self) -> String {
         self.get().borrow().summary()
     }
     fn get_fields(&self) -> Vec<Field> {
         self.get_fields()
-        // let t = &self.val;
-        // let mut rs: Vec<Field> = Vec::new();
-        // for pos in self.fields.iter() {
-        //     rs.push(pos.build(t));
-        // }
-        // rs
     }
-    fn get_protocol(&self) -> Protocol {
-        self.get().borrow().get_protocol()
-    }
-
+    // fn get_protocol(&self) -> Protocol {
+    //     self.get().borrow().get_protocol()
+    // }
     fn info(&self) -> String {
-        self.get().borrow().summary()
+        self.get().borrow().info()
     }
 }
 impl<T> PacketContext<T>
@@ -196,11 +162,11 @@ where
     pub fn read_with_string<K>(
         &self,
         reader: &Reader,
-        opt: impl Fn(&Reader) -> K,
+        opt: impl Fn(&Reader) -> Result<K>,
         render: fn(&T) -> String,
-    ) -> K {
+    ) -> Result<K> {
         let start = reader.cursor();
-        let val: K = opt(reader);
+        let val: K = opt(reader)?;
         let end = reader.cursor();
         let size = end - start;
         self.fields.borrow_mut().push(Box::new(StringPosition {
@@ -209,7 +175,7 @@ where
             data: reader.get_raw(),
             render,
         }));
-        val
+        Ok(val)
     }
     pub fn append_string(&self, content: String, data: Rc<Vec<u8>>) {
         self.fields.borrow_mut().push(Box::new(TXTPosition {
@@ -237,18 +203,103 @@ where
         }));
         val
     }
+    pub fn read_txt (&self, reader: &Reader, start: usize, size: usize, content: String){
+        self.fields.borrow_mut().push(Box::new(TXTPosition {
+            start,
+            size,
+            data: reader.get_raw(),
+            content,
+        }));
+    }
+    pub fn _readoption_with_format_string<K>(
+        &self,
+        reader: &Reader,
+        opt: impl Fn(&Reader) -> Result<K>,
+        tmp: &str,
+    ) -> Result<K> where K:ToString {
+        let start = reader.cursor();
+        let val: K = opt(reader)?;
+        let end = reader.cursor();
+        let size = end - start;
+        let content = tmp.replace("{}", val.to_string().as_str());
+        self.read_txt(reader, start, size, content);
+        // self.fields.borrow_mut().push(Box::new(TXTPosition {
+        //     start,
+        //     size,
+        //     data: reader.get_raw(),
+        //     content,
+        // }));
+        Ok(val)
+    }
+    pub fn _read_with_format_string_rs<K>(
+        &self,
+        reader: &Reader,
+        opt: impl Fn(&Reader) -> Result<K>,
+        tmp: &str,
+    ) -> Result<K> where K:ToString {
+        let start = reader.cursor();
+        let val: K = opt(reader)?;
+        let end = reader.cursor();
+        let size = end - start;
+        let content = tmp.replace("{}", val.to_string().as_str());
+        self.fields.borrow_mut().push(Box::new(TXTPosition {
+            start,
+            size,
+            data: reader.get_raw(),
+            content,
+        }));
+        Ok(val)
+    }
+    pub fn _read_with_format_string<K>(
+        &self,
+        reader: &Reader,
+        opt: impl Fn(&Reader) -> K,
+        tmp: &str,
+    ) -> K where K:ToString {
+        let start = reader.cursor();
+        let val: K = opt(reader);
+        let end = reader.cursor();
+        let size = end - start;
+        let content = tmp.replace("{}", val.to_string().as_str());
+        self.fields.borrow_mut().push(Box::new(TXTPosition {
+            start,
+            size,
+            data: reader.get_raw(),
+            content,
+        }));
+        val
+    }
+    pub fn _read_with_mapper<K>(
+        &self,
+        reader: &Reader,
+        opt: impl Fn(&Reader) -> Result<K>,
+        mapper: impl Fn(K) -> String,
+    ) -> Result<K> where K: Clone {
+        let start = reader.cursor();
+        let val: K = opt(reader)?;
+        let end = reader.cursor();
+        let size = end - start;
+        let content = mapper(val.clone());
+        self.fields.borrow_mut().push(Box::new(TXTPosition {
+            start,
+            size,
+            data: reader.get_raw(),
+            content,
+        }));
+        Ok(val)
+    }
     pub fn read_with_field<K>(
         &self,
         reader: &Reader,
-        opt: impl Fn(&Reader) -> PacketContext<K>,
+        opt: impl Fn(&Reader) -> Result<PacketContext<K>>,
         head: Option<String>,
-    ) -> Rc<RefCell<K>>
+    ) -> Result<Rc<RefCell<K>>>
     where
         K: Initer + 'static,
         FieldPosition<K>: FieldBuilder<T>,
     {
         let start = reader.cursor();
-        let packet = opt(reader);
+        let packet = opt(reader)?;
         let rs = packet._clone_obj();
         let end = reader.cursor();
         let size = end - start;
@@ -259,20 +310,8 @@ where
             head,
             packet,
         }));
-        rs
+        Ok(rs)
     }
-    // fn add_pos(&self, start:usize, size: usize, render: fn(usize, usize,&T) -> Field){
-    //     self.fields.borrow_mut().push(Box::new(Position {start, size, render}));
-    // }
-    // pub fn iter(&self) {
-    //     let v = &self.val;
-    //     // for pos in &self.fields {
-    //     //     let str = pos.render.unwrap()(v);
-    //     // }
-    // }
-    // pub fn get_val(&self) -> &T {
-    //     &self.val
-    // }
 }
 
 pub struct Position<T> {
@@ -364,15 +403,19 @@ pub trait DomainService {
 
 
 pub trait Initer {
-    fn new(protocol: Protocol) -> Self;
+    fn new() -> Self;
     fn summary(&self) -> String;
 }
+pub trait InfoPacket{
+    fn info(&self) -> String;
+}
+
 #[derive(Default, Clone)]
 pub struct FrameSummary {
     pub index: u32,
     pub source: String,
     pub target: String,
-    pub protocol: Protocol,
+    pub protocol: String,
     pub link_type: u16,
 }
 
@@ -383,7 +426,7 @@ pub struct Frame {
     pub summary: RefCell<FrameSummary>,
     data: Rc<Vec<u8>>,
     pub ctx: Rc<Context>,
-    pub eles: RefCell<Vec<Box<dyn Element>>>,
+    pub eles: RefCell<Vec<ProtocolData>>,
 }
 impl Frame {
     pub fn new(
@@ -423,11 +466,16 @@ impl Frame {
 
     pub fn info(&self) -> String {
         for e in self.eles.borrow().iter() {
-            return e.as_ref().info();
+            return e.borrow().to_string();
         }
         self.to_string()
     }
-
+    pub fn update_host(&self, packet: Ref<impl IPPacket>){
+        let mut s = self.summary.borrow_mut();
+        s.source = packet.source_ip_address();
+        s.target = packet.target_ip_address();
+        drop(s);
+    }
     pub fn get_fields(&self) -> Vec<Field> {
         let mut rs = Vec::new();
         let mut lists = Vec::new();
@@ -467,27 +515,43 @@ impl Frame {
         self.data.clone()
     }
     pub fn get_reader(&self) -> Reader {
-        return Reader::new_raw(self.data.clone());
+        return Reader::new_raw(self.data());
     }
-    pub fn create_packet<K>(protocol: Protocol) -> PacketContext<K>
+    pub fn create_packet<K>() -> PacketContext<K>
     where
         K: Initer,
     {
-        let val = K::new(protocol);
+        let val = K::new();
         PacketContext {
             val: Rc::new(RefCell::new(val)),
             fields: RefCell::new(Vec::new()),
         }
     }
-    pub fn add_element(&self, ele: Box<dyn Element>) {
+    pub fn create<K>(val: K) -> PacketContext<K>{
+        PacketContext {
+            val: Rc::new(RefCell::new(val)),
+            fields: RefCell::new(Vec::new()),
+        }
+    }
+    pub fn add_element(&self, ele: ProtocolData) {
         let mut mref = self.summary.borrow_mut();
-        mref.protocol = ele.get_protocol();
+        mref.protocol = format!("{}", ele);
+        drop(mref);
+        match &ele {
+            ProtocolData::IPV4(packet) => {
+                self.update_host(packet.get().borrow());
+            },
+            ProtocolData::IPV6(packet) => {
+                self.update_host(packet.get().borrow());
+            },
+            _ => {},
+        }
         self.eles.borrow_mut().push(ele);
     }
 }
 
 
-type Ref2<T> = Rc<RefCell<T>>;
+pub type Ref2<T> = Rc<RefCell<T>>;
 pub struct Context {
     count: Cell<u32>,
     info: RefCell<FileInfo>,
@@ -501,10 +565,14 @@ impl Context {
     pub fn get_info(&self)-> FileInfo{
         self.info.borrow().clone()
     }
+    pub fn get_dns_count(&self) -> usize {
+        self.dns.borrow().len()
+    }
     pub fn get_dns(&self) -> Vec<DNSRecord> {
         let mut rs = Vec::new();
         for d in self.dns.borrow().iter() {
-            rs.push(DNSRecord::create(d.borrow()));
+            let aa = d.as_ref().borrow();
+            rs.push(DNSRecord::create(aa));
         }
         rs
     }
@@ -542,8 +610,17 @@ impl Instance {
             link_type,
         );
         let reader = f.get_reader();
-        crate::specs::execute(link_type, &f, &reader);
-        self.frames.borrow_mut().push(f);
+        let rs = crate::specs::execute(link_type, &f, &reader);
+        match rs {
+            Ok(_) => {
+                self.frames.borrow_mut().push(f);
+            },
+            Err(e) => {
+                error!("parse_frame_failed index:[{}]", count);
+                error!("msg:[{}]", e.to_string());
+                panic!("parse_failed");
+            },
+        }
         ctx.count.set(count + 1);
     }
     pub fn context(&self) -> Rc<Context> {

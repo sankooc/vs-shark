@@ -17,6 +17,7 @@ impl Ethernet {
         return self.to_string()
     }
 }
+
 impl Display for Ethernet {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         f.write_str("ousize")?;
@@ -48,9 +49,13 @@ pub trait ContainProtocol {
     // fn info(&self) -> String;
 }
 pub trait Initer {
-    fn new(protocol: Protocol) -> Self;
+    fn new() -> Self;
     fn summary(&self) -> String;
 }
+
+
+// #[show_streams(bar)]
+// fn invoke2() {}
 
 // #[derive(Default, Packet)]
 // struct Pancakes {
@@ -94,5 +99,5 @@ pub trait Initer {
 #[test]
 fn tests() {
     // let token = DeriveInput::parse("");
-    Ethernet::new(Protocol::ETHERNET);
+    // Ethernet::new(Protocol::ETHERNET);
 }

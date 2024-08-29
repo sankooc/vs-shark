@@ -55,9 +55,6 @@ impl DNSRecord {
     }
 }
 
-
-
-
 #[wasm_bindgen]
 pub struct WFileInfo {
     pub link_type: u16,
@@ -139,10 +136,10 @@ impl WContext {
         let start_ts = self.get_info().start_time;
         let mut rs = Vec::new();
         for frame in self.ctx.get_frames().iter() {
-            let proto = match frame.eles.borrow().last() {
-                Some(ele) => format!("{:?}", ele.get_protocol()),
-                None => "none".into(),
-            };
+            // let proto = match frame.eles.borrow().last() {
+            //     Some(ele) => format!("{:?}", ele.get_protocol()),
+            //     None => "none".into(),
+            // };
             // last.get_protocol();
             let mut item = FrameInfo {
                 ..Default::default()
@@ -153,7 +150,7 @@ impl WContext {
             item.len = frame.capture_size;
             item.source = sum.source.clone();
             item.dest = sum.target.clone();
-            item.protocol = proto;
+            // item.protocol = proto;
             item.info = frame.info();
             item.irtt = 1;
             rs.push(item);
@@ -166,16 +163,14 @@ impl WContext {
         let f = binding.get(index as usize).unwrap();
         f.get_fields()
     }
-    // #[wasm_bindgen]
-    // pub fn get_frame_data(&self, index: u32) -> Uint8Array {
-    //     let binding = self.ctx.get_frames();
-    //     let f = binding.get(index as usize).unwrap();
-    //     let data: &[u8] = &f.data();
-    //     data.into()
-    // }
-
+    
+    #[wasm_bindgen]
     pub fn get_dns_record(&self)-> Vec<DNSRecord>{
         self.ctx.context().get_dns()
+    }
+    #[wasm_bindgen]
+    pub fn get_dns_count(&self) -> usize {
+        self.ctx.context().get_dns_count()
     }
 }
 

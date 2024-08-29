@@ -30,4 +30,8 @@
 - PPPOE
 - SSL
 - IPv4
+- IPv6
+- ARP
 - UDP
+- TCP
+- HTTP

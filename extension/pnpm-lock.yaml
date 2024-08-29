@@ -4,11 +4,6 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
-dependencies:
-  nshark:
-    specifier: file:../nshark/
-    version: file:../nshark
-
 devDependencies:
   '@types/mocha':
     specifier: ^10.0.6

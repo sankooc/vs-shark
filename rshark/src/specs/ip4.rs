@@ -1,24 +1,31 @@
-use std::fmt::{Formatter, Result};
+use std::fmt::Formatter;
 
 use pcap_derive::Packet;
+use anyhow::Result;
 
 use crate::{
-    common::{ContainProtocol, Description, IPPacket, IPv4Address, Protocol, Reader, TtypePacket}, files::{Frame, Initer, PacketContext, Visitor}
+    common::{Description, IPPacket, IPv4Address, Reader, TtypePacket}, files::{Frame, Initer, PacketContext, Visitor}
 };
 
-pub fn excute(ipprototype: u8, frame: &Frame, reader: &Reader) {
+pub fn excute(ipprototype: u8, frame: &Frame, reader: &Reader) -> Result<()> {
     match ipprototype {
         17 => {
-            super::transport::UDPVisitor.visit(frame, reader);
-        }
-        _ => (),
+            return super::udp::UDPVisitor.visit(frame, reader);
+        },
+        6 => {
+            return super::tcp::TCPVisitor.visit(frame, reader);
+        },
+        1 => {
+            return super::icmp::ICMPVisitor.visit(frame, reader);
+        },
+        _ => Ok(()),
     }
 }
 
 
 #[derive(Default, Packet)]
 pub struct IPv4 {
-    protocol: Protocol,
+    
     source_ip: Option<IPv4Address>,
     target_ip: Option<IPv4Address>,
     total_len: u16,
@@ -27,6 +34,12 @@ pub struct IPv4 {
     ttl: u8,
     t_protocol: u8,
     crc: u16,
+}
+
+impl crate::files::InfoPacket for IPv4 {
+    fn info(&self) -> String {
+        self.to_string()
+    }
 }
 
 impl IPPacket for IPv4 {
@@ -46,7 +59,7 @@ impl TtypePacket for IPv4{
 }
 
 impl std::fmt::Display for IPv4 {
-    fn fmt(&self, fmt: &mut Formatter) -> Result {
+    fn fmt(&self, fmt: &mut Formatter) -> std::fmt::Result {
         let source = match &self.source_ip {
             Some(ip) => ip.to_string(),
             _ => "".into(),
@@ -74,19 +87,19 @@ impl IPv4 {
 pub struct IP4Visitor;
 
 impl crate::files::Visitor for IP4Visitor {
-    fn visit(&self, frame: &Frame, reader: &Reader) {
-        let packet: PacketContext<IPv4> = Frame::create_packet(Protocol::IPV4);
-        let head = reader.read8();
+    fn visit(&self, frame: &Frame, reader: &Reader) -> Result<()> {
+        let packet: PacketContext<IPv4> = Frame::create_packet();
+        let head = reader.read8()?;
         let head_len = head & 0x0f;
-        reader.read8();//tos
-        let total_len = packet.read_with_string(reader, Reader::_read16_be, | val| format!("Total Length: {}", val.total_len));
-        let identification = packet.read_with_string(reader, Reader::_read16_be, | val| format!("Identification: {:#06x}", val.identification));
-        let flag = reader.read16(false);
-        let ttl = packet.read_with_string(reader, Reader::_read8, |val| format!("Time To Live: {}", val.ttl));
-        let ipproto = packet.read_with_string(reader, Reader::_read8, Description::t_protocol);
-        let crc: u16 = reader.read16(false);
-        let source = packet.read_with_string(reader, Reader::_read_ipv4, Description::source_ip);
-        let target = packet.read_with_string(reader, Reader::_read_ipv4, Description::target_ip);
+        let _ = reader.read8();//tos
+        let total_len = packet.read_with_string(reader, Reader::_read16_be, | val| format!("Total Length: {}", val.total_len))?;
+        let identification = packet.read_with_string(reader, Reader::_read16_be, | val| format!("Identification: {:#06x}", val.identification))?;
+        let flag = reader.read16(false)?;
+        let ttl = packet.read_with_string(reader, Reader::_read8, |val| format!("Time To Live: {}", val.ttl))?;
+        let ipproto = packet.read_with_string(reader, Reader::_read8, Description::t_protocol)?;
+        let crc: u16 = reader.read16(false)?;
+        let source = packet.read_with_string(reader, Reader::_read_ipv4, Description::source_ip).ok();
+        let target = packet.read_with_string(reader, Reader::_read_ipv4, Description::target_ip).ok();
         // let ptype = packet.read(reader, Reader::_read16_be, Some(IPv4::_ptype));
         let mut p = packet.get().borrow_mut();
         p.total_len = total_len;
@@ -97,15 +110,13 @@ impl crate::files::Visitor for IP4Visitor {
         p.crc = crc;
         p.source_ip = source;
         p.target_ip = target;
-        frame.summary.borrow_mut().source = p.source_ip.as_ref().unwrap().to_string();
-        frame.summary.borrow_mut().target = p.target_ip.as_ref().unwrap().to_string();
-        frame.summary.borrow_mut().protocol = p.protocol;
         let ext = head_len - 5;
         if ext > 0 {
             reader.slice((ext * 4) as usize);
         }
         drop(p);
-        frame.add_element(Box::new(packet));
-        excute(ipproto,frame, reader);
+        // frame.update_host(packet.get().borrow());
+        frame.add_element(super::ProtocolData::IPV4(packet));
+        excute(ipproto,frame, reader)
     }
 }
