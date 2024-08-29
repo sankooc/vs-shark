@@ -214,12 +214,6 @@ impl Reader<'_> {
             if self.left()? == 2 {
                 return Ok((list.into_iter().collect::<Vec<_>>().join("."), self.read16(true)?));
             }
-            let _size = self.read8()?;
-            if _size > 0 {
-                let str = self.read_string(_size as usize)?;
-                list.push(str);
-            }
-            
             let next = self._get_data()[self.cursor.get()];
             if next == 0 {
                 self._move(1);
@@ -230,6 +224,11 @@ impl Reader<'_> {
             }
             if next > self.left()? as u8 {
                 return Ok((list.into_iter().collect::<Vec<_>>().join("."), 0));
+            }
+            let _size = self.read8()?;
+            if _size > 0 {
+                let str = self.read_string(_size as usize)?;
+                list.push(str);
             }
         }
     }

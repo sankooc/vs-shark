@@ -2,6 +2,7 @@ use std::cell::RefCell;
 use std::fmt::Display;
 use std::rc::Rc;
 
+use log::info;
 // use log::info;
 //https://www.rfc-editor.org/rfc/rfc1035
 use pcap_derive::Packet;
@@ -269,9 +270,10 @@ impl DNSVisitor {
 impl Visitor for DNSVisitor {
     fn visit(&self, frame: &Frame, reader: &Reader)  -> Result<()>{
         let packet: PacketContext<DNS> = Frame::create_packet();
+        // info!("# index:{}", frame.summary.borrow().index);
         let mut p = packet.get().borrow_mut();
         let _cur = reader.cursor();
-        // if frame.summary.borrow().index > 15475 {
+        // if frame.summary.borrow().index == 86 {
         //     println!("--")
         // }
         p.transaction_id =
