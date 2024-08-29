@@ -10,6 +10,7 @@ pub mod dns;
 pub mod tcp;
 pub mod dhcp;
 pub mod http;
+pub mod igmp;
 use anyhow::Result;
 use enum_dispatch::enum_dispatch;
 use strum_macros::Display;
@@ -20,25 +21,6 @@ pub fn execute(link_type: u16, frame: &Frame, reader: &Reader)-> Result<()>{
     _ => ethernet::EthernetVisitor.visit(frame, reader),
   }
 }
-
-
-// pub enum ProtocolData {
-//   ETHERNET,
-//   PPPoESS,
-//   SSL,
-//   IPV4,
-//   IPV6,
-//   ARP,
-//   TCP,
-//   UDP,
-//   ICMP,
-//   ICMPv6,
-//   // IGMP,
-//   DNS,
-//   DHCP,
-//   // TLS,
-//   HTTP,
-// }
 
 type ETHERNET = PacketContext<ethernet::Ethernet>;
 type PPPoESS = PacketContext<ethernet::PPPoESS>;
@@ -53,6 +35,7 @@ type ICMPv6 = PacketContext<icmp::ICMP6>;
 type DNS = PacketContext<dns::DNS>;
 type DHCP = PacketContext<dhcp::DHCP>;
 type HTTP = PacketContext<http::HTTP>;
+type IGMP = PacketContext<igmp::IGMP>;
 
 #[enum_dispatch]
 #[derive(Display)]
@@ -68,6 +51,7 @@ pub enum ProtocolData {
     UDP,
     ICMP,
     ICMPv6,
+    IGMP,
     DNS,
     DHCP,
     HTTP,

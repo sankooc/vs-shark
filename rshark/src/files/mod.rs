@@ -2,14 +2,12 @@ pub mod pcap;
 pub mod pcapng;
 
 use crate::{common::IPPacket, constants::link_type_mapper, nshark::DNSRecord, specs::{dns::RecordResource, ProtocolData}};
-use std::{
-    borrow::Borrow, cell::{Cell, Ref, RefCell}, fmt::Display, rc::Rc, time::{Duration, UNIX_EPOCH}
+use std::{cell::{Cell, Ref, RefCell}, rc::Rc, time::{Duration, UNIX_EPOCH}
 };
-
 use chrono::{DateTime, Utc};
 use enum_dispatch::enum_dispatch;
 use js_sys::Uint8Array;
-use log::{error, info};
+use log::error;
 use wasm_bindgen::prelude::*;
 
 use anyhow::Result;
@@ -56,7 +54,6 @@ impl Field {
 }
 #[wasm_bindgen]
 impl Field {
-
     #[wasm_bindgen(getter)]
     pub fn summary(&self) -> String {
         self.summary.clone()
@@ -505,7 +502,6 @@ impl Frame {
             self.capture_size,
             self.capture_size * 8
         )));
-
         rs.push(Field::new2(self.to_string(),Rc::new(Vec::new()), lists));
         for e in self.eles.borrow().iter() {
             let vs = e.get_fields();

@@ -653,6 +653,15 @@ lazy_static! {
 		m.insert(18, "DHCPTL");
 		m
 	};
+	pub static ref igmp_type_map: HashMap<u8, &'static str> = {
+		let mut m = HashMap::new();
+		m.insert(17, "Membership Query");
+		m.insert(18, "IGMPv1 Membership Report");
+		m.insert(22, "IGMPv2 Membership Report");
+		m.insert(23, "Leave Group");
+		m.insert(34, "IGMPv3 Membership Report");
+		m
+	};
 }pub fn link_type_mapper(code:u16) -> String {
     (*link_type_map.get(&code).unwrap_or(&"unknown")).into()
   }
@@ -688,4 +697,7 @@ pub fn dhcp_option_type_mapper(code:u8) -> String {
   }
 pub fn dhcp_type_mapper(code:u8) -> String {
     (*dhcp_type_map.get(&code).unwrap_or(&"unknown")).into()
+  }
+pub fn igmp_type_mapper(code:u8) -> String {
+    (*igmp_type_map.get(&code).unwrap_or(&"unknown")).into()
   }

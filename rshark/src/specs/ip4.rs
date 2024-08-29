@@ -9,15 +9,10 @@ use crate::{
 
 pub fn excute(ipprototype: u8, frame: &Frame, reader: &Reader) -> Result<()> {
     match ipprototype {
-        17 => {
-            return super::udp::UDPVisitor.visit(frame, reader);
-        },
-        6 => {
-            return super::tcp::TCPVisitor.visit(frame, reader);
-        },
-        1 => {
-            return super::icmp::ICMPVisitor.visit(frame, reader);
-        },
+        1 => super::icmp::ICMPVisitor.visit(frame, reader),
+        2 => super::igmp::IGMPVisitor.visit(frame, reader),
+        6 => super::tcp::TCPVisitor.visit(frame, reader),
+        17 => super::udp::UDPVisitor.visit(frame, reader),
         _ => Ok(()),
     }
 }

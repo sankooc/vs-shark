@@ -32,6 +32,9 @@
 - IPv4
 - IPv6
 - ARP
+- ICMP
+- IGMP
 - UDP
 - TCP
+- DNS
 - HTTP

@@ -1,4 +1,4 @@
-import { linktypeMap, DHCP_OPTION_TYPE_MAP, DHCP_TYPE_MAP, SLL_TYPE, ipProtocolMap, etypeMap, DNS_CLASS_MAP, DNS_TYPE_MAP, ARP_HARDWARE_TYPE_MAP, TCP_OPTION_KIND_MAP, ARP_OPER_TYPE_MAP, ICMPV6_TYPE_MAP } from  './index.js';
+import { linktypeMap, DHCP_OPTION_TYPE_MAP, IGMP_TYPE_MAP, DHCP_TYPE_MAP, SLL_TYPE, ipProtocolMap, etypeMap, DNS_CLASS_MAP, DNS_TYPE_MAP, ARP_HARDWARE_TYPE_MAP, TCP_OPTION_KIND_MAP, ARP_OPER_TYPE_MAP, ICMPV6_TYPE_MAP } from  './index.js';
 import fs from 'node:fs';
 
 const str = `use lazy_static::lazy_static;
@@ -31,6 +31,7 @@ const items = [
   ['icmpv6_type', ICMPV6_TYPE_MAP, k => parseInt(k, 10), 'u16'],
   ['dhcp_option_type', DHCP_OPTION_TYPE_MAP, k => parseInt(k, 10), 'u8'],
   ['dhcp_type', DHCP_TYPE_MAP, k => parseInt(k, 10), 'u8'],
+  ['igmp_type', IGMP_TYPE_MAP, k => parseInt(k, 10), 'u8'],
 ];
 //DHCP_OPTION_TYPE
 const conts = items.map((item) => buildConstants(item[0]+'_map', item[1], item[2], item[3]));
