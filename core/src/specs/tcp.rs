@@ -3,11 +3,10 @@ use std::{
 };
 
 use anyhow::Result;
-use log::info;
 use pcap_derive::Packet;
 
 use crate::{
-    common::{Description, IPPacket, IPv4Address, MacAddress, PortPacket, Reader},
+    common::{Description, PortPacket, Reader},
     constants::tcp_option_kind_mapper,
     files::{Frame, Initer, MultiBlock, PacketContext},
 };
@@ -207,7 +206,7 @@ impl TCPVisitor {
         let packet: PacketContext<MultiBlock<TCPOption>> = Frame::create_packet();
         let mut p = packet.get().borrow_mut();
         let start = reader.cursor();
-        let end = start + len;
+        let end = start + (len -5) * 4;
         while reader.cursor() < end {
             let item = packet.read_with_field(reader, TCPVisitor::read_option, None)?;
             p.push(item);
