@@ -1,8 +1,8 @@
 pub mod pcap;
 pub mod pcapng;
 
-use crate::{common::IPPacket, constants::link_type_mapper, nshark::DNSRecord, specs::{dns::RecordResource, tcp::TCP, ProtocolData}};
-use std::{cell::{Cell, Ref, RefCell, RefMut}, rc::Rc, time::{Duration, UNIX_EPOCH}
+use crate::{common::IPPacket, constants::link_type_mapper, specs::{dns::RecordResource, tcp::TCP, ProtocolData}};
+use std::{cell::{Cell, Ref, RefCell}, rc::Rc, time::{Duration, UNIX_EPOCH}
 };
 use chrono::{DateTime, Utc};
 use enum_dispatch::enum_dispatch;
@@ -559,7 +559,7 @@ pub type Ref2<T> = Rc<RefCell<T>>;
 pub struct Context {
     count: Cell<u32>,
     info: RefCell<FileInfo>,
-    dns: RefCell<Vec<Ref2<RecordResource>>>,
+    pub dns: RefCell<Vec<Ref2<RecordResource>>>,
 }
 
 impl Context {
@@ -571,14 +571,6 @@ impl Context {
     }
     pub fn get_dns_count(&self) -> usize {
         self.dns.borrow().len()
-    }
-    pub fn get_dns(&self) -> Vec<DNSRecord> {
-        let mut rs = Vec::new();
-        for d in self.dns.borrow().iter() {
-            let aa = d.as_ref().borrow();
-            rs.push(DNSRecord::create(aa));
-        }
-        rs
     }
 }
 pub struct Instance {

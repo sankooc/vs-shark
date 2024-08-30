@@ -40,4 +40,6 @@ let _content = str + "lazy_static! {\r\n" + conts.join('')+ "}";
 
 _content += (items.map((item) => buildMapper(item[0], item[3])).join('\r\n'))
 
-fs.writeFileSync('../rshark/src/constants.rs', _content);
+fs.writeFileSync('../core/src/constants.rs', _content);
+
+console.log('complete');

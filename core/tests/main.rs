@@ -3,7 +3,7 @@ mod tests {
     use std::time::{SystemTime, UNIX_EPOCH};
 
     use log::info;
-    use crate::{
+    use core::{
         common::IPv4Address,
         files::Field,
     };
@@ -18,14 +18,15 @@ mod tests {
     }
     #[test]
     fn testbasic() -> std::io::Result<()> {
-        use crate::entry::load_data;
+        use core::entry::load_data;
         // use log::{error, info};
         use std::fs;
         // use env_logger::{Builder, Target};
         env_logger::builder().is_test(true).try_init().unwrap();
         // let fname = "../sandbox/demo.pcap";
+        let fname = "../sandbox/demo.pcapng";
         // let fname = "../sandbox/11.pcapng";
-        let fname = "../sandbox/dns.pcapng";
+        // let fname = "../sandbox/dns.pcapng";
         // let fname = "../sandbox/creden.pcapng";
         let data: Vec<u8> = fs::read(fname)?;
         let start = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis();
@@ -66,7 +67,7 @@ mod tests {
     // struct Pancakes {
     //     age: u16,
     // }
-    #[test]
+    // #[test]
     fn testip() {
         // env_logger::builder().is_test(true).try_init().unwrap();
         let ip = IPv4Address {

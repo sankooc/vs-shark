@@ -1,11 +1,10 @@
 use std::borrow::Borrow;
 use std::cell::{Ref, RefCell};
 use std::ops::Deref;
-use std::rc::Rc;
 
-use crate::common::FileInfo;
-use crate::{entry::*, files};
-use crate::files::{DomainService, Instance};
+use core::common::FileInfo;
+use core::files::{DomainService, Instance};
+use core::{entry::*, files};
 use js_sys::Uint8Array;
 use wasm_bindgen::prelude::*;
 
@@ -27,12 +26,18 @@ pub struct Field {
 impl Field {
     pub fn convert(embed: &files::Field) -> Self {
         let (start, size);
-        files::Field {start, size, ..} = *embed;
+        files::Field { start, size, .. } = *embed;
         let summary = embed.summary.clone();
-        let a:&[u8] = embed.borrow().data.deref();
+        let a: &[u8] = embed.borrow().data.deref();
         let data: Uint8Array = a.into();
         let children = embed.children.clone();
-        Field{ start, size, summary, data, children }
+        Field {
+            start,
+            size,
+            summary,
+            data,
+            children,
+        }
     }
 }
 #[wasm_bindgen]
@@ -67,7 +72,14 @@ pub struct DNSRecord {
 
 impl DNSRecord {
     pub fn create(data: Ref<impl DomainService>) -> DNSRecord {
-        DNSRecord{ name: data.name(), _type:data._type(), proto: data.proto(), class: data.class(), content: data.content(), ttl: data.ttl()}
+        DNSRecord {
+            name: data.name(),
+            _type: data._type(),
+            proto: data.proto(),
+            class: data.class(),
+            content: data.content(),
+            ttl: data.ttl(),
+        }
     }
 }
 
@@ -201,10 +213,15 @@ impl WContext {
         let f = binding.get(index as usize).unwrap();
         f.get_fields().iter().map(|f| Field::convert(&f)).collect()
     }
-    
+
     #[wasm_bindgen]
-    pub fn get_dns_record(&self)-> Vec<DNSRecord>{
-        self.ctx.context().get_dns()
+    pub fn get_dns_record(&self) -> Vec<DNSRecord> {
+        let mut rs = Vec::new();
+        for d in self.ctx.context().dns.borrow().iter() {
+            let aa = d.as_ref().borrow();
+            rs.push(DNSRecord::create(aa));
+        }
+        rs
     }
     #[wasm_bindgen]
     pub fn get_dns_count(&self) -> usize {
