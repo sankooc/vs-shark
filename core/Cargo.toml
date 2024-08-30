@@ -1,0 +1,28 @@
+[package]
+name = "core"
+version = "0.2.0"
+authors = ["sankooc <sankooc@163.com>"]
+description = "pcap/pcapng file analyzer"
+edition = "2021"
+repository = "https://github.com/sankooc/vs-shark"
+readme="../README.MD"
+license-file = "../LICENSE"
+
+[lib]
+crate-type = ["lib"]
+
+[dependencies]
+chrono = "0.4.38"
+js-sys = "0.3.69"
+lazy_static = "1.5.0"
+log = "0.4.22"
+pcap_derive = { path = "../derive" }
+thiserror = "1.0.63"
+anyhow = "1.0.86"
+enum_dispatch = "0.3.13"
+strum = { version = "0.26.3", features = ["derive"] }
+strum_macros = "0.26.3"
+
+
+[dev-dependencies]
+env_logger = "0.11.3"

@@ -1,0 +1,19 @@
+[package]
+name = "nshark"
+version = "0.2.0"
+authors = ["sankooc <sankooc@163.com>"]
+description = "pcap/pcapng file analyzer"
+edition = "2021"
+repository = "https://github.com/sankooc/vs-shark"
+readme="../README.MD"
+license-file = "../LICENSE"
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+crate-type = ["cdylib"]
+
+
+[dependencies]
+js-sys = "0.3.69"
+wasm-bindgen = "0.2.93"
+core = { path = "../core" }
