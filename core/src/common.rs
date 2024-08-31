@@ -36,6 +36,7 @@ pub trait PlayloadPacket {
 pub trait IPPacket {
     fn source_ip_address(&self) -> String;
     fn target_ip_address(&self) -> String;
+    fn payload_len(&self) -> u16;
 }
 
 pub trait MacPacket {

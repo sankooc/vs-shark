@@ -35,6 +35,9 @@ impl IPPacket for IPv6 {
     fn target_ip_address(&self) -> String {
         self.target_ip.as_ref().unwrap().to_string()
     }
+    fn payload_len(&self) -> u16 {
+        self.total_len
+    }
 }
 
 impl TtypePacket for IPv6{
@@ -84,7 +87,6 @@ impl crate::files::Visitor for IP6Visitor {
         p.total_len = plen;
         p.hop_limit = hop_limit;
         drop(p);
-        // frame.update_host(packet.get().borrow());
         frame.add_element(super::ProtocolData::IPV6(packet));
         excute(ipproto,frame, reader)
     }

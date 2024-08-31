@@ -24,8 +24,8 @@ mod tests {
         // use env_logger::{Builder, Target};
         env_logger::builder().is_test(true).try_init().unwrap();
         // let fname = "../sandbox/demo.pcap";
-        let fname = "../sandbox/demo.pcapng";
-        // let fname = "../sandbox/11.pcapng";
+        // let fname = "../sandbox/demo.pcapng";
+        let fname = "../sandbox/11.pcapng";
         // let fname = "../sandbox/dns.pcapng";
         // let fname = "../sandbox/creden.pcapng";
         let data: Vec<u8> = fs::read(fname)?;

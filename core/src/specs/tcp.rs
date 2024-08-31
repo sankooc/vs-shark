@@ -1,8 +1,9 @@
 use std::{
-    cell::RefCell, fmt::{Display, Formatter, Write}, ops::Deref, rc::Rc
+    borrow::Borrow, cell::RefCell, fmt::{Display, Formatter, Write}, ops::Deref, rc::Rc
 };
 
 use anyhow::Result;
+use log::info;
 use pcap_derive::Packet;
 
 use crate::{
@@ -105,6 +106,7 @@ pub struct TCP {
     target_port: u16,
     head: u16,
     len: u16,
+    payload_len: u16,
     window: u16,
     crc: u16,
     urgent: u16,
@@ -218,6 +220,10 @@ impl TCPVisitor {
 
 impl crate::files::Visitor for TCPVisitor {
     fn visit(&self, frame: &Frame, reader: &Reader) -> Result<()> {
+        let ip_packet = frame.get_ip();
+        let unwap = ip_packet.deref().borrow();
+        let total = unwap.payload_len();
+        let _start = reader.left()? as u16;
         let packet: PacketContext<TCP> = Frame::create_packet();
         let mut p = packet.get().borrow_mut();
         p.source_port =
@@ -239,13 +245,22 @@ impl crate::files::Visitor for TCPVisitor {
             let options = packet.read_with_field(reader, read, Some("Options".into()))?;
             p.options = Some(options);
         }
-        let left_size = reader.left().unwrap_or(0);
+        let left_size = reader.left().unwrap_or(0) as u16;
+        p.payload_len = left_size;
+        if _start > total {
+            p.payload_len = total + left_size - _start;
+        }
         packet.read_txt(
             reader,
             reader.cursor(),
-            left_size,
+            p.payload_len.into(),
             format!("TCP payload ({} bytes)", left_size),
         );
+        // if left_size > 1 && left_size < 6{
+        //     if !p.state.push && !p.state.sync {
+        //         info!("unx: {} [{}]", frame.summary.borrow().index, left_size);
+        //     }
+        // }
         frame.update_tcp(p.deref());
         drop(p);
         frame.add_element(super::ProtocolData::TCP(packet));

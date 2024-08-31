@@ -29,6 +29,9 @@ impl IPPacket for ARP {
     fn target_ip_address(&self) -> String {
         self.target_ip.as_ref().unwrap().to_string()
     }
+    fn payload_len(&self) -> u16 {
+        0
+    }
 }
 
 
@@ -80,11 +83,15 @@ impl crate::files::Visitor for ARPVisitor {
         p.protocol_size = packet._read_with_format_string_rs(reader, Reader::_read8, "Protocol size: {}")?;
         p.operation = packet.read_with_string(reader, Reader::_read16_be, ARP::operation_type_desc)?;
         p.sender_mac = packet._read_with_format_string_rs(reader, Reader::_read_mac, "Sender MAC address: ({})").ok();
-        p.sender_ip = packet._read_with_format_string_rs(reader, Reader::_read_ipv4, "Sender IP address: {}").ok();
+        let sender_ip = packet._read_with_format_string_rs(reader, Reader::_read_ipv4, "Sender IP address: {}")?;
         p.target_mac = packet._read_with_format_string_rs(reader, Reader::_read_mac, "Target MAC address: ({})").ok();
-        p.target_ip = packet._read_with_format_string_rs(reader, Reader::_read_ipv4, "Target IP address: {}").ok();
+        let target_ip = packet._read_with_format_string_rs(reader, Reader::_read_ipv4, "Target IP address: {}")?;
+        let soruce = sender_ip.to_string();
+        let target = target_ip.to_string();
+        p.sender_ip = Some(sender_ip);
+        p.target_ip = Some(target_ip);
         drop(p);
-        frame.update_host(packet.get().borrow());
+        frame.update_host(&soruce, &target);
         frame.add_element(ProtocolData::ARP(packet));
         Ok(())
     }

@@ -198,8 +198,14 @@ impl WContext {
             item.index = sum.index;
             item.time = (frame.ts - start_ts) as u32;
             item.len = frame.capture_size;
-            item.source = sum.source.clone();
-            item.dest = sum.target.clone();
+            match &sum.ip {
+                Some(ip) => {
+                    let _ip = ip.as_ref().borrow();
+                    item.source = _ip.source_ip_address();
+                    item.dest = _ip.target_ip_address();
+                }
+                None => {}
+            }
             item.protocol = sum.protocol.clone();
             item.info = frame.info();
             item.irtt = 1;

@@ -1,4 +1,4 @@
-use std::fmt::Formatter;
+use std::{fmt::Formatter, rc::Rc};
 
 use pcap_derive::Packet;
 use anyhow::Result;
@@ -24,6 +24,7 @@ pub struct IPv4 {
     source_ip: Option<IPv4Address>,
     target_ip: Option<IPv4Address>,
     total_len: u16,
+    payload_len: u16,
     identification: u16,
     flag: u16,
     ttl: u8,
@@ -41,9 +42,11 @@ impl IPPacket for IPv4 {
     fn source_ip_address(&self) -> String {
         self.source_ip.as_ref().unwrap().to_string()
     }
-
     fn target_ip_address(&self) -> String {
         self.target_ip.as_ref().unwrap().to_string()
+    }
+    fn payload_len(&self) -> u16 {
+        self.payload_len
     }
 }
 
@@ -82,6 +85,7 @@ pub struct IP4Visitor;
 
 impl crate::files::Visitor for IP4Visitor {
     fn visit(&self, frame: &Frame, reader: &Reader) -> Result<()> {
+        let _start = reader.left()?;
         let packet: PacketContext<IPv4> = Frame::create_packet();
         let head = reader.read8()?;
         let head_len = head & 0x0f;
@@ -108,7 +112,11 @@ impl crate::files::Visitor for IP4Visitor {
         if ext > 0 {
             reader.slice((ext * 4) as usize);
         }
+        
+        let _stop = reader.left()?;
+        p.payload_len = total_len - (_start - _stop) as u16;
         drop(p);
+        
         // frame.update_host(packet.get().borrow());
         frame.add_element(super::ProtocolData::IPV4(packet));
         excute(ipproto,frame, reader)

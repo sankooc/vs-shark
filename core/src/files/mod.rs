@@ -1,8 +1,8 @@
 pub mod pcap;
 pub mod pcapng;
 
-use crate::{common::IPPacket, constants::link_type_mapper, specs::{dns::RecordResource, tcp::TCP, ProtocolData}};
-use std::{cell::{Cell, Ref, RefCell}, rc::Rc, time::{Duration, UNIX_EPOCH}
+use crate::{common::{IPPacket, PortPacket}, constants::link_type_mapper, specs::{dns::RecordResource, tcp::TCP, ProtocolData}};
+use std::{cell::{Cell, Ref, RefCell}, collections::HashMap, rc::Rc, time::{Duration, UNIX_EPOCH}
 };
 use chrono::{DateTime, Utc};
 use enum_dispatch::enum_dispatch;
@@ -389,10 +389,25 @@ pub trait DomainService {
     fn content(&self) -> String;
     fn ttl(&self) -> u32;
 }
-
+struct Endpoint {
+    host: String,
+    port: u16,
+    seq: u32,
+    ack: u32,
+}
 pub struct TCPConnection{
-    count: usize,
-    throughput: usize,    
+    count: u16,
+    throughput: u32,
+    ep1: Rc<Endpoint>,
+    ep2: Rc<Endpoint>,        
+}
+
+impl TCPConnection {
+    fn new(src: String, dst: String, srp: u16, dsp: u16) -> Self{
+        let ep1 = Rc::new(Endpoint{host: src, port: srp, seq: 0, ack: 0 });
+        let ep2 = Rc::new(Endpoint{host: dst, port: dsp, seq: 0, ack: 0 });   
+        Self{count: 0, throughput: 0, ep1, ep2}
+    }
 }
 
 pub trait Initer {
@@ -410,6 +425,7 @@ pub struct FrameSummary {
     pub target: String,
     pub protocol: String,
     pub link_type: u16,
+    pub ip: Option<Ref2<dyn IPPacket>>,
 }
 
 pub struct Frame {
@@ -420,6 +436,7 @@ pub struct Frame {
     data: Rc<Vec<u8>>,
     pub ctx: Rc<Context>,
     pub eles: RefCell<Vec<ProtocolData>>,
+
 }
 impl Frame {
     pub fn new(
@@ -465,17 +482,37 @@ impl Frame {
             None => "N/A".into()
         }
     }
-    pub fn update_host(&self, packet: Ref<impl IPPacket>){
+    pub fn get_ip(&self) -> Ref2<dyn IPPacket> {
+        let sum = self.summary.borrow();
+        // sum.ip.unwrap().clone()
+        match &sum.ip{
+            Some(_ip) => {
+                _ip.clone()
+            },
+            _ => {
+                panic!("nodata")
+            }
+        }
+    }
+    pub fn update_host(&self, src: &str, dst: &str){
         let mut s = self.summary.borrow_mut();
-        s.source = packet.source_ip_address();
-        s.target = packet.target_ip_address();
+        s.source = src.into();
+        s.target = dst.into();
         drop(s);
     }
-    pub fn update_tcp(&self,packet: &TCP){
+    pub fn update_ip(&self, packet: Ref2<dyn IPPacket>){
+        let _ip = packet.as_ref().borrow();
+        self.update_host(&_ip.source_ip_address(), &_ip.target_ip_address());
+        drop(_ip);
+        let mut s = self.summary.borrow_mut();
+        s.ip = Some(packet);
+        drop(s);
+    }
+    pub fn update_tcp(&self, packet: &TCP){
         let s = self.summary.borrow();
         let source = s.source.clone();
         let target = s.target.clone();
-        if source > target {}
+        // if source > target {}
         
     }
     pub fn get_fields(&self) -> Vec<Field> {
@@ -540,10 +577,10 @@ impl Frame {
         drop(mref);
         match &ele {
             ProtocolData::IPV4(packet) => {
-                self.update_host(packet.get().borrow());
+                self.update_ip(packet._clone_obj());
             },
             ProtocolData::IPV6(packet) => {
-                self.update_host(packet.get().borrow());
+                self.update_ip(packet._clone_obj());
             },
             // ProtocolData::TCP(packet) => {
             //     self.update_tcp(packet.get().borrow());
@@ -560,6 +597,7 @@ pub struct Context {
     count: Cell<u32>,
     info: RefCell<FileInfo>,
     pub dns: RefCell<Vec<Ref2<RecordResource>>>,
+    conversation_map: RefCell<HashMap<String, TCPConnection>>
 }
 
 impl Context {
@@ -571,6 +609,20 @@ impl Context {
     }
     pub fn get_dns_count(&self) -> usize {
         self.dns.borrow().len()
+    }
+    fn update_tcp(&self, src: String, dst: String, tcp: &TCP) {
+        let key = String::from("1.23.23");
+        let mut _map = self.conversation_map.borrow_mut();
+        let v = _map.get(&key);
+        let conn = match v {
+            Some(conn) => conn,
+            None => {
+                let con = TCPConnection::new(src, dst, tcp.source_port(), tcp.target_port());
+                _map.insert(key.clone(), con);
+                _map.get(&key).unwrap()
+            },
+        };
+        
     }
 }
 pub struct Instance {
@@ -586,6 +638,7 @@ impl Instance {
                 file_type: ftype,
                 ..Default::default()
             }),
+            conversation_map: RefCell::new(HashMap::new())
         };
         Instance {
             ctx: Rc::new(ctx),
