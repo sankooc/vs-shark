@@ -33,6 +33,8 @@ mod tests {
         let _ctx = load_data(&data).unwrap();
         let end = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis();
         let _frames = _ctx.get_frames();
+
+
         // for f in frames.iter() {
         //     match f.summary.borrow().protocol {
         //         Protocol::DNS => (),
@@ -52,6 +54,12 @@ mod tests {
         //             _dis(1, field);
         //         }
         //     }
+        // }
+
+        // let ct = _ctx.context();
+        // let cons = ct.conversations();
+        // for con in cons.values().into_iter() {
+        //     info!("{} -{}", con.ep1.as_ref().borrow().host, con.ep2.as_ref().borrow().host, )
         // }
         println!("finish cost {}", end -start);
         Ok(())

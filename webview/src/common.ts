@@ -1,4 +1,4 @@
-import { DNSRecord, WContext } from 'rshark';
+import { DNSRecord, TCPConversation, WContext } from 'rshark';
 
 export class ComMessage<T> {
     type: string;
@@ -94,14 +94,15 @@ export interface ColumnItem {
 // }
 
 export class TCPCol implements ColumnItem {
+    constructor(public item: TCPConversation){}
     no!: number;
-    ep1!: string;
-    ep2!: string;
-    total!: number;
-    tcp!: number;
-    tcpUse!: number;
-    count!: number;
-    countUse!: number;
+    // ep1!: string;
+    // ep2!: string;
+    // total!: number;
+    // tcp!: number;
+    // tcpUse!: number;
+    // count!: number;
+    // countUse!: number;
     getIndex(): number {
         return 0;
     }

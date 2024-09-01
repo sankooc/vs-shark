@@ -9,11 +9,12 @@ use pcap_derive::Packet;
 use crate::{
     common::{Description, PortPacket, Reader},
     constants::tcp_option_kind_mapper,
-    files::{Frame, Initer, MultiBlock, PacketContext},
+    files::{Frame, Initer, MultiBlock, PacketContext, Ref2, TCPDetail, TCPInfo},
 };
 
 #[derive(Default)]
-struct TCPState {
+pub struct TCPState {
+    head: u8,
     cwr: bool,
     ece: bool,
     urg: bool,
@@ -23,6 +24,12 @@ struct TCPState {
     sync: bool,
     fin: bool,
 }
+pub const ACK: u8 = 16;
+pub const PUSH: u8 = 8;
+pub const RESET: u8 = 4;
+pub const SYNC: u8 = 2;
+pub const FIN: u8 = 1;
+
 const C_ACK: &str = "ACK";
 const C_PUSH: &str = "PUSH";
 const C_RESET: &str = "RESET";
@@ -30,6 +37,7 @@ const C_SYN: &str = "SYN";
 const C_FIN: &str = "FIN";
 impl TCPState {
     fn update(&mut self, head: u16) {
+        self.head = (head & 0xff) as u8;
         let lann = |off: u8| -> bool { 1 == (head >> off) & 0x01 };
         self.cwr = lann(7);
         self.ece = lann(6);
@@ -58,14 +66,17 @@ impl TCPState {
         if self.fin {
             list.push(C_FIN);
         }
-        str.write_str(list.join(",").as_str());
-        str.write_str("]");
+        str.write_str(list.join(",").as_str()).unwrap();
+        str.write_str("]").unwrap();
         str
     }
+    pub fn check(&self,mask: u8) -> bool {
+        (self.head & mask) == mask
+    }
 }
-struct TCPExtra {
-    dump: bool,
-}
+// struct TCPExtra {
+//     dump: bool,
+// }
 #[derive(Default, Packet)]
 struct TCPOption {
     kind: u8,
@@ -97,21 +108,22 @@ impl TCPOption {
     }
 }
 
-type TCPOptions = Rc<RefCell<MultiBlock<TCPOption>>>;
+type TCPOptions = Ref2<MultiBlock<TCPOption>>;
 #[derive(Default, Packet)]
 pub struct TCP {
-    sequence: u32,
-    acknowledge: u32,
-    source_port: u16,
-    target_port: u16,
+    pub sequence: u32,
+    pub acknowledge: u32,
+    pub source_port: u16,
+    pub target_port: u16,
     head: u16,
     len: u16,
-    payload_len: u16,
+    pub payload_len: u16,
     window: u16,
-    crc: u16,
+    pub crc: u16,
     urgent: u16,
     options: Option<TCPOptions>,
-    state: TCPState,
+    pub state: TCPState,
+    info: Option<TCPInfo>,
 }
 
 impl std::fmt::Display for TCP {
@@ -133,7 +145,7 @@ impl PortPacket for TCP {
 }
 impl crate::files::InfoPacket for TCP {
     fn info(&self) -> String {
-        format!(
+        let mut info = format!(
             "{} → {} {} Seq={} Ack={} Win={} Len={}",
             self.source_port,
             self.target_port,
@@ -142,7 +154,25 @@ impl crate::files::InfoPacket for TCP {
             self.acknowledge,
             self.window,
             self.len
-        )
+        );
+        match &self.info {
+            Some(_info) => {
+                match _info.detail {
+                    TCPDetail::KEEPALIVE => {
+                        info = format!("[{}] {}", "Keeplive", info)
+                    },
+                    TCPDetail::NOPREVCAPTURE => {
+                        info = format!("[{}] {}", "no_previous_segment", info)
+                    }
+                    TCPDetail::RETRANSMISSION => {
+                        info = format!("[{}] {}", "retransmission", info)
+                    }
+                    _ => {}
+                }
+            },
+            _ => {}
+        }
+        info
     }
 }
 impl TCP {
@@ -152,10 +182,32 @@ impl TCP {
         self.state.update(head);
     }
     fn sequence_desc(&self) -> String {
-        format!("Sequence Number (raw): {}", self.sequence)
+        match &self.info {
+            Some(info) => {
+                let _seq = info._seq;
+                if _seq <= self.sequence {
+                    return format!("Sequence Number : {} (raw: {})", self.sequence - _seq, self.sequence)
+                }
+                format!("Sequence Number (raw): {}", self.sequence)
+            },
+            None => {
+                format!("Sequence Number (raw): {}", self.sequence)
+            },
+        }
     }
     fn acknowledge_desc(&self) -> String {
-        format!("Acknowlagde Number (raw): {}", self.acknowledge)
+        match &self.info {
+            Some(info) => {
+                let _ack = info._ack;
+                if _ack <= self.sequence {
+                    return format!("Acknowlagde Number : {} (raw: {})", self.acknowledge-_ack, self.acknowledge)
+                }
+                format!("Acknowlagde Number (raw): {}", self.acknowledge)
+            },
+            None => {
+                format!("Acknowlagde Number (raw): {}", self.acknowledge)
+            },
+        }
     }
     fn len_desc(&self) -> String {
         format!(
@@ -163,23 +215,6 @@ impl TCP {
             self.len, self.len
         )
     }
-
-    // fn protocol_type_desc(&self) -> String {
-    //     format!("Protocol type: {} ({})", etype_mapper(self.protocol_type),self.protocol_type)
-    // }
-    // fn hardware_type_desc(&self) -> String {
-    //     format!("Hardware type: {} ({})", self._hardware_type(),self.hardware_type)
-    // }
-    // fn operation_type_desc(&self) -> String {
-    //     format!("Opcode: {} ({})", self._operation_type(), self.operation)
-    // }
-    // fn _hardware_type(&self) -> String {
-    //     arp_hardware_type_mapper(self.hardware_type)
-    // }
-
-    // fn _operation_type(&self) -> String {
-    //     arp_oper_type_mapper(self.operation)
-    // }
 }
 pub struct TCPVisitor;
 
@@ -256,12 +291,8 @@ impl crate::files::Visitor for TCPVisitor {
             p.payload_len.into(),
             format!("TCP payload ({} bytes)", left_size),
         );
-        // if left_size > 1 && left_size < 6{
-        //     if !p.state.push && !p.state.sync {
-        //         info!("unx: {} [{}]", frame.summary.borrow().index, left_size);
-        //     }
-        // }
-        frame.update_tcp(p.deref());
+        let info = frame.update_tcp(p.deref());
+        p.info = Some(info);
         drop(p);
         frame.add_element(super::ProtocolData::TCP(packet));
 

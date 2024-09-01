@@ -1,29 +1,25 @@
 import React, { useEffect, useState } from "react";
 import { emitMessage, trace } from "../../connect";
 import { ColumnItem, ComMessage, Frame, TCPCol } from "../../common";
-import { Splitter, SplitterPanel } from 'primereact/splitter';
 import DTable from '../dataTable';
-import Stack from '../tree';
-import HexView from '../detail';
+import { MainProto } from "../../wasm";
+import { TCPConversation } from "rshark";
 
-class ListProps {
-    items: TCPCol[];
-}
-
-const TCPList = (props: ListProps) => {
+const TCPList = (props: MainProto) => {
     const getData = (): TCPCol[] => {
-        return props.items;
+        return props.instance.getConversations().map((d, inx) => {
+            const item = new TCPCol(d);
+            item.no = inx + 1;
+            return item;
+        });
     };
     const items = getData();
     const columes = [
         { field: 'no', header: 'index', style: { width: '5%' } },
-        { field: 'ep1', header: 'ep1' },
-        { field: 'ep2', header: 'ep2' },
-        { field: 'total', header: 'total', style: { width: '7%' } },
-        { field: 'tcp', header: 'tcp', style: { width: '7%' } },
-        { field: 'tcpUse', header: 'tcpUse', style: { width: '7%' } },
-        { field: 'count', header: 'count', style: { width: '7%' } },
-        { field: 'countUse', header: 'countUse', style: { width: '7%' }  }
+        { field: 'item.source', header: 'source' },
+        { field: 'item.dest', header: 'dest' },
+        { field: 'item.count', header: 'count', style: { width: '7%' } },
+        { field: 'item.throughput', header: 'throughput', style: { width: '7%' }  }
     ];
     return (<div className="flex flex-nowrap h-full w-full" id="frame-page">
         <DTable cols={columes} items={items} onSelect={() => {}} scrollHeight="95vh"/>

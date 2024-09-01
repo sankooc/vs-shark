@@ -10,13 +10,13 @@ use anyhow::Result;
 
 use crate::common::{IPv4Address, Reader};
 use crate::constants::{dns_class_mapper, dns_type_mapper};
-use crate::files::{DomainService, Frame, Initer, MultiBlock, PacketContext, Visitor};
+use crate::files::{DomainService, Frame, Initer, MultiBlock, PacketContext, Ref2, Visitor};
 
 use super::ProtocolData;
 
-type Questions = Rc<RefCell<MultiBlock<Question>>>;
-type Answers = Rc<RefCell<MultiBlock<RecordResource>>>;
-type Authority = Rc<RefCell<MultiBlock<RecordResource>>>;
+type Questions = Ref2<MultiBlock<Question>>;
+type Answers = Ref2<MultiBlock<RecordResource>>;
+type Authority = Ref2<MultiBlock<RecordResource>>;
 #[derive(Default, Packet)]
 pub struct DNS {
     
@@ -257,7 +257,7 @@ impl DNSVisitor {
         let _resource = |reader: &Reader| DNSVisitor::read_rr(reader, archor);
 
         for _ in 0..count {
-            let item: Rc<RefCell<RecordResource>> = packet.read_with_field(reader, _resource, None)?;
+            let item: Ref2<RecordResource> = packet.read_with_field(reader, _resource, None)?;
             let ctx = frame.ctx.clone();
             ctx.add_dns_record(item.clone());
             p.push(item);
@@ -292,7 +292,7 @@ impl Visitor for DNSVisitor {
         }
         if answer_rr > 0 {
             let _read = |reader: &Reader| DNSVisitor::read_rrs(frame,reader, answer_rr, _cur);
-            let qs: Rc<RefCell<Vec<Rc<RefCell<RecordResource>>>>> = packet.read_with_field(reader, _read, Some("Answers".into()))?;
+            let qs: Ref2<Vec<Ref2<RecordResource>>> = packet.read_with_field(reader, _read, Some("Answers".into()))?;
             for r in qs.as_ref().borrow().iter() {
                 frame.ctx.add_dns_record(r.clone());
             }

@@ -8,7 +8,7 @@ import { onMessage, emitMessage } from '../connect';
 import Overview from './overview';
 
 import FrameList from './frames';
-// import TCPList from './tcp';
+import TCPList from './tcp';
 // import ARPReplies from './arp';
 // import DNSList from './dns';
 import { CProto } from "../wasm";
@@ -54,9 +54,10 @@ const Main = () => {
       });
     };
     const frameCount = props.getFrames().length;
+    const tcpCount = props.ctx.get_conversations_count();
     addPanel('overview', 'Overview', '', 'pi pi-chart-bar');
     addPanel('frame', 'Frame', frameCount + '', 'pi pi-list');
-    // if (props.tcps?.length) addPanel('tcp', 'TCP', props.tcps.length + '', 'pi pi-server');
+    if (tcpCount) addPanel('tcp', 'TCP', tcpCount + '', 'pi pi-server');
     // if (props.arpGraph?.nodes?.length) addPanel('arp', 'ARP', props.arpGraph?.nodes?.length + '', 'pi pi-chart-pie');
     // if (props.dnsRecords?.length) addPanel('dns', 'DNS', props.dnsRecords?.length + '', 'pi pi-address-book');
     return mitems;
@@ -66,8 +67,8 @@ const Main = () => {
       case 'frame':
         const items: FrameInfo[] = data.ctx.get_frames();
         return <FrameList instance={data}/>;
-      // case 'tcp':
-      //   return <TCPList items={data.tcps} />
+      case 'tcp':
+        return <TCPList instance={data}/>
 
       // case 'arp':
       //   return <ARPReplies graph={data.arpGraph} legends={['sender', 'target']} />

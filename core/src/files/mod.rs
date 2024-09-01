@@ -1,16 +1,31 @@
 pub mod pcap;
 pub mod pcapng;
 
-use crate::{common::{IPPacket, PortPacket}, constants::link_type_mapper, specs::{dns::RecordResource, tcp::TCP, ProtocolData}};
-use std::{cell::{Cell, Ref, RefCell}, collections::HashMap, rc::Rc, time::{Duration, UNIX_EPOCH}
+use crate::{
+    common::{IPPacket, PortPacket},
+    constants::link_type_mapper,
+    specs::{
+        dns::RecordResource,
+        tcp::{ACK, TCP},
+        ProtocolData,
+    },
 };
 use chrono::{DateTime, Utc};
 use enum_dispatch::enum_dispatch;
 use log::error;
+use std::{
+    cell::{Cell, Ref, RefCell},
+    collections::HashMap,
+    ops::Deref,
+    rc::Rc,
+    time::{Duration, UNIX_EPOCH},
+};
 
 use anyhow::Result;
 // pub mod pcapng;
 use crate::common::{FileInfo, FileType, Reader};
+
+pub type Ref2<T> = Rc<RefCell<T>>;
 
 #[derive(Default, Clone)]
 pub struct Field {
@@ -21,7 +36,7 @@ pub struct Field {
     pub children: RefCell<Vec<Field>>,
 }
 impl Field {
-    pub fn new(start: usize, size: usize, data: Rc<Vec<u8>>,summary: String) -> Field {
+    pub fn new(start: usize, size: usize, data: Rc<Vec<u8>>, summary: String) -> Field {
         Field {
             start,
             size,
@@ -30,7 +45,7 @@ impl Field {
             children: RefCell::new(Vec::new()),
         }
     }
-    pub fn new2(summary: String, data: Rc<Vec<u8>>,vs: Vec<Field>) -> Field {
+    pub fn new2(summary: String, data: Rc<Vec<u8>>, vs: Vec<Field>) -> Field {
         Field {
             start: 0,
             size: 0,
@@ -54,7 +69,7 @@ impl Field {
     pub fn summary(&self) -> String {
         self.summary.clone()
     }
-    
+
     pub fn children(&self) -> Ref<Vec<Field>> {
         let ch: Ref<Vec<Field>> = self.children.borrow();
         ch
@@ -91,7 +106,7 @@ pub trait FieldBuilder<T> {
     fn data(&self) -> Rc<Vec<u8>>;
 }
 
-pub type MultiBlock<T> = Vec<Rc<RefCell<T>>>;
+pub type MultiBlock<T> = Vec<Ref2<T>>;
 
 impl<T> Initer for MultiBlock<T> {
     fn new() -> MultiBlock<T> {
@@ -103,15 +118,13 @@ impl<T> Initer for MultiBlock<T> {
     }
 }
 
-pub struct PacketContext<T>
-{
-    val: Rc<RefCell<T>>,
+pub struct PacketContext<T> {
+    val: Ref2<T>,
     fields: RefCell<Vec<Box<dyn FieldBuilder<T>>>>,
 }
 
-impl<T> PacketContext<T>
-{
-    pub fn _clone_obj(&self) -> Rc<RefCell<T>> {
+impl<T> PacketContext<T> {
+    pub fn _clone_obj(&self) -> Ref2<T> {
         self.val.clone()
     }
     pub fn get(&self) -> &RefCell<T> {
@@ -192,7 +205,7 @@ where
         }));
         val
     }
-    pub fn read_txt (&self, reader: &Reader, start: usize, size: usize, content: String){
+    pub fn read_txt(&self, reader: &Reader, start: usize, size: usize, content: String) {
         self.fields.borrow_mut().push(Box::new(TXTPosition {
             start,
             size,
@@ -205,7 +218,10 @@ where
         reader: &Reader,
         opt: impl Fn(&Reader) -> Result<K>,
         tmp: &str,
-    ) -> Result<K> where K:ToString {
+    ) -> Result<K>
+    where
+        K: ToString,
+    {
         let start = reader.cursor();
         let val: K = opt(reader)?;
         let end = reader.cursor();
@@ -225,7 +241,10 @@ where
         reader: &Reader,
         opt: impl Fn(&Reader) -> Result<K>,
         tmp: &str,
-    ) -> Result<K> where K:ToString {
+    ) -> Result<K>
+    where
+        K: ToString,
+    {
         let start = reader.cursor();
         let val: K = opt(reader)?;
         let end = reader.cursor();
@@ -244,7 +263,10 @@ where
         reader: &Reader,
         opt: impl Fn(&Reader) -> K,
         tmp: &str,
-    ) -> K where K:ToString {
+    ) -> K
+    where
+        K: ToString,
+    {
         let start = reader.cursor();
         let val: K = opt(reader);
         let end = reader.cursor();
@@ -263,7 +285,10 @@ where
         reader: &Reader,
         opt: impl Fn(&Reader) -> Result<K>,
         mapper: impl Fn(K) -> String,
-    ) -> Result<K> where K: Clone {
+    ) -> Result<K>
+    where
+        K: Clone,
+    {
         let start = reader.cursor();
         let val: K = opt(reader)?;
         let end = reader.cursor();
@@ -282,7 +307,7 @@ where
         reader: &Reader,
         opt: impl Fn(&Reader) -> Result<PacketContext<K>>,
         head: Option<String>,
-    ) -> Result<Rc<RefCell<K>>>
+    ) -> Result<Ref2<K>>
     where
         K: Initer + 'static,
         FieldPosition<K>: FieldBuilder<T>,
@@ -313,7 +338,7 @@ impl<T> FieldBuilder<T> for Position<T> {
     fn build(&self, t: &T) -> Field {
         (self.render)(self.start, self.size, t)
     }
-    
+
     fn data(&self) -> Rc<Vec<u8>> {
         self.data.clone()
     }
@@ -343,7 +368,7 @@ where
         field.children = RefCell::new(fields);
         field
     }
-    
+
     fn data(&self) -> Rc<Vec<u8>> {
         self.data.clone()
     }
@@ -360,7 +385,7 @@ impl<T> FieldBuilder<T> for StringPosition<T> {
         let summary = (self.render)(t);
         Field::new(self.start, self.size, self.data.clone(), summary)
     }
-    
+
     fn data(&self) -> Rc<Vec<u8>> {
         self.data.clone()
     }
@@ -374,7 +399,12 @@ pub struct TXTPosition {
 }
 impl<T> FieldBuilder<T> for TXTPosition {
     fn build(&self, _: &T) -> Field {
-        Field::new(self.start, self.size, self.data.clone(), self.content.clone())
+        Field::new(
+            self.start,
+            self.size,
+            self.data.clone(),
+            self.content.clone(),
+        )
     }
     fn data(&self) -> Rc<Vec<u8>> {
         self.data.clone()
@@ -389,24 +419,140 @@ pub trait DomainService {
     fn content(&self) -> String;
     fn ttl(&self) -> u32;
 }
-struct Endpoint {
-    host: String,
-    port: u16,
-    seq: u32,
-    ack: u32,
-}
-pub struct TCPConnection{
-    count: u16,
-    throughput: u32,
-    ep1: Rc<Endpoint>,
-    ep2: Rc<Endpoint>,        
+
+pub enum TCPDetail {
+    KEEPALIVE,
+    NOPREVCAPTURE,
+    RETRANSMISSION,
+    DUMP,
+    NONE,
 }
 
+#[derive(Default)]
+pub struct Endpoint {
+    pub host: String,
+    pub port: u16,
+    seq: u32,
+    ack: u32,
+    pub next: u32,
+    _seq: u32,
+    _ack: u32, 
+    _checksum: u16,
+}
+impl Endpoint {
+    fn new(host: String, port: u16) -> Self {
+        Self {
+            host,
+            port,
+            ..Default::default()
+        }
+    }
+    fn update(&mut self, tcp: &TCP) -> TCPDetail {
+        let sequence = tcp.sequence;
+        if self._checksum == tcp.crc {
+            return TCPDetail::RETRANSMISSION;
+        }
+        if self.seq == 0 {
+            self._seq = sequence;
+            self.seq = sequence;
+            self.next = sequence + tcp.payload_len as u32;
+            self._checksum = tcp.crc;
+            return TCPDetail::NONE;
+        }
+        if sequence > self.next {
+            self.seq = sequence;
+            self.next = sequence + tcp.payload_len as u32;
+            self._checksum = tcp.crc;
+            return TCPDetail::NOPREVCAPTURE;
+        } else if sequence == self.next {
+            self.seq = tcp.sequence;
+            self.next = tcp.sequence + tcp.payload_len as u32;
+            self._checksum = tcp.crc;
+        } else {
+            if sequence == self.next - 1 && tcp.payload_len == 1 && tcp.state.check(ACK) {
+                return TCPDetail::KEEPALIVE;
+            }
+            return TCPDetail::DUMP;
+        }
+        TCPDetail::NONE
+    }
+    pub fn stringfy(&self) -> String{
+        format!("{}:{}", self.host, self.port)
+    }
+    fn confirm(&mut self, tcp: &TCP) {
+        let acknowledge = tcp.acknowledge;
+        if self._ack == 0 {
+            self._ack = acknowledge;
+        }
+        
+        if self.ack > acknowledge {
+            return;
+            // TODO
+        }
+        if self.seq < acknowledge{
+          // TODO   
+        }
+        self.ack = acknowledge;
+    }
+}
+pub struct TCPConnection {
+    pub count: Cell<u16>,
+    pub throughput: Cell<u32>,
+    pub ep1: Ref2<Endpoint>,
+    pub ep2: Ref2<Endpoint>,
+}
+
+pub struct TCPInfo {
+    pub detail: TCPDetail,
+    pub _seq: u32,
+    pub _ack: u32,
+    pub next: u32,
+}
 impl TCPConnection {
-    fn new(src: String, dst: String, srp: u16, dsp: u16) -> Self{
-        let ep1 = Rc::new(Endpoint{host: src, port: srp, seq: 0, ack: 0 });
-        let ep2 = Rc::new(Endpoint{host: dst, port: dsp, seq: 0, ack: 0 });   
-        Self{count: 0, throughput: 0, ep1, ep2}
+    fn create_ep(src: String, port: u16) -> Ref2<Endpoint> {
+        Rc::new(RefCell::new(Endpoint::new(src, port)))
+    }
+    fn new(ip: &dyn IPPacket, packet: &TCP, arch: bool) -> Self {
+        let src = ip.source_ip_address();
+        let dst = ip.target_ip_address();
+        let srp = packet.source_port();
+        let dsp = packet.target_port();
+        let ep1 = TCPConnection::create_ep(src, srp);
+        let ep2 = TCPConnection::create_ep(dst, dsp);
+        if arch {
+            return Self {
+                count: Cell::new(0),
+                throughput: Cell::new(0),
+                ep1,
+                ep2,
+            };
+        }
+        Self {
+            count: Cell::new(0),
+            throughput: Cell::new(0),
+            ep2: ep1,
+            ep1: ep2,
+        }
+    }
+    fn update(&self, arch: bool, tcp: &TCP) -> TCPInfo{
+        let (main, rev) = match arch {
+            true => (self.ep1.clone(), self.ep2.clone()),
+            false => (self.ep2.clone(), self.ep1.clone()),
+        };
+        let _count = self.count.get();
+        self.count.set(_count + 1);
+        let mut _main = main.as_ref().borrow_mut();
+        let detail = _main.update(tcp);
+        let _seq = _main._seq;
+        let next = _main.next;
+        drop(_main);
+        let mut _rev = rev.as_ref().borrow_mut();
+        _rev.confirm(tcp);
+        let _ack = _rev._ack;
+        drop(_rev);
+        let _size = self.throughput.get();
+        self.throughput.set(_size + tcp.payload_len as u32);
+        TCPInfo{next, _ack, _seq, detail}
     }
 }
 
@@ -414,7 +560,7 @@ pub trait Initer {
     fn new() -> Self;
     fn summary(&self) -> String;
 }
-pub trait InfoPacket{
+pub trait InfoPacket {
     fn info(&self) -> String;
 }
 
@@ -436,7 +582,6 @@ pub struct Frame {
     data: Rc<Vec<u8>>,
     pub ctx: Rc<Context>,
     pub eles: RefCell<Vec<ProtocolData>>,
-
 }
 impl Frame {
     pub fn new(
@@ -479,28 +624,25 @@ impl Frame {
         let the_last = list.last();
         match the_last {
             Some(data) => data.info(),
-            None => "N/A".into()
+            None => "N/A".into(),
         }
     }
     pub fn get_ip(&self) -> Ref2<dyn IPPacket> {
         let sum = self.summary.borrow();
-        // sum.ip.unwrap().clone()
-        match &sum.ip{
-            Some(_ip) => {
-                _ip.clone()
-            },
+        match &sum.ip {
+            Some(_ip) => _ip.clone(),
             _ => {
                 panic!("nodata")
             }
         }
     }
-    pub fn update_host(&self, src: &str, dst: &str){
+    pub fn update_host(&self, src: &str, dst: &str) {
         let mut s = self.summary.borrow_mut();
         s.source = src.into();
         s.target = dst.into();
         drop(s);
     }
-    pub fn update_ip(&self, packet: Ref2<dyn IPPacket>){
+    pub fn update_ip(&self, packet: Ref2<dyn IPPacket>) {
         let _ip = packet.as_ref().borrow();
         self.update_host(&_ip.source_ip_address(), &_ip.target_ip_address());
         drop(_ip);
@@ -508,12 +650,10 @@ impl Frame {
         s.ip = Some(packet);
         drop(s);
     }
-    pub fn update_tcp(&self, packet: &TCP){
-        let s = self.summary.borrow();
-        let source = s.source.clone();
-        let target = s.target.clone();
-        // if source > target {}
-        
+    pub fn update_tcp(&self, packet: &TCP) -> TCPInfo{
+        let ippacket = self.get_ip();
+        let refer = ippacket.deref().borrow();
+        self.ctx.update_tcp(refer.deref(), packet)
     }
     pub fn get_fields(&self) -> Vec<Field> {
         let mut rs = Vec::new();
@@ -542,14 +682,14 @@ impl Frame {
             self.capture_size,
             self.capture_size * 8
         )));
-        rs.push(Field::new2(self.to_string(),Rc::new(Vec::new()), lists));
+        rs.push(Field::new2(self.to_string(), Rc::new(Vec::new()), lists));
         for e in self.eles.borrow().iter() {
             let vs = e.get_fields();
             rs.push(Field::new2(e.summary(), self.data.clone(), vs));
         }
         rs
     }
-    pub fn data(&self) -> Rc<Vec<u8>>{
+    pub fn data(&self) -> Rc<Vec<u8>> {
         self.data.clone()
     }
     pub fn get_reader(&self) -> Reader {
@@ -565,7 +705,7 @@ impl Frame {
             fields: RefCell::new(Vec::new()),
         }
     }
-    pub fn _create<K>(val: K) -> PacketContext<K>{
+    pub fn _create<K>(val: K) -> PacketContext<K> {
         PacketContext {
             val: Rc::new(RefCell::new(val)),
             fields: RefCell::new(Vec::new()),
@@ -578,51 +718,62 @@ impl Frame {
         match &ele {
             ProtocolData::IPV4(packet) => {
                 self.update_ip(packet._clone_obj());
-            },
+            }
             ProtocolData::IPV6(packet) => {
                 self.update_ip(packet._clone_obj());
-            },
-            // ProtocolData::TCP(packet) => {
-            //     self.update_tcp(packet.get().borrow());
-            // },
-            _ => {},
+            }
+            ProtocolData::ARP(packet) => {
+                self.update_ip(packet._clone_obj());
+            }
+            _ => {}
         }
         self.eles.borrow_mut().push(ele);
     }
 }
 
-
-pub type Ref2<T> = Rc<RefCell<T>>;
 pub struct Context {
     count: Cell<u32>,
     info: RefCell<FileInfo>,
     pub dns: RefCell<Vec<Ref2<RecordResource>>>,
-    conversation_map: RefCell<HashMap<String, TCPConnection>>
+    conversation_map: RefCell<HashMap<String, TCPConnection>>,
 }
 
 impl Context {
-    pub fn add_dns_record(&self, rr: Ref2<RecordResource>){
+    pub fn add_dns_record(&self, rr: Ref2<RecordResource>) {
         self.dns.borrow_mut().push(rr);
     }
-    pub fn get_info(&self)-> FileInfo{
+    pub fn get_info(&self) -> FileInfo {
         self.info.borrow().clone()
     }
     pub fn get_dns_count(&self) -> usize {
         self.dns.borrow().len()
     }
-    fn update_tcp(&self, src: String, dst: String, tcp: &TCP) {
-        let key = String::from("1.23.23");
+    pub fn conversations(&self) -> Ref<HashMap<String, TCPConnection>> {
+        let rs = self.conversation_map.borrow();
+        rs
+    }
+    pub fn tcp_key(ip: &dyn IPPacket, packet: &TCP) -> (String, bool) {
+        let source = format!("{}:{}", ip.source_ip_address(), packet.source_port());
+        let target = format!("{}:{}", ip.target_ip_address(), packet.target_port());
+        let arch = source > target;
+        if arch {
+            return (format!("{}-{}", source, target), arch);
+        }
+        (format!("{}-{}", target, source), arch)
+    }
+    fn update_tcp(&self, ip: &dyn IPPacket, packet: &TCP) -> TCPInfo {
+        let (key, arch) = Context::tcp_key(ip, packet);
         let mut _map = self.conversation_map.borrow_mut();
         let v = _map.get(&key);
         let conn = match v {
             Some(conn) => conn,
             None => {
-                let con = TCPConnection::new(src, dst, tcp.source_port(), tcp.target_port());
+                let con = TCPConnection::new(ip, packet, arch);
                 _map.insert(key.clone(), con);
                 _map.get(&key).unwrap()
-            },
+            }
         };
-        
+        conn.update(arch, packet)
     }
 }
 pub struct Instance {
@@ -638,7 +789,7 @@ impl Instance {
                 file_type: ftype,
                 ..Default::default()
             }),
-            conversation_map: RefCell::new(HashMap::new())
+            conversation_map: RefCell::new(HashMap::new()),
         };
         Instance {
             ctx: Rc::new(ctx),
@@ -663,12 +814,12 @@ impl Instance {
         match rs {
             Ok(_) => {
                 self.frames.borrow_mut().push(f);
-            },
+            }
             Err(e) => {
                 error!("parse_frame_failed index:[{}]", count);
                 error!("msg:[{}]", e.to_string());
                 panic!("parse_failed");
-            },
+            }
         }
         ctx.count.set(count + 1);
     }

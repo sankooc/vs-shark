@@ -7,7 +7,6 @@ use std::{fmt, str};
 use std::str::from_utf8;
 use anyhow::bail;
 use anyhow::Result;
-// use core::error::Error;
 
 
 #[derive(Error, Debug)]
@@ -19,10 +18,6 @@ pub enum DataError {
     // #[error("unknown data store error")]
     // Unknown,
 }
-// pub trait ContainProtocol {
-//     fn get_protocol(&self) -> Protocol;
-//     // fn info(&self) -> String;
-// }
 
 pub trait PortPacket {
     fn source_port(&self) -> u16;
@@ -509,24 +504,3 @@ pub enum FileType {
     #[default]
     NONE,
 }
-
-// #[derive(Default, Debug, Copy, Clone)]
-// pub enum Protocol {
-//     ETHERNET,
-//     PPPoESS,
-//     SSL,
-//     IPV4,
-//     IPV6,
-//     ARP,
-//     TCP,
-//     UDP,
-//     ICMP,
-//     ICMPv6,
-//     // IGMP,
-//     DNS,
-//     DHCP,
-//     // TLS,
-//     HTTP,
-//     #[default]
-//     UNKNOWN,
-// }

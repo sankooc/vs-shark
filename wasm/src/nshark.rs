@@ -173,6 +173,33 @@ impl FrameInfo {
 }
 
 #[wasm_bindgen]
+pub struct TCPConversation{
+    source: String,
+    dest: String,
+    count: u16,
+    throughput: u32,
+}
+#[wasm_bindgen]
+impl TCPConversation {
+    #[wasm_bindgen(getter)]
+    pub fn source(&self) -> String {
+        self.source.clone()
+    }
+    #[wasm_bindgen(getter)]
+    pub fn dest(&self) -> String {
+        self.dest.clone()
+    }
+    #[wasm_bindgen(getter)]
+    pub fn count(&self) -> u16 {
+        self.count
+    }
+    #[wasm_bindgen(getter)]
+    pub fn throughput(&self) -> u32 {
+        self.throughput
+    }
+}
+
+#[wasm_bindgen]
 impl WContext {
     #[wasm_bindgen(constructor)]
     pub fn new(s: &Uint8Array) -> WContext {
@@ -232,6 +259,26 @@ impl WContext {
     #[wasm_bindgen]
     pub fn get_dns_count(&self) -> usize {
         self.ctx.context().get_dns_count()
+    }
+    #[wasm_bindgen]
+    pub fn get_conversations_count(&self) -> usize{
+        let ct = self.ctx.context();
+        let cons = ct.conversations();
+        cons.len()
+    }
+    #[wasm_bindgen]
+    pub fn get_conversations(&self) -> Vec<TCPConversation>{
+        let ct = self.ctx.context();
+        let cons = ct.conversations();
+        let mut rs = Vec::new();
+        for con in cons.values().into_iter() {
+            let source = con.ep1.as_ref().borrow().stringfy();
+            let dest = con.ep2.as_ref().borrow().stringfy();
+            let count:u16 = con.count.get();
+            let throughput = con.throughput.get();
+            rs.push(TCPConversation{source, dest, count, throughput})
+        }
+        rs
     }
 }
 

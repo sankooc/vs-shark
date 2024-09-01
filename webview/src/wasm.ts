@@ -1,4 +1,4 @@
-import { DNSRecord, WContext, FrameInfo } from 'rshark';
+import { DNSRecord, WContext, FrameInfo, TCPConversation } from 'rshark';
 
 // import { MainProps, Frame } from './common';
 
@@ -16,12 +16,19 @@ import { DNSRecord, WContext, FrameInfo } from 'rshark';
 
 export class CProto {
   frames?: FrameInfo[];
+  conversations?: TCPConversation[];
   constructor(public ctx: WContext){}
   public getFrames(): FrameInfo[] {
     if(!this.frames){
       this.frames = this.ctx.get_frames();
     }
     return this.frames;
+  }
+  public getConversations() {
+    if(!this.conversations) {
+      this.conversations = this.ctx.get_conversations();
+    }
+    return this.conversations;
   }
 }
 

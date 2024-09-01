@@ -1,4 +1,4 @@
-use std::{fmt::Formatter, rc::Rc};
+use std::fmt::Formatter;
 
 use pcap_derive::Packet;
 use anyhow::Result;
