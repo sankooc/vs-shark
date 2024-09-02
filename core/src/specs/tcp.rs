@@ -1,5 +1,4 @@
-use std::{
-    borrow::Borrow, cell::RefCell, fmt::{Display, Formatter, Write}, ops::Deref, rc::Rc
+use std::{fmt::{Display, Formatter, Write}, ops::Deref, rc::Rc
 };
 
 use anyhow::Result;
@@ -87,10 +86,32 @@ struct TCPOption {
 struct TCPOptionKindBlock {
     data: Vec<u8>,
 }
+// 
+struct TCPTIMESTAMP {
+    sender: u32,
+    reply: u32,
+}
+struct TCPUserTimeout;
+impl TCPUserTimeout {
+    fn desc(data: u16) -> String{
+        let g = data >> 15;
+        let v = data & 0x7fff;
+        match g {
+            1 => format!("{} minus", v),
+            _ => format!("{} second", v)
+        }
+    }
+}
 #[derive(Default)]
 enum TCPOptionKind {
     #[default]
     NOP,
+    EOL,
+    MSS(u16),
+    SCALE(u8),
+    SACK,
+    TIMESTAMP(TCPTIMESTAMP),
+    USERTIMEOUT(u16),
     BLOCK(TCPOptionKindBlock),
 }
 impl Display for TCPOption {
@@ -153,7 +174,7 @@ impl crate::files::InfoPacket for TCP {
             self.sequence,
             self.acknowledge,
             self.window,
-            self.len
+            self.payload_len
         );
         match &self.info {
             Some(_info) => {
@@ -224,16 +245,57 @@ impl TCPVisitor {
         let mut option = packet.get().borrow_mut();
         option.kind = packet.read_with_string(reader, Reader::_read8, TCPOption::kind)?;
         match option.kind {
-            2 | 3 | 4 | 5 | 8 | 28 | 29 | 30 => {
+            5 | 29 | 30 => {
                 let len =
                     packet._read_with_format_string_rs(reader, Reader::_read8, "Length: {}")?;
                 option.len = len;
-                // let read = |reader: &Reader|  TCPOptionKind::BLOCK(TCPOptionKindBlock{data: reader.slice((len-2) as usize).to_vec()});
-                // option.data = packet._read_with_format_string_rs(reader,Reader::_read8, "Length: {}")?;
                 let raw = reader.slice((len - 2) as usize);
                 let block = TCPOptionKindBlock { data: raw.to_vec() };
                 option.data = TCPOptionKind::BLOCK(block);
-            }
+            },
+            0 => {
+                option.data = TCPOptionKind::EOL;
+            },
+            1 => {
+                option.data = TCPOptionKind::NOP;
+            },
+            2 => {
+                packet._read_with_format_string_rs(reader, Reader::_read8, "Length: {}")?;
+                let value  = packet._read_with_format_string_rs(reader, Reader::_read16_be, "MSS Value: {}")?;
+                option.data = TCPOptionKind::MSS(value);
+            },
+            3 => {
+                packet._read_with_format_string_rs(reader, Reader::_read8, "Length: {}")?;
+                let value  = packet._read_with_format_string_rs(reader, Reader::_read8, "Shift count: {}")?;
+                option.data = TCPOptionKind::SCALE(value);
+
+            },
+            4 => {
+                packet._read_with_format_string_rs(reader, Reader::_read8, "Length: {}")?;
+                option.data = TCPOptionKind::SACK;
+            },
+            8 => {
+                let len = packet._read_with_format_string_rs(reader, Reader::_read8, "Length: {}")?;
+                match len {
+                    10 => {
+                        let sender  = packet._read_with_format_string_rs(reader, Reader::_read32_be, "sender: {}")?;
+                        let reply  = packet._read_with_format_string_rs(reader, Reader::_read32_be, "reply: {}")?;
+                        option.data = TCPOptionKind::TIMESTAMP(TCPTIMESTAMP{sender, reply})
+                    },
+                    _ => {
+                        let raw = reader.slice((len - 2) as usize);
+                        let block = TCPOptionKindBlock { data: raw.to_vec() };
+                        option.data = TCPOptionKind::BLOCK(block);
+                    },
+                }
+            },
+            28 => {
+                //https://datatracker.ietf.org/doc/html/rfc5482
+                packet._read_with_format_string_rs(reader, Reader::_read8, "Length: {}")?;
+                let value  = packet._read_with_mapper(reader, Reader::_read16_be, TCPUserTimeout::desc)?;
+                option.data = TCPOptionKind::USERTIMEOUT(value);
+
+            },
             _ => {}
         }
         drop(option);
