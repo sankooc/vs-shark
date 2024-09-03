@@ -6,19 +6,15 @@ use crate::{
     constants::link_type_mapper,
     specs::{
         dns::RecordResource,
-        tcp::{ACK, TCP},
+        tcp::{TCPOption, TCPOptionKind, ACK, TCP},
         ProtocolData,
     },
 };
 use chrono::{DateTime, Utc};
 use enum_dispatch::enum_dispatch;
-use log::error;
+use log::{error, info};
 use std::{
-    cell::{Cell, Ref, RefCell},
-    collections::HashMap,
-    ops::Deref,
-    rc::Rc,
-    time::{Duration, UNIX_EPOCH},
+    borrow::Borrow, cell::{Cell, Ref, RefCell}, collections::HashMap, fmt::Display, ops::Deref, rc::Rc, time::{Duration, UNIX_EPOCH}
 };
 
 use anyhow::Result;
@@ -169,6 +165,7 @@ where
             content,
         }));
     }
+    
     pub fn _build_lazy(&self, reader: &Reader, start: usize, size: usize, render: fn(&T) -> String) {
         self.fields.borrow_mut().push(Box::new(StringPosition{
             start,
@@ -191,6 +188,15 @@ where
         let size = end - start;
         self._build_lazy(reader, start, size, render);
         Ok(val)
+    }
+    pub fn build_compact(&self, content: String, data: Rc<Vec<u8>>) {
+        let size = data.len();
+        self.fields.borrow_mut().push(Box::new(TXTPosition {
+            start: 0,
+            size,
+            data,
+            content,
+        }));
     }
     pub fn append_string(&self, content: String, data: Rc<Vec<u8>>) {
         self.fields.borrow_mut().push(Box::new(TXTPosition {
@@ -377,7 +383,20 @@ pub enum TCPDetail {
     NOPREVCAPTURE,
     RETRANSMISSION,
     DUMP,
+    SEGMENT,
+    SEGMENTS(Vec<Segment>),
     NONE,
+}
+
+pub struct Segment {
+    pub index: u32,
+    pub data: Rc<Vec<u8>>,
+}
+impl Display for Segment {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let len = self.data.len();
+        f.write_fmt(format_args!("[Frame: {}, payload: {} bytes]", self.index, len))
+    }
 }
 
 #[derive(Default)]
@@ -390,6 +409,8 @@ pub struct Endpoint {
     _seq: u32,
     _ack: u32, 
     _checksum: u16,
+    mss: u16,
+    segments: Option<Vec<Segment>>,
 }
 impl Endpoint {
     fn new(host: String, port: u16) -> Self {
@@ -399,10 +420,44 @@ impl Endpoint {
             ..Default::default()
         }
     }
-    fn update(&mut self, tcp: &TCP) -> TCPDetail {
+
+    fn add_segment(&mut self, tcp: &TCP, frame: &Frame, data: &[u8]){
+        let segment = Segment{index: frame.summary.borrow().index, data: Rc::new(data.to_vec())};
+        match &mut self.segments {
+            Some(seg) => {
+                seg.push(segment)
+            },
+            None => {
+                let mut list = Vec::new();
+                list.push(segment);
+                self.segments = Some(list);
+            }
+
+        }
+    }
+    fn clear_segment(&mut self){
+        self.segments = None;
+    }
+    fn update(&mut self, tcp: &TCP, frame: &Frame,data: &[u8]) -> TCPDetail {
         let sequence = tcp.sequence;
         if self._checksum == tcp.crc {
+            self.clear_segment();
             return TCPDetail::RETRANSMISSION;
+        }
+        
+        match tcp.options.borrow() {
+            Some(opt) => {
+                let _ref = opt.as_ref().borrow();
+                for _opt in _ref.iter() {
+                    match _opt.as_ref().borrow().data {
+                        TCPOptionKind::MSS(mss) => {
+                            self.mss = mss;
+                        },
+                        _ => {}
+                    }
+                }
+            },
+            _ => {}
         }
         if self.seq == 0 {
             self._seq = sequence;
@@ -415,18 +470,37 @@ impl Endpoint {
             self.seq = sequence;
             self.next = sequence + tcp.payload_len as u32;
             self._checksum = tcp.crc;
+            self.clear_segment();
             return TCPDetail::NOPREVCAPTURE;
         } else if sequence == self.next {
+            if tcp.payload_len == 0 {
+                self._checksum = tcp.crc;
+                return TCPDetail::KEEPALIVE;
+            }
             self.seq = tcp.sequence;
             self.next = tcp.sequence + tcp.payload_len as u32;
             self._checksum = tcp.crc;
+            let len = tcp.payload_len;
+            if self.mss> 0 && len == self.mss {
+                self.add_segment(tcp, frame, data);
+                return TCPDetail::SEGMENT;
+            } else {
+                return match self.segments.take() {
+                    Some(mut opt) => {
+                        opt.push(Segment{index: frame.summary.borrow().index, data: Rc::new(data.to_vec())});
+                        TCPDetail::SEGMENTS(opt)
+                    },
+                    None => TCPDetail::NONE,
+                }
+            }
         } else {
             if sequence == self.next - 1 && tcp.payload_len == 1 && tcp.state.check(ACK) {
+                self._checksum = tcp.crc;
                 return TCPDetail::KEEPALIVE;
             }
+            self.clear_segment();
             return TCPDetail::DUMP;
         }
-        TCPDetail::NONE
     }
     pub fn stringfy(&self) -> String{
         format!("{}:{}", self.host, self.port)
@@ -486,7 +560,7 @@ impl TCPConnection {
             ep1: ep2,
         }
     }
-    fn update(&self, arch: bool, tcp: &TCP) -> TCPInfo{
+    fn update(&self, arch: bool, tcp: &TCP,frame: &Frame, data: &[u8]) -> TCPInfo{
         let (main, rev) = match arch {
             true => (self.ep1.clone(), self.ep2.clone()),
             false => (self.ep2.clone(), self.ep1.clone()),
@@ -494,7 +568,7 @@ impl TCPConnection {
         let _count = self.count.get();
         self.count.set(_count + 1);
         let mut _main = main.as_ref().borrow_mut();
-        let detail = _main.update(tcp);
+        let detail = _main.update(tcp, frame, data);
         let _seq = _main._seq;
         let next = _main.next;
         drop(_main);
@@ -602,10 +676,10 @@ impl Frame {
         s.ip = Some(packet);
         drop(s);
     }
-    pub fn update_tcp(&self, packet: &TCP) -> TCPInfo{
+    pub fn update_tcp(&self, packet: &TCP, data: &[u8]) -> TCPInfo{
         let ippacket = self.get_ip();
         let refer = ippacket.deref().borrow();
-        self.ctx.update_tcp(refer.deref(), packet)
+        self.ctx.update_tcp(self, refer.deref(), packet, data)
     }
     pub fn get_fields(&self) -> Vec<Field> {
         let mut rs = Vec::new();
@@ -713,7 +787,7 @@ impl Context {
         }
         (format!("{}-{}", target, source), arch)
     }
-    fn update_tcp(&self, ip: &dyn IPPacket, packet: &TCP) -> TCPInfo {
+    fn update_tcp(&self, frame: &Frame, ip: &dyn IPPacket, packet: &TCP, data: &[u8]) -> TCPInfo {
         let (key, arch) = Context::tcp_key(ip, packet);
         let mut _map = self.conversation_map.borrow_mut();
         let v = _map.get(&key);
@@ -725,7 +799,7 @@ impl Context {
                 _map.get(&key).unwrap()
             }
         };
-        conn.update(arch, packet)
+        conn.update(arch, packet, frame, data)
     }
 }
 pub struct Instance {

@@ -8,12 +8,12 @@ use pcap_derive::Packet;
 use crate::{
     common::{Description, PortPacket, Reader},
     constants::tcp_option_kind_mapper,
-    files::{Frame, Initer, MultiBlock, PacketContext, Ref2, TCPDetail, TCPInfo},
+    files::{Frame, Initer, MultiBlock, PacketContext, Ref2, TCPDetail, TCPInfo, Visitor},
 };
 
 #[derive(Default)]
 pub struct TCPState {
-    head: u8,
+    pub head: u8,
     cwr: bool,
     ece: bool,
     urg: bool,
@@ -77,21 +77,21 @@ impl TCPState {
 //     dump: bool,
 // }
 #[derive(Default, Packet)]
-struct TCPOption {
+pub struct TCPOption {
     kind: u8,
     len: u8,
-    data: TCPOptionKind,
+    pub data: TCPOptionKind,
 }
 
-struct TCPOptionKindBlock {
+pub struct TCPOptionKindBlock {
     data: Vec<u8>,
 }
 // 
-struct TCPTIMESTAMP {
+pub struct TCPTIMESTAMP {
     sender: u32,
     reply: u32,
 }
-struct TCPUserTimeout;
+pub struct TCPUserTimeout;
 impl TCPUserTimeout {
     fn desc(data: u16) -> String{
         let g = data >> 15;
@@ -103,7 +103,7 @@ impl TCPUserTimeout {
     }
 }
 #[derive(Default)]
-enum TCPOptionKind {
+pub enum TCPOptionKind {
     #[default]
     NOP,
     EOL,
@@ -142,7 +142,7 @@ pub struct TCP {
     window: u16,
     pub crc: u16,
     urgent: u16,
-    options: Option<TCPOptions>,
+    pub options: Option<TCPOptions>,
     pub state: TCPState,
     info: Option<TCPInfo>,
 }
@@ -353,30 +353,43 @@ impl crate::files::Visitor for TCPVisitor {
             p.payload_len.into(),
             format!("TCP payload ({} bytes)", left_size),
         );
-        let info = frame.update_tcp(p.deref());
-        p.info = Some(info);
-        drop(p);
-        frame.add_element(super::ProtocolData::TCP(packet));
-
-        let is_http = super::http::HTTPVisitor::check(reader);
-        if is_http {
-            return super::http::HTTPVisitor.visit(frame, reader);
+        let _data = reader._slice(left_size as usize);
+        let info = frame.update_tcp(p.deref(), _data);
+        match &info.detail {
+            TCPDetail::NONE => {
+                p.info = Some(info);
+                drop(p);
+                handle(frame, reader, packet)
+            },
+            TCPDetail::SEGMENTS(segs) => {
+                let mut _raw:Vec<&[u8]> = Vec::new();
+                for seg in segs.iter() {
+                    let cp = seg.data.clone();
+                    packet.build_compact(seg.to_string(), cp);
+                    _raw.push(&seg.data);
+                }
+                let _reader = Reader::new_raw(Rc::new(_raw.concat()));
+                p.info = Some(info);
+                drop(p);
+                handle(frame, &_reader, packet)
+            }
+            _ => {
+                p.info = Some(info);
+                drop(p);
+                frame.add_element(super::ProtocolData::TCP(packet));
+                Ok(())
+            }
         }
-        Ok(())
-        // let method = reader._read_space(10);
-        // match method {
-        //     Some(_method) => {
-        //         return match _method.as_str() {
-        //             "GET" | "POST" | "PUT" | "DELETE" | "HEAD" | "CONNECT" | "OPTIONS" | "TRACE" | "PATCH" => {
-        //                 return super::http::HTTPVisitor.visit(frame, reader);
-        //             },
-        //             "HTTP/1.1" => super::http::HTTPVisitor.visit(frame, reader),
-        //             _ => Ok(())
-        //         }
-        //     },
-        //     _ => {
-        //         Ok(())
-        //     }
-        // }
     }
+}
+
+
+fn handle(frame: &Frame, reader: &Reader, packet: PacketContext<TCP>) -> Result<()> {
+    frame.add_element(super::ProtocolData::TCP(packet));
+
+    let is_http = super::http::HTTPVisitor::check(reader);
+    if is_http {
+        return super::http::HTTPVisitor.visit(frame, reader);
+    }
+    Ok(())
 }
