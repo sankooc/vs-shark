@@ -58,7 +58,6 @@ function convert(frames: FrameInfo[]) {
     it.addLable(pname, item);
     ps.add(pname);
   }
-  console.log('total', _total);
 
   const categories = ['total'];
   const map: any = {

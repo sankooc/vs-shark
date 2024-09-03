@@ -88,7 +88,7 @@ pub trait Element {
     fn summary(&self) -> String;
     fn get_fields(&self) -> Vec<Field>;
     // fn add_next(&mut self, ele: Box<dyn Element>);
-    // fn get_protocol(&self) -> Protocol;
+    fn status(&self) -> String;
     fn info(&self) -> String;
 }
 
@@ -151,6 +151,10 @@ where
     // }
     fn info(&self) -> String {
         self.get().borrow().info()
+    }
+    
+    fn status(&self) -> String {
+        self.get().borrow().status()
     }
 }
 impl<T> PacketContext<T>
@@ -473,14 +477,16 @@ impl Endpoint {
             self.clear_segment();
             return TCPDetail::NOPREVCAPTURE;
         } else if sequence == self.next {
-            if tcp.payload_len == 0 {
-                self._checksum = tcp.crc;
-                return TCPDetail::KEEPALIVE;
-            }
             self.seq = tcp.sequence;
-            self.next = tcp.sequence + tcp.payload_len as u32;
             self._checksum = tcp.crc;
             let len = tcp.payload_len;
+            if len == 0 {
+                if tcp.state.check(ACK) {
+                    return TCPDetail::KEEPALIVE;
+                }
+                return TCPDetail::NONE;
+            }
+            self.next = tcp.sequence + len as u32;
             if self.mss> 0 && len == self.mss {
                 self.add_segment(tcp, frame, data);
                 return TCPDetail::SEGMENT;
@@ -588,6 +594,7 @@ pub trait Initer {
 }
 pub trait InfoPacket {
     fn info(&self) -> String;
+    fn status(&self) -> String;
 }
 
 #[derive(Default, Clone)]

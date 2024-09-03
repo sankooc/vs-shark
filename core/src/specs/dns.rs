@@ -5,7 +5,7 @@ use std::rc::Rc;
 use log::info;
 // use log::info;
 //https://www.rfc-editor.org/rfc/rfc1035
-use pcap_derive::Packet;
+use pcap_derive::{Packet, NINFO};
 use anyhow::Result;
 
 use crate::common::{IPv4Address, Reader};
@@ -17,7 +17,7 @@ use super::ProtocolData;
 type Questions = Ref2<MultiBlock<Question>>;
 type Answers = Ref2<MultiBlock<RecordResource>>;
 type Authority = Ref2<MultiBlock<RecordResource>>;
-#[derive(Default, Packet)]
+#[derive(Default, Packet, NINFO)]
 pub struct DNS {
     
     transaction_id: u16,
@@ -40,11 +40,6 @@ impl Display for DNS {
             f.write_str("Domain Name System (query)")?;
         }
         Ok(())
-    }
-}
-impl crate::files::InfoPacket for DNS {
-    fn info(&self) -> String {
-        self.to_string()
     }
 }
 
@@ -113,13 +108,14 @@ pub enum ResourceType {
     EMPTY,
 }
 
-impl ToString for ResourceType {
-    fn to_string(&self) -> String {
+impl ResourceType {
+    fn content(&self) -> String {
         match self {
-            Self::EMPTY => {
-                return "".into();
-            }
-            _ => self.to_string()
+            ResourceType::EMPTY => "".into(),
+            ResourceType::A(addr) =>  addr.to_string(),
+            ResourceType::CNAME(str) =>  str.into(),
+            ResourceType::PTR(str) =>  str.into(),
+            ResourceType::SOA(str) =>  str.into(),
         }
     }
 }
@@ -184,7 +180,7 @@ impl DomainService for RecordResource {
     }
 
     fn content(&self) -> String {
-        self.data.to_string()
+        self.data.content()
     }
 
     fn ttl(&self) -> u32 {

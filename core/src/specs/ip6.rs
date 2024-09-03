@@ -1,6 +1,6 @@
 use std::fmt::Formatter;
 
-use pcap_derive::Packet;
+use pcap_derive::{Packet, NINFO};
 use anyhow::Result;
 
 use crate::{
@@ -17,7 +17,7 @@ pub fn excute(ipprototype: u8, frame: &Frame, reader: &Reader) -> Result<()> {
 }
 
 
-#[derive(Default, Packet)]
+#[derive(Default, Packet, NINFO)]
 pub struct IPv6 {
     
     source_ip: Option<IPv6Address>,
@@ -62,11 +62,6 @@ impl std::fmt::Display for IPv6 {
         );
         fmt.write_str(mn.as_str())?;
         Ok(())
-    }
-}
-impl crate::files::InfoPacket for IPv6 {
-    fn info(&self) -> String {
-        self.to_string()
     }
 }
 pub struct IP6Visitor;

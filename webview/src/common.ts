@@ -240,7 +240,6 @@ export class IDNSRecord implements ColumnItem {
     getStyle(inx: number): string {
         return '';
     }
-
 }
 export class DNSProps {
     constructor(public ctx: WContext, public dnsRecords: IDNSRecord[]) { }

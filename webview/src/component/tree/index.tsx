@@ -2,19 +2,21 @@
 import React, { useState, useEffect } from 'react';
 import { Tree, TreeEventNodeEvent, TreeNodeClickEvent } from 'primereact/tree';
 import { TreeNode } from 'primereact/treenode';
-import { emitMessage, onMessage } from '../../connect';
-import { CTreeItem, ComMessage } from '../../common';
 import './app.css';
 import { Field } from 'rshark';
 const className = 'vector';
 class StackProps {
     items: Field[];
+    frame: number;
     // data: Uint8Array;
     onSelect: (field) => void;
 }
 export default function Stack(props:StackProps) {
-    const [store, setStore] = useState({ items: [], key: '', data: null });
+    const [store, setStore] = useState<any>({ items: [], key: '', data: null });
     let counter = 0;
+    useEffect(() => {
+        setStore({key: ''})
+    }, [props.frame]);
     const mapper = (it: Field): TreeNode => {
         const key = 'item' + (counter += 1);
         const rs = {

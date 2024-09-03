@@ -1,6 +1,6 @@
 use std::fmt::Formatter;
 
-use pcap_derive::Packet;
+use pcap_derive::{Packet, NINFO};
 use anyhow::Result;
 
 use crate::{
@@ -18,7 +18,7 @@ pub fn excute(ipprototype: u8, frame: &Frame, reader: &Reader) -> Result<()> {
 }
 
 
-#[derive(Default, Packet)]
+#[derive(Default, Packet, NINFO)]
 pub struct IPv4 {
     
     source_ip: Option<IPv4Address>,
@@ -30,12 +30,6 @@ pub struct IPv4 {
     ttl: u8,
     t_protocol: u8,
     crc: u16,
-}
-
-impl crate::files::InfoPacket for IPv4 {
-    fn info(&self) -> String {
-        self.to_string()
-    }
 }
 
 impl IPPacket for IPv4 {

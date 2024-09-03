@@ -32,7 +32,11 @@ export class FrameItem implements ColumnItem {
     this.protocol = info.protocol;
     this.len = info.len;
     this.iRtt = info.irtt;
-    this.style = info.protocol;
+    if(info.status == 'info'){
+      this.style = info.protocol?.toLowerCase();
+    } else {
+      this.style = info.status;
+    }
     this.info = info.info;
   }
   public getIndex(): number {
@@ -49,10 +53,10 @@ export class FrameItem implements ColumnItem {
 function FrameList(props: MainProto) {
   const [filters, setFilter] = useState(null);
   const [stacks, setStack] = useState<Field[]>([]);
+  const [index, setIndex] = useState(0);
   const [hex, setHex] = useState<HexV>(null);
   const frames = props.instance.getFrames().map((item) => new FrameItem(item));
   const getData = (): ColumnItem[] => {
-    // return frames.map((item) => new FrameItem(item));
     if(!filters || !filters.length) return frames;
     const maps = {};
     for(const f of filters){
@@ -64,8 +68,8 @@ function FrameList(props: MainProto) {
   const columes = [
     { field: 'no', header: 'index', style: { width: '4%' } },
     { field: 'time', header: 'time', style: { width: '8%' } },
-    { field: 'source', header: 'source', style: { width: '20%' }},
-    { field: 'dest', header: 'dest', style: { width: '20%' }},
+    { field: 'source', header: 'source', style: { width: '15%' }},
+    { field: 'dest', header: 'dest', style: { width: '15%' }},
     { field: 'protocol', header: 'protocol', style: { width: '5%' } },
     { field: 'len', header: 'len', style: { width: '5%' } },
     { field: 'info', header: 'info', style: { width: '20vw' }  }
@@ -83,6 +87,8 @@ function FrameList(props: MainProto) {
   const onSelect = (item: ColumnItem): void => {
     // props.instance.ctx.get_fields(item.no - 1);
     setStack(props.instance.ctx.get_fields(item.no - 1));
+    setIndex(item.no);
+    setHex(null);
   };
   const onStackSelect = (f) => {
     const { data, start, size } = f;
@@ -102,7 +108,7 @@ function FrameList(props: MainProto) {
       <SplitterPanel className="flex align-items-center justify-content-center" size={30} minSize={20}>
         <Splitter className="w-full">
           <SplitterPanel className="flex align-items-center" size={50} minSize={50} style={{ height: '28vh', overflow: 'auto' }}>
-            <Stack items={stacks} onSelect={onStackSelect}/>
+            <Stack frame={index} items={stacks} onSelect={onStackSelect}/>
           </SplitterPanel>
           <SplitterPanel className="flex align-items-center" size={50} minSize={50} style={{ height: '28vh', overflow: 'auto' }}>
             <HexView data={hex}/>

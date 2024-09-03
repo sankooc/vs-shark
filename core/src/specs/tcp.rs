@@ -2,7 +2,6 @@ use std::{fmt::{Display, Formatter, Write}, ops::Deref, rc::Rc
 };
 
 use anyhow::Result;
-use log::info;
 use pcap_derive::Packet;
 
 use crate::{
@@ -195,6 +194,28 @@ impl crate::files::InfoPacket for TCP {
         }
         info
     }
+    
+    fn status(&self) -> String {
+        let mut rs = "info";
+        match &self.info {
+            Some(_info) => {
+                match &_info.detail {
+                    TCPDetail::DUMP => {
+                        rs = "deactive";        
+                    },
+                    TCPDetail::NOPREVCAPTURE => {
+                        rs = "deactive";        
+                    },
+                    TCPDetail::RETRANSMISSION => {
+                        rs = "deactive";        
+                    },
+                    _ => {}
+                }
+            },
+            None => {}
+        }
+        rs.into()
+    }
 }
 impl TCP {
     fn set_head(&mut self, head: u16) {
@@ -220,7 +241,7 @@ impl TCP {
         match &self.info {
             Some(info) => {
                 let _ack = info._ack;
-                if _ack <= self.sequence {
+                if _ack <= self.acknowledge {
                     return format!("Acknowlagde Number : {} (raw: {})", self.acknowledge-_ack, self.acknowledge)
                 }
                 format!("Acknowlagde Number (raw): {}", self.acknowledge)

@@ -1,5 +1,4 @@
-import React, { ReactElement, SyntheticEvent, useEffect, useState } from "react";
-import { Button } from 'primereact/button';
+import React, { ReactElement, useState } from "react";
 import { DataTable, DataTableSelectionSingleChangeEvent } from 'primereact/datatable';
 import { Column, ColumnProps } from 'primereact/column';
 import { ColumnItem } from "../common";

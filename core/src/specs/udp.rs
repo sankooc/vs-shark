@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use pcap_derive::Packet;
+use pcap_derive::{Packet, NINFO};
 use anyhow::Result;
 
 use crate::common::{Description, PlayloadPacket, PortPacket};
@@ -22,9 +22,8 @@ fn execute(source: u16, target: u16, frame: &Frame, reader: &Reader)  -> Result<
     Ok(())
 }
 
-#[derive(Default, Packet)]
+#[derive(Default, Packet, NINFO)]
 pub struct UDP {
-    
     source_port: u16,
     target_port: u16,
     len: u16,
@@ -57,11 +56,6 @@ impl Display for UDP {
             .as_str(),
         )?;
         Ok(())
-    }
-}
-impl crate::files::InfoPacket for UDP {
-    fn info(&self) -> String {
-        self.to_string()
     }
 }
 pub struct UDPVisitor;

@@ -10,7 +10,7 @@ import Overview from './overview';
 import FrameList from './frames';
 import TCPList from './tcp';
 // import ARPReplies from './arp';
-// import DNSList from './dns';
+import DNSList from './dns';
 import { CProto } from "../wasm";
 import { ComLog, Panel, MainProps, HexV } from "../common";
 import init, { load, WContext,FrameInfo } from 'rshark';
@@ -45,7 +45,6 @@ const Main = () => {
 
   const convert = (props: CProto): MenuItem[] => {
     const mitems: MenuItem[] = [];
-    // if (!props) return [];
     const addPanel = (id: string, label: string, extra: string, icon: string = ''): void => {
       mitems.push({
         id, data: extra, template: itemRenderer, label, icon, className: select === id ? 'active' : '', command: (env) => {
@@ -55,11 +54,12 @@ const Main = () => {
     };
     const frameCount = props.getFrames().length;
     const tcpCount = props.ctx.get_conversations_count();
+    const dnsCount = props.ctx.get_dns_count();
     addPanel('overview', 'Overview', '', 'pi pi-chart-bar');
     addPanel('frame', 'Frame', frameCount + '', 'pi pi-list');
     if (tcpCount) addPanel('tcp', 'TCP', tcpCount + '', 'pi pi-server');
     // if (props.arpGraph?.nodes?.length) addPanel('arp', 'ARP', props.arpGraph?.nodes?.length + '', 'pi pi-chart-pie');
-    // if (props.dnsRecords?.length) addPanel('dns', 'DNS', props.dnsRecords?.length + '', 'pi pi-address-book');
+    if (dnsCount) addPanel('dns', 'DNS', dnsCount + '', 'pi pi-address-book');
     return mitems;
   };
   const buildPage = (): ReactElement => {
@@ -69,15 +69,8 @@ const Main = () => {
         return <FrameList instance={data}/>;
       case 'tcp':
         return <TCPList instance={data}/>
-
-      // case 'arp':
-      //   return <ARPReplies graph={data.arpGraph} legends={['sender', 'target']} />
-      // case 'dns':
-      //   return <DNSList items={data.dnsRecords.map((record: DNSRecord, inx: number) => {
-      //     const r = new IDNSRecord(record);
-      //     r.no = inx + 1;
-      //     return r;
-      //   })} />
+      case 'dns':
+        return <DNSList instance={data}/>
     }
     // const items: FrameInfo[] = data.ctx.get_frames();
     // return <FrameList items={items} ctx={data.ctx} />;
@@ -89,7 +82,7 @@ const Main = () => {
 
   const navItems = convert(data);
   return (<>
-    <div className="card h-full">
+    <div className="card h-full monaco-workbench">
       <div className="flex flex-row h-full">
         <div className="w-2 flex flex-column flex-grow-0 flex-shrink-0">
           <Menu model={navItems} className="w-full h-full" />

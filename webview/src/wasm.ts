@@ -17,6 +17,7 @@ import { DNSRecord, WContext, FrameInfo, TCPConversation } from 'rshark';
 export class CProto {
   frames?: FrameInfo[];
   conversations?: TCPConversation[];
+  dnsRecords?: DNSRecord[];
   constructor(public ctx: WContext){}
   public getFrames(): FrameInfo[] {
     if(!this.frames){
@@ -24,11 +25,17 @@ export class CProto {
     }
     return this.frames;
   }
-  public getConversations() {
+  public getConversations(): TCPConversation[]{
     if(!this.conversations) {
       this.conversations = this.ctx.get_conversations();
     }
     return this.conversations;
+  }
+  public getDNSRecord(): DNSRecord[]{
+    if(!this.dnsRecords) {
+      this.dnsRecords = this.ctx.get_dns_record();
+    }
+    return this.dnsRecords;
   }
 }
 

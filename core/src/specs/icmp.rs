@@ -1,13 +1,13 @@
 use std::fmt::Formatter;
 
 use anyhow::Result;
-use pcap_derive::Packet;
+use pcap_derive::{Packet, NINFO};
 
 use crate::{
     common::Reader, constants::icmpv6_type_mapper, files::{Frame, Initer, PacketContext}
 };
 //https://datatracker.ietf.org/doc/html/rfc792
-#[derive(Default, Packet)]
+#[derive(Default, Packet, NINFO)]
 pub struct ICMP {
     _type: u8,
     code: u8,
@@ -17,11 +17,6 @@ pub struct ICMP {
 impl std::fmt::Display for ICMP {
     fn fmt(&self, _fmt: &mut Formatter) -> std::fmt::Result {
         _fmt.write_str("Internet Control Message Protocol")
-    }
-}
-impl crate::files::InfoPacket for ICMP {
-    fn info(&self) -> String {
-        self.to_string()
     }
 }
 impl ICMP {
@@ -109,7 +104,7 @@ impl crate::files::Visitor for ICMPVisitor {
 }
 
 
-#[derive(Default, Packet)]
+#[derive(Default, Packet, NINFO)]
 pub struct ICMP6 {
     
     _type: u8,
@@ -119,11 +114,6 @@ pub struct ICMP6 {
 impl std::fmt::Display for ICMP6 {
     fn fmt(&self, _fmt: &mut Formatter) -> std::fmt::Result {
         _fmt.write_str("Internet Control Message Protocol v6")
-    }
-}
-impl crate::files::InfoPacket for ICMP6 {
-    fn info(&self) -> String {
-        self.to_string()
     }
 }
 impl ICMP6 {

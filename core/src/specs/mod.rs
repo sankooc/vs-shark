@@ -42,7 +42,7 @@ type IGMP = PacketContext<igmp::IGMP>;
 #[derive(Display)]
 // #[strum(serialize_all = "snake_case")]
 pub enum ProtocolData {
-  ETHERNET,
+    ETHERNET,
     PPPoESS,
     SSL,
     IPV4,

@@ -37,6 +37,10 @@ impl crate::files::InfoPacket for HTTP {
     fn info(&self) -> String {
         self.head.clone()
     }
+    
+    fn status(&self) -> String {
+        "info".into()
+    }
 }
 impl std::fmt::Display for HTTP {
     fn fmt(&self, fmt: &mut Formatter) -> std::fmt::Result {

@@ -1,4 +1,4 @@
-use pcap_derive::Packet;
+use pcap_derive::{Packet, NINFO};
 
 use crate::common::{Description, MacAddress, MacPacket, PtypePacket, DEF_EMPTY_MAC};
 use crate::constants::{etype_mapper, link_type_mapper, ssl_type_mapper};
@@ -12,18 +12,12 @@ use anyhow::{Ok, Result};
 
 use super::ProtocolData;
 
-#[derive(Default, Packet)]
+#[derive(Default, Packet, NINFO)]
 pub struct Ethernet {
     source_mac: Option<MacAddress>,
     target_mac: Option<MacAddress>,
     len: u16,
     ptype: u16,
-}
-
-impl InfoPacket for Ethernet {
-    fn info(&self) -> String {
-        self.to_string()
-    }
 }
 
 impl Display for Ethernet {
@@ -84,7 +78,7 @@ impl Visitor for EthernetVisitor {
         excute(ptype, frame, reader)
     }
 }
-#[derive(Default, Packet)]
+#[derive(Default, Packet, NINFO)]
 pub struct PPPoESS {
     version: u8,
     _type: u8,
@@ -96,12 +90,6 @@ pub struct PPPoESS {
 impl Display for PPPoESS {
     fn fmt(&self, _f: &mut std::fmt::Formatter) -> std::fmt::Result {
         _f.write_str("PPP-over-Ethernet Session")
-    }
-}
-
-impl InfoPacket for PPPoESS {
-    fn info(&self) -> String {
-        self.to_string()
     }
 }
 
@@ -149,7 +137,7 @@ impl Visitor for PPPoESSVisitor {
         Ok(())
     }
 }
-#[derive(Default, Packet)]
+#[derive(Default, Packet,NINFO)]
 pub struct SSL {
     _type: u16,
     ltype: u16,
@@ -160,11 +148,6 @@ pub struct SSL {
 impl Display for SSL {
     fn fmt(&self, _f: &mut std::fmt::Formatter) -> std::fmt::Result {
         _f.write_str("Linux cooked capture v1")
-    }
-}
-impl InfoPacket for SSL {
-    fn info(&self) -> String {
-        self.to_string()
     }
 }
 impl SSL {

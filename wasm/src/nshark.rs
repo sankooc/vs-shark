@@ -3,7 +3,7 @@ use std::cell::{Ref, RefCell};
 use std::ops::Deref;
 
 use core::common::FileInfo;
-use core::files::{DomainService, Instance};
+use core::files::{DomainService, Element, Instance};
 use core::{entry::*, files};
 use js_sys::Uint8Array;
 use wasm_bindgen::prelude::*;
@@ -150,6 +150,7 @@ pub struct FrameInfo {
     pub len: u32,
     pub irtt: u16,
     info: String,
+    status: String,
 }
 
 #[wasm_bindgen]
@@ -169,6 +170,10 @@ impl FrameInfo {
     #[wasm_bindgen(getter)]
     pub fn info(&self) -> String {
         self.info.clone()
+    }
+    #[wasm_bindgen(getter)]
+    pub fn status(&self) -> String {
+        self.status.clone()
     }
 }
 
@@ -235,6 +240,13 @@ impl WContext {
             }
             item.protocol = sum.protocol.clone();
             item.info = frame.info();
+            item.status = "info".into();
+            match frame.eles.borrow().last() {
+                Some(ele) => {
+                    item.status = ele.status();
+                },
+                _ => {}
+            }
             item.irtt = 1;
             rs.push(item);
         }

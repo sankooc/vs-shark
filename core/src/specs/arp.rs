@@ -52,6 +52,10 @@ impl crate::files::InfoPacket for ARP {
             format!("{} at {}", self.target_ip_address(), self.source_ip_address())
         }
     }
+    
+    fn status(&self) -> String {
+        "info".into()
+    }
 }
 impl ARP {
     fn protocol_type_desc(&self) -> String {

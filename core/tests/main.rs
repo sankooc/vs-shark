@@ -1,12 +1,34 @@
 #[cfg(test)]
 mod tests {
-    use std::time::{SystemTime, UNIX_EPOCH};
+    use std::{cell::Ref, ops::Deref, time::{SystemTime, UNIX_EPOCH}};
 
     use log::info;
     use core::{
         common::IPv4Address,
-        files::Field,
+        files::{DomainService, Field}, specs::dns::RecordResource,
     };
+
+    // pub struct DNSRecord {
+    //     name: String,
+    //     _type: String,
+    //     proto: String,
+    //     class: String,
+    //     content: String,
+    //     pub ttl: u32,
+    // }
+    
+    // impl DNSRecord {
+    //     pub fn create(data: &RecordResource) -> DNSRecord {
+    //         DNSRecord {
+    //             name: data.name(),
+    //             _type: data._type(),
+    //             proto: data.proto(),
+    //             class: data.class(),
+    //             content: data.content(),
+    //             ttl: data.ttl(),
+    //         }
+    //     }
+    // }
 
     fn _dis(inx: usize, field: &Field) {
         //assert_eq!("hello       ", format!("{:width$}", "hello", width=12));
@@ -33,7 +55,13 @@ mod tests {
         let _ctx = load_data(&data).unwrap();
         let end = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis();
         let _frames = _ctx.get_frames();
-
+        // let mut rs = Vec::new();
+        // for d in _ctx.context().dns.borrow().iter() {
+        //     let _ref = d.as_ref().borrow();
+        //     // let aa = d.as_ref().borrow().deref();
+        //     info!("hei");
+        //     rs.push(DNSRecord::create(_ref.deref()));
+        // }
 
         // for f in frames.iter() {
         //     match f.summary.borrow().protocol {

@@ -23,6 +23,10 @@ impl crate::files::InfoPacket for IGMP {
     fn info(&self) -> String {
         self._type()
     }
+    
+    fn status(&self) -> String {
+        "info".into()
+    }
 }
 impl IGMP {
     fn _type(&self) -> String {

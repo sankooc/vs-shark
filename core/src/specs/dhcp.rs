@@ -38,6 +38,10 @@ impl crate::files::InfoPacket for DHCP {
     fn info(&self) -> String {
         format!("{} - Transaction ID {:#010x}", self._type(), self.transaction_id)
     }
+    
+    fn status(&self) -> String {
+        "info".into()
+    }
 }
 impl DHCP {
     fn _type(&self) -> String {
