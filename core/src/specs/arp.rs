@@ -77,15 +77,15 @@ impl crate::files::Visitor for ARPVisitor {
     fn visit(&self, frame: &Frame, reader: &Reader) -> Result<()> {
         let packet: PacketContext<ARP> = Frame::create_packet();
         let mut p = packet.get().borrow_mut();
-        p.hardware_type = packet.read_with_string(reader, Reader::_read16_be, ARP::hardware_type_desc)?;
-        p.protocol_type = packet.read_with_string(reader, Reader::_read16_be, ARP::protocol_type_desc)?;
-        p.hardware_size = packet._read_with_format_string_rs(reader, Reader::_read8, "Hardware size: {}")?;
-        p.protocol_size = packet._read_with_format_string_rs(reader, Reader::_read8, "Protocol size: {}")?;
-        p.operation = packet.read_with_string(reader, Reader::_read16_be, ARP::operation_type_desc)?;
-        p.sender_mac = packet._read_with_format_string_rs(reader, Reader::_read_mac, "Sender MAC address: ({})").ok();
-        p.sender_ip = packet._read_with_format_string_rs(reader, Reader::_read_ipv4, "Sender IP address: {}").ok();
-        p.target_mac = packet._read_with_format_string_rs(reader, Reader::_read_mac, "Target MAC address: ({})").ok();
-        p.target_ip = packet._read_with_format_string_rs(reader, Reader::_read_ipv4, "Target IP address: {}").ok();
+        p.hardware_type = packet.build_lazy(reader, Reader::_read16_be, ARP::hardware_type_desc)?;
+        p.protocol_type = packet.build_lazy(reader, Reader::_read16_be, ARP::protocol_type_desc)?;
+        p.hardware_size = packet.build_format(reader, Reader::_read8, "Hardware size: {}")?;
+        p.protocol_size = packet.build_format(reader, Reader::_read8, "Protocol size: {}")?;
+        p.operation = packet.build_lazy(reader, Reader::_read16_be, ARP::operation_type_desc)?;
+        p.sender_mac = packet.build_format(reader, Reader::_read_mac, "Sender MAC address: ({})").ok();
+        p.sender_ip = packet.build_format(reader, Reader::_read_ipv4, "Sender IP address: {}").ok();
+        p.target_mac = packet.build_format(reader, Reader::_read_mac, "Target MAC address: ({})").ok();
+        p.target_ip = packet.build_format(reader, Reader::_read_ipv4, "Target IP address: {}").ok();
         drop(p);
         frame.add_element(ProtocolData::ARP(packet));
         Ok(())

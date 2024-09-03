@@ -99,34 +99,34 @@ impl crate::files::Visitor for DHCPVisitor {
     fn visit(&self, frame: &Frame, reader: &Reader) -> Result<()> {
         let packet: PacketContext<DHCP> = Frame::create_packet();
         let mut p = packet.get().borrow_mut();
-        p.op = packet.read_with_string(reader, Reader::_read8, DHCP::op)?;
+        p.op = packet.build_lazy(reader, Reader::_read8, DHCP::op)?;
         p.hardware_type =
-            packet.read_with_string(reader, Reader::_read8, DHCP::hardware_type_desc)?;
+            packet.build_lazy(reader, Reader::_read8, DHCP::hardware_type_desc)?;
 
-        p.hardware_len = packet._read_with_format_string_rs(
+        p.hardware_len = packet.build_format(
             reader,
             Reader::_read8,
             "Hardware Address Len: {}",
         )?;
-        p.hops = packet._read_with_format_string_rs(reader, Reader::_read8, "Protocol size: {}")?;
-        p.transaction_id = packet._read_with_format_string_rs(reader, Reader::_read32_be, "")?;
-        p.sec = packet._read_with_format_string_rs(reader, Reader::_read16_be, "")?;
+        p.hops = packet.build_format(reader, Reader::_read8, "Protocol size: {}")?;
+        p.transaction_id = packet.build_format(reader, Reader::_read32_be, "")?;
+        p.sec = packet.build_format(reader, Reader::_read16_be, "")?;
         p.flag = reader.read16(false)?;
-        // p.fla = packet._read_with_format_string_rs(reader, Reader::_read16_be, "")?;
+        // p.fla = packet.build_format(reader, Reader::_read16_be, "")?;
         p.client_address = packet
-            ._read_with_format_string_rs(reader, Reader::_read_ipv4, "Client Address: {}")
+            .build_format(reader, Reader::_read_ipv4, "Client Address: {}")
             .ok();
         p.your_address = packet
-            ._read_with_format_string_rs(reader, Reader::_read_ipv4, "Client Address: {}")
+            .build_format(reader, Reader::_read_ipv4, "Client Address: {}")
             .ok();
         p.next_server_address = packet
-            ._read_with_format_string_rs(reader, Reader::_read_ipv4, "Client Address: {}")
+            .build_format(reader, Reader::_read_ipv4, "Client Address: {}")
             .ok();
         p.relay_address = packet
-            ._read_with_format_string_rs(reader, Reader::_read_ipv4, "Client Address: {}")
+            .build_format(reader, Reader::_read_ipv4, "Client Address: {}")
             .ok();
         p.mac_address = packet
-            ._read_with_format_string_rs(reader, Reader::_read_mac, "Client Address: {}")
+            .build_format(reader, Reader::_read_mac, "Client Address: {}")
             .ok();
         reader._move(10); //padding
         reader._move(64); //sname
@@ -147,13 +147,13 @@ impl crate::files::Visitor for DHCPVisitor {
                     m_option.extension = DHCPExtention::END
                 },
                 53 => {
-                    let len = option_packet._read_with_format_string_rs(reader, Reader::_read8, "Length: {}")?;
+                    let len = option_packet.build_format(reader, Reader::_read8, "Length: {}")?;
                     m_option.len = len;
-                    p._type = option_packet._read_with_mapper(reader, Reader::_read8,DHCP::dhcp_message_type_desc)?;
+                    p._type = option_packet.build_fn(reader, Reader::_read8,DHCP::dhcp_message_type_desc)?;
                     m_option.extension = DHCPExtention::MESSAGETYPE(p._type);
                 },
                 _ => {
-                    let len = option_packet._read_with_format_string_rs(reader, Reader::_read8, "Length: {}")?;
+                    let len = option_packet.build_format(reader, Reader::_read8, "Length: {}")?;
                     m_option.len = len;
                     m_option.extension = DHCPExtention::DEFAULT(reader.slice(len as usize).to_vec())
                 },
@@ -165,7 +165,7 @@ impl crate::files::Visitor for DHCPVisitor {
                 break;
             }
         }
-        // p.target_ip = packet._read_with_format_string_rs(reader, Reader::_read_ipv4, "Target IP address: {}").ok();
+        // p.target_ip = packet.build_format(reader, Reader::_read_ipv4, "Target IP address: {}").ok();
         drop(p);
         frame.add_element(ProtocolData::DHCP(packet));
         Ok(())

@@ -35,9 +35,9 @@ impl crate::files::Visitor for IGMPVisitor {
     fn visit(&self, frame: &Frame, reader: &Reader) -> Result<()> {
         let packet: PacketContext<IGMP> = Frame::create_packet();
         let mut p = packet.get().borrow_mut();
-        p._type = packet.read_with_string(reader, Reader::_read8, IGMP::_type)?;
-        p.resp = packet._read_with_format_string_rs(reader, Reader::_read8, "Max Resp Time: {} sec)")?;
-        p.checksum = packet._read_with_format_string_rs(reader, Reader::_read16_be, "Checksum: {}")?;
+        p._type = packet.build_lazy(reader, Reader::_read8, IGMP::_type)?;
+        p.resp = packet.build_format(reader, Reader::_read8, "Max Resp Time: {} sec)")?;
+        p.checksum = packet.build_format(reader, Reader::_read16_be, "Checksum: {}")?;
         //TODO ADD
         drop(p);
         frame.add_element(super::ProtocolData::IGMP(packet));

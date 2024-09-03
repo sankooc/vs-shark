@@ -69,12 +69,12 @@ pub struct UDPVisitor;
 impl Visitor for UDPVisitor {
     fn visit(&self, frame: &Frame, reader: &Reader) -> Result<()> {
         let packet: PacketContext<UDP> = Frame::create_packet();
-        let source = packet.read_with_string(reader, Reader::_read16_be, Description::source_port)?;
-        let target = packet.read_with_string(reader, Reader::_read16_be, Description::target_port)?;
-        let len = packet.read_with_string(reader, Reader::_read16_be, Description::packet_length)?;
+        let source = packet.build_lazy(reader, Reader::_read16_be, Description::source_port)?;
+        let target = packet.build_lazy(reader, Reader::_read16_be, Description::target_port)?;
+        let len = packet.build_lazy(reader, Reader::_read16_be, Description::packet_length)?;
         let crc = reader.read16(false)?;
         let playload_size = len - 8;
-        packet.read_txt(
+        packet._build(
             reader,
             reader.cursor(),
             playload_size as usize,

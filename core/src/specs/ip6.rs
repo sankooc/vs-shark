@@ -76,11 +76,11 @@ impl crate::files::Visitor for IP6Visitor {
         let packet: PacketContext<IPv6> = Frame::create_packet();
         let mut p = packet.get().borrow_mut();
         let _ = reader.read32(true);
-        let plen = packet._read_with_format_string_rs(reader, Reader::_read16_be, "Payload Length: {}")?;
-        let ipproto = packet.read_with_string(reader, Reader::_read8, Description::t_protocol)?;
-        let hop_limit = packet._read_with_format_string_rs(reader, Reader::_read8, "Hop Limit: {}")?;
-        let source = packet.read_with_string(reader, Reader::_read_ipv6, Description::source_ip);
-        let target = packet.read_with_string(reader, Reader::_read_ipv6, Description::target_ip);
+        let plen = packet.build_format(reader, Reader::_read16_be, "Payload Length: {}")?;
+        let ipproto = packet.build_lazy(reader, Reader::_read8, Description::t_protocol)?;
+        let hop_limit = packet.build_format(reader, Reader::_read8, "Hop Limit: {}")?;
+        let source = packet.build_lazy(reader, Reader::_read_ipv6, Description::source_ip);
+        let target = packet.build_lazy(reader, Reader::_read_ipv6, Description::target_ip);
         p.t_protocol = ipproto;
         p.source_ip = source.ok();
         p.target_ip = target.ok();

@@ -202,9 +202,9 @@ impl DNSVisitor {
     fn read_question(reader: &Reader) -> Result<PacketContext<Question>> {
         let packet: PacketContext<Question> = Frame::create_packet();
         let mut p = packet.get().borrow_mut();
-        p.name = packet.read_with_string(reader, Reader::_read_dns_query, Question::name)?;
-        p._type = packet.read_with_string(reader, Reader::_read16_be, Question::_type)?;
-        p.class = packet.read_with_string(reader, Reader::_read16_be, Question::class)?;
+        p.name = packet.build_lazy(reader, Reader::_read_dns_query, Question::name)?;
+        p._type = packet.build_lazy(reader, Reader::_read16_be, Question::_type)?;
+        p.class = packet.build_lazy(reader, Reader::_read16_be, Question::class)?;
         drop(p);
         Ok(packet)
     }
@@ -212,7 +212,7 @@ impl DNSVisitor {
         let packet: PacketContext<MultiBlock<Question>> = Frame::create_packet();
         let mut p = packet.get().borrow_mut();
         for _ in 0..count {
-            let item = packet.read_with_field(reader, DNSVisitor::read_question, None)?;
+            let item = packet.build_packet(reader, DNSVisitor::read_question, None)?;
             p.push(item);
         }
         drop(p);
@@ -223,22 +223,22 @@ impl DNSVisitor {
         let mut p: std::cell::RefMut<RecordResource> = packet.get().borrow_mut();
         let name_ref = reader.read16(true)?;
         let _read = |reader: &Reader| reader.read_dns_compress_string(archor, "", name_ref);
-        p.name = packet.read_with_string(reader, _read, RecordResource::name)?;
-        p._type = packet.read_with_string(reader, Reader::_read16_be, RecordResource::_type)?;
-        p.class = packet.read_with_string(reader, Reader::_read16_be, RecordResource::class)?;
-        p.ttl = packet.read_with_string(reader, Reader::_read32_be, RecordResource::ttl)?;
-        p.len = packet.read_with_string(reader, Reader::_read16_be, RecordResource::len)?;
+        p.name = packet.build_lazy(reader, _read, RecordResource::name)?;
+        p._type = packet.build_lazy(reader, Reader::_read16_be, RecordResource::_type)?;
+        p.class = packet.build_lazy(reader, Reader::_read16_be, RecordResource::class)?;
+        p.ttl = packet.build_lazy(reader, Reader::_read32_be, RecordResource::ttl)?;
+        p.len = packet.build_lazy(reader, Reader::_read16_be, RecordResource::len)?;
         match p._type {
             1 => {
                 if p.len == 4 {
-                    p.data = ResourceType::A(packet._read_with_format_string_rs(reader, Reader::_read_ipv4, "Address: {}")?);
+                    p.data = ResourceType::A(packet.build_format(reader, Reader::_read_ipv4, "Address: {}")?);
                 } else {
                     reader.slice(p.len as usize);
                 }
             },
             5 => {
                 let _read = |reader: &Reader| reader._read_compress(archor); 
-                p.data = ResourceType::CNAME(packet._read_with_format_string_rs(reader, _read, "CNAME: {}")?);
+                p.data = ResourceType::CNAME(packet.build_format(reader, _read, "CNAME: {}")?);
             }
             _ => {reader.slice(p.len as usize);},
         };
@@ -257,7 +257,7 @@ impl DNSVisitor {
         let _resource = |reader: &Reader| DNSVisitor::read_rr(reader, archor);
 
         for _ in 0..count {
-            let item: Ref2<RecordResource> = packet.read_with_field(reader, _resource, None)?;
+            let item: Ref2<RecordResource> = packet.build_packet(reader, _resource, None)?;
             let ctx = frame.ctx.clone();
             ctx.add_dns_record(item.clone());
             p.push(item);
@@ -277,22 +277,22 @@ impl Visitor for DNSVisitor {
         //     println!("--")
         // }
         p.transaction_id =
-            packet.read_with_string(reader, Reader::_read16_be, DNS::transaction_id)?;
-        let flag = packet.read_with_string(reader, Reader::_read16_be, DNS::flag)?;
-        let questions = packet.read_with_string(reader, Reader::_read16_be, DNS::questions)?;
-        let answer_rr = packet.read_with_string(reader, Reader::_read16_be, DNS::answer_rr)?;
-        let authority_rr = packet.read_with_string(reader, Reader::_read16_be, DNS::authority_rr)?;
-        let additional_rr = packet.read_with_string(reader, Reader::_read16_be, DNS::additional_rr)?;
+            packet.build_lazy(reader, Reader::_read16_be, DNS::transaction_id)?;
+        let flag = packet.build_lazy(reader, Reader::_read16_be, DNS::flag)?;
+        let questions = packet.build_lazy(reader, Reader::_read16_be, DNS::questions)?;
+        let answer_rr = packet.build_lazy(reader, Reader::_read16_be, DNS::answer_rr)?;
+        let authority_rr = packet.build_lazy(reader, Reader::_read16_be, DNS::authority_rr)?;
+        let additional_rr = packet.build_lazy(reader, Reader::_read16_be, DNS::additional_rr)?;
         p.is_response = (flag >> 15) > 0;
         p.opcode = (flag >> 11) & 0xf;
         if questions > 0 {
             let read_question = |reader: &Reader| DNSVisitor::read_questions(reader, questions);
-            let qs = packet.read_with_field(reader, read_question, Some("Questions".into()))?;
+            let qs = packet.build_packet(reader, read_question, Some("Questions".into()))?;
             p.questions_ref = Some(qs);
         }
         if answer_rr > 0 {
             let _read = |reader: &Reader| DNSVisitor::read_rrs(frame,reader, answer_rr, _cur);
-            let qs: Ref2<Vec<Ref2<RecordResource>>> = packet.read_with_field(reader, _read, Some("Answers".into()))?;
+            let qs: Ref2<Vec<Ref2<RecordResource>>> = packet.build_packet(reader, _read, Some("Answers".into()))?;
             for r in qs.as_ref().borrow().iter() {
                 frame.ctx.add_dns_record(r.clone());
             }
@@ -300,11 +300,11 @@ impl Visitor for DNSVisitor {
         }
         if authority_rr > 0 {
             let _read = |reader: &Reader| DNSVisitor::read_rrs(frame,reader, authority_rr, _cur);
-            p.authorities_ref = packet.read_with_field(reader, _read, Some("Authorities".into())).ok();
+            p.authorities_ref = packet.build_packet(reader, _read, Some("Authorities".into())).ok();
         }
         // if additional_rr > 0 {
         //     let _read = |reader: &Reader| DNSVisitor::read_rrs(frame,reader, additional_rr, _cur);
-        //     p.authorities_ref = Some(packet.read_with_field(reader, _read, Some("Additionals".into())));
+        //     p.authorities_ref = Some(packet.build_packet(reader, _read, Some("Additionals".into())));
         // }
 
         // p.transaction_id = transaction_id;

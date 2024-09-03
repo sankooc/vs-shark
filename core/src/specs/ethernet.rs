@@ -70,9 +70,9 @@ impl Visitor for EthernetVisitor {
         let packet: PacketContext<Ethernet> = Frame::create_packet();
 
         let mut p = packet.get().borrow_mut();
-        p.source_mac = packet.read_with_string(reader, Reader::_read_mac, Description::source_mac).ok();
-        p.target_mac = packet.read_with_string(reader, Reader::_read_mac, Description::target_mac).ok();
-        let ptype = packet.read_with_string(reader, Reader::_read16_be, Description::ptype)?;
+        p.source_mac = packet.build_lazy(reader, Reader::_read_mac, Description::source_mac).ok();
+        p.target_mac = packet.build_lazy(reader, Reader::_read_mac, Description::target_mac).ok();
+        let ptype = packet.build_lazy(reader, Reader::_read16_be, Description::ptype)?;
         if reader.left()? == ptype as usize {
             p.len = ptype;
             // info!("{}", ptype); // IEEE 802.3
@@ -131,10 +131,10 @@ impl Visitor for PPPoESSVisitor {
         let head = reader.read8()?;
         p.version = head >> 4;
         p._type = head & 0x0f;
-        p.code = packet.read_with_string(reader, Reader::_read8, PPPoESS::code)?;
-        p.session_id = packet.read_with_string(reader, Reader::_read16_be, PPPoESS::session_id)?;
-        p.payload = packet.read_with_string(reader, Reader::_read16_be, PPPoESS::payload)?;
-        p.ptype = packet.read_with_string(reader, Reader::_read16_be, PPPoESS::ptype)?;
+        p.code = packet.build_lazy(reader, Reader::_read8, PPPoESS::code)?;
+        p.session_id = packet.build_lazy(reader, Reader::_read16_be, PPPoESS::session_id)?;
+        p.payload = packet.build_lazy(reader, Reader::_read16_be, PPPoESS::payload)?;
+        p.ptype = packet.build_lazy(reader, Reader::_read16_be, PPPoESS::ptype)?;
         let code = p.code;
         let ptype = p.ptype;
         drop(p);
@@ -194,12 +194,12 @@ impl Visitor for SSLVisitor {
     fn visit(&self, frame: &Frame, reader: &Reader) -> Result<()>{
         let packet:PacketContext<SSL> = Frame::create_packet();
         let mut p = packet.get().borrow_mut();
-        p._type = packet.read_with_string(reader, Reader::_read16_be, SSL::_type)?;
-        p.ltype = packet.read_with_string(reader, Reader::_read16_be, SSL::ltype)?;
-        p.len = packet.read_with_string(reader, Reader::_read16_be, SSL::len_str)?;
-        p.source = packet.read_with_string(reader, Reader::_read_mac, SSL::source_str).ok();
+        p._type = packet.build_lazy(reader, Reader::_read16_be, SSL::_type)?;
+        p.ltype = packet.build_lazy(reader, Reader::_read16_be, SSL::ltype)?;
+        p.len = packet.build_lazy(reader, Reader::_read16_be, SSL::len_str)?;
+        p.source = packet.build_lazy(reader, Reader::_read_mac, SSL::source_str).ok();
         reader._move(2);
-        p.ptype = packet.read_with_string(reader, Reader::_read16_be, SSL::ptype_str)?;
+        p.ptype = packet.build_lazy(reader, Reader::_read16_be, SSL::ptype_str)?;
         let ptype = p.ptype;
         drop(p);
         frame.add_element(ProtocolData::SSL(packet));

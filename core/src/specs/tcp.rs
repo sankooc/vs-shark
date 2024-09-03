@@ -243,11 +243,11 @@ impl TCPVisitor {
     fn read_option(reader: &Reader) -> Result<PacketContext<TCPOption>> {
         let packet: PacketContext<TCPOption> = Frame::create_packet();
         let mut option = packet.get().borrow_mut();
-        option.kind = packet.read_with_string(reader, Reader::_read8, TCPOption::kind)?;
+        option.kind = packet.build_lazy(reader, Reader::_read8, TCPOption::kind)?;
         match option.kind {
             5 | 29 | 30 => {
                 let len =
-                    packet._read_with_format_string_rs(reader, Reader::_read8, "Length: {}")?;
+                    packet.build_format(reader, Reader::_read8, "Length: {}")?;
                 option.len = len;
                 let raw = reader.slice((len - 2) as usize);
                 let block = TCPOptionKindBlock { data: raw.to_vec() };
@@ -260,26 +260,26 @@ impl TCPVisitor {
                 option.data = TCPOptionKind::NOP;
             },
             2 => {
-                packet._read_with_format_string_rs(reader, Reader::_read8, "Length: {}")?;
-                let value  = packet._read_with_format_string_rs(reader, Reader::_read16_be, "MSS Value: {}")?;
+                packet.build_format(reader, Reader::_read8, "Length: {}")?;
+                let value  = packet.build_format(reader, Reader::_read16_be, "MSS Value: {}")?;
                 option.data = TCPOptionKind::MSS(value);
             },
             3 => {
-                packet._read_with_format_string_rs(reader, Reader::_read8, "Length: {}")?;
-                let value  = packet._read_with_format_string_rs(reader, Reader::_read8, "Shift count: {}")?;
+                packet.build_format(reader, Reader::_read8, "Length: {}")?;
+                let value  = packet.build_format(reader, Reader::_read8, "Shift count: {}")?;
                 option.data = TCPOptionKind::SCALE(value);
 
             },
             4 => {
-                packet._read_with_format_string_rs(reader, Reader::_read8, "Length: {}")?;
+                packet.build_format(reader, Reader::_read8, "Length: {}")?;
                 option.data = TCPOptionKind::SACK;
             },
             8 => {
-                let len = packet._read_with_format_string_rs(reader, Reader::_read8, "Length: {}")?;
+                let len = packet.build_format(reader, Reader::_read8, "Length: {}")?;
                 match len {
                     10 => {
-                        let sender  = packet._read_with_format_string_rs(reader, Reader::_read32_be, "sender: {}")?;
-                        let reply  = packet._read_with_format_string_rs(reader, Reader::_read32_be, "reply: {}")?;
+                        let sender  = packet.build_format(reader, Reader::_read32_be, "sender: {}")?;
+                        let reply  = packet.build_format(reader, Reader::_read32_be, "reply: {}")?;
                         option.data = TCPOptionKind::TIMESTAMP(TCPTIMESTAMP{sender, reply})
                     },
                     _ => {
@@ -291,8 +291,8 @@ impl TCPVisitor {
             },
             28 => {
                 //https://datatracker.ietf.org/doc/html/rfc5482
-                packet._read_with_format_string_rs(reader, Reader::_read8, "Length: {}")?;
-                let value  = packet._read_with_mapper(reader, Reader::_read16_be, TCPUserTimeout::desc)?;
+                packet.build_format(reader, Reader::_read8, "Length: {}")?;
+                let value  = packet.build_fn(reader, Reader::_read16_be, TCPUserTimeout::desc)?;
                 option.data = TCPOptionKind::USERTIMEOUT(value);
 
             },
@@ -307,7 +307,7 @@ impl TCPVisitor {
         let start = reader.cursor();
         let end = start + (len -5) * 4;
         while reader.cursor() < end {
-            let item = packet.read_with_field(reader, TCPVisitor::read_option, None)?;
+            let item = packet.build_packet(reader, TCPVisitor::read_option, None)?;
             p.push(item);
         }
         drop(p);
@@ -324,22 +324,22 @@ impl crate::files::Visitor for TCPVisitor {
         let packet: PacketContext<TCP> = Frame::create_packet();
         let mut p = packet.get().borrow_mut();
         p.source_port =
-            packet.read_with_string(reader, Reader::_read16_be, Description::source_port)?;
+            packet.build_lazy(reader, Reader::_read16_be, Description::source_port)?;
         p.target_port =
-            packet.read_with_string(reader, Reader::_read16_be, Description::target_port)?;
-        p.sequence = packet.read_with_string(reader, Reader::_read32_be, TCP::sequence_desc)?;
+            packet.build_lazy(reader, Reader::_read16_be, Description::target_port)?;
+        p.sequence = packet.build_lazy(reader, Reader::_read32_be, TCP::sequence_desc)?;
         p.acknowledge =
-            packet.read_with_string(reader, Reader::_read32_be, TCP::acknowledge_desc)?;
-        let head = packet.read_with_string(reader, Reader::_read16_be, TCP::len_desc)?;
-        p.window = packet._read_with_format_string_rs(reader, Reader::_read16_be, "Window: {}")?;
-        p.crc = packet._read_with_format_string_rs(reader, Reader::_read16_be, "Checksum: {}")?;
+            packet.build_lazy(reader, Reader::_read32_be, TCP::acknowledge_desc)?;
+        let head = packet.build_lazy(reader, Reader::_read16_be, TCP::len_desc)?;
+        p.window = packet.build_format(reader, Reader::_read16_be, "Window: {}")?;
+        p.crc = packet.build_format(reader, Reader::_read16_be, "Checksum: {}")?;
         p.urgent =
-            packet._read_with_format_string_rs(reader, Reader::_read16_be, "Urgent Pointer: {}")?;
+            packet.build_format(reader, Reader::_read16_be, "Urgent Pointer: {}")?;
         p.set_head(head);
         let len = p.len;
         if len > 5 {
             let read = |reader: &Reader| TCPVisitor::read_options(reader, len as usize);
-            let options = packet.read_with_field(reader, read, Some("Options".into()))?;
+            let options = packet.build_packet(reader, read, Some("Options".into()))?;
             p.options = Some(options);
         }
         let left_size = reader.left().unwrap_or(0) as u16;
@@ -347,7 +347,7 @@ impl crate::files::Visitor for TCPVisitor {
         if _start > total {
             p.payload_len = total + left_size - _start;
         }
-        packet.read_txt(
+        packet._build(
             reader,
             reader.cursor(),
             p.payload_len.into(),

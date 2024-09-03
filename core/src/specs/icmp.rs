@@ -98,10 +98,10 @@ impl crate::files::Visitor for ICMPVisitor {
     fn visit(&self, frame: &Frame, reader: &Reader) -> Result<()> {
         let packet: PacketContext<ICMP> = Frame::create_packet();
         let mut p = packet.get().borrow_mut();
-        p._type = packet.read_with_string(reader, Reader::_read8, ICMP::type_desc)?;
-        p.code = packet._read_with_format_string_rs(reader, Reader::_read8, "Code {}")?;
+        p._type = packet.build_lazy(reader, Reader::_read8, ICMP::type_desc)?;
+        p.code = packet.build_format(reader, Reader::_read8, "Code {}")?;
         p.checksum = reader.read16(false)?;
-        packet.read_txt(reader, reader.cursor() - 2, 2, format!("Checksum: {:#06x}",p.checksum));
+        packet._build(reader, reader.cursor() - 2, 2, format!("Checksum: {:#06x}",p.checksum));
         drop(p);
         frame.add_element(super::ProtocolData::ICMP(packet));
         Ok(())
@@ -146,9 +146,9 @@ impl crate::files::Visitor for ICMPv6Visitor {
     fn visit(&self, frame: &Frame, reader: &Reader) -> Result<()> {
         let packet: PacketContext<ICMP6> = Frame::create_packet();
         let mut p = packet.get().borrow_mut();
-        p._type = packet.read_with_string(reader, Reader::_read8, ICMP6::type_desc)?;
-        p.code = packet._read_with_format_string_rs(reader, Reader::_read8, "Code {}")?;
-        p.checksum = packet.read_with_string(reader, Reader::_read16_be, ICMP6::checksum)?;
+        p._type = packet.build_lazy(reader, Reader::_read8, ICMP6::type_desc)?;
+        p.code = packet.build_format(reader, Reader::_read8, "Code {}")?;
+        p.checksum = packet.build_lazy(reader, Reader::_read16_be, ICMP6::checksum)?;
         drop(p);
         frame.add_element(super::ProtocolData::ICMPv6(packet));
         Ok(())

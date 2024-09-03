@@ -66,7 +66,7 @@ impl crate::files::Visitor for HTTPVisitor {
     fn visit(&self, frame: &Frame, reader: &Reader) -> Result<()> {
         let packet: PacketContext<HTTP> = Frame::create_packet();
         let mut p = packet.get().borrow_mut();
-        let v = packet._read_with_format_string_rs(reader, Reader::_read_enter, "{}")?;
+        let v = packet.build_format(reader, Reader::_read_enter, "{}")?;
         p.head = v.clone();
         let spl: Vec<_> = v.split(" ").collect();
         if spl.len() == 3 {
@@ -95,11 +95,11 @@ impl crate::files::Visitor for HTTPVisitor {
             if reader.enter_flag(0) {
                 break;
             }
-            let header = packet._read_with_format_string_rs(reader, Reader::_read_enter, "{}")?;
+            let header = packet.build_format(reader, Reader::_read_enter, "{}")?;
             p.header.push(header);
         }
         let dlen = reader.left()?;
-        packet.read_txt(reader, reader.cursor(), dlen, format!("File Data: {} bytes",dlen));
+        packet._build(reader, reader.cursor(), dlen, format!("File Data: {} bytes",dlen));
         drop(p);
         frame.add_element(super::ProtocolData::HTTP(packet));
         Ok(())

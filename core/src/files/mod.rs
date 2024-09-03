@@ -161,7 +161,25 @@ impl<T> PacketContext<T>
 where
     T: Initer + 'static,
 {
-    pub fn read_with_string<K>(
+    pub fn _build(&self, reader: &Reader, start: usize, size: usize, content: String){
+        self.fields.borrow_mut().push(Box::new(TXTPosition {
+            start,
+            size,
+            data: reader.get_raw(),
+            content,
+        }));
+    }
+    pub fn _build_lazy(&self, reader: &Reader, start: usize, size: usize, render: fn(&T) -> String) {
+        self.fields.borrow_mut().push(Box::new(StringPosition{
+            start,
+            size,
+            data: reader.get_raw(),
+            render,
+        }));
+    }
+
+
+    pub fn build_lazy<K>(
         &self,
         reader: &Reader,
         opt: impl Fn(&Reader) -> Result<K>,
@@ -171,12 +189,7 @@ where
         let val: K = opt(reader)?;
         let end = reader.cursor();
         let size = end - start;
-        self.fields.borrow_mut().push(Box::new(StringPosition {
-            start,
-            size,
-            data: reader.get_raw(),
-            render,
-        }));
+        self._build_lazy(reader, start, size, render);
         Ok(val)
     }
     pub fn append_string(&self, content: String, data: Rc<Vec<u8>>) {
@@ -187,7 +200,7 @@ where
             content,
         }));
     }
-    pub fn _read_with_concrete_string<K>(
+    pub fn build<K>(
         &self,
         reader: &Reader,
         opt: impl Fn(&Reader) -> K,
@@ -197,23 +210,11 @@ where
         let val: K = opt(reader);
         let end = reader.cursor();
         let size = end - start;
-        self.fields.borrow_mut().push(Box::new(TXTPosition {
-            start,
-            size,
-            data: reader.get_raw(),
-            content,
-        }));
+        self._build(reader, start, size, content);
         val
     }
-    pub fn read_txt(&self, reader: &Reader, start: usize, size: usize, content: String) {
-        self.fields.borrow_mut().push(Box::new(TXTPosition {
-            start,
-            size,
-            data: reader.get_raw(),
-            content,
-        }));
-    }
-    pub fn _readoption_with_format_string<K>(
+    
+    pub fn build_format<K>(
         &self,
         reader: &Reader,
         opt: impl Fn(&Reader) -> Result<K>,
@@ -227,60 +228,11 @@ where
         let end = reader.cursor();
         let size = end - start;
         let content = tmp.replace("{}", val.to_string().as_str());
-        self.read_txt(reader, start, size, content);
-        // self.fields.borrow_mut().push(Box::new(TXTPosition {
-        //     start,
-        //     size,
-        //     data: reader.get_raw(),
-        //     content,
-        // }));
+        self._build(reader, start, size, content);
         Ok(val)
     }
-    pub fn _read_with_format_string_rs<K>(
-        &self,
-        reader: &Reader,
-        opt: impl Fn(&Reader) -> Result<K>,
-        tmp: &str,
-    ) -> Result<K>
-    where
-        K: ToString,
-    {
-        let start = reader.cursor();
-        let val: K = opt(reader)?;
-        let end = reader.cursor();
-        let size = end - start;
-        let content = tmp.replace("{}", val.to_string().as_str());
-        self.fields.borrow_mut().push(Box::new(TXTPosition {
-            start,
-            size,
-            data: reader.get_raw(),
-            content,
-        }));
-        Ok(val)
-    }
-    pub fn _read_with_format_string<K>(
-        &self,
-        reader: &Reader,
-        opt: impl Fn(&Reader) -> K,
-        tmp: &str,
-    ) -> K
-    where
-        K: ToString,
-    {
-        let start = reader.cursor();
-        let val: K = opt(reader);
-        let end = reader.cursor();
-        let size = end - start;
-        let content = tmp.replace("{}", val.to_string().as_str());
-        self.fields.borrow_mut().push(Box::new(TXTPosition {
-            start,
-            size,
-            data: reader.get_raw(),
-            content,
-        }));
-        val
-    }
-    pub fn _read_with_mapper<K>(
+
+    pub fn build_fn<K>(
         &self,
         reader: &Reader,
         opt: impl Fn(&Reader) -> Result<K>,
@@ -302,7 +254,7 @@ where
         }));
         Ok(val)
     }
-    pub fn read_with_field<K>(
+    pub fn build_packet<K>(
         &self,
         reader: &Reader,
         opt: impl Fn(&Reader) -> Result<PacketContext<K>>,
