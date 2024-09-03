@@ -1,2 +1,2 @@
 *.js linguist-vendored
-webview/src/_var.scss
+webview/src/_var.scss linguist-vendored
