@@ -1,9 +1,5 @@
-use std::cell::RefCell;
-use std::fmt::Display;
-use std::rc::Rc;
 
-use log::info;
-// use log::info;
+use std::fmt::Display;
 //https://www.rfc-editor.org/rfc/rfc1035
 use pcap_derive::{Packet, NINFO};
 use anyhow::Result;

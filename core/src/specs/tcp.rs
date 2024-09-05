@@ -1,4 +1,7 @@
-use std::{fmt::{Display, Formatter, Write}, ops::Deref, rc::Rc
+use std::{
+    fmt::{Display, Formatter, Write},
+    ops::Deref,
+    rc::Rc,
 };
 
 use anyhow::Result;
@@ -7,7 +10,9 @@ use pcap_derive::Packet;
 use crate::{
     common::{Description, PortPacket, Reader},
     constants::tcp_option_kind_mapper,
-    files::{Frame, Initer, MultiBlock, PacketContext, Ref2, TCPDetail, TCPInfo, Visitor},
+    files::{
+        Frame, Initer, MultiBlock, PacketContext, Ref2, TCPDetail, TCPInfo, Visitor, TCPPAYLOAD,
+    },
 };
 
 #[derive(Default)]
@@ -68,7 +73,7 @@ impl TCPState {
         str.write_str("]").unwrap();
         str
     }
-    pub fn check(&self,mask: u8) -> bool {
+    pub fn check(&self, mask: u8) -> bool {
         (self.head & mask) == mask
     }
 }
@@ -85,19 +90,19 @@ pub struct TCPOption {
 pub struct TCPOptionKindBlock {
     data: Vec<u8>,
 }
-// 
+//
 pub struct TCPTIMESTAMP {
     sender: u32,
     reply: u32,
 }
 pub struct TCPUserTimeout;
 impl TCPUserTimeout {
-    fn desc(data: u16) -> String{
+    fn desc(data: u16) -> String {
         let g = data >> 15;
         let v = data & 0x7fff;
         match g {
             1 => format!("{} minus", v),
-            _ => format!("{} second", v)
+            _ => format!("{} second", v),
         }
     }
 }
@@ -136,7 +141,7 @@ pub struct TCP {
     pub source_port: u16,
     pub target_port: u16,
     head: u16,
-    len: u16,
+    pub len: u16,
     pub payload_len: u16,
     window: u16,
     pub crc: u16,
@@ -176,41 +181,31 @@ impl crate::files::InfoPacket for TCP {
             self.payload_len
         );
         match &self.info {
-            Some(_info) => {
-                match _info.detail {
-                    TCPDetail::KEEPALIVE => {
-                        info = format!("[{}] {}", "Keeplive", info)
-                    },
-                    TCPDetail::NOPREVCAPTURE => {
-                        info = format!("[{}] {}", "no_previous_segment", info)
-                    }
-                    TCPDetail::RETRANSMISSION => {
-                        info = format!("[{}] {}", "retransmission", info)
-                    }
-                    _ => {}
-                }
+            Some(_info) => match _info.detail {
+                TCPDetail::KEEPALIVE => info = format!("[{}] {}", "Keeplive", info),
+                TCPDetail::NOPREVCAPTURE => info = format!("[{}] {}", "no_previous_segment", info),
+                TCPDetail::RETRANSMISSION => info = format!("[{}] {}", "retransmission", info),
+                _ => {}
             },
             _ => {}
         }
         info
     }
-    
+
     fn status(&self) -> String {
         let mut rs = "info";
         match &self.info {
-            Some(_info) => {
-                match &_info.detail {
-                    TCPDetail::DUMP => {
-                        rs = "deactive";        
-                    },
-                    TCPDetail::NOPREVCAPTURE => {
-                        rs = "deactive";        
-                    },
-                    TCPDetail::RETRANSMISSION => {
-                        rs = "deactive";        
-                    },
-                    _ => {}
+            Some(_info) => match &_info.detail {
+                TCPDetail::DUMP => {
+                    rs = "deactive";
                 }
+                TCPDetail::NOPREVCAPTURE => {
+                    rs = "deactive";
+                }
+                TCPDetail::RETRANSMISSION => {
+                    rs = "deactive";
+                }
+                _ => {}
             },
             None => {}
         }
@@ -228,13 +223,17 @@ impl TCP {
             Some(info) => {
                 let _seq = info._seq;
                 if _seq <= self.sequence {
-                    return format!("Sequence Number : {} (raw: {})", self.sequence - _seq, self.sequence)
+                    return format!(
+                        "Sequence Number : {} (raw: {})",
+                        self.sequence - _seq,
+                        self.sequence
+                    );
                 }
                 format!("Sequence Number (raw): {}", self.sequence)
-            },
+            }
             None => {
                 format!("Sequence Number (raw): {}", self.sequence)
-            },
+            }
         }
     }
     fn acknowledge_desc(&self) -> String {
@@ -242,13 +241,17 @@ impl TCP {
             Some(info) => {
                 let _ack = info._ack;
                 if _ack <= self.acknowledge {
-                    return format!("Acknowlagde Number : {} (raw: {})", self.acknowledge-_ack, self.acknowledge)
+                    return format!(
+                        "Acknowlagde Number : {} (raw: {})",
+                        self.acknowledge - _ack,
+                        self.acknowledge
+                    );
                 }
                 format!("Acknowlagde Number (raw): {}", self.acknowledge)
-            },
+            }
             None => {
                 format!("Acknowlagde Number (raw): {}", self.acknowledge)
-            },
+            }
         }
     }
     fn len_desc(&self) -> String {
@@ -267,56 +270,54 @@ impl TCPVisitor {
         option.kind = packet.build_lazy(reader, Reader::_read8, TCPOption::kind)?;
         match option.kind {
             5 | 29 | 30 => {
-                let len =
-                    packet.build_format(reader, Reader::_read8, "Length: {}")?;
+                let len = packet.build_format(reader, Reader::_read8, "Length: {}")?;
                 option.len = len;
                 let raw = reader.slice((len - 2) as usize);
                 let block = TCPOptionKindBlock { data: raw.to_vec() };
                 option.data = TCPOptionKind::BLOCK(block);
-            },
+            }
             0 => {
                 option.data = TCPOptionKind::EOL;
-            },
+            }
             1 => {
                 option.data = TCPOptionKind::NOP;
-            },
+            }
             2 => {
                 packet.build_format(reader, Reader::_read8, "Length: {}")?;
-                let value  = packet.build_format(reader, Reader::_read16_be, "MSS Value: {}")?;
+                let value = packet.build_format(reader, Reader::_read16_be, "MSS Value: {}")?;
                 option.data = TCPOptionKind::MSS(value);
-            },
+            }
             3 => {
                 packet.build_format(reader, Reader::_read8, "Length: {}")?;
-                let value  = packet.build_format(reader, Reader::_read8, "Shift count: {}")?;
+                let value = packet.build_format(reader, Reader::_read8, "Shift count: {}")?;
                 option.data = TCPOptionKind::SCALE(value);
-
-            },
+            }
             4 => {
                 packet.build_format(reader, Reader::_read8, "Length: {}")?;
                 option.data = TCPOptionKind::SACK;
-            },
+            }
             8 => {
                 let len = packet.build_format(reader, Reader::_read8, "Length: {}")?;
                 match len {
                     10 => {
-                        let sender  = packet.build_format(reader, Reader::_read32_be, "sender: {}")?;
-                        let reply  = packet.build_format(reader, Reader::_read32_be, "reply: {}")?;
-                        option.data = TCPOptionKind::TIMESTAMP(TCPTIMESTAMP{sender, reply})
-                    },
+                        let sender =
+                            packet.build_format(reader, Reader::_read32_be, "sender: {}")?;
+                        let reply = packet.build_format(reader, Reader::_read32_be, "reply: {}")?;
+                        option.data = TCPOptionKind::TIMESTAMP(TCPTIMESTAMP { sender, reply })
+                    }
                     _ => {
                         let raw = reader.slice((len - 2) as usize);
                         let block = TCPOptionKindBlock { data: raw.to_vec() };
                         option.data = TCPOptionKind::BLOCK(block);
-                    },
+                    }
                 }
-            },
+            }
             28 => {
                 //https://datatracker.ietf.org/doc/html/rfc5482
                 packet.build_format(reader, Reader::_read8, "Length: {}")?;
-                let value  = packet.build_fn(reader, Reader::_read16_be, TCPUserTimeout::desc)?;
+                let value = packet.build_fn(reader, Reader::_read16_be, TCPUserTimeout::desc)?;
                 option.data = TCPOptionKind::USERTIMEOUT(value);
-
-            },
+            }
             _ => {}
         }
         drop(option);
@@ -326,7 +327,7 @@ impl TCPVisitor {
         let packet: PacketContext<MultiBlock<TCPOption>> = Frame::create_packet();
         let mut p = packet.get().borrow_mut();
         let start = reader.cursor();
-        let end = start + (len -5) * 4;
+        let end = start + (len - 5) * 4;
         while reader.cursor() < end {
             let item = packet.build_packet(reader, TCPVisitor::read_option, None)?;
             p.push(item);
@@ -344,18 +345,14 @@ impl crate::files::Visitor for TCPVisitor {
         let _start = reader.left()? as u16;
         let packet: PacketContext<TCP> = Frame::create_packet();
         let mut p = packet.get().borrow_mut();
-        p.source_port =
-            packet.build_lazy(reader, Reader::_read16_be, Description::source_port)?;
-        p.target_port =
-            packet.build_lazy(reader, Reader::_read16_be, Description::target_port)?;
+        p.source_port = packet.build_lazy(reader, Reader::_read16_be, Description::source_port)?;
+        p.target_port = packet.build_lazy(reader, Reader::_read16_be, Description::target_port)?;
         p.sequence = packet.build_lazy(reader, Reader::_read32_be, TCP::sequence_desc)?;
-        p.acknowledge =
-            packet.build_lazy(reader, Reader::_read32_be, TCP::acknowledge_desc)?;
+        p.acknowledge = packet.build_lazy(reader, Reader::_read32_be, TCP::acknowledge_desc)?;
         let head = packet.build_lazy(reader, Reader::_read16_be, TCP::len_desc)?;
         p.window = packet.build_format(reader, Reader::_read16_be, "Window: {}")?;
         p.crc = packet.build_format(reader, Reader::_read16_be, "Checksum: {}")?;
-        p.urgent =
-            packet.build_format(reader, Reader::_read16_be, "Urgent Pointer: {}")?;
+        p.urgent = packet.build_format(reader, Reader::_read16_be, "Urgent Pointer: {}")?;
         p.set_head(head);
         let len = p.len;
         if len > 5 {
@@ -381,19 +378,19 @@ impl crate::files::Visitor for TCPVisitor {
                 p.info = Some(info);
                 drop(p);
                 handle(frame, reader, packet)
-            },
-            TCPDetail::SEGMENTS(segs) => {
-                let mut _raw:Vec<&[u8]> = Vec::new();
-                for seg in segs.iter() {
-                    let cp = seg.data.clone();
-                    packet.build_compact(seg.to_string(), cp);
-                    _raw.push(&seg.data);
-                }
-                let _reader = Reader::new_raw(Rc::new(_raw.concat()));
-                p.info = Some(info);
-                drop(p);
-                handle(frame, &_reader, packet)
             }
+            // TCPDetail::SEGMENTS(segs) => {
+            //     let mut _raw:Vec<&[u8]> = Vec::new();
+            //     for seg in segs.iter() {
+            //         let cp = seg.data.clone();
+            //         packet.build_compact(seg.to_string(), cp);
+            //         _raw.push(&seg.data);
+            //     }
+            //     let _reader = Reader::new_raw(Rc::new(_raw.concat()));
+            //     p.info = Some(info);
+            //     drop(p);
+            //     handle(frame, &_reader, packet)
+            // }
             _ => {
                 p.info = Some(info);
                 drop(p);
@@ -404,13 +401,42 @@ impl crate::files::Visitor for TCPVisitor {
     }
 }
 
-
 fn handle(frame: &Frame, reader: &Reader, packet: PacketContext<TCP>) -> Result<()> {
     frame.add_element(super::ProtocolData::TCP(packet));
-
-    let is_http = super::http::HTTPVisitor::check(reader);
-    if is_http {
-        return super::http::HTTPVisitor.visit(frame, reader);
+    let _len = reader.left()?;
+    if _len < 1 {
+        return Ok(());
     }
+    let _info = frame.get_tcp_info()?;
+    let mut ep = _info.as_ref().borrow_mut();
+    match ep._seg_type {
+        TCPPAYLOAD::TLS => {
+            let head = ep.get_segment()?;
+            let seg_length = head.len();
+            let (_, len) = super::tls::TLS::_check(&head[0..5])?;
+            let data = reader.slice(_len);
+            if len + 5 > seg_length + _len {
+                ep.add_segment(frame, TCPPAYLOAD::TLS, data);
+                drop(ep);
+            } else {
+                let mut _data = ep.take_segment();
+                drop(ep);
+                _data.extend_from_slice(data);
+                let _reader = Reader::new_raw(Rc::new(_data));
+                super::tls::TLSVisitor.visit(frame, &_reader)?;
+            }
+            
+        }
+        TCPPAYLOAD::NONE => {
+            drop(ep);
+            let (is_tls, _) = super::tls::TLS::check(reader)?;
+            if is_tls {
+                return super::tls::TLSVisitor.visit(frame, reader);
+            } else if super::http::HTTPVisitor::check(reader) {
+                return super::http::HTTPVisitor.visit(frame, reader);
+            }
+        }
+    }
+
     Ok(())
 }

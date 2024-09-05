@@ -183,7 +183,8 @@ impl Reader<'_> {
     pub fn read8(&self) -> Result<u8> {
         let a = self._get_data()[self.cursor.get()];
         self._move(1);
-        Ok(u8::from_be_bytes([a]))
+        // Ok(u8::from_be_bytes([a]))
+        Ok(a)
     }
 
     pub fn read_string(&self, size: usize) -> Result<String>{

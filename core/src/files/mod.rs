@@ -6,7 +6,7 @@ use crate::{
     constants::link_type_mapper,
     specs::{
         dns::RecordResource,
-        tcp::{TCPOption, TCPOptionKind, ACK, TCP},
+        tcp::{TCPOptionKind, ACK, TCP},
         ProtocolData,
     },
 };
@@ -14,10 +14,10 @@ use chrono::{DateTime, Utc};
 use enum_dispatch::enum_dispatch;
 use log::{error, info};
 use std::{
-    borrow::Borrow, cell::{Cell, Ref, RefCell}, collections::HashMap, fmt::Display, ops::Deref, rc::Rc, time::{Duration, UNIX_EPOCH}
+    borrow::Borrow, cell::{Cell, Ref, RefCell}, collections::HashMap, fmt::Display, ops::{Deref, Range}, rc::Rc, time::{Duration, UNIX_EPOCH}
 };
 
-use anyhow::Result;
+use anyhow::{bail, Result};
 // pub mod pcapng;
 use crate::common::{FileInfo, FileType, Reader};
 
@@ -152,7 +152,7 @@ where
     fn info(&self) -> String {
         self.get().borrow().info()
     }
-    
+
     fn status(&self) -> String {
         self.get().borrow().status()
     }
@@ -161,7 +161,7 @@ impl<T> PacketContext<T>
 where
     T: Initer + 'static,
 {
-    pub fn _build(&self, reader: &Reader, start: usize, size: usize, content: String){
+    pub fn _build(&self, reader: &Reader, start: usize, size: usize, content: String) {
         self.fields.borrow_mut().push(Box::new(TXTPosition {
             start,
             size,
@@ -169,16 +169,21 @@ where
             content,
         }));
     }
-    
-    pub fn _build_lazy(&self, reader: &Reader, start: usize, size: usize, render: fn(&T) -> String) {
-        self.fields.borrow_mut().push(Box::new(StringPosition{
+
+    pub fn _build_lazy(
+        &self,
+        reader: &Reader,
+        start: usize,
+        size: usize,
+        render: fn(&T) -> String,
+    ) {
+        self.fields.borrow_mut().push(Box::new(StringPosition {
             start,
             size,
             data: reader.get_raw(),
             render,
         }));
     }
-
 
     pub fn build_lazy<K>(
         &self,
@@ -210,12 +215,7 @@ where
             content,
         }));
     }
-    pub fn build<K>(
-        &self,
-        reader: &Reader,
-        opt: impl Fn(&Reader) -> K,
-        content: String,
-    ) -> K {
+    pub fn build<K>(&self, reader: &Reader, opt: impl Fn(&Reader) -> K, content: String) -> K {
         let start = reader.cursor();
         let val: K = opt(reader);
         let end = reader.cursor();
@@ -223,7 +223,7 @@ where
         self._build(reader, start, size, content);
         val
     }
-    
+
     pub fn build_format<K>(
         &self,
         reader: &Reader,
@@ -387,22 +387,29 @@ pub enum TCPDetail {
     NOPREVCAPTURE,
     RETRANSMISSION,
     DUMP,
-    SEGMENT,
-    SEGMENTS(Vec<Segment>),
+    // SEGMENT,
+    // SEGMENTS(Vec<Segment>),
     NONE,
 }
 
 pub struct Segment {
     pub index: u32,
-    pub data: Rc<Vec<u8>>,
+    pub range: Range<usize>,
 }
 impl Display for Segment {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let len = self.data.len();
-        f.write_fmt(format_args!("[Frame: {}, payload: {} bytes]", self.index, len))
+        // let len = self.data.len();
+        // f.write_fmt(format_args!("[Frame: {}, payload: {} bytes]", self.index, len))
+        f.write_fmt(format_args!("[Frame: {}, payload: bytes]", self.index))
     }
 }
 
+#[derive(Default)]
+pub enum TCPPAYLOAD {
+    #[default]
+    NONE,
+    TLS,
+}
 #[derive(Default)]
 pub struct Endpoint {
     pub host: String,
@@ -411,10 +418,14 @@ pub struct Endpoint {
     ack: u32,
     pub next: u32,
     _seq: u32,
-    _ack: u32, 
+    _ack: u32,
     _checksum: u16,
     mss: u16,
-    segments: Option<Vec<Segment>>,
+    //
+    _seg: Option<Vec<u8>>,
+    _seg_len: usize,
+    _segments: Option<Vec<Segment>>,
+    pub _seg_type: TCPPAYLOAD,
 }
 impl Endpoint {
     fn new(host: String, port: u16) -> Self {
@@ -425,30 +436,77 @@ impl Endpoint {
         }
     }
 
-    fn add_segment(&mut self, tcp: &TCP, frame: &Frame, data: &[u8]){
-        let segment = Segment{index: frame.summary.borrow().index, data: Rc::new(data.to_vec())};
-        match &mut self.segments {
-            Some(seg) => {
-                seg.push(segment)
+    // fn add_segment(&mut self, tcp: &TCP, frame: &Frame, data: &[u8]){
+    //     let segment = Segment{index: frame.summary.borrow().index, data: Rc::new(data.to_vec())};
+    //     match &mut self.segments {
+    //         Some(seg) => {
+    //             seg.push(segment)
+    //         },
+    //         None => {
+    //             let mut list = Vec::new();
+    //             list.push(segment);
+    //             self.segments = Some(list);
+    //         }
+
+    //     }
+    // }
+    pub fn segment_count(&mut self) -> usize {
+        self._seg_len
+    }
+    pub fn take_segment(&mut self) -> Vec<u8> {
+        let rs = self._seg.take().unwrap();
+        self.clear_segment();
+        rs
+    }
+    pub fn get_segment(&self) -> Result<&[u8]> {
+        match &self._seg {
+            Some(data) => {
+                Ok(data)
             },
+            None => {
+                bail!("nodata")
+            }
+        }
+    }
+    pub fn add_segment(&mut self, frame: &Frame, _type: TCPPAYLOAD, data: &[u8]) {
+        let range = self._seg_len..(self._seg_len + data.len());
+        self._seg_len += data.len();
+        self._seg_type = _type;
+        match &mut self._seg {
+            Some(list) => {
+                list.extend_from_slice(data);
+            },
+            None => {
+                self._seg = Some(data.to_vec());
+            }
+        }
+        let segment = Segment {
+            index: frame.summary.borrow().index,
+            range,
+        };
+        match &mut self._segments {
+            Some(seg) => seg.push(segment),
             None => {
                 let mut list = Vec::new();
                 list.push(segment);
-                self.segments = Some(list);
+                self._segments = Some(list);
             }
-
         }
     }
-    fn clear_segment(&mut self){
-        self.segments = None;
+    fn clear_segment(&mut self) {
+        self._segments = None;
+        self._seg_len = 0;
+        self._seg = None;
+        self._seg_type = TCPPAYLOAD::NONE;
     }
-    fn update(&mut self, tcp: &TCP, frame: &Frame,data: &[u8]) -> TCPDetail {
+
+    fn update(&mut self, tcp: &TCP, frame: &Frame, data: &[u8]) -> TCPDetail {
         let sequence = tcp.sequence;
         if self._checksum == tcp.crc {
             self.clear_segment();
             return TCPDetail::RETRANSMISSION;
         }
-        
+
         match tcp.options.borrow() {
             Some(opt) => {
                 let _ref = opt.as_ref().borrow();
@@ -456,11 +514,11 @@ impl Endpoint {
                     match _opt.as_ref().borrow().data {
                         TCPOptionKind::MSS(mss) => {
                             self.mss = mss;
-                        },
+                        }
                         _ => {}
                     }
                 }
-            },
+            }
             _ => {}
         }
         if self.seq == 0 {
@@ -481,24 +539,26 @@ impl Endpoint {
             self._checksum = tcp.crc;
             let len = tcp.payload_len;
             if len == 0 {
-                if tcp.state.check(ACK) {
-                    return TCPDetail::KEEPALIVE;
-                }
+                // if tcp.state.check(ACK) {
+                //     return TCPDetail::KEEPALIVE;
+                // }
                 return TCPDetail::NONE;
             }
             self.next = tcp.sequence + len as u32;
-            if self.mss> 0 && len == self.mss {
-                self.add_segment(tcp, frame, data);
-                return TCPDetail::SEGMENT;
-            } else {
-                return match self.segments.take() {
-                    Some(mut opt) => {
-                        opt.push(Segment{index: frame.summary.borrow().index, data: Rc::new(data.to_vec())});
-                        TCPDetail::SEGMENTS(opt)
-                    },
-                    None => TCPDetail::NONE,
-                }
-            }
+            return TCPDetail::NONE;
+            // let _len = len + (tcp.len - 5) * 4;
+            // if self.mss > 0 && _len >= self.mss {
+            //     self.add_segment(tcp, frame, data);
+            //     return TCPDetail::SEGMENT;
+            // } else {
+            //     return match self.segments.take() {
+            //         Some(mut opt) => {
+            //             opt.push(Segment{index: frame.summary.borrow().index, data: Rc::new(data.to_vec())});
+            //             TCPDetail::SEGMENTS(opt)
+            //         },
+            //         None => TCPDetail::NONE,
+            //     }
+            // }
         } else {
             if sequence == self.next - 1 && tcp.payload_len == 1 && tcp.state.check(ACK) {
                 self._checksum = tcp.crc;
@@ -508,7 +568,7 @@ impl Endpoint {
             return TCPDetail::DUMP;
         }
     }
-    pub fn stringfy(&self) -> String{
+    pub fn stringfy(&self) -> String {
         format!("{}:{}", self.host, self.port)
     }
     fn confirm(&mut self, tcp: &TCP) {
@@ -516,13 +576,13 @@ impl Endpoint {
         if self._ack == 0 {
             self._ack = acknowledge;
         }
-        
+
         if self.ack > acknowledge {
             return;
             // TODO
         }
-        if self.seq < acknowledge{
-          // TODO   
+        if self.seq < acknowledge {
+            // TODO
         }
         self.ack = acknowledge;
     }
@@ -566,7 +626,13 @@ impl TCPConnection {
             ep1: ep2,
         }
     }
-    fn update(&self, arch: bool, tcp: &TCP,frame: &Frame, data: &[u8]) -> TCPInfo{
+    fn get_endpoint(&self, arch: bool) -> Ref2<Endpoint> {
+        match arch {
+            true => self.ep1.clone(),
+            false => self.ep2.clone(),
+        }
+    }
+    fn update(&self, arch: bool, tcp: &TCP, frame: &Frame, data: &[u8]) -> TCPInfo {
         let (main, rev) = match arch {
             true => (self.ep1.clone(), self.ep2.clone()),
             false => (self.ep2.clone(), self.ep1.clone()),
@@ -584,7 +650,12 @@ impl TCPConnection {
         drop(_rev);
         let _size = self.throughput.get();
         self.throughput.set(_size + tcp.payload_len as u32);
-        TCPInfo{next, _ack, _seq, detail}
+        TCPInfo {
+            next,
+            _ack,
+            _seq,
+            detail,
+        }
     }
 }
 
@@ -605,6 +676,7 @@ pub struct FrameSummary {
     pub protocol: String,
     pub link_type: u16,
     pub ip: Option<Ref2<dyn IPPacket>>,
+    pub tcp: Option<Ref2<TCP>>,
 }
 
 pub struct Frame {
@@ -683,7 +755,12 @@ impl Frame {
         s.ip = Some(packet);
         drop(s);
     }
-    pub fn update_tcp(&self, packet: &TCP, data: &[u8]) -> TCPInfo{
+    fn add_tcp(&self, packet: Ref2<TCP>) {
+        let mut s = self.summary.borrow_mut();
+        s.tcp = Some(packet);
+        drop(s);
+    }
+    pub fn update_tcp(&self, packet: &TCP, data: &[u8]) -> TCPInfo {
         let ippacket = self.get_ip();
         let refer = ippacket.deref().borrow();
         self.ctx.update_tcp(self, refer.deref(), packet, data)
@@ -744,6 +821,15 @@ impl Frame {
             fields: RefCell::new(Vec::new()),
         }
     }
+    pub fn get_tcp_info(&self) -> Result<Ref2<Endpoint>> {
+        let sum = self.summary.borrow();
+        let _ip = sum.ip.clone().expect("no_ip_layer");
+        let _tcp = sum.tcp.clone().expect("no_tcp_layer");
+        let refer = _ip.deref().borrow();
+        let tcp_refer = _tcp.deref().borrow();
+        drop(sum);
+        self.ctx.get_tcp(refer.deref(), tcp_refer.deref())
+    }
     pub fn add_element(&self, ele: ProtocolData) {
         let mut mref = self.summary.borrow_mut();
         mref.protocol = format!("{}", ele);
@@ -757,6 +843,9 @@ impl Frame {
             }
             ProtocolData::ARP(packet) => {
                 self.update_ip(packet._clone_obj());
+            }
+            ProtocolData::TCP(packet) => {
+                self.add_tcp(packet._clone_obj());
             }
             _ => {}
         }
@@ -807,6 +896,14 @@ impl Context {
             }
         };
         conn.update(arch, packet, frame, data)
+    }
+    fn get_tcp(&self,ip: &dyn IPPacket, packet: &TCP) -> Result<Ref2<Endpoint>>{
+        let (key, arch) = Context::tcp_key(ip, packet);
+        let mut _map = self.conversation_map.borrow_mut();
+        let conn = _map.get(&key).expect("no_tcp_connection");
+        let ep = conn.get_endpoint(arch);
+        drop(_map);
+        Ok(ep)
     }
 }
 pub struct Instance {

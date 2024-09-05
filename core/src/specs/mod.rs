@@ -11,6 +11,7 @@ pub mod tcp;
 pub mod dhcp;
 pub mod http;
 pub mod igmp;
+pub mod tls;
 use anyhow::Result;
 use enum_dispatch::enum_dispatch;
 use strum_macros::Display;
@@ -36,6 +37,7 @@ type DNS = PacketContext<dns::DNS>;
 type DHCP = PacketContext<dhcp::DHCP>;
 type HTTP = PacketContext<http::HTTP>;
 type IGMP = PacketContext<igmp::IGMP>;
+type TLS = PacketContext<tls::TLS>;
 
 
 #[enum_dispatch]
@@ -56,4 +58,5 @@ pub enum ProtocolData {
     DNS,
     DHCP,
     HTTP,
+    TLS,
 }
