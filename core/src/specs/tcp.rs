@@ -411,20 +411,22 @@ fn handle(frame: &Frame, reader: &Reader, packet: PacketContext<TCP>) -> Result<
     let mut ep = _info.as_ref().borrow_mut();
     match ep._seg_type {
         TCPPAYLOAD::TLS => {
-            let head = ep.get_segment()?;
-            let seg_length = head.len();
-            let (_, len) = super::tls::TLS::_check(&head[0..5])?;
-            let data = reader.slice(_len);
-            if len + 5 > seg_length + _len {
-                ep.add_segment(frame, TCPPAYLOAD::TLS, data);
-                drop(ep);
-            } else {
-                let mut _data = ep.take_segment();
-                drop(ep);
-                _data.extend_from_slice(data);
-                let _reader = Reader::new_raw(Rc::new(_data));
-                super::tls::TLSVisitor.visit(frame, &_reader)?;
-            }
+            drop(ep);
+            return super::tls::TLSVisitor.visit(frame, reader);
+            // let head = ep.get_segment()?;
+            // let seg_length = head.len();
+            // let (_, len) = super::tls::TLS::_check(&head[0..5])?;
+            // let data = reader.slice(_len);
+            // if len + 5 > seg_length + _len {
+            //     ep.add_segment(frame, TCPPAYLOAD::TLS, data);
+            //     drop(ep);
+            // } else {
+            //     let mut _data = ep.take_segment();
+            //     drop(ep);
+            //     _data.extend_from_slice(data);
+            //     let _reader = Reader::new_raw(Rc::new(_data));
+            //     super::tls::TLSVisitor.visit(frame, &_reader)?;
+            // }
             
         }
         TCPPAYLOAD::NONE => {

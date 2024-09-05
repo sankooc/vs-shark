@@ -1,18 +1,20 @@
-use std::fmt::Formatter;
+use std::{cell::RefMut, fmt::Formatter, ops::DerefMut, rc::Rc};
 
+use anyhow::Result;
 use log::info;
 use pcap_derive::{Packet, NINFO};
-use anyhow::Result;
 
 use crate::{
-    common::Reader, constants::{tls_content_type_mapper, tls_min_type_mapper}, files::{Frame, Initer, PacketContext, Ref2, TCPPAYLOAD}
+    common::Reader,
+    constants::{tls_content_type_mapper, tls_min_type_mapper},
+    files::{Endpoint, Frame, Initer, PacketContext, Ref2, TCPPAYLOAD},
 };
 
 use super::ProtocolData;
 
 #[derive(Default, Packet)]
 pub struct TLS {
-    records: Vec<Ref2<TLSRecord>>
+    records: Vec<Ref2<TLSRecord>>,
 }
 impl crate::files::InfoPacket for TLS {
     fn info(&self) -> String {
@@ -24,7 +26,7 @@ impl crate::files::InfoPacket for TLS {
             String::from("TLS segment")
         }
     }
-    
+
     fn status(&self) -> String {
         "info".into()
     }
@@ -36,17 +38,17 @@ pub struct TLSRecord {
     len: u16,
     message: TLSRecorMessage,
 }
-impl TLSRecord{
+impl TLSRecord {
     fn _type(&self) -> String {
         tls_content_type_mapper(self._type)
     }
     fn _type_desc(&self) -> String {
         format!("Content Type: {} ({})", self._type(), self._type)
     }
-    fn version(&self) -> String{
+    fn version(&self) -> String {
         tls_min_type_mapper(self.min)
     }
-    fn version_desc(&self) -> String{
+    fn version_desc(&self) -> String {
         format!("Version: {} (0x03{:02x})", self.version(), self.min)
     }
 }
@@ -67,9 +69,9 @@ impl TLS {
         let min = head[2];
         let len = u16::from_be_bytes(head[3..5].try_into()?);
         let is_tls = _type > 19 && _type < 25 && major == 3 && min < 5;
-        return Ok((is_tls ,len as usize))
+        return Ok((is_tls, len as usize));
     }
-    pub fn check(reader: &Reader) -> Result<(bool, usize)>{
+    pub fn check(reader: &Reader) -> Result<(bool, usize)> {
         let left = reader.left()?;
         if left <= 5 {
             return Ok((false, 0));
@@ -79,10 +81,8 @@ impl TLS {
     }
 }
 
-
 enum HandshakeTYPE {
-    HELLOCIENT
-
+    HELLOCIENT,
 }
 
 #[derive(Default, Clone)]
@@ -116,28 +116,30 @@ impl TLSVisitor {
         p.min = packet.build_lazy(reader, Reader::_read8, TLSRecord::version_desc)?;
         p.len = packet.build_format(reader, Reader::_read16_be, "Length: {}")?;
         let finish = reader.cursor() + p.len as usize;
-        
-        let _read = |reader: &Reader| {reader.slice(p.len as usize);};
+
+        let _read = |reader: &Reader| {
+            reader.slice(p.len as usize);
+        };
         match p._type {
             20 => {
                 packet.build(reader, _read, TLS_CCS_DESC.into());
                 p.message = TLSRecorMessage::CHANGECIPHERSPEC;
-            },
+            }
             21 => {
                 packet.build(reader, _read, TLS_ALERT_DESC.into());
                 p.message = TLSRecorMessage::ALERT;
-            },
+            }
             22 => {
                 // packet.build(reader, _read, TLS_ALERT_DESC.into());
                 // p.message = TLSRecorMessage::ALERT;
-            },
+            }
             23 => {
                 packet.build(reader, _read, TLS_APPLICATION.into());
                 p.message = TLSRecorMessage::ALERT;
-            },
+            }
             _ => {
                 packet.build(reader, _read, "Encrypted Message".into());
-            },
+            }
         }
         if finish > reader.cursor() {
             reader.slice(finish - reader.cursor());
@@ -147,44 +149,95 @@ impl TLSVisitor {
     }
 }
 
+fn proc(frame: &Frame, reader: &Reader, packet: &PacketContext<TLS>, p: &mut TLS, ep: &mut Endpoint)  -> Result<()> {
+    loop {
+        let left_size = reader.left()?;
+        if left_size == 0 {
+            //TODO FLUSH SEGMENT
+            break;
+        }
+        let (is_tls, _len) = TLS::check(reader)?;
+        if is_tls {
+            if left_size >= _len + 5 {
+                let item = packet.build_packet(reader, TLSVisitor::read_tls, None)?;
+                p.records.push(item);
+                // info!("comple");
+            } else {
+                let left_data = reader.slice(left_size);
+                ep.add_segment(frame, TCPPAYLOAD::TLS, left_data);
+                break;
+            }
+        } else {
+            // info!("frame: {} left {}", frame.summary.borrow().index, reader.left()?);
+            break;
+        }
+    };
+    Ok(())
+}
 impl TLSVisitor {
     pub fn visit(&self, frame: &Frame, reader: &Reader) -> Result<()> {
         let packet: PacketContext<TLS> = Frame::create_packet();
         let mut p = packet.get().borrow_mut();
+
+        let _info = frame.get_tcp_info()?;
+        let mut ep = _info.as_ref().borrow_mut();
+        let _len = reader.left()?;
+        let _reader = reader;
+        match ep._seg_type {
+            TCPPAYLOAD::TLS => {
+                let head = ep.get_segment()?;
+                let seg_length = head.len();
+                let (_, len) = TLS::_check(&head[0..5])?;
+                let data = reader.slice(_len);
+                if len + 5 > seg_length + _len {
+                    ep.add_segment(frame, TCPPAYLOAD::TLS, data);
+                    let content = format!("TLS Segments {} bytes", _len);
+                    packet._build(reader, reader.cursor(), _len, content);
+                } else {
+                    let mut _data = ep.take_segment();
+                    _data.extend_from_slice(data);
+                    let _reader = Reader::new_raw(Rc::new(_data));
+                    proc(frame, &_reader, &packet, p.deref_mut(), ep.deref_mut())?;
+                }
+                // return None;
+            }
+            TCPPAYLOAD::NONE => {
+                proc(frame, reader, &packet, p.deref_mut(), ep.deref_mut())?;
+            },
+        }
+
         // if frame.summary.borrow().index == 562 {
         //     println!("")
         // }
-        loop {
-            let left_size = reader.left()?;
-            if left_size == 0 {
-                //TODO FLUSH SEGMENT
-                // info!("complete");
-                break;
-            }
-            let (is_tls, _len) = TLS::check(reader)?;
-            if is_tls {
-                if left_size >= _len + 5 {
-                    let item = packet.build_packet(reader, TLSVisitor::read_tls, None)?;
-                    p.records.push(item);
-                    // info!("comple");
-                } else {
-                    let _info = frame.get_tcp_info()?;
-                    let mut ep = _info.as_ref().borrow_mut();
-                    let left_data = reader.slice(left_size);
-                    ep.add_segment(frame, TCPPAYLOAD::TLS, left_data);
-                    drop(ep);
-                    break;
-                }
-            } else {
-                // info!("frame: {} left {}", frame.summary.borrow().index, reader.left()?);
-                break;
-            }
-        }
+        // loop {
+        //     let left_size = reader.left()?;
+        //     if left_size == 0 {
+        //         //TODO FLUSH SEGMENT
+        //         // info!("complete");
+        //         break;
+        //     }
+        //     let (is_tls, _len) = TLS::check(reader)?;
+        //     if is_tls {
+        //         if left_size >= _len + 5 {
+        //             let item = packet.build_packet(reader, TLSVisitor::read_tls, None)?;
+        //             p.records.push(item);
+        //             // info!("comple");
+        //         } else {
+        //             let left_data = reader.slice(left_size);
+        //             ep.add_segment(frame, TCPPAYLOAD::TLS, left_data);
+        //             break;
+        //         }
+        //     } else {
+        //         // info!("frame: {} left {}", frame.summary.borrow().index, reader.left()?);
+        //         break;
+        //     }
+        // }
         let _len = p.records.len();
+        drop(ep);
         drop(p);
-        if _len > 0 {
-            frame.add_element(ProtocolData::TLS(packet));
-        }
+        // if _len > 0 {
+        frame.add_element(ProtocolData::TLS(packet));
+        // }
         Ok(())
     }
 }
