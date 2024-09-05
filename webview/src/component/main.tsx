@@ -82,13 +82,13 @@ const Main = () => {
 
   const navItems = convert(data);
   return (<>
-    <div className="card h-full monaco-workbench">
+    <div className="card h-full">
       <div className="flex flex-row h-full">
-        <div className="w-2 flex flex-column flex-grow-0 flex-shrink-0">
-          <Menu model={navItems} className="w-full h-full" />
-        </div>
         <div className="w-full flex flex-grow-1">
           {buildPage()}
+        </div>
+        <div className="w-1 flex flex-column flex-grow-0 flex-shrink-0">
+          <Menu model={navItems} className="w-full h-full" />
         </div>
       </div>
     </div>

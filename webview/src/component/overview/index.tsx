@@ -86,6 +86,9 @@ function convert(frames: FrameInfo[]) {
   return overview;
 }
 
+// const fore = 'var(--vscode-list-focusForeground)';
+const fore = '#ebdbb2';
+const lineColor = '#ebdbb2';
 function Overview(props: MainProto) {
   const title = 'Network Traffic';
   const { legends, labels, counts, valMap } = convert(props.instance.getFrames());
@@ -110,6 +113,7 @@ function Overview(props: MainProto) {
       yAxisIndex: 1,
       smooth: true,
       type: 'line',
+      lineStyle: {color: lineColor},
       data
     };
     if (key === 'total') {
@@ -119,12 +123,14 @@ function Overview(props: MainProto) {
   });
   const option = {
     title: {
+      textStyle: {color: fore },
       text: title
     },
+    textStyle: {color: fore},
     legend: {
       right: 50,
+      textStyle: {color: fore },
       data: legends
-
     },
     tooltip: {
       trigger: 'axis',
@@ -145,6 +151,7 @@ function Overview(props: MainProto) {
       left: '1%',
       right: '2%',
       bottom: '3%',
+      borderColor: fore,
       containLabel: true
     },
     animation: true,
@@ -156,7 +163,8 @@ function Overview(props: MainProto) {
         axisLabel: {
           formatter: labelFormater
         },
-        data: labels
+        // nameTextStyle: {color: 'white'},
+        data: labels,
       }
     ],
     yAxis: [
@@ -168,6 +176,7 @@ function Overview(props: MainProto) {
         axisLine: {
           show: true,
         },
+        // nameTextStyle: {color: 'white'},
         axisLabel: {
           formatter: '{value}'
         }

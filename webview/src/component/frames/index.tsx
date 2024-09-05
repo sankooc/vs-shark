@@ -97,23 +97,23 @@ function FrameList(props: MainProto) {
     setHex(h);
   };
   return (<div className="flex flex-nowrap h-full w-full" id="frame-page">
-    <Splitter layout="vertical" className="h-full w-full">
-      <SplitterPanel className="flex flex-column align-items-center justify-content-center" size={70}>
+    <Splitter layout="vertical" className="h-full w-full" onResizeEnd={(evt: any) => {}}>
+      <SplitterPanel className="flex flex-column align-items-center justify-content-center">
         <IconField iconPosition="left" className="w-full">
           <MultiSelect value={filters} onChange={(e) => { setFilter(e.value) }} options={protos} optionLabel="name"
             placeholder="Select Protocols" maxSelectedLabels={10} className="p-inputtext-sm w-2" />
         </IconField>
         <DTable cols={columes} items={items} onSelect={onSelect} />
       </SplitterPanel>
-      <SplitterPanel className="flex align-items-center justify-content-center" size={30} minSize={20}>
-        <Splitter className="w-full">
+      <SplitterPanel className="flex align-items-center justify-content-center">
+        {/* <Splitter className="w-full">
           <SplitterPanel className="flex align-items-center" size={50} minSize={50} style={{ height: '28vh', overflow: 'auto' }}>
             <Stack frame={index} items={stacks} onSelect={onStackSelect}/>
           </SplitterPanel>
           <SplitterPanel className="flex align-items-center" size={50} minSize={50} style={{ height: '28vh', overflow: 'auto' }}>
             <HexView data={hex}/>
           </SplitterPanel>
-        </Splitter>
+        </Splitter> */}
       </SplitterPanel>
     </Splitter>
   </div>
