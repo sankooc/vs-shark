@@ -28,7 +28,7 @@ const DTable = (props: Props) => {
     }} onSelectionChange={onSelectionChange}
       virtualScrollerOptions={{ itemSize: 20 }} scrollable showGridlines
       style={{ tableLayout: 'fixed' }}
-      scrollHeight={props.scrollHeight || "67vh"} size={props.size || "small"} className={"pcap-table w-full"}
+      scrollHeight={props.scrollHeight || "67vh"} size={props.size || "small"} className={"pcap-table flex-grow-1 w-full"}
       currentPageReportTemplate="{first} to {last} of {totalRecords}">
       {props.cols.map((c: ColumnProps, inx: number): ReactElement => {
         return (<Column {...c} key={'col' + inx}></Column>)

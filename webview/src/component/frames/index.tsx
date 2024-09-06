@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { ColumnItem, HexV } from "../../common";
 import { MainProto } from '../../wasm';
-import { Splitter, SplitterPanel } from 'primereact/splitter';
+import { Splitter, SplitterPanel, SplitterResizeEndEvent } from 'primereact/splitter';
 import DTable from '../dataTable';
 import Stack from '../tree';
 import HexView from '../detail';
@@ -55,6 +55,7 @@ function FrameList(props: MainProto) {
   const [stacks, setStack] = useState<Field[]>([]);
   const [index, setIndex] = useState(0);
   const [hex, setHex] = useState<HexV>(null);
+  const [[up, down], setUp] = useState([70, 30]);
   const frames = props.instance.getFrames().map((item) => new FrameItem(item));
   const getData = (): ColumnItem[] => {
     if(!filters || !filters.length) return frames;
@@ -96,24 +97,31 @@ function FrameList(props: MainProto) {
     h.index = [start, size];
     setHex(h);
   };
+  const scrollHeight = `calc(${up}vh - 40px)`;
+  const upSplice = (evt: SplitterResizeEndEvent) => {
+    const { sizes } = evt; 
+    const [ up, down ] = sizes;
+    setUp([up, down]);
+  }
+  console.log(scrollHeight);
   return (<div className="flex flex-nowrap h-full w-full" id="frame-page">
-    <Splitter layout="vertical" className="h-full w-full" onResizeEnd={(evt: any) => {}}>
-      <SplitterPanel className="flex flex-column align-items-center justify-content-center">
+    <Splitter layout="vertical" className="h-full w-full" onResizeEnd={upSplice}>
+      <SplitterPanel className="flex flex-column align-items-center justify-content-center" size={up} minSize={50} style={{overflow: "auto"}}>
         <IconField iconPosition="left" className="w-full">
           <MultiSelect value={filters} onChange={(e) => { setFilter(e.value) }} options={protos} optionLabel="name"
             placeholder="Select Protocols" maxSelectedLabels={10} className="p-inputtext-sm w-2" />
         </IconField>
-        <DTable cols={columes} items={items} onSelect={onSelect} />
+        <DTable cols={columes} scrollHeight={scrollHeight} items={items} onSelect={onSelect} />
       </SplitterPanel>
-      <SplitterPanel className="flex align-items-center justify-content-center">
-        {/* <Splitter className="w-full">
-          <SplitterPanel className="flex align-items-center" size={50} minSize={50} style={{ height: '28vh', overflow: 'auto' }}>
+      <SplitterPanel className="flex align-items-center justify-content-center" minSize={30}>
+        <Splitter className="w-full" style={{height: `${down}vh`}}>
+          <SplitterPanel className="flex align-items-center" size={50} minSize={50} style={{overflow: 'auto' }}>
             <Stack frame={index} items={stacks} onSelect={onStackSelect}/>
           </SplitterPanel>
-          <SplitterPanel className="flex align-items-center" size={50} minSize={50} style={{ height: '28vh', overflow: 'auto' }}>
+          <SplitterPanel className="flex align-items-center" size={50} minSize={50} style={{overflow: 'auto' }}>
             <HexView data={hex}/>
           </SplitterPanel>
-        </Splitter> */}
+        </Splitter>
       </SplitterPanel>
     </Splitter>
   </div>
