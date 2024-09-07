@@ -26,7 +26,6 @@ pub fn parse(data: &[u8]) -> Result<Instance> {
         ctx.update_ts(ts);
         let captured = reader.read32(false)?;
         let origin = reader.read32(false)?;
-        // info!("ts {}, {}, {}", ts, captured, origin);
         let raw = reader.slice(origin as usize);
         ctx.create(raw, ts, captured, origin);
     }

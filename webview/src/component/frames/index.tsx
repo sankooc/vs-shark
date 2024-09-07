@@ -103,7 +103,6 @@ function FrameList(props: MainProto) {
     const [ up, down ] = sizes;
     setUp([up, down]);
   }
-  console.log(scrollHeight);
   return (<div className="flex flex-nowrap h-full w-full" id="frame-page">
     <Splitter layout="vertical" className="h-full w-full" onResizeEnd={upSplice}>
       <SplitterPanel className="flex flex-column align-items-center justify-content-center" size={up} minSize={50} style={{overflow: "auto"}}>

@@ -1,7 +1,6 @@
 use std::{
     fmt::{Display, Formatter, Write},
     ops::Deref,
-    rc::Rc,
 };
 
 use anyhow::Result;
