@@ -17,3 +17,8 @@ crate-type = ["cdylib"]
 js-sys = "0.3.69"
 wasm-bindgen = "0.2.93"
 core = { path = "../core" }
+
+[dev-dependencies]
+log = "0.4.22"
+env_logger = "0.11.3"
+wasm-bindgen-test = "0.3.0"

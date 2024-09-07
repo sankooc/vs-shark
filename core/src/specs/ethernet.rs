@@ -1,23 +1,39 @@
-use pcap_derive::{Packet, NINFO};
+use pcap_derive::{Packet2, NINFO};
 
 use crate::common::{Description, MacAddress, MacPacket, PtypePacket, DEF_EMPTY_MAC};
 use crate::constants::{etype_mapper, link_type_mapper, ssl_type_mapper};
-use crate::files::{InfoPacket, Visitor};
+use crate::files::{PacketOpt, Visitor};
 use crate::{
     common::Reader,
     files::{Frame, Initer, PacketContext},
 };
-use std::fmt::{Display, Write};
-use anyhow::{Ok, Result};
+use std::cell::RefCell;
+use std::fmt::Display;
+use anyhow::{bail, Ok, Result};
 
 use super::ProtocolData;
 
-#[derive(Default, Packet, NINFO)]
+#[derive(Default,Packet2, NINFO)]
 pub struct Ethernet {
     source_mac: Option<MacAddress>,
     target_mac: Option<MacAddress>,
     len: u16,
     ptype: u16,
+}
+
+impl Ethernet{
+    fn _create(reader: &Reader, packet: &PacketContext<Self>, p: &mut std::cell::RefMut<Self>, _:Option<PacketOpt>) -> Result<()> {
+        p.source_mac = packet.build_lazy(reader, Reader::_read_mac, Description::source_mac).ok();
+        p.target_mac = packet.build_lazy(reader, Reader::_read_mac, Description::target_mac).ok();
+        let ptype = packet.build_lazy(reader, Reader::_read16_be, Description::ptype)?;
+        if reader.left()? == ptype as usize {
+            p.len = ptype;
+            // info!("{}", ptype); // IEEE 802.3
+            return Ok(());
+        }
+        p.ptype = ptype;
+        Ok(())
+    }
 }
 
 impl Display for Ethernet {
@@ -61,24 +77,14 @@ pub struct EthernetVisitor;
 
 impl Visitor for EthernetVisitor {
     fn visit(&self, frame: &Frame, reader: &Reader) -> Result<()> {
-        let packet: PacketContext<Ethernet> = Frame::create_packet();
-
-        let mut p = packet.get().borrow_mut();
-        p.source_mac = packet.build_lazy(reader, Reader::_read_mac, Description::source_mac).ok();
-        p.target_mac = packet.build_lazy(reader, Reader::_read_mac, Description::target_mac).ok();
-        let ptype = packet.build_lazy(reader, Reader::_read16_be, Description::ptype)?;
-        if reader.left()? == ptype as usize {
-            p.len = ptype;
-            // info!("{}", ptype); // IEEE 802.3
-            return Ok(());
-        }
-        p.ptype = ptype;
-        drop(p);
+        let packet = Ethernet::create(reader, None)?;
+        let val:&RefCell<Ethernet> = packet.get();
+        let ptype = val.borrow().ptype;
         frame.add_element(ProtocolData::ETHERNET(packet));
         excute(ptype, frame, reader)
     }
 }
-#[derive(Default, Packet, NINFO)]
+#[derive(Default, Packet2, NINFO)]
 pub struct PPPoESS {
     version: u8,
     _type: u8,
@@ -90,6 +96,19 @@ pub struct PPPoESS {
 impl Display for PPPoESS {
     fn fmt(&self, _f: &mut std::fmt::Formatter) -> std::fmt::Result {
         _f.write_str("PPP-over-Ethernet Session")
+    }
+}
+
+impl PPPoESS {
+    fn _create(reader: &Reader, packet: &PacketContext<Self>, p: &mut std::cell::RefMut<Self>,_:Option<PacketOpt>) -> Result<()> {
+        let head = reader.read8()?;
+        p.version = head >> 4;
+        p._type = head & 0x0f;
+        p.code = packet.build_lazy(reader, Reader::_read8, PPPoESS::code)?;
+        p.session_id = packet.build_lazy(reader, Reader::_read16_be, PPPoESS::session_id)?;
+        p.payload = packet.build_lazy(reader, Reader::_read16_be, PPPoESS::payload)?;
+        p.ptype = packet.build_lazy(reader, Reader::_read16_be, PPPoESS::ptype)?;
+        Ok(())
     }
 }
 
@@ -114,18 +133,10 @@ impl PPPoESS{
 struct PPPoESSVisitor;
 impl Visitor for PPPoESSVisitor {
     fn visit(&self, frame: &Frame, reader: &Reader) -> Result<()> {
-        let packet: PacketContext<PPPoESS> = Frame::create_packet();
-        let mut p = packet.get().borrow_mut();
-        let head = reader.read8()?;
-        p.version = head >> 4;
-        p._type = head & 0x0f;
-        p.code = packet.build_lazy(reader, Reader::_read8, PPPoESS::code)?;
-        p.session_id = packet.build_lazy(reader, Reader::_read16_be, PPPoESS::session_id)?;
-        p.payload = packet.build_lazy(reader, Reader::_read16_be, PPPoESS::payload)?;
-        p.ptype = packet.build_lazy(reader, Reader::_read16_be, PPPoESS::ptype)?;
-        let code = p.code;
-        let ptype = p.ptype;
-        drop(p);
+        let packet = PPPoESS::create(reader, None)?;
+        let p = packet.get();
+        let code = p.borrow().code;
+        let ptype = p.borrow().ptype;
         frame.add_element(ProtocolData::PPPoESS(packet));
         if code == 0 {
             return match ptype {
@@ -137,7 +148,7 @@ impl Visitor for PPPoESSVisitor {
         Ok(())
     }
 }
-#[derive(Default, Packet,NINFO)]
+#[derive(Default, Packet2, NINFO)]
 pub struct SSL {
     _type: u16,
     ltype: u16,
@@ -149,6 +160,18 @@ impl Display for SSL {
     fn fmt(&self, _f: &mut std::fmt::Formatter) -> std::fmt::Result {
         _f.write_str("Linux cooked capture v1")
     }
+}
+impl SSL {
+    fn _create(reader: &Reader, packet: &PacketContext<Self>, p: &mut std::cell::RefMut<Self>, _:Option<PacketOpt>) -> Result<()> {
+        p._type = packet.build_lazy(reader, Reader::_read16_be, SSL::_type)?;
+        p.ltype = packet.build_lazy(reader, Reader::_read16_be, SSL::ltype)?;
+        p.len = packet.build_lazy(reader, Reader::_read16_be, SSL::len_str)?;
+        p.source = packet.build_lazy(reader, Reader::_read_mac, SSL::source_str).ok();
+        reader._move(2);
+        p.ptype = packet.build_lazy(reader, Reader::_read16_be, SSL::ptype_str)?;
+        Ok(())
+    }
+    
 }
 impl SSL {
     fn _type(&self) -> String{
@@ -175,16 +198,9 @@ impl SSL {
 pub struct SSLVisitor;
 impl Visitor for SSLVisitor {
     fn visit(&self, frame: &Frame, reader: &Reader) -> Result<()>{
-        let packet:PacketContext<SSL> = Frame::create_packet();
-        let mut p = packet.get().borrow_mut();
-        p._type = packet.build_lazy(reader, Reader::_read16_be, SSL::_type)?;
-        p.ltype = packet.build_lazy(reader, Reader::_read16_be, SSL::ltype)?;
-        p.len = packet.build_lazy(reader, Reader::_read16_be, SSL::len_str)?;
-        p.source = packet.build_lazy(reader, Reader::_read_mac, SSL::source_str).ok();
-        reader._move(2);
-        p.ptype = packet.build_lazy(reader, Reader::_read16_be, SSL::ptype_str)?;
-        let ptype = p.ptype;
-        drop(p);
+        let packet = SSL::create(reader, None)?;
+        let p = packet.get();
+        let ptype = p.borrow().ptype;
         frame.add_element(ProtocolData::SSL(packet));
         excute(ptype, frame, reader)
     }

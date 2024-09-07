@@ -34,7 +34,9 @@ const Main = () => {
       switch (type) {
         case 'raw-data': {
           initPro.then(() => {
+            const start = Date.now();
             const ctx = load(body as Uint8Array);
+            console.log('spend', Date.now() - start);
             setData(new CProto(ctx))
           });
         }

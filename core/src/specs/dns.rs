@@ -6,7 +6,7 @@ use anyhow::Result;
 
 use crate::common::{IPv4Address, Reader};
 use crate::constants::{dns_class_mapper, dns_type_mapper};
-use crate::files::{DomainService, Frame, Initer, MultiBlock, PacketContext, Ref2, Visitor};
+use crate::files::{DomainService, Frame, Initer, MultiBlock, PacketContext, PacketOpt, Ref2, Visitor};
 
 use super::ProtocolData;
 
@@ -191,7 +191,7 @@ impl DomainService for RecordResource {
 pub struct DNSVisitor;
 
 impl DNSVisitor {
-    fn read_question(reader: &Reader) -> Result<PacketContext<Question>> {
+    fn read_question(reader: &Reader, _: Option<PacketOpt>) -> Result<PacketContext<Question>> {
         let packet: PacketContext<Question> = Frame::create_packet();
         let mut p = packet.get().borrow_mut();
         p.name = packet.build_lazy(reader, Reader::_read_dns_query, Question::name)?;
@@ -200,17 +200,19 @@ impl DNSVisitor {
         drop(p);
         Ok(packet)
     }
-    fn read_questions(reader: &Reader, count: u16) -> Result<PacketContext<MultiBlock<Question>>> {
+    fn read_questions(reader: &Reader, opt: Option<u16>) -> Result<PacketContext<MultiBlock<Question>>> {
+        let count = opt.unwrap();
         let packet: PacketContext<MultiBlock<Question>> = Frame::create_packet();
         let mut p = packet.get().borrow_mut();
         for _ in 0..count {
-            let item = packet.build_packet(reader, DNSVisitor::read_question, None)?;
+            let item = packet.build_packet(reader, DNSVisitor::read_question,None, None)?;
             p.push(item);
         }
         drop(p);
         Ok(packet)
     }
-    fn read_rr(reader: &Reader, archor: usize) -> Result<PacketContext<RecordResource>> {
+    fn read_rr(reader: &Reader, opt: Option<PacketOpt>) -> Result<PacketContext<RecordResource>> {
+        let archor = opt.unwrap();
         let packet: PacketContext<RecordResource> = Frame::create_packet();
         let mut p: std::cell::RefMut<RecordResource> = packet.get().borrow_mut();
         let name_ref = reader.read16(true)?;
@@ -246,10 +248,8 @@ impl DNSVisitor {
     ) -> Result<PacketContext<MultiBlock<RecordResource>>> {
         let packet: PacketContext<MultiBlock<RecordResource>> = Frame::create_packet();
         let mut p = packet.get().borrow_mut();
-        let _resource = |reader: &Reader| DNSVisitor::read_rr(reader, archor);
-
         for _ in 0..count {
-            let item: Ref2<RecordResource> = packet.build_packet(reader, _resource, None)?;
+            let item: Ref2<RecordResource> = packet.build_packet(reader, DNSVisitor::read_rr, Some(archor), None)?;
             let ctx = frame.ctx.clone();
             ctx.add_dns_record(item.clone());
             p.push(item);
@@ -278,21 +278,20 @@ impl Visitor for DNSVisitor {
         p.is_response = (flag >> 15) > 0;
         p.opcode = (flag >> 11) & 0xf;
         if questions > 0 {
-            let read_question = |reader: &Reader| DNSVisitor::read_questions(reader, questions);
-            let qs = packet.build_packet(reader, read_question, Some("Questions".into()))?;
+            let qs = packet.build_packet(reader, DNSVisitor::read_questions, Some(questions), Some("Questions".into()))?;
             p.questions_ref = Some(qs);
         }
         if answer_rr > 0 {
-            let _read = |reader: &Reader| DNSVisitor::read_rrs(frame,reader, answer_rr, _cur);
-            let qs: Ref2<Vec<Ref2<RecordResource>>> = packet.build_packet(reader, _read, Some("Answers".into()))?;
+            let _read = |reader: &Reader, _: Option<()>| DNSVisitor::read_rrs(frame, reader, answer_rr, _cur);
+            let qs: Ref2<Vec<Ref2<RecordResource>>> = packet.build_packet(reader, _read, None, Some("Answers".into()))?;
             for r in qs.as_ref().borrow().iter() {
                 frame.ctx.add_dns_record(r.clone());
             }
             p.answers_ref = Some(qs);
         }
         if authority_rr > 0 {
-            let _read = |reader: &Reader| DNSVisitor::read_rrs(frame,reader, authority_rr, _cur);
-            p.authorities_ref = packet.build_packet(reader, _read, Some("Authorities".into())).ok();
+            let _read = |reader: &Reader, _: Option<()>| DNSVisitor::read_rrs(frame,reader, authority_rr, _cur);
+            p.authorities_ref = packet.build_packet(reader, _read, None, Some("Authorities".into())).ok();
         }
         // if additional_rr > 0 {
         //     let _read = |reader: &Reader| DNSVisitor::read_rrs(frame,reader, additional_rr, _cur);

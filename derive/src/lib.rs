@@ -39,6 +39,16 @@ pub fn packet2_macro_derive(input: TokenStream) -> TokenStream {
                 self.to_string()
             }
         }
+        impl #name {
+            pub fn create(reader: &Reader, opt: Option<PacketOpt>) -> Result<PacketContext<Self>> {
+                let packet: PacketContext<Self> = Frame::create_packet();
+                let mut p = packet.get().borrow_mut();
+                let rs = Self::_create(reader, &packet, &mut p, opt);
+                drop(p);
+                rs?;
+                Ok(packet)
+            }
+        }
     };
     gen.into()
 }

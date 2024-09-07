@@ -28,7 +28,7 @@ impl Field {
         let (start, size);
         files::Field { start, size, .. } = *embed;
         let summary = embed.summary.clone();
-        let a: &[u8] = embed.borrow().data.deref();
+        let a: &[u8] = embed.borrow().data.as_ref();
         let data: Uint8Array = a.into();
         let children = embed.children.clone();
         Field {

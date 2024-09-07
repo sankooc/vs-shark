@@ -263,7 +263,7 @@ impl TCP {
 pub struct TCPVisitor;
 
 impl TCPVisitor {
-    fn read_option(reader: &Reader) -> Result<PacketContext<TCPOption>> {
+    fn read_option(reader: &Reader, opt: Option<()>) -> Result<PacketContext<TCPOption>> {
         let packet: PacketContext<TCPOption> = Frame::create_packet();
         let mut option = packet.get().borrow_mut();
         option.kind = packet.build_lazy(reader, Reader::_read8, TCPOption::kind)?;
@@ -322,13 +322,14 @@ impl TCPVisitor {
         drop(option);
         Ok(packet)
     }
-    fn read_options(reader: &Reader, len: usize) -> Result<PacketContext<MultiBlock<TCPOption>>> {
+    fn read_options(reader: &Reader, opt: Option<usize>) -> Result<PacketContext<MultiBlock<TCPOption>>> {
+        let len = opt.unwrap();
         let packet: PacketContext<MultiBlock<TCPOption>> = Frame::create_packet();
         let mut p = packet.get().borrow_mut();
         let start = reader.cursor();
         let end = start + (len - 5) * 4;
         while reader.cursor() < end {
-            let item = packet.build_packet(reader, TCPVisitor::read_option, None)?;
+            let item = packet.build_packet(reader, TCPVisitor::read_option, None, None)?;
             p.push(item);
         }
         drop(p);
@@ -355,8 +356,7 @@ impl crate::files::Visitor for TCPVisitor {
         p.set_head(head);
         let len = p.len;
         if len > 5 {
-            let read = |reader: &Reader| TCPVisitor::read_options(reader, len as usize);
-            let options = packet.build_packet(reader, read, Some("Options".into()))?;
+            let options = packet.build_packet(reader, TCPVisitor::read_options, Some(len as usize), Some("Options".into()))?;
             p.options = Some(options);
         }
         let left_size = reader.left().unwrap_or(0) as u16;

@@ -1,10 +1,10 @@
 use std::fmt::Formatter;
 
-use pcap_derive::{Packet, NINFO};
+use pcap_derive::{Packet2, NINFO};
 use anyhow::Result;
 
 use crate::{
-    common::{Description, IPPacket, IPv6Address, Reader, TtypePacket}, files::{Frame, Initer, PacketContext, Visitor}
+    common::{Description, IPPacket, IPv6Address, Reader, TtypePacket}, files::{Frame, Initer, PacketContext, PacketOpt, Visitor}
 };
 
 pub fn excute(ipprototype: u8, frame: &Frame, reader: &Reader) -> Result<()> {
@@ -16,8 +16,7 @@ pub fn excute(ipprototype: u8, frame: &Frame, reader: &Reader) -> Result<()> {
     }
 }
 
-
-#[derive(Default, Packet, NINFO)]
+#[derive(Default, Packet2, NINFO)]
 pub struct IPv6 {
     
     source_ip: Option<IPv6Address>,
@@ -25,6 +24,23 @@ pub struct IPv6 {
     total_len: u16,
     hop_limit: u8,
     t_protocol: u8,
+}
+
+impl IPv6 {
+    fn _create(reader: &Reader, packet: &PacketContext<Self>, p: &mut std::cell::RefMut<Self>,_:Option<PacketOpt>) -> Result<()> {
+        let _ = reader.read32(true);
+        let plen = packet.build_format(reader, Reader::_read16_be, "Payload Length: {}")?;
+        let ipproto = packet.build_lazy(reader, Reader::_read8, Description::t_protocol)?;
+        let hop_limit = packet.build_format(reader, Reader::_read8, "Hop Limit: {}")?;
+        let source = packet.build_lazy(reader, Reader::_read_ipv6, Description::source_ip);
+        let target = packet.build_lazy(reader, Reader::_read_ipv6, Description::target_ip);
+        p.t_protocol = ipproto;
+        p.source_ip = source.ok();
+        p.target_ip = target.ok();
+        p.total_len = plen;
+        p.hop_limit = hop_limit;
+        Ok(())
+    }
 }
 
 impl IPPacket for IPv6 {
@@ -68,20 +84,9 @@ pub struct IP6Visitor;
 
 impl crate::files::Visitor for IP6Visitor {
     fn visit(&self, frame: &Frame, reader: &Reader) -> Result<()> {
-        let packet: PacketContext<IPv6> = Frame::create_packet();
-        let mut p = packet.get().borrow_mut();
-        let _ = reader.read32(true);
-        let plen = packet.build_format(reader, Reader::_read16_be, "Payload Length: {}")?;
-        let ipproto = packet.build_lazy(reader, Reader::_read8, Description::t_protocol)?;
-        let hop_limit = packet.build_format(reader, Reader::_read8, "Hop Limit: {}")?;
-        let source = packet.build_lazy(reader, Reader::_read_ipv6, Description::source_ip);
-        let target = packet.build_lazy(reader, Reader::_read_ipv6, Description::target_ip);
-        p.t_protocol = ipproto;
-        p.source_ip = source.ok();
-        p.target_ip = target.ok();
-        p.total_len = plen;
-        p.hop_limit = hop_limit;
-        drop(p);
+        let packet: PacketContext<IPv6> = IPv6::create(reader, None)?;
+        let p = packet.get();
+        let ipproto = p.borrow().t_protocol;
         frame.add_element(super::ProtocolData::IPV6(packet));
         excute(ipproto,frame, reader)
     }

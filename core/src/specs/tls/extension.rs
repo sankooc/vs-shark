@@ -1,10 +1,8 @@
-use std::cell::RefMut;
 use std::fmt::Display;
 use anyhow::Result;
 
-use log::info;
-use pcap_derive::Packet;
-use crate::files::{Frame, Initer, PacketContext};
+use pcap_derive::Packet2;
+use crate::files::{Frame, Initer, PacketContext, PacketOpt};
 use crate::common::Reader;
 
 
@@ -13,26 +11,19 @@ pub enum ExtensionType {
 }
 
 //rfc6066
-#[derive(Default, Clone, Packet)]
+#[derive(Default, Clone, Packet2)]
 pub struct ServerName {
     list_len: u16,
     names: Vec<String>,
 }
 impl Display for ServerName {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        todo!()
+        f.write_str("Server Name Indication extension")
     }
 }
 
 impl ServerName {
-    pub fn create(reader: &Reader) -> Result<PacketContext<Self>> {
-        let packet: PacketContext<Self> = Frame::create_packet();
-        let mut p = packet.get().borrow_mut();
-        Self::_create(reader, &packet, &mut p)?;
-        drop(p);
-        Ok(packet)
-    }
-    fn _create(reader: &Reader, packet: &PacketContext<Self>, p: &mut std::cell::RefMut<Self>) -> Result<()> {
+    fn _create(reader: &Reader, packet: &PacketContext<Self>, p: &mut std::cell::RefMut<Self>, _:Option<PacketOpt>) -> Result<()> {
         p.list_len = packet.build_format(reader, Reader::_read16_be, "Server Name list length: {}")?;
         let finish = reader.cursor() + p.list_len as usize;
         loop {

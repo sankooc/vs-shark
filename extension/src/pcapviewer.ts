@@ -221,8 +221,9 @@ export class PcapViewerProvider implements vscode.CustomReadonlyEditorProvider<P
 					case 'ready':
 						try {
 							console.log('inited');
-							// this.init();
+							const start = Date.now();
 							webviewPanel.webview.postMessage({ type: 'raw-data', body: document.documentData });
+							console.log('spend', Date.now() - start);
 						} catch (e) {
 							console.error(e);
 						}

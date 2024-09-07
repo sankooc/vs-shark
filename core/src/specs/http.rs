@@ -4,7 +4,6 @@ use pcap_derive::Packet;
 
 use crate::{
     common::Reader,
-    constants::{arp_hardware_type_mapper, arp_oper_type_mapper, etype_mapper},
     files::{Frame, Initer, PacketContext},
 };
 use anyhow::Result;

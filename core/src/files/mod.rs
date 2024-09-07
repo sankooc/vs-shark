@@ -102,7 +102,16 @@ pub trait FieldBuilder<T> {
     fn data(&self) -> Rc<Vec<u8>>;
 }
 
+
+
 pub type MultiBlock<T> = Vec<Ref2<T>>;
+
+pub struct COption {
+    summary: String,
+    limit: usize,
+}
+
+pub type PacketOpt = usize;
 
 impl<T> Initer for MultiBlock<T> {
     fn new() -> MultiBlock<T> {
@@ -264,10 +273,11 @@ where
         }));
         Ok(val)
     }
-    pub fn build_packet<K>(
+    pub fn build_packet<K, M>(
         &self,
         reader: &Reader,
-        opt: impl Fn(&Reader) -> Result<PacketContext<K>>,
+        opt: impl Fn(&Reader, Option<M>) -> Result<PacketContext<K>>,
+        packet_opt: Option<M>,
         head: Option<String>,
     ) -> Result<Ref2<K>>
     where
@@ -275,7 +285,7 @@ where
         FieldPosition<K>: FieldBuilder<T>,
     {
         let start = reader.cursor();
-        let packet = opt(reader)?;
+        let packet = opt(reader, packet_opt)?;
         let rs = packet._clone_obj();
         let end = reader.cursor();
         let size = end - start;
