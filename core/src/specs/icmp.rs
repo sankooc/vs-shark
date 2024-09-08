@@ -1,13 +1,13 @@
 use std::fmt::Formatter;
 
 use anyhow::Result;
-use pcap_derive::{Packet, NINFO};
+use pcap_derive::{Packet, Packet2, NINFO};
 
 use crate::{
-    common::Reader, constants::icmpv6_type_mapper, files::{Frame, Initer, PacketContext}
+    common::Reader, constants::icmpv6_type_mapper, files::{Frame, Initer, PacketContext, PacketOpt}
 };
 //https://datatracker.ietf.org/doc/html/rfc792
-#[derive(Default, Packet, NINFO)]
+#[derive(Default, Packet2, NINFO)]
 pub struct ICMP {
     _type: u8,
     code: u8,
@@ -20,6 +20,18 @@ impl std::fmt::Display for ICMP {
     }
 }
 impl ICMP {
+    fn _create(
+        reader: &Reader,
+        packet: &PacketContext<Self>,
+        p: &mut std::cell::RefMut<Self>,
+        _: Option<PacketOpt>,
+    ) -> Result<()> {
+        p._type = packet.build_lazy(reader, Reader::_read8, ICMP::type_desc)?;
+        p.code = packet.build_format(reader, Reader::_read8, "Code {}")?;
+        p.checksum = reader.read16(false)?;
+        packet._build(reader, reader.cursor() - 2, 2, format!("Checksum: {:#06x}",p.checksum));
+        Ok(())
+    }
     fn _type(&self) -> String {
         let _t = self._type;
         let code = self.code;
@@ -91,13 +103,7 @@ pub struct ICMPVisitor;
 
 impl crate::files::Visitor for ICMPVisitor {
     fn visit(&self, frame: &Frame, reader: &Reader) -> Result<()> {
-        let packet: PacketContext<ICMP> = Frame::create_packet();
-        let mut p = packet.get().borrow_mut();
-        p._type = packet.build_lazy(reader, Reader::_read8, ICMP::type_desc)?;
-        p.code = packet.build_format(reader, Reader::_read8, "Code {}")?;
-        p.checksum = reader.read16(false)?;
-        packet._build(reader, reader.cursor() - 2, 2, format!("Checksum: {:#06x}",p.checksum));
-        drop(p);
+        let packet = ICMP::create(reader, None)?;
         frame.add_element(super::ProtocolData::ICMP(packet));
         Ok(())
     }
@@ -106,7 +112,6 @@ impl crate::files::Visitor for ICMPVisitor {
 
 #[derive(Default, Packet, NINFO)]
 pub struct ICMP6 {
-    
     _type: u8,
     code: u8,
     checksum: u16,

@@ -9,7 +9,7 @@ use crate::{
 };
 use std::cell::RefCell;
 use std::fmt::Display;
-use anyhow::{bail, Ok, Result};
+use anyhow::{Ok, Result};
 
 use super::ProtocolData;
 
@@ -205,21 +205,52 @@ impl Visitor for SSLVisitor {
         excute(ptype, frame, reader)
     }
 }
+#[derive(Clone, Default, Packet2, NINFO)]
+pub struct IEEE1905A {
+    version: u8,
+    message_type: u16,
+    message_id: u16,
+    flagment: u8,
+
+}
+impl Display for IEEE1905A {
+    fn fmt(&self, _f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        _f.write_str("IEEE 1905.1a")
+    }
+}
+impl IEEE1905A {
+    fn _create(reader: &Reader, packet: &PacketContext<Self>, p: &mut std::cell::RefMut<Self>, _:Option<PacketOpt>) -> Result<()> {
+        p.version = packet.build_format(reader, Reader::_read8, "Message version: {}")?;
+        reader.read8()?;//Message type: Topology response (0x0003)
+        p.message_type = packet.build_format(reader, Reader::_read16_be, "Message type: ({})")?;
+        p.message_id = packet.build_format(reader, Reader::_read16_be, "Message id: {}")?;
+        p.flagment = packet.build_format(reader, Reader::_read8, "Fragment id: {}")?;
+        // p.ltype = packet.build_lazy(reader, Reader::_read16_be, SSL::ltype)?;
+        // p.len = packet.build_lazy(reader, Reader::_read16_be, SSL::len_str)?;
+        // p.source = packet.build_lazy(reader, Reader::_read_mac, SSL::source_str).ok();
+        // reader._move(2);
+        // p.ptype = packet.build_lazy(reader, Reader::_read16_be, SSL::ptype_str)?;
+        Ok(())
+    }
+    
+}
+
+pub struct IEEE1905AVisitor;
+impl Visitor for IEEE1905AVisitor {
+    fn visit(&self, frame: &Frame, reader: &Reader) -> Result<()>{
+        let packet = IEEE1905A::create(reader, None)?;
+        frame.add_element(ProtocolData::IEEE1905A(packet));
+        Ok(())
+    }
+}
 
 pub fn excute(etype: u16, frame: &Frame, reader: &Reader) -> Result<()>{
     match etype {
-        2048 => {
-            return super::ip4::IP4Visitor.visit(frame, reader);
-        }
-        34525 => {
-            return super::ip6::IP6Visitor.visit(frame, reader);
-        }
-        0x0806 => {
-            return super::arp::ARPVisitor.visit(frame, reader);
-        }
-        34916 => {
-            return PPPoESSVisitor.visit(frame, reader);
-        }
+        2048 => super::ip4::IP4Visitor.visit(frame, reader),
+        34525 => super::ip6::IP6Visitor.visit(frame, reader),
+        0x0806 => super::arp::ARPVisitor.visit(frame, reader),
+        0x893a => IEEE1905AVisitor.visit(frame, reader),
+        34916 => PPPoESSVisitor.visit(frame, reader),
         _ => Ok(()),
     }
 }

@@ -7,8 +7,8 @@ pub fn parse(data: &[u8]) -> Result<Instance> {
     let ctx = Instance::new(FileType::PCAP);
     let reader = Reader::new(data);
     let _magic = reader.read32(true)?;
-    let major = reader.read16(true)?;
-    let minor = reader.read16(true)?;
+    let major = reader.read16(false)?;
+    let minor = reader.read16(false)?;
     
     let context = ctx.context();
     let mut info = context.info.borrow_mut();

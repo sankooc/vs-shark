@@ -1,4 +1,4 @@
-use crate::{common::Reader, files::{Frame, Element,Field, PacketContext, Visitor}};
+use crate::{common::{Reader, IO}, files::{Element, Field, Frame, PacketContext, Visitor}};
 
 pub mod ethernet;
 pub mod ip4;
@@ -18,6 +18,18 @@ use strum_macros::Display;
 
 pub fn execute(link_type: u16, frame: &Frame, reader: &Reader)-> Result<()>{
   match link_type {
+    0 => {
+      let _head = reader._slice(16);
+      if _head[0] == 0 && _head[5] == 6 {
+        let lat = &_head[14..16];
+        let _flag = u16::from_be_bytes(lat.try_into().unwrap());
+        return match _flag {
+          0x0806 | 0x0800 | 0x86dd | 0x8864 => ethernet::SSLVisitor.visit(frame, reader),
+          _ => ethernet::EthernetVisitor.visit(frame, reader),
+        }
+      }
+      ethernet::EthernetVisitor.visit(frame, reader)
+    },
     113 => ethernet::SSLVisitor.visit(frame, reader),
     _ => ethernet::EthernetVisitor.visit(frame, reader),
   }
@@ -38,6 +50,7 @@ type DHCP = PacketContext<dhcp::DHCP>;
 type HTTP = PacketContext<http::HTTP>;
 type IGMP = PacketContext<igmp::IGMP>;
 type TLS = PacketContext<tls::TLS>;
+type IEEE1905A = PacketContext<ethernet::IEEE1905A>;
 
 
 #[enum_dispatch]
@@ -59,4 +72,5 @@ pub enum ProtocolData {
     DHCP,
     HTTP,
     TLS,
+    IEEE1905A,
 }

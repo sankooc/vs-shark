@@ -1,15 +1,15 @@
 use std::fmt::Formatter;
 
-use pcap_derive::Packet;
+use pcap_derive::Packet2;
 use anyhow::Result;
 
 use crate::{
-    common::{IPPacket, IPv4Address, MacAddress, Reader}, constants::{arp_hardware_type_mapper, arp_oper_type_mapper, etype_mapper}, files::{Frame, Initer, PacketContext}
+    common::{IPPacket, IPv4Address, MacAddress, Reader}, constants::{arp_hardware_type_mapper, arp_oper_type_mapper, etype_mapper}, files::{Frame, Initer, PacketContext, PacketOpt}
 };
 
 use super::ProtocolData;
 
-#[derive(Default, Packet)]
+#[derive(Default, Packet2)]
 pub struct ARP {
     hardware_type: u16,
     protocol_type: u16,
@@ -74,13 +74,12 @@ impl ARP {
     fn _operation_type(&self) -> String {
         arp_oper_type_mapper(self.operation)
     }
-}
-pub struct ARPVisitor;
-
-impl crate::files::Visitor for ARPVisitor {
-    fn visit(&self, frame: &Frame, reader: &Reader) -> Result<()> {
-        let packet: PacketContext<ARP> = Frame::create_packet();
-        let mut p = packet.get().borrow_mut();
+    fn _create(
+        reader: &Reader,
+        packet: &PacketContext<Self>,
+        p: &mut std::cell::RefMut<Self>,
+        _: Option<PacketOpt>,
+    ) -> Result<()> {
         p.hardware_type = packet.build_lazy(reader, Reader::_read16_be, ARP::hardware_type_desc)?;
         p.protocol_type = packet.build_lazy(reader, Reader::_read16_be, ARP::protocol_type_desc)?;
         p.hardware_size = packet.build_format(reader, Reader::_read8, "Hardware size: {}")?;
@@ -90,7 +89,14 @@ impl crate::files::Visitor for ARPVisitor {
         p.sender_ip = packet.build_format(reader, Reader::_read_ipv4, "Sender IP address: {}").ok();
         p.target_mac = packet.build_format(reader, Reader::_read_mac, "Target MAC address: ({})").ok();
         p.target_ip = packet.build_format(reader, Reader::_read_ipv4, "Target IP address: {}").ok();
-        drop(p);
+    Ok(())
+    }
+}
+pub struct ARPVisitor;
+
+impl crate::files::Visitor for ARPVisitor {
+    fn visit(&self, frame: &Frame, reader: &Reader) -> Result<()> {
+        let packet = ARP::create(reader, None)?;
         frame.add_element(ProtocolData::ARP(packet));
         Ok(())
     }

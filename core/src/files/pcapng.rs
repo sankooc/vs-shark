@@ -1,5 +1,6 @@
 use crate::common::{FileType, Reader};
 use anyhow::Result;
+use log::info;
 
 use super::Instance;
 

@@ -4,7 +4,7 @@ use std::fmt::Display;
 use pcap_derive::{Packet, NINFO};
 use anyhow::Result;
 
-use crate::common::{IPv4Address, Reader};
+use crate::common::{IPv4Address, IPv6Address, Reader};
 use crate::constants::{dns_class_mapper, dns_type_mapper};
 use crate::files::{DomainService, Frame, Initer, MultiBlock, PacketContext, PacketOpt, Ref2, Visitor};
 
@@ -94,9 +94,10 @@ impl Question {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Default)]
 pub enum ResourceType {
     A(IPv4Address),
+    AAAA(IPv6Address),
     CNAME(String),
     PTR(String),
     SOA(String),
@@ -112,6 +113,7 @@ impl ResourceType {
             ResourceType::CNAME(str) =>  str.into(),
             ResourceType::PTR(str) =>  str.into(),
             ResourceType::SOA(str) =>  str.into(),
+            ResourceType::AAAA(str) =>  str.to_string(),
         }
     }
 }
@@ -216,7 +218,10 @@ impl DNSVisitor {
         let packet: PacketContext<RecordResource> = Frame::create_packet();
         let mut p: std::cell::RefMut<RecordResource> = packet.get().borrow_mut();
         let name_ref = reader.read16(true)?;
-        let _read = |reader: &Reader| reader.read_dns_compress_string(archor, "", name_ref);
+        let _read = |reader: &Reader| {
+            
+            return  reader.read_dns_compress_string(archor, "", name_ref);
+        };
         p.name = packet.build_lazy(reader, _read, RecordResource::name)?;
         p._type = packet.build_lazy(reader, Reader::_read16_be, RecordResource::_type)?;
         p.class = packet.build_lazy(reader, Reader::_read16_be, RecordResource::class)?;
@@ -233,7 +238,14 @@ impl DNSVisitor {
             5 => {
                 let _read = |reader: &Reader| reader._read_compress(archor); 
                 p.data = ResourceType::CNAME(packet.build_format(reader, _read, "CNAME: {}")?);
-            }
+            },
+            28 => {
+                if p.len == 16 {
+                    p.data = ResourceType::AAAA(packet.build_format(reader, Reader::_read_ipv6, "Address: {}")?);
+                } else {
+                    reader.slice(p.len as usize);
+                }
+            },
             _ => {reader.slice(p.len as usize);},
         };
         // reader.slice(p.len as usize);

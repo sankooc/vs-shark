@@ -2,7 +2,6 @@ mod extension;
 use std::{fmt::Formatter, ops::DerefMut, rc::Rc};
 
 use anyhow::Result;
-use log::info;
 use pcap_derive::{Packet, Packet2};
 
 use super::ProtocolData;

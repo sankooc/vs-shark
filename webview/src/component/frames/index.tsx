@@ -86,7 +86,6 @@ function FrameList(props: MainProto) {
     protos.push({ name: `${code.toUpperCase()} (${_map[code]})`, code});
   }
   const onSelect = (item: ColumnItem): void => {
-    // props.instance.ctx.get_fields(item.no - 1);
     setStack(props.instance.ctx.get_fields(item.no - 1));
     setIndex(item.no);
     setHex(null);
@@ -112,8 +111,8 @@ function FrameList(props: MainProto) {
         </IconField>
         <DTable cols={columes} scrollHeight={scrollHeight} items={items} onSelect={onSelect} />
       </SplitterPanel>
-      <SplitterPanel className="flex align-items-center justify-content-center" minSize={30}>
-        <Splitter className="w-full" style={{height: `${down}vh`}}>
+      <SplitterPanel className="flex align-items-center justify-content-center" minSize={30} style={{maxHeight: `${down}vh`}}>
+        <Splitter className="w-full" style={{height: `100%`}}>
           <SplitterPanel className="flex align-items-center" size={50} minSize={50} style={{overflow: 'auto' }}>
             <Stack frame={index} items={stacks} onSelect={onStackSelect}/>
           </SplitterPanel>

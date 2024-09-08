@@ -220,23 +220,23 @@ export class PcapViewerProvider implements vscode.CustomReadonlyEditorProvider<P
 				switch (type) {
 					case 'ready':
 						try {
-							console.log('inited');
+							// console.log('inited');
 							const start = Date.now();
 							webviewPanel.webview.postMessage({ type: 'raw-data', body: document.documentData });
-							console.log('spend', Date.now() - start);
+							// console.log('spend', Date.now() - start);
 						} catch (e) {
 							console.error(e);
 						}
 						break;
 					case 'log':
-						console.log(body);
+						// console.log(body);
 						if(body.level === 'error'){
 							vscode.window.showErrorMessage(body.msg?.toString());
 						}
 						this.output.appendLine(JSON.stringify(body));
 						break;
 					default:
-						console.log('unknown type', msg.type);
+						// console.log('unknown type', msg.type);
 				}
 			} catch (e) {
 				console.error(e);

@@ -1,10 +1,10 @@
-import React, { ReactElement, SyntheticEvent, useEffect, useState } from "react";
+import React, { ReactElement, useEffect, useState } from "react";
 import { MenuItem } from 'primereact/menuitem';
 import { Badge } from 'primereact/badge';
 import { Menu } from 'primereact/menu';
-import { ComMessage, IDNSRecord } from '../common';
+import { ComMessage } from '../common';
 import Loading from './loading';
-import { onMessage, emitMessage } from '../connect';
+import { onMessage, log, emitMessage } from '../connect';
 import Overview from './overview';
 
 import FrameList from './frames';
@@ -12,7 +12,6 @@ import TCPList from './tcp';
 // import ARPReplies from './arp';
 import DNSList from './dns';
 import { CProto } from "../wasm";
-import { ComLog, Panel, MainProps, HexV } from "../common";
 import init, { load, WContext,FrameInfo } from 'rshark';
 
 
@@ -34,10 +33,15 @@ const Main = () => {
       switch (type) {
         case 'raw-data': {
           initPro.then(() => {
-            const start = Date.now();
-            const ctx = load(body as Uint8Array);
-            console.log('spend', Date.now() - start);
-            setData(new CProto(ctx))
+            try {
+              // const start = Date.now();
+              const ctx = load(body as Uint8Array);
+              setData(new CProto(ctx))
+              // console.log('spend', Date.now() - start);
+            }catch(e){
+              console.error(e);
+              log('error', 'parse_failed');
+            }
           });
         }
       }

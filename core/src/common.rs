@@ -219,7 +219,8 @@ impl Reader<'_> {
             if next >= 0xc0 {
                 return Ok((list.into_iter().collect::<Vec<_>>().join("."), self.read16(true)?));
             }
-            if next > self.left()? as u8 {
+            let __left = self.left()?;
+            if next as usize > __left {
                 return Ok((list.into_iter().collect::<Vec<_>>().join("."), 0));
             }
             let _size = self.read8()?;
@@ -233,6 +234,16 @@ impl Reader<'_> {
         if refer == 0 {
             // self._move(1);
             return Ok(def.into());
+        }
+        let pre = refer >> 8;
+        if pre < 0xc0 {
+            self._back(2);
+            let (str, refer2) = self.read_compress_string()?;
+            if refer2 > 0 {
+                return Ok(self.read_dns_compress_string(archor, &str, refer2)?)
+            } else {
+                return Ok(str);
+            }
         }
         let inx = (refer & 0x3fff) as usize;
         let from = archor + inx;
