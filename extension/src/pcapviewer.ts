@@ -13,8 +13,11 @@ function getNonce() {
 	return text;
 }
 
+const DIST = "webview/dist";
+const ENTRY = "app.js";
+
 const createWebviewHtml = (context: vscode.ExtensionContext, webview: vscode.Webview, file: string): string => {
-	const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(context.extensionUri, 'media', file));
+	const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(context.extensionUri, DIST, file));
 	const nonce = getNonce();
 	const result = `<!DOCTYPE html>
 		<html lang="en">
@@ -30,36 +33,6 @@ const createWebviewHtml = (context: vscode.ExtensionContext, webview: vscode.Web
 		`;
 	return result;
 }
-
-// class DetailProvider implements vscode.WebviewViewProvider {
-// 	// public static instance: DetailProvider = new DetailProvider();
-// 	context: vscode.ExtensionContext;
-// 	webview!: vscode.WebviewView;
-// 	_extensionUri: vscode.Uri;
-// 	constructor(context: vscode.ExtensionContext) {
-// 		this.context = context;
-// 		this._extensionUri = context.extensionUri
-// 	}
-// 	resolveWebviewView(webviewView: vscode.WebviewView, context: vscode.WebviewViewResolveContext<unknown>, token: vscode.CancellationToken): void | Thenable<void> {
-// 		this.webview = webviewView;
-// 		webviewView.webview.options = {
-// 			enableScripts: true,
-// 			localResourceRoots: [
-// 				this._extensionUri
-// 			]
-// 		};
-// 		webviewView.webview.html = createWebviewHtml(this.context, webviewView.webview, 'hex.js');
-// 	}
-// 	load(data: Uint8Array, hightlight: [number, number]): void {
-// 		if (!this.webview) return;
-// 		const it = new HexV(data);
-// 		it.index = hightlight;
-// 		this.webview.webview.postMessage(new ComMessage('hex-data', it));
-// 	}
-// }
-/**
- * Define the document (the data model) used for paw draw files.
- */
 class PcapDocument extends Disposable implements vscode.CustomDocument {
 
 	static async create(
@@ -190,11 +163,7 @@ export class PcapViewerProvider implements vscode.CustomReadonlyEditorProvider<P
 		openContext: { backupId?: string },
 		_token: vscode.CancellationToken
 	): Promise<PcapDocument> {
-		const document: PcapDocument = await PcapDocument.create(uri, openContext.backupId);
-
-		const listeners: vscode.Disposable[] = [];
-
-		return document;
+		return PcapDocument.create(uri, openContext.backupId);
 	}
 
 	async resolveCustomEditor(
@@ -208,12 +177,7 @@ export class PcapViewerProvider implements vscode.CustomReadonlyEditorProvider<P
 		webviewPanel.webview.options = {
 			enableScripts: true,
 		};
-		webviewPanel.webview.html = createWebviewHtml(this._context, webviewPanel.webview, 'app.js');
-		// this.getHtmlForWebview(webviewPanel.webview);
-
-		// const client = new PCAPClient(document.documentData, webviewPanel, PcapViewerProvider.output, PcapViewerProvider.pcapProvider);
-
-
+		webviewPanel.webview.html = createWebviewHtml(this._context, webviewPanel.webview, ENTRY);
 		webviewPanel.webview.onDidReceiveMessage((msg) => {
 			const { type, body } = msg
 			try {

@@ -40,7 +40,7 @@
 		]
 	},
 	"scripts": {
-		"build": "sh build.sh",
+		"build": "cd webview && npm run css && npm run build",
 		"vscode:prepublish": "pnpm run package",
 		"compile": "webpack",
 		"watch": "webpack --watch",
