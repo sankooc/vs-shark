@@ -23,6 +23,7 @@ const itemRenderer = (item, options) => {
   </a>
 }; //pi-chart-bar
 
+let _start = 0;
 const initPro = init();
 const Main = () => {
   const [select, setSelect] = useState('overview');
@@ -34,10 +35,11 @@ const Main = () => {
         case 'raw-data': {
           initPro.then(() => {
             try {
-              // const start = Date.now();
+              console.log('load raw data spend', Date.now() - _start, 'ms');
+              const start = Date.now();
               const ctx = load(body as Uint8Array);
               setData(new CProto(ctx))
-              // console.log('spend', Date.now() - start);
+              console.log('parse spend', Date.now() - start, 'ms');
             }catch(e){
               console.error(e);
               log('error', 'parse_failed');
@@ -46,6 +48,7 @@ const Main = () => {
         }
       }
     });
+    _start = Date.now();
     emitMessage(new ComMessage('ready', 'demo'));
   }, []);
 

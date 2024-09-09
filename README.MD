@@ -27,8 +27,8 @@
 pure pcap/pcapng analyzer
 
 ### Protocols
-
-<table style="width: 100%">
+<div style="width: 100%; text-align: center;">
+<table >
 <tr>
 <td style="font-weight: bold">file type</td>
 <td>PCAP</td>
@@ -38,6 +38,7 @@ pure pcap/pcapng analyzer
 <td style="font-weight: bold">ehternet</td>
 <td>ETHERNET II</td>
 <td>PPPOE</td>
+<td>IEE 1905.1a</td>
 <td>SSL</td>
 </tr>
 <tr>
@@ -61,6 +62,7 @@ pure pcap/pcapng analyzer
 <td>TLS</td>
 </tr>
 </table>
+</div>
 
 ### Install
 

@@ -44,15 +44,18 @@ pure pcap/pcapng analyzer
 ### features
 
 
+* traffic overview
+
 <img src="https://raw.githubusercontent.com/sankooc/vs-shark/master/assets/overview.png" style="text-align:center, width: 80%"/>
-</br>
-</hr>
+
+* packets 
 
 <img src="https://raw.githubusercontent.com/sankooc/vs-shark/master/assets/frame.png" style="text-align:center, width: 80%"/>
-</br>
-</hr>
+
+* tcp conversation
+
 <img src="https://raw.githubusercontent.com/sankooc/vs-shark/master/assets/conv.png" style="text-align:center, width: 80%"/>
-</br>
-</hr>
+
+* dns list
 
 <img src="https://raw.githubusercontent.com/sankooc/vs-shark/master/assets/dns.png" style="text-align:center, width: 80%"/>
