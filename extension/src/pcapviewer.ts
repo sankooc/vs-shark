@@ -1,8 +1,5 @@
 import * as vscode from 'vscode';
 import { Disposable, disposeAll } from './dispose';
-// import { Client } from './client';
-// import { Panel, ComMessage, ComLog, CTreeItem, HexV } from './common';
-// import { FrameProvider } from './treeProvider';
 
 function getNonce() {
 	let text = '';
@@ -13,7 +10,7 @@ function getNonce() {
 	return text;
 }
 
-const DIST = "webview/dist";
+const DIST = "media";
 const ENTRY = "app.js";
 
 const createWebviewHtml = (context: vscode.ExtensionContext, webview: vscode.Webview, file: string): string => {

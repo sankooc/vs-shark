@@ -30,8 +30,8 @@ dependencies:
     specifier: ^18.3.0
     version: 18.3.1(react@18.3.1)
   rshark:
-    specifier: file:../../wasm/pkg
-    version: file:../../wasm/pkg
+    specifier: file:../wasm/pkg
+    version: file:../wasm/pkg
 
 devDependencies:
   '@types/node-sass':
@@ -4900,7 +4900,7 @@ packages:
       tslib: 2.3.0
     dev: false
 
-  file:../../wasm/pkg:
-    resolution: {directory: ../../wasm/pkg, type: directory}
+  file:../wasm/pkg:
+    resolution: {directory: ../wasm/pkg, type: directory}
     name: nshark
     dev: false

@@ -1,18 +1,7 @@
 import { DNSRecord, WContext, FrameInfo, TCPConversation } from 'rshark';
 
-// import { MainProps, Frame } from './common';
-
-// const convert(f: FrameInfo): Frame {
-//   const rs = new Frame();
-//   rs.
-// }
-
-// export class WASMProps extends MainProps {
-//   constructor(private cxt: WContext){}
-//   _frames(): Frame[] {
-//     this.cxt.get_frames;
-//   }
-// }
+import { IDNSRecord } from './common';
+import { PCAPClient } from './client';
 
 export class CProto {
   frames?: FrameInfo[];
@@ -42,5 +31,7 @@ export class CProto {
 export class MainProto {
   instance: CProto;
 }
-
+export class DNSProps {
+  constructor(public ctx: WContext, public dnsRecords: IDNSRecord[]) { }
+}
 export { DNSRecord }

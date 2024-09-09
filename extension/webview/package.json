@@ -8,7 +8,7 @@
     "serve": "npx webpack serve -c webpack.dev.config.js",
     "css": "npx sass src --no-source-map",
     "css-watch": "npx sass src --no-source-map --watch",
-    "build": "rm -rf dist && npx webpack "
+    "build": "npx webpack "
   },
   "dependencies": {
     "echarts": "^5.5.0",
@@ -16,7 +16,7 @@
     "primeflex": "^3.3.1",
     "primeicons": "^7.0.0",
     "primereact": "^10.7.0",
-    "rshark": "file:../../wasm/pkg",
+    "rshark": "file:../wasm/pkg",
     "@vscode/webview-ui-toolkit": "^1.2.2",
     "react": "^18.3.0",
     "react-dom": "^18.3.0"

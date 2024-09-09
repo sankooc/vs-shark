@@ -1,10 +1,9 @@
 import React, { useEffect } from "react";
 import ReactECharts from 'echarts-for-react';
-import { OverviewSource } from "../../common";
+import { OverviewSource, Statc } from "../../common";
 import { MainProto } from '../../wasm';
 import { FrameInfo } from 'rshark';
 import { TabView, TabPanel } from 'primereact/tabview';
-import { Statc } from '../../client';
 import './index.css';
 
 const bytesFormater = (v) => {

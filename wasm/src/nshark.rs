@@ -3,7 +3,7 @@ use std::cell::{Ref, RefCell};
 use std::ops::Deref;
 
 use core::common::FileInfo;
-use core::files::{DomainService, Element, Instance};
+use core::files::{DomainService, Element, Frame, Instance};
 use core::{entry::*, files};
 use js_sys::Uint8Array;
 use wasm_bindgen::prelude::*;
@@ -219,35 +219,56 @@ impl WContext {
         WFileInfo::new(self.ctx.get_info())
     }
     #[wasm_bindgen]
+    pub fn get_frame_count(&self) -> usize {
+        self.ctx.get_frames().len()
+    }
+
+    fn _frame(frame: &Frame, start_ts: u64) -> FrameInfo {
+        let mut item = FrameInfo {
+            ..Default::default()
+        };
+        let sum = frame.summary.borrow();
+        item.index = sum.index;
+        item.time = (frame.ts - start_ts) as u32;
+        item.len = frame.capture_size;
+        match &sum.ip {
+            Some(ip) => {
+                let _ip = ip.as_ref().borrow();
+                item.source = _ip.source_ip_address();
+                item.dest = _ip.target_ip_address();
+            }
+            None => {}
+        }
+        item.protocol = sum.protocol.clone();
+        item.info = frame.info();
+        item.status = "info".into();
+        match frame.eles.borrow().last() {
+            Some(ele) => {
+                item.status = ele.status();
+            },
+            _ => {}
+        }
+        item.irtt = 1;
+        item
+    }
+    #[wasm_bindgen]
+    pub fn select_frames(&mut self, start: usize, end: usize) -> Vec<FrameInfo> {
+        let start_ts = self.get_info().start_time;
+        let mut rs = Vec::new();
+        let _fs = self.ctx.get_frames();
+        let _data: &[Frame] = &_fs.deref()[start..(start + end)];
+        for frame in _data.iter() {
+            let item = WContext::_frame(frame, start_ts);
+            rs.push(item);
+        }
+        rs
+    }
+    #[wasm_bindgen]
     pub fn get_frames(&mut self) -> Vec<FrameInfo> {
         let start_ts = self.get_info().start_time;
         let mut rs = Vec::new();
         for frame in self.ctx.get_frames().iter() {
-            let mut item = FrameInfo {
-                ..Default::default()
-            };
-            let sum = frame.summary.borrow();
-            item.index = sum.index;
-            item.time = (frame.ts - start_ts) as u32;
-            item.len = frame.capture_size;
-            match &sum.ip {
-                Some(ip) => {
-                    let _ip = ip.as_ref().borrow();
-                    item.source = _ip.source_ip_address();
-                    item.dest = _ip.target_ip_address();
-                }
-                None => {}
-            }
-            item.protocol = sum.protocol.clone();
-            item.info = frame.info();
-            item.status = "info".into();
-            match frame.eles.borrow().last() {
-                Some(ele) => {
-                    item.status = ele.status();
-                },
-                _ => {}
-            }
-            item.irtt = 1;
+            let item = WContext::_frame(frame, start_ts);
             rs.push(item);
         }
         rs

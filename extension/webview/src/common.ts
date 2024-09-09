@@ -1,4 +1,4 @@
-import { DNSRecord, TCPConversation, WContext } from 'rshark';
+import { DNSRecord, TCPConversation, FrameInfo } from 'rshark';
 
 export class ComMessage<T> {
     type: string;
@@ -17,60 +17,6 @@ export class ComLog {
         this.level = level;
         this.msg = msg;
     }
-}
-
-export enum Panel {
-    MAIN,
-    TREE,
-    DETAIL,
-}
-
-
-export abstract class PCAPClient {
-    level: string = 'trace';
-    data!: Uint8Array;
-    initData(data: Uint8Array): void {
-        this.data = data;
-    };
-    abstract emitMessage(panel: Panel, msg: ComMessage<any>): void;
-    abstract printLog(log: ComLog): void;
-    abstract selectFrame(no: number): void;
-
-    abstract renderHexView(data: HexV): void;
-    abstract init(): MainProps;
-
-    handle(msg: ComMessage<any>) {
-        if (!msg) return;
-        const { type, body } = msg
-        try {
-            switch (type) {
-                case 'ready':
-                    try {
-                        this.init();
-                    } catch (e) {
-                        console.error(e);
-                        this.printLog(new ComLog('error', 'failed to open file'));
-                    }
-                    break;
-                case 'log':
-                    this.printLog(body as ComLog);
-                    break;
-                case 'webpackWarnings':
-                    break;
-                case 'frame-select':
-                    this.selectFrame(body.index as number);
-                    break;
-                case 'hex-data':
-                    this.renderHexView(body as HexV);
-                    break;
-                default:
-                    console.log('unknown type', msg.type);
-            }
-        } catch (e) {
-            console.error(e);
-        }
-    }
-
 }
 
 export interface ColumnItem {
@@ -241,6 +187,70 @@ export class IDNSRecord implements ColumnItem {
         return '';
     }
 }
-export class DNSProps {
-    constructor(public ctx: WContext, public dnsRecords: IDNSRecord[]) { }
+
+export class Statc {
+    size: number = 0;
+    count: number = 0;
+    start!: number;
+    end!: number;
+    stc: Map<string, number> = new Map();
+    public addLable(label: string, packet: FrameInfo): void {
+      const count = this.stc.get(label) || 0;
+      const size = packet.len || 0;
+      this.stc.set(label, count + size);
+    }
+    public static create(ts: number, per: number) {
+      const item = new Statc();
+      item.start = ts;
+      item.end = ts + per;
+      return item;
+    }
+  }
+
+  const parseTime = (time: number): string => {
+    const date = new Date(time);
+    const [hour, minutes, seconds, ms] = [
+      date.getHours(),
+      date.getMinutes(),
+      date.getSeconds(),
+      date.getMilliseconds()
+    ];
+    return `${minutes}:${seconds} ${ms}`;
+  }
+  
+export interface IContextInfo {
+    frame: number,
+    conversation: number,
+    dns: number,
+}
+
+export interface IOverviewData {
+    legends: any[],
+    labels: any[],
+    datas: any[],
+}
+
+export class Pagination {
+    page: number;
+    size: number;
+    filter: string;
+}
+export interface IFrameInfo {
+    no: number;
+    time: number;
+    source: string;
+    dest: string;
+    protocol: string;
+    // iRtt: number;
+    len: number;
+    // style: string;
+    info: string;
+    status: string;
+}
+
+export interface IFrameResult {
+    data: IFrameInfo[],
+    total: number,
+    page: number;
+    size: number;
 }
