@@ -2,6 +2,7 @@
 @import '../theme';
 @import '../common';
 $nav_selected_color: rebeccapurple;
+
 html, body {
     height: 100%;
     padding: 0;
@@ -110,11 +111,16 @@ tr[role=row]{
     }
 }
 .paging {
-    
-    // position: sticky;
-    // bottom: -1px;
-    // left: 0;
     button{
         margin: 0;
     }
+}
+.treemap{
+    width: 45vw;
+    border-right: 1px solid var(--vscode-list-focusBackground);
+}
+.hexvewer{
+    width: calc(45vw - 2px);
+    height: 30vh;
+    overflow: auto;
 }

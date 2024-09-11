@@ -88,8 +88,8 @@ export class Client extends PCAPClient {
 		this.output.info(log.msg.toString());
 	}
 	emitMessage(msg: ComMessage<any>): void {
-		console.log('vs emit', msg);
 		this.view.postMessage(msg);
+		console.log('emit', msg?.type);
 	}
 }
 

@@ -18,6 +18,7 @@ pure pcap/pcapng analyzer
 <td>ETHERNET II</td>
 <td>PPPOE</td>
 <td>SSL</td>
+<td>IEE 1905.1a</td>
 </tr>
 <tr>
 <td style="font-weight: bold">network</td>
@@ -48,7 +49,7 @@ pure pcap/pcapng analyzer
 
 <img src="https://raw.githubusercontent.com/sankooc/vs-shark/master/assets/overview.png" style="text-align:center, width: 80%"/>
 
-* packets 
+* ip packets 
 
 <img src="https://raw.githubusercontent.com/sankooc/vs-shark/master/assets/frame.png" style="text-align:center, width: 80%"/>
 
@@ -56,6 +57,6 @@ pure pcap/pcapng analyzer
 
 <img src="https://raw.githubusercontent.com/sankooc/vs-shark/master/assets/conv.png" style="text-align:center, width: 80%"/>
 
-* dns list
+* dns
 
 <img src="https://raw.githubusercontent.com/sankooc/vs-shark/master/assets/dns.png" style="text-align:center, width: 80%"/>

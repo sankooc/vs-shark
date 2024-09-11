@@ -87,7 +87,7 @@ const Main = () => {
         <div className="w-full flex flex-grow-1">
           {buildPage()}
         </div>
-        <div className="w-1 flex flex-column flex-grow-0 flex-shrink-0">
+        <div className="flex flex-column flex-grow-0 flex-shrink-0" style={{width: '10vw'}}>
           <Menu model={navItems} className="w-full h-full" />
         </div>
       </div>

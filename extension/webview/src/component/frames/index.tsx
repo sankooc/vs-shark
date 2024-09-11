@@ -62,7 +62,7 @@ function FrameList() {
       <DTable key={page} cols={columes} result={{items, page, size, total}} getStyle={getStyle} onSelect={onSelect} request={request} scrollHeight={70}/>
     </div>
     <div className="viewer flex-grow-1 flex flex-row">
-      <div className="treemap h-full flex-shrink-0" style={{"width":"50%","borderRight":"1px solid var(--vscode-list-focusBackground)"}}>
+      <div className="treemap h-full flex-shrink-0">
       <Stack frame={index} items={stacks} onSelect={onStackSelect}/>
       </div>
       <div className="hexvewer">

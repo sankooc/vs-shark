@@ -1,62 +1,87 @@
+@import '../../common';
 #detail {
     overflow: auto;
-    padding: 0;
-    margin: 0;
-    font-size: 12px;
-}
-#detail {
-    overflow: auto;
-    padding: 0;
     margin: 0;
     font-size: 12px;
     display: flex; 
     flex-direction: row; 
     flex-wrap: nowrap;
-    align-items: flex-start;
+    align-items: start;
     justify-content: left;
-    width: 45rem;
+    width: 100%;
+    // min-height: 100%;
+    overflow-x: hidden;
 }
 #detail>.index {
-    flex-basis: 7rem;
+    padding-top: 1rem;
+    flex-basis: 15%;
     flex-shrink: 0;
     flex-grow: 0;
+    min-height: 100%;
+    background-color: var(--vscode-list-dropBackground);
 }
 #detail>.hex {
-    flex-basis: 25rem; 
+    padding-top: 1rem;
+    flex-basis: 33rem; 
     display: flex; 
     flex-wrap: wrap;
     flex-shrink: 0;
     flex-grow: 0;
+    background-color: var(--vscode-minimap-infoHighlight);
+    code {
+        border-radius: 0 !important;
+    }
+    code:nth-child(8n) {
+        margin-right: 1rem;
+    }
+    code:nth-child(16n) {
+        margin-right: 0;
+    }
 }
 #detail>.text {
-    flex-basis: 14rem;
-    overflow: none;
-}
-#detail>.text>pre {
-    width: 14rem;
+    padding: 1rem;
+    overflow-x: hidden;
     white-space: break-spaces;
     word-break: break-all;
 }
-pre {
+#detail>.text pre {
+    font-family: $base-family;
+    white-space: break-spaces;
+    word-break: break-all;
+    display: inline;
     margin: 0 14px;
     padding: 0;
     text-align: right;
-    font-family: "0xProto Nerd Font", sans-serif;
+    &.active {
+        background-color: darkgoldenrod;
+        color: darkblue;
+    }
+}
+.index pre {
+    margin: 0 14px;
+    padding: 0;
+    text-align: right;
+    font-family: $base-family;
+    height: 2rem;
+    &.active {
+        background-color: darkgoldenrod;
+        color: darkblue;
+    }
 }
 code {
+    text-align: center;
     margin: 0;
     padding: 0;
-    flex-basis: 6.22%;
-    text-align: center;
-    font-family: "0xProto Nerd Font", sans-serif;
-    border-radius: 0;
-}
-code.active {
-    background-color: darkgoldenrod;
-    color: darkblue;
-}
-dv{
-    margin: 1px 0px;
-    padding: 0;
-    flex-basis: 1rem;
+    flex-basis: 2rem;
+    height: 2rem;
+    cursor: pointer;
+    font-family: $base-family;
+    &:hover{
+        color: var(--vscode-list-focusOutline);
+        background-color: var(--vscode-list-focusForeground);
+    }
+    &.active {
+        background-color: darkgoldenrod;
+        color: darkblue;
+    }
 }
