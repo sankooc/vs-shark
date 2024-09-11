@@ -1,5 +1,6 @@
 use std::borrow::Borrow;
 use std::cell::{Ref, RefCell};
+use std::cmp;
 use std::ops::Deref;
 
 use core::common::FileInfo;
@@ -222,7 +223,7 @@ impl WContext {
     pub fn get_frame_count(&self) -> usize {
         self.ctx.get_frames().len()
     }
-
+    
     fn _frame(frame: &Frame, start_ts: u64) -> FrameInfo {
         let mut item = FrameInfo {
             ..Default::default()
@@ -251,18 +252,31 @@ impl WContext {
         item.irtt = 1;
         item
     }
+
+    
     #[wasm_bindgen]
-    pub fn select_frames(&mut self, start: usize, end: usize) -> Vec<FrameInfo> {
+    pub fn select_frames(&mut self, start: usize, size: usize) -> Vec<FrameInfo> {
         let start_ts = self.get_info().start_time;
-        let mut rs = Vec::new();
         let _fs = self.ctx.get_frames();
-        let _data: &[Frame] = &_fs.deref()[start..(start + end)];
+        let total = _fs.len();
+        if total <= start {
+            return Vec::new()
+        }
+        let end = cmp::min(start + size, total);
+        let _data: &[Frame] = &_fs.deref()[start..end];
+        let mut rs = Vec::new();
         for frame in _data.iter() {
             let item = WContext::_frame(frame, start_ts);
             rs.push(item);
         }
         rs
     }
+
+    #[wasm_bindgen]
+    pub fn get_aval_protocals(&self) -> Vec<String>{
+        Vec::new()
+    }
+
     #[wasm_bindgen]
     pub fn get_frames(&mut self) -> Vec<FrameInfo> {
         let start_ts = self.get_info().start_time;
@@ -280,6 +294,7 @@ impl WContext {
         f.get_fields().iter().map(|f| Field::convert(&f)).collect()
     }
 
+    
     #[wasm_bindgen]
     pub fn get_dns_record(&self) -> Vec<DNSRecord> {
         let mut rs = Vec::new();

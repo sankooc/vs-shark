@@ -4,6 +4,14 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+dependencies:
+  lodash:
+    specifier: ^4.17.21
+    version: 4.17.21
+  rshark:
+    specifier: file:../wasm/node
+    version: file:../wasm/node
+
 devDependencies:
   '@types/mocha':
     specifier: ^10.0.6
@@ -1564,6 +1572,10 @@ packages:
     resolution: {integrity: sha512-0KpjqXRVvrYyCsX1swR/XTK0va6VQkQM6MNo7PqW77ByjAhoARA8EfrP1N4+KlKj8YS0ZUCtRT/YUuhyYDujIQ==}
     dev: true
 
+  /lodash@4.17.21:
+    resolution: {integrity: sha512-v2kDEe57lecTulaDIuNTPy3Ry4gLGJ6Z1O3vE1krgXZNrsQ+LFTGHVxVjcXPs17LhbZVGedAJv8XZ1tvj5FvSg==}
+    dev: false
+
   /log-symbols@4.1.0:
     resolution: {integrity: sha512-8XPvpAA8uyhfteu8pIvQxpJZ7SYYdpUivZpGy6sFsBuKRY/7rQGavedeB8aK+Zkyq6upMFVL/9AW6vOYzfRyLg==}
     engines: {node: '>=10'}
@@ -2462,7 +2474,7 @@ packages:
     engines: {node: '>=10'}
     dev: true
 
-  file:../nshark:
-    resolution: {directory: ../nshark, type: directory}
+  file:../wasm/node:
+    resolution: {directory: ../wasm/node, type: directory}
     name: nshark
     dev: false

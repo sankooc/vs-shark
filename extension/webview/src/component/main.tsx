@@ -2,17 +2,14 @@ import React, { ReactElement, useEffect, useState } from "react";
 import { MenuItem } from 'primereact/menuitem';
 import { Badge } from 'primereact/badge';
 import { Menu } from 'primereact/menu';
-import { ComMessage } from '../common';
+import { ComMessage, IContextInfo } from '../common';
 import Loading from './loading';
 import { onMessage, log, emitMessage } from '../connect';
-import Overview from './overview';
 
+import Overview from './overview';
 import FrameList from './frames';
 import TCPList from './tcp';
-// import ARPReplies from './arp';
 import DNSList from './dns';
-import { CProto } from "../wasm";
-import init, { load, WContext,FrameInfo } from 'rshark';
 
 
 const itemRenderer = (item, options) => {
@@ -24,27 +21,18 @@ const itemRenderer = (item, options) => {
 }; //pi-chart-bar
 
 let _start = 0;
-const initPro = init();
 const Main = () => {
   const [select, setSelect] = useState('overview');
-  const [data, setData] = useState<CProto>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [meta, setMeta] = useState<IContextInfo>(null);
   useEffect(() => {
     onMessage('message', (e: any) => {
       const { type, body, requestId } = e.data;
       switch (type) {
-        case 'raw-data': {
-          initPro.then(() => {
-            try {
-              console.log('load raw data spend', Date.now() - _start, 'ms');
-              const start = Date.now();
-              const ctx = load(body as Uint8Array);
-              setData(new CProto(ctx))
-              console.log('parse spend', Date.now() - start, 'ms');
-            }catch(e){
-              console.error(e);
-              log('error', 'parse_failed');
-            }
-          });
+        case '_info': {
+          setMeta(body);
+          setLoading(false);
+          break;
         }
       }
     });
@@ -52,7 +40,7 @@ const Main = () => {
     emitMessage(new ComMessage('ready', 'demo'));
   }, []);
 
-  const convert = (props: CProto): MenuItem[] => {
+  const convert = (): MenuItem[] => {
     const mitems: MenuItem[] = [];
     const addPanel = (id: string, label: string, extra: string, icon: string = ''): void => {
       mitems.push({
@@ -61,35 +49,28 @@ const Main = () => {
         }
       });
     };
-    const frameCount = props.getFrames().length;
-    const tcpCount = props.ctx.get_conversations_count();
-    const dnsCount = props.ctx.get_dns_count();
     addPanel('overview', 'Overview', '', 'pi pi-chart-bar');
-    addPanel('frame', 'Frame', frameCount + '', 'pi pi-list');
-    if (tcpCount) addPanel('tcp', 'TCP', tcpCount + '', 'pi pi-server');
-    // if (props.arpGraph?.nodes?.length) addPanel('arp', 'ARP', props.arpGraph?.nodes?.length + '', 'pi pi-chart-pie');
-    if (dnsCount) addPanel('dns', 'DNS', dnsCount + '', 'pi pi-address-book');
+    if (meta.frame) addPanel('frame', 'Frame', meta.frame + '', 'pi pi-list');
+    if (meta.conversation) addPanel('tcp', 'TCP', meta.conversation + '', 'pi pi-server');
+    if (meta.dns) addPanel('dns', 'DNS', meta.dns + '', 'pi pi-address-book');
     return mitems;
   };
   const buildPage = (): ReactElement => {
     switch (select) {
       case 'frame':
-        const items: FrameInfo[] = data.ctx.get_frames();
-        return <FrameList instance={data}/>;
+        return <FrameList />;
       case 'tcp':
-        return <TCPList instance={data}/>
+        return <TCPList/>
       case 'dns':
-        return <DNSList instance={data}/>
+        return <DNSList/>
     }
-    // const items: FrameInfo[] = data.ctx.get_frames();
-    // return <FrameList items={items} ctx={data.ctx} />;
-    return <Overview instance={data}/>;
+    return <Overview/>;
   };
-  if (!data || !data.ctx) {
+  if (loading) {
     return <Loading />
   }
 
-  const navItems = convert(data);
+  const navItems = convert();
   return (<>
     <div className="card h-full">
       <div className="flex flex-row h-full">

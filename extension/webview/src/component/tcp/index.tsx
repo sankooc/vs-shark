@@ -1,28 +1,32 @@
 import React, { useEffect, useState } from "react";
-import { emitMessage, trace } from "../../connect";
-import { ColumnItem, ComMessage, Frame, TCPCol } from "../../common";
-import DTable from '../dataTable';
-import { MainProto } from "../../wasm";
-import { TCPConversation } from "rshark";
+import { emitMessage,onMessage } from "../../connect";
+import { ComMessage, IConversation } from "../../common";
+import DTable from '../dataTable2';
 
-const TCPList = (props: MainProto) => {
-    const getData = (): TCPCol[] => {
-        return props.instance.getConversations().map((d, inx) => {
-            const item = new TCPCol(d);
-            item.no = inx + 1;
-            return item;
+const TCPList = () => {
+    const [items, setItems] = useState<IConversation[]>([]);
+    const mountHook = () => {
+        const remv = onMessage('message', (e: any) => {
+          const { type, body, requestId } = e.data;
+          switch (type) {
+            case '_conversation': {
+                setItems(body);
+              break;
+            }
+          }
         });
-    };
-    const items = getData();
+        emitMessage(new ComMessage('conversation', null));
+        return remv;
+      };
+      useEffect(mountHook, []);
     const columes = [
-        { field: 'no', header: 'index', style: { width: '5%' } },
-        { field: 'item.source', header: 'source' },
-        { field: 'item.dest', header: 'dest' },
-        { field: 'item.count', header: 'count', style: { width: '7%' } },
-        { field: 'item.throughput', header: 'throughput', style: { width: '7%' }  }
+        { field: 'source', header: 'source' },
+        { field: 'dest', header: 'dest' },
+        { field: 'count', header: 'count', style: { width: '7%' } },
+        { field: 'throughput', header: 'throughput', style: { width: '7%' }  }
     ];
-    return (<div className="flex flex-nowrap h-full w-full" id="frame-page">
-        <DTable cols={columes} items={items} onSelect={() => {}} scrollHeight="95vh"/>
+    return (<div className="flex flex-nowrap h-full w-full">
+      <DTable cols={columes} result={{items: items, page: 1, size: items.length, total: items.length}} />
     </div>
     );
 }

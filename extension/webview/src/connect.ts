@@ -15,6 +15,9 @@ export const emitMessage = (message: ComMessage<any>) => {
 
 export const onMessage = (type: string, listen: (msg: any) => void) => {
     window.addEventListener(type, listen);
+    return () => {
+        window.removeEventListener(type, listen);
+    }
 };
 
 export const log = (level: string, msg: any): void => {

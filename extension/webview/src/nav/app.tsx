@@ -1,18 +1,45 @@
-import React, { useRef } from 'react';
+import React, { MutableRefObject, useRef, useState } from 'react';
 import { Menubar } from 'primereact/menubar';
-import { ComMessage } from '../common';
+import { ComLog, ComMessage } from '../common';
+import { PCAPClient } from '../client';
+
+class Client extends PCAPClient {
+    constructor(private ref: MutableRefObject<any>){
+        super();
+    }
+    printLog(log: ComLog): void {
+        console.log(log.level, log.msg);
+    }
+    emitMessage(msg: ComMessage<any>): void {
+        console.log('nav emit', msg);
+        this.ref.current.contentWindow.postMessage(msg, '*');
+    }
+
+}
+
 
 export default function CommandDemo() {
     const inputRef = useRef(null);
     const iframeRef = useRef(null);
+    const [name, setName] = useState('');
+    const [client, setClient] = useState<Client>(null);
     const onFileChangeCapture = (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = e.target.files;
         if (files.length) {
+            const {name} = files[0];
+            setName(name);
             const reader = new FileReader();
             reader.onload = function () {
                 const arrayBuffer: ArrayBuffer = this.result as ArrayBuffer;
                 const array = new Uint8Array(arrayBuffer);
-                iframeRef.current.contentWindow.postMessage(new ComMessage<Uint8Array>('raw-data', array), '*');
+                const client = new Client(iframeRef);
+                client.initData(array);
+                setClient(client);
+                client.ready = true;
+                client.init();
+                window.onmessage = function(e) {
+                    client.handle(e.data);
+                };
             };
             reader.readAsArrayBuffer(files[0]);
         }

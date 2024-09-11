@@ -1,5 +1,7 @@
 import * as vscode from 'vscode';
 import { Disposable, disposeAll } from './dispose';
+import { PCAPClient } from './client';
+import { ComLog, ComMessage } from './common';
 
 function getNonce() {
 	let text = '';
@@ -52,6 +54,8 @@ class PcapDocument extends Disposable implements vscode.CustomDocument {
 
 	private _documentData: Uint8Array;
 
+	client?: Client
+
 	private constructor(
 		uri: vscode.Uri,
 		initialContent: Uint8Array
@@ -71,45 +75,23 @@ class PcapDocument extends Disposable implements vscode.CustomDocument {
 }
 
 
-// export class PCAPClient extends Client {
-// 	selectFrame(no: number): void {
-// 		const items = this.buildFrameTree(no);
-// 		const data = this.getPacket(no);
-// 		// vscode.commands.executeCommand('pcaptree.load', no, items, data);
-// 		// vscode.commands.executeCommand('detail.load', data, [0,0]);
-
-// 		this.emitMessage(Panel.TREE, new ComMessage('frame', { items, data }));
-// 		this.renderHexView(new HexV(data));
-// 	}
-// 	renderHexView(data: HexV): void {
-// 		this.emitMessage(Panel.DETAIL, new ComMessage('hex-data', data));
-// 	}
-// 	webviewPanel: vscode.WebviewPanel;
-// 	output: vscode.LogOutputChannel;
-// 	treeProvider: FrameProvider;
-// 	constructor(doc: Uint8Array, webviewPanel: vscode.WebviewPanel, output: vscode.LogOutputChannel, treeProvider: FrameProvider) {
-// 		super();
-// 		this.data = doc;
-// 		this.webviewPanel = webviewPanel;
-// 		this.output = output;
-// 		this.treeProvider = treeProvider;
-// 	}
-// 	emitMessage(panel: Panel, msg: ComMessage<any>): void {
-// 		this.webviewPanel.webview.postMessage(msg);
-// 	}
-// 	printLog(log: ComLog): void {
-// 		switch(log.level){
-// 			case 'error':
-// 				vscode.window.showErrorMessage(log.msg.toString());
-// 				break;
-// 		}
-// 		this.output.info(log.msg.toString());
-// 	}
-// 	init(): void {
-// 		super.init();
-// 	}
-
-// }
+export class Client extends PCAPClient {
+	constructor(private view: vscode.Webview, private output: vscode.LogOutputChannel ){
+		super();
+	}
+	printLog(log: ComLog): void {
+		switch (log.level) {
+			case 'error':
+				vscode.window.showErrorMessage(log.msg.toString());
+				break;
+		}
+		this.output.info(log.msg.toString());
+	}
+	emitMessage(msg: ComMessage<any>): void {
+		console.log('vs emit', msg);
+		this.view.postMessage(msg);
+	}
+}
 
 export class PcapViewerProvider implements vscode.CustomReadonlyEditorProvider<PcapDocument> {
 
@@ -170,39 +152,46 @@ export class PcapViewerProvider implements vscode.CustomReadonlyEditorProvider<P
 	): Promise<void> {
 
 		this.webviews.add(document.uri, webviewPanel);
+	
 
 		webviewPanel.webview.options = {
 			enableScripts: true,
 		};
 		webviewPanel.webview.html = createWebviewHtml(this._context, webviewPanel.webview, ENTRY);
-		webviewPanel.webview.onDidReceiveMessage((msg) => {
-			const { type, body } = msg
-			try {
-				switch (type) {
-					case 'ready':
-						try {
-							// console.log('inited');
-							const start = Date.now();
-							webviewPanel.webview.postMessage({ type: 'raw-data', body: document.documentData });
-							// console.log('spend', Date.now() - start);
-						} catch (e) {
-							console.error(e);
-						}
-						break;
-					case 'log':
-						// console.log(body);
-						if(body.level === 'error'){
-							vscode.window.showErrorMessage(body.msg?.toString());
-						}
-						this.output.appendLine(JSON.stringify(body));
-						break;
-					default:
-						// console.log('unknown type', msg.type);
-				}
-			} catch (e) {
-				console.error(e);
-			}
-		});
+		if(!document.client){
+			const client = new Client(webviewPanel.webview, PcapViewerProvider.output);
+			client.initData(document.documentData);
+			document.client = client;
+			webviewPanel.webview.onDidReceiveMessage(client.handle.bind(client));
+		}
+		// webviewPanel.webview.onDidReceiveMessage((msg) => {
+		// 	const { type, body } = msg
+		// 	try {
+		// 		switch (type) {
+		// 			case 'ready':
+		// 				try {
+		// 					// console.log('inited');
+		// 					const start = Date.now();
+		// 					webviewPanel.webview.postMessage({ type: 'raw-data', body: document.documentData });
+		// 					// console.log('spend', Date.now() - start);
+		// 				} catch (e) {
+		// 					console.error(e);
+		// 				}
+		// 				break;
+		// 			case 'log':
+		// 				// console.log(body);
+		// 				if (body.level === 'error') {
+		// 					vscode.window.showErrorMessage(body.msg?.toString());
+		// 				}
+		// 				this.output.appendLine(JSON.stringify(body));
+		// 				break;
+		// 			default:
+		// 			// console.log('unknown type', msg.type);
+		// 		}
+		// 	} catch (e) {
+		// 		console.error(e);
+		// 	}
+		// });
 	}
 
 	private _requestId = 1;

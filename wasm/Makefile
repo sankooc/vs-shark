@@ -1,5 +1,5 @@
 node:
-	wasm-pack build --target nodejs
+	wasm-pack build --target nodejs -d node
 web:
 	wasm-pack build --target web
 test:

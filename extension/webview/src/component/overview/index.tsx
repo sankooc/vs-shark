@@ -1,11 +1,16 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import ReactECharts from 'echarts-for-react';
-import { OverviewSource, Statc } from "../../common";
-import { MainProto } from '../../wasm';
-import { FrameInfo } from 'rshark';
+import {emitMessage, onMessage} from '../../connect';
 import { TabView, TabPanel } from 'primereact/tabview';
 import './index.css';
-
+import { ComMessage, IOverviewData } from "../../common";
+import {
+  VSCodeBadge,
+  VSCodePanels,
+  VSCodePanelTab,
+  VSCodePanelView,
+  VSCodeDivider,
+} from "@vscode/webview-ui-toolkit/react";
 const bytesFormater = (v) => {
   let h = 0;
   let l = 0;
@@ -26,100 +31,37 @@ const bytesFormater = (v) => {
   return `${h}.${l}gB`
 };
 
-function convert(frames: FrameInfo[]) {
-  const scale = 24;
-  const start = frames[0].time;
-  const end = frames[frames.length - 1].time;
-  const duration = end - start;
-  const per = Math.floor(duration / scale);
-  const result: Statc[] = [];
-  let cur = start;
-  let limit = cur + per;
-  let rs = Statc.create(start, per);
-  const ps = new Set<string>();
-  const getArray = (num: number): Statc => {
-    if (num < limit) {
-      return rs;
-    }
-    result.push(rs);
-    rs = Statc.create(limit, per);
-    limit = limit + per;
-    return getArray(num);
-  }
-  let _total = 0;
-  for (const item of frames) {
-    const origin = item.len;
-    _total += item.len;
-    const it = getArray(item.time);
-    it.size += origin;
-    it.count += 1;
-    const pname = item.protocol?.toLowerCase() || '';
-    it.addLable(pname, item);
-    ps.add(pname);
-  }
-
-  const categories = ['total'];
-  const map: any = {
-    total: []
-  };
-  ps.forEach((c) => {
-    categories.push(c);
-    map[c] = [];
-  });
-  const labels = [];
-  const countlist = [];
-  for (const rs of result) {
-    const { size, count, stc, start } = rs;
-    labels.push(start);
-    countlist.push(count);
-    map.total.push(size)
-    ps.forEach((c) => {
-      map[c].push(stc.get(c) || 0);
-    });
-  }
-  const overview = new OverviewSource();
-  overview.legends = categories;
-  overview.labels = labels;
-  overview.counts = countlist;
-  overview.valMap = map;
-  return overview;
-}
-
 // const fore = 'var(--vscode-list-focusForeground)';
 const fore = '#ebdbb2';
 const lineColor = '#ebdbb2';
-function Overview(props: MainProto) {
+
+const labelFormater = (v) => {
+  const ts = Math.floor(v);
+  const date = new Date(ts);
+  const [minutes, seconds, ms] = [
+    date.getMinutes(),
+    date.getSeconds(),
+    date.getMilliseconds()
+  ];
+  return `${minutes}:${seconds}:${ms}`
+};
+function Overview() {
   const title = 'Network Traffic';
-  const { legends, labels, counts, valMap } = convert(props.instance.getFrames());
-  const labelFormater = (v) => {
-    const ts = Math.floor(v);
-    const date = new Date(ts);
-    const [minutes, seconds, ms] = [
-      date.getMinutes(),
-      date.getSeconds(),
-      date.getMilliseconds()
-    ];
-    return `${minutes}:${seconds}:${ms}`
+  const [{legends, labels, datas}, setData] = useState<IOverviewData>({legends:[], labels: [],datas:[] });
+  const mountHook = () => {
+    const remv = onMessage('message', (e: any) => {
+      const { type, body, requestId } = e.data;
+      switch (type) {
+        case '_overview': {
+          setData(body);
+          break;
+        }
+      }
+    });
+    emitMessage(new ComMessage('overview', null));
+    return remv;
   };
-
-
-
-  const keys = Object.keys(valMap);
-  const datas = keys.map((key) => {
-    const data = valMap[key];
-    const rs: any = {
-      name: key,
-      yAxisIndex: 1,
-      smooth: true,
-      type: 'line',
-      lineStyle: {color: lineColor},
-      data
-    };
-    if (key === 'total') {
-      rs.areaStyle = {};
-    }
-    return rs;
-  });
+  useEffect(mountHook, []);
   const option = {
     title: {
       textStyle: {color: fore },
@@ -202,6 +144,28 @@ function Overview(props: MainProto) {
       <ReactECharts option={option} className="overview" />
     </TabPanel>
     <TabPanel header="DNS">
+    <VSCodePanels aria-label="Default">
+          <VSCodePanelTab id="tab-1">PROBLEMS</VSCodePanelTab>
+          <VSCodePanelTab id="tab-2">OUTPUT</VSCodePanelTab>
+          <VSCodePanelTab id="tab-3">DEBUG CONSOLE</VSCodePanelTab>
+          <VSCodePanelTab id="tab-4">TERMINAL</VSCodePanelTab>
+          <VSCodePanelView id="view-1">Problems content.</VSCodePanelView>
+          <VSCodePanelView id="view-2">Output content.</VSCodePanelView>
+          <VSCodePanelView id="view-3">Debug content.</VSCodePanelView>
+          <VSCodePanelView id="view-4">
+          <section className="component-container">
+      <h2>Divider</h2>
+      <section className="component-example">
+        <p>With Separator Role</p>
+        <VSCodeDivider role="separator"></VSCodeDivider>
+      </section>
+      <section className="component-example">
+        <p>With Presentation Role</p>
+        <VSCodeDivider role="presentation"></VSCodeDivider>
+      </section>
+    </section>
+          </VSCodePanelView>
+        </VSCodePanels>
     </TabPanel>
     <TabPanel header="TLS">
     </TabPanel>

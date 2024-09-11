@@ -109,3 +109,12 @@ tr[role=row]{
         color: $t-udp-font;
     }
 }
+.paging {
+    
+    // position: sticky;
+    // bottom: -1px;
+    // left: 0;
+    button{
+        margin: 0;
+    }
+}

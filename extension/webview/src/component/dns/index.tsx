@@ -1,44 +1,34 @@
 import React, { useEffect, useState } from "react";
-import { ColumnItem } from "../../common";
-import DTable from '../dataTable';
-import { DNSRecord, MainProto } from "../../wasm";
+import { ComMessage, IConversation } from "../../common";
+// import DTable from '../vsTable';
+import DTable from '../dataTable2';
+import {emitMessage, onMessage} from '../../connect';
 
-class IDNSRecord implements ColumnItem {
-    style?: string;
-    no?: number;
-    record: DNSRecord
-    getIndex(): number {
-        return this.no;
-    }
-    getStyle(inx: number): string {
-        return this.style
-    }
-    constructor(record: DNSRecord) {
-        this.record = record;
-        this.style = 'info';
-    }
-}
-
-const DNSList = (props: MainProto) => {
-    const getData = (): IDNSRecord[] => {
-        const _items = props.instance.getDNSRecord();
-        return _items.map((item: DNSRecord, index: number) => {
-            const rs = new IDNSRecord(item);
-            rs.no = index + 1;
-            return rs;
+const DNSList = () => {
+    const [items, setItems] = useState<IConversation[]>([]);
+    const mountHook = () => {
+        const remv = onMessage('message', (e: any) => {
+          const { type, body, requestId } = e.data;
+          switch (type) {
+            case '_dns': {
+                setItems(body);
+              break;
+            }
+          }
         });
-    };
-    const items = getData();
+        emitMessage(new ComMessage('dns', null));
+        return remv;
+      };
+      useEffect(mountHook, []);
     const columes = [
-        // { field: 'record.source', header: 'source'},
-        { field: 'record.name', header: 'name' },
-        { field: 'record._type', header: 'type' },
-        { field: 'record.class', header: 'clz'},
-        { field: 'record.ttl', header: 'ttl'},
-        { field: 'record.content', header: 'address' }
+        { field: 'name', header: 'name' },
+        { field: '_type', header: 'type' },
+        { field: 'class', header: 'clz'},
+        { field: 'ttl', header: 'ttl'},
+        { field: 'content', header: 'address' }
     ];
     return (<div className="flex flex-nowrap h-full w-full" id="frame-page">
-        <DTable cols={columes} items={items} onSelect={() => {}} scrollHeight="95vh"/>
+        <DTable cols={columes} result={{items: items, page: 1, size: items.length, total: items.length}} />
     </div>
     );
 };

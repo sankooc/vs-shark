@@ -248,8 +248,8 @@ export interface IFrameInfo {
     status: string;
 }
 
-export interface IResult {
-    items: any[],
+export interface IFrameResult {
+    items: IFrameInfo[],
     total: number,
     page: number;
     size: number;
@@ -268,12 +268,4 @@ export interface IDNSRecord{
     content: string,
     class: string,
     ttl: number,
-}
-
-export interface CField {
-    // start: number,
-    // size: number,
-    summary: string,
-    children?: CField[],
-    // data(): Uint8Array,
 }

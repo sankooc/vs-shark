@@ -14,6 +14,9 @@ dependencies:
   echarts-for-react:
     specifier: ^3.0.2
     version: 3.0.2(echarts@5.5.1)(react@18.3.1)
+  lodash:
+    specifier: ^4.17.21
+    version: 4.17.21
   primeflex:
     specifier: ^3.3.1
     version: 3.3.1
@@ -30,8 +33,8 @@ dependencies:
     specifier: ^18.3.0
     version: 18.3.1(react@18.3.1)
   rshark:
-    specifier: file:../wasm/pkg
-    version: file:../wasm/pkg
+    specifier: file:../../wasm/pkg
+    version: file:../../wasm/pkg
 
 devDependencies:
   '@types/node-sass':
@@ -2653,7 +2656,6 @@ packages:
 
   /lodash@4.17.21:
     resolution: {integrity: sha512-v2kDEe57lecTulaDIuNTPy3Ry4gLGJ6Z1O3vE1krgXZNrsQ+LFTGHVxVjcXPs17LhbZVGedAJv8XZ1tvj5FvSg==}
-    dev: true
 
   /log-symbols@2.2.0:
     resolution: {integrity: sha512-VeIAFslyIerEJLXHziedo2basKbMKtTw3vfn5IzG0XTjhAVEJyNHnL2p7vc+wBDSdQuUpNw3M2u6xb9QsAY5Eg==}
@@ -4900,7 +4902,7 @@ packages:
       tslib: 2.3.0
     dev: false
 
-  file:../wasm/pkg:
-    resolution: {directory: ../wasm/pkg, type: directory}
+  file:../../wasm/pkg:
+    resolution: {directory: ../../wasm/pkg, type: directory}
     name: nshark
     dev: false

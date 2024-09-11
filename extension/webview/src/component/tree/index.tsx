@@ -4,21 +4,19 @@ import { Tree, TreeEventNodeEvent, TreeNodeClickEvent } from 'primereact/tree';
 import { TreeNode } from 'primereact/treenode';
 import './app.css';
 import { Field } from 'rshark';
+import { CField } from '../../common';
 const className = 'vector';
 class StackProps {
-    items: Field[];
+    items: CField[];
     frame: number;
-    // data: Uint8Array;
-    onSelect: (field) => void;
+    onSelect: (frame: number, key: string, field:any) => void;
 }
 export default function Stack(props:StackProps) {
     const [store, setStore] = useState<any>({ items: [], key: '', data: null });
-    let counter = 0;
     useEffect(() => {
         setStore({key: ''})
     }, [props.frame]);
-    const mapper = (it: Field): TreeNode => {
-        const key = 'item' + (counter += 1);
+    const mapper = (it: CField, key: string): TreeNode => {
         const rs = {
             key,
             label: it.summary,
@@ -27,22 +25,26 @@ export default function Stack(props:StackProps) {
             children: [],
             selectable: true,
         };
+        let _inx = 0;
         for(const f of (it.children || [])){
-            if(f.summary) {
-                rs.children.push(mapper(f));
-            }
+            rs.children.push(mapper(f, `${key}_${_inx}`));
+            _inx+=1;
         }
         return rs;
     }
-    const stacks: TreeNode[] = props.items.map(mapper);
+    // console.log(props.items);
+    
+    const stacks: TreeNode[] = props.items.map((item, inx) => {
+        return mapper(item, inx + '');
+    });
     const onSelect = (e: TreeNodeClickEvent) => {
         const { node } = e;
-        props.onSelect(node.data);
+        props.onSelect(props.frame, node.key + '', node.data);
         setStore({...store, key: node.key + ''})
     }
     return (
         <div className="flex-grow-1 justify-content-center" style={{ height: '100%', border: 0, padding: 0}}>
-            <Tree className="tree-view" value={stacks} style={{ border: 0, padding: 0 }} contentStyle={{ padding: 0 }} onNodeClick={onSelect} />
+            <Tree className="tree-view" value={stacks} style={{ height: '30vh', border: 0, padding: 0 }} contentStyle={{ padding: 0, height: "100%" }} onNodeClick={onSelect} />
         </div>
     )
 }
