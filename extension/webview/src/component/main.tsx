@@ -2,7 +2,7 @@ import React, { ReactElement, useEffect, useState } from "react";
 import { MenuItem } from 'primereact/menuitem';
 import { Badge } from 'primereact/badge';
 import { Menu } from 'primereact/menu';
-import { ComMessage, IContextInfo } from '../common';
+import { ComMessage, IContextInfo, IConversation, IDNSRecord } from '../common';
 import Loading from './loading';
 import { onMessage, log, emitMessage } from '../connect';
 
@@ -25,6 +25,8 @@ const Main = () => {
   const [select, setSelect] = useState('overview');
   const [loading, setLoading] = useState<boolean>(true);
   const [meta, setMeta] = useState<IContextInfo>(null);
+  const [dnsRecords, setDnsRecords] = useState<IDNSRecord[]>([]);
+  const [conversations, setConversations] = useState<IConversation[]>([]);
   useEffect(() => {
     onMessage('message', (e: any) => {
       const { type, body, requestId } = e.data;
@@ -32,6 +34,14 @@ const Main = () => {
         case '_info': {
           setMeta(body);
           setLoading(false);
+          break;
+        }
+        case '_dns': {
+          setDnsRecords(body);
+          break;
+        }
+        case '_conversation': {
+          setConversations(body);
           break;
         }
       }
@@ -60,9 +70,9 @@ const Main = () => {
       case 'frame':
         return <FrameList />;
       case 'tcp':
-        return <TCPList/>
+        return <TCPList items={conversations}/>
       case 'dns':
-        return <DNSList/>
+        return <DNSList items={dnsRecords}/>
     }
     return <Overview/>;
   };

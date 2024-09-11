@@ -3,7 +3,6 @@ import { createRoot } from 'react-dom/client';
 import Application from './main';
 import 'primeflex/primeflex.css';
 import 'primeicons/primeicons.css';
-// import 'primereact/resources/themes/md-dark-indigo/theme.css';
 import './index.css';
 const container = document.getElementById('app') as HTMLElement;
 const root = createRoot(container);

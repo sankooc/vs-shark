@@ -4,13 +4,13 @@ import {emitMessage, onMessage} from '../../connect';
 import { TabView, TabPanel } from 'primereact/tabview';
 import './index.css';
 import { ComMessage, IOverviewData } from "../../common";
-import {
-  VSCodeBadge,
-  VSCodePanels,
-  VSCodePanelTab,
-  VSCodePanelView,
-  VSCodeDivider,
-} from "@vscode/webview-ui-toolkit/react";
+// import {
+//   VSCodeBadge,
+//   VSCodePanels,
+//   VSCodePanelTab,
+//   VSCodePanelView,
+//   VSCodeDivider,
+// } from "@vscode/webview-ui-toolkit/react";
 const bytesFormater = (v) => {
   let h = 0;
   let l = 0;
@@ -144,28 +144,6 @@ function Overview() {
       <ReactECharts option={option} className="overview" />
     </TabPanel>
     <TabPanel header="DNS">
-    <VSCodePanels aria-label="Default">
-          <VSCodePanelTab id="tab-1">PROBLEMS</VSCodePanelTab>
-          <VSCodePanelTab id="tab-2">OUTPUT</VSCodePanelTab>
-          <VSCodePanelTab id="tab-3">DEBUG CONSOLE</VSCodePanelTab>
-          <VSCodePanelTab id="tab-4">TERMINAL</VSCodePanelTab>
-          <VSCodePanelView id="view-1">Problems content.</VSCodePanelView>
-          <VSCodePanelView id="view-2">Output content.</VSCodePanelView>
-          <VSCodePanelView id="view-3">Debug content.</VSCodePanelView>
-          <VSCodePanelView id="view-4">
-          <section className="component-container">
-      <h2>Divider</h2>
-      <section className="component-example">
-        <p>With Separator Role</p>
-        <VSCodeDivider role="separator"></VSCodeDivider>
-      </section>
-      <section className="component-example">
-        <p>With Presentation Role</p>
-        <VSCodeDivider role="presentation"></VSCodeDivider>
-      </section>
-    </section>
-          </VSCodePanelView>
-        </VSCodePanels>
     </TabPanel>
     <TabPanel header="TLS">
     </TabPanel>

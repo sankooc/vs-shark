@@ -25,7 +25,7 @@ const DTable = (props: Props) => {
       props.onSelect(e.value);
     }
   }
-  const scrollHeight = props.scrollHeight || 90;
+  const scrollHeight = props.scrollHeight || 99;
   const result = props.result || { total: 0, size : 0, items: [], page: 1};
   const { total, size, items, page } = result;
   const hasPaging = total > size;

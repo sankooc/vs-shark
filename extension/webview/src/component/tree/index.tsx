@@ -1,9 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
-import { Tree, TreeEventNodeEvent, TreeNodeClickEvent } from 'primereact/tree';
+import { Tree, TreeNodeClickEvent } from 'primereact/tree';
 import { TreeNode } from 'primereact/treenode';
 import './app.css';
-import { Field } from 'rshark';
 import { CField } from '../../common';
 const className = 'vector';
 class StackProps {
