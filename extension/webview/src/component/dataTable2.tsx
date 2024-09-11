@@ -2,13 +2,13 @@ import React, { ReactElement, useState } from "react";
 import { DataTable, DataTableSelectionSingleChangeEvent } from 'primereact/datatable';
 import { Paginator } from 'primereact/paginator';
 import { Column, ColumnProps } from 'primereact/column';
-import { ColumnItem, IResult } from "../common";
+import { IResult } from "../common";
 
 
 class Props {
   cols: ColumnProps[] = [];
   result?: IResult;
-  onSelect?: (item: ColumnItem) => void;
+  onSelect?: (item: any) => void;
   getStyle?: (item: any) => string;
   scrollHeight?: number;
   size?: 'small' | 'normal' | 'large';
@@ -61,7 +61,7 @@ const DTable = (props: Props) => {
         return (<Column {...c} key={'col' + inx}></Column>)
       })}
     </DataTable>
-    {hasPaging && <Paginator pageLinkSize={16} first={first} onPageChange={onPageChange}  className="paging" rows={size} totalRecords={total} rowsPerPageOptions={[500, 1000]} />}
+    {hasPaging && <Paginator pageLinkSize={16} first={first} onPageChange={onPageChange}  className="paging" rows={size} totalRecords={total} />}
   </>
   );
 };

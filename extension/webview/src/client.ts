@@ -1,6 +1,6 @@
 import init, { load, WContext, FrameInfo, Field } from 'rshark';
 import { pick } from 'lodash';
-import { ComLog, ComMessage, IContextInfo, OverviewSource, Statc, IOverviewData, IFrameInfo, Pagination, IResult, IConversation, IDNSRecord, CField, HexV } from './common';
+import { ComLog, ComMessage, IContextInfo, OverviewSource, IOverviewData, IFrameInfo, Pagination, IResult, IConversation, IDNSRecord, CField, HexV } from './common';
 
 
 const convert = (frames: FrameInfo[]): any => {
@@ -62,6 +62,24 @@ const convert = (frames: FrameInfo[]): any => {
   return overview;
 }
 
+export class Statc {
+  size: number = 0;
+  count: number = 0;
+  start!: number;
+  end!: number;
+  stc: Map<string, number> = new Map();
+  public addLable(label: string, packet: FrameInfo): void {
+      const count = this.stc.get(label) || 0;
+      const size = packet.len || 0;
+      this.stc.set(label, count + size);
+  }
+  public static create(ts: number, per: number) {
+      const item = new Statc();
+      item.start = ts;
+      item.end = ts + per;
+      return item;
+  }
+}
 class FieldImlp implements CField {
   // start: number;
   // size: number;
