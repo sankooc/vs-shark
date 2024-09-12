@@ -130,6 +130,13 @@ export abstract class PCAPClient {
     const dns = this.ctx.get_dns_count();
     return { frame, conversation, dns }
   }
+  _protocols(): void {
+    if (this.ready && this.ctx) {
+      const data = this.ctx.get_aval_protocals();
+      const options = (data || []).map(f => ({name:f, code: f}));
+      this.emitMessage(new ComMessage('_protocols', options));
+    }
+  }
   getOverview(): IOverviewData {
     const { legends, labels, valMap } = convert(this.ctx.get_frames());
     const keys = Object.keys(valMap);
@@ -182,14 +189,12 @@ export abstract class PCAPClient {
   getFrames(pag: Pagination): IResult {
     const { page, size } = pag;
     const start = (page - 1) * size;
-    const end = start + size;
-    const total = this.ctx.get_frame_count();
-    const items = this.ctx.select_frames(start, size);
-    const data = items.map((f, inx) => {
+    const rs = this.ctx.select_frames(start, size, pag.filter || []);
+    const data = rs.items().map((f, inx) => {
       const emb = pick(f, 'index', 'time', 'status', 'len', 'info', 'irtt', 'protocol', 'dest', 'source');
       return emb;
     });
-    return { items: data, page, size, total };
+    return { items: data, page, size, total: rs.total };
   }
   _frame(pag: Pagination): void {
     if (this.ready && this.ctx) {
@@ -250,6 +255,9 @@ export abstract class PCAPClient {
         case 'overview':
           this._overview();
           break;
+        case 'protocols':
+          this._protocols();
+          break;
         case 'dns':
           this._dns();
           break;
@@ -261,9 +269,6 @@ export abstract class PCAPClient {
           break;
         case 'conversation':
           this._conversation();
-          break;
-        case 'hex-data':
-          // this.renderHexView(body as HexV); 
           break;
         default:
           console.log('unknown type', msg.type);

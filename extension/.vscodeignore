@@ -13,4 +13,5 @@ vsc-extension-quickstart.md
 **/*.ts
 **/.vscode-test.*
 webview/**
+sandbox
 

@@ -31,7 +31,6 @@ export default function Stack(props:StackProps) {
         }
         return rs;
     }
-    // console.log(props.items);
     
     const stacks: TreeNode[] = props.items.map((item, inx) => {
         return mapper(item, inx + '');

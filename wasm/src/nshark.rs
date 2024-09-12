@@ -2,6 +2,7 @@ use std::borrow::Borrow;
 use std::cell::{Ref, RefCell};
 use std::cmp;
 use std::ops::Deref;
+use std::collections::HashSet;
 
 use core::common::FileInfo;
 use core::files::{DomainService, Element, Frame, Instance};
@@ -140,7 +141,7 @@ impl WFileInfo {
     }
 }
 #[wasm_bindgen]
-#[derive(Default)]
+#[derive(Default,Clone)]
 pub struct FrameInfo {
     // frame: &'static Frame,
     pub index: u32,
@@ -185,6 +186,26 @@ pub struct TCPConversation{
     count: u16,
     throughput: u32,
 }
+#[wasm_bindgen]
+pub struct FrameResult {
+    pub start: usize,
+    pub total: usize,
+    items: Vec<FrameInfo>,
+}
+#[wasm_bindgen]
+impl FrameResult {
+    #[wasm_bindgen]
+    pub fn items(&self) -> Vec<FrameInfo> {
+        self.items.clone()
+    }
+}
+
+impl FrameResult {
+    fn new( start:usize, total: usize,items: Vec<FrameInfo>) -> Self {
+        Self{start, total, items}
+    }
+}
+
 #[wasm_bindgen]
 impl TCPConversation {
     #[wasm_bindgen(getter)]
@@ -255,26 +276,46 @@ impl WContext {
 
     
     #[wasm_bindgen]
-    pub fn select_frames(&mut self, start: usize, size: usize) -> Vec<FrameInfo> {
+    pub fn select_frames(&mut self, start: usize, size: usize, protos: Vec<String>) -> FrameResult {
         let start_ts = self.get_info().start_time;
         let _fs = self.ctx.get_frames();
-        let total = _fs.len();
+        let mut total = 0;
+        let mut items = Vec::new();
+        if protos.len() > 0 {
+            let mut left = size;
+            let _filters = HashSet::from_iter(protos.iter().cloned());
+            for frame in _fs.iter() {
+                if frame.do_match(&_filters) {
+                    total += 1;
+                    if total > start && left > 0 {
+                        left -= 1;
+                        let item = WContext::_frame(frame, start_ts);
+                        items.push(item);
+                    }
+                }
+            }
+            return FrameResult::new(start, total, items);
+        }
+        total = _fs.len();
         if total <= start {
-            return Vec::new()
+            return FrameResult::new(start, 0, Vec::new());
         }
         let end = cmp::min(start + size, total);
         let _data: &[Frame] = &_fs.deref()[start..end];
-        let mut rs = Vec::new();
         for frame in _data.iter() {
             let item = WContext::_frame(frame, start_ts);
-            rs.push(item);
+            items.push(item);
         }
-        rs
+        FrameResult::new(start, total, items)
     }
 
     #[wasm_bindgen]
-    pub fn get_aval_protocals(&self) -> Vec<String>{
-        Vec::new()
+    pub fn get_aval_protocals(&self) -> Vec<String> {
+        let mut set = HashSet::new();
+        for f in self.ctx.get_frames().iter() {
+            set.insert(f.get_protocol());
+        }
+        set.into_iter().collect()
     }
 
     #[wasm_bindgen]

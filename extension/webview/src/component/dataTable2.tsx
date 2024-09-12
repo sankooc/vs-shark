@@ -2,6 +2,8 @@ import React, { ReactElement, useState } from "react";
 import { DataTable, DataTableSelectionSingleChangeEvent } from 'primereact/datatable';
 import { Paginator } from 'primereact/paginator';
 import { Column, ColumnProps } from 'primereact/column';
+import { IconField } from 'primereact/iconfield';
+import { MultiSelect } from 'primereact/multiselect';
 import { IResult } from "../common";
 
 
@@ -14,6 +16,7 @@ class Props {
   size?: 'small' | 'normal' | 'large';
   className?: string;
   request?: (event:any) => void;
+  filter?: any;
 }
 const DTable = (props: Props) => {
   const [select, setSelect] = useState<number>(0);
@@ -32,7 +35,8 @@ const DTable = (props: Props) => {
   let tableHeight = `${scrollHeight}vh`;
   let inSight = `calc(${scrollHeight}vh - 1px)`;
   const space = 40;
-  if(hasPaging){
+  const hasFootbar = hasPaging || !!props.filter;
+  if(hasFootbar){
     tableHeight = `calc(${scrollHeight}vh - ${space}px)`
     inSight = `calc(${scrollHeight}vh - ${space + 1}px)`;
   }
@@ -42,17 +46,24 @@ const DTable = (props: Props) => {
       props.request(event);
     }
   }
+  const rowClassName = (data: any) => {
+    if (data.index !== undefined && data.index == select){
+      return 'active';
+    }
+    if(props.getStyle) {
+      return props.getStyle(data);
+    }
+    return ''
+  };
   const first = (page - 1) * size;
+  const opt = {
+    optionLabel: "name",
+    placeholder: "Select Protocols",
+    maxSelectedLabels: 10,
+    ...props.filter
+  };
   return (<>
-    <DataTable loading={loading} style={{height: tableHeight, overflow: "auto"}} value={items} showHeaders selectionMode="single" rowClassName={(data: any) => {
-      if (data.index !== undefined && data.index == select){
-        return 'active';
-      }
-      if(props.getStyle) {
-        return props.getStyle(data);
-      }
-      return ''
-    }}
+    <DataTable loading={loading} style={{height: inSight, overflow: "auto"}} value={items} showHeaders selectionMode="single" rowClassName={rowClassName}
     virtualScrollerOptions={{ itemSize: 20 }}
       scrollHeight={inSight} 
       onSelectionChange={onSelectionChange} showGridlines scrollable
@@ -61,7 +72,12 @@ const DTable = (props: Props) => {
         return (<Column {...c} key={'col' + inx}></Column>)
       })}
     </DataTable>
-    {hasPaging && <Paginator pageLinkSize={16} first={first} onPageChange={onPageChange}  className="paging" rows={size} totalRecords={total} />}
+    {hasFootbar && <div className="flex justify-content-between" style={{height: `${space}px`}}>
+      {!!props.filter && <IconField className="filter w-3 flex">
+          <MultiSelect {...opt} className="p-inputtext-sm" />
+        </IconField>}
+        {hasPaging && <Paginator pageLinkSize={16} first={first} onPageChange={onPageChange}  className="paging" rows={size} totalRecords={total} />}
+      </div>}
   </>
   );
 };

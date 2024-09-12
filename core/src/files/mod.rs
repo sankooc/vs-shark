@@ -14,7 +14,7 @@ use chrono::{DateTime, Utc};
 use enum_dispatch::enum_dispatch;
 use log::{error, info};
 use std::{
-    borrow::Borrow, cell::{Cell, Ref, RefCell}, collections::HashMap, fmt::Display, ops::{Deref, Range}, rc::Rc, time::{Duration, UNIX_EPOCH}
+    borrow::Borrow, cell::{Cell, Ref, RefCell}, collections::{HashMap, HashSet}, fmt::Display, ops::{Deref, Range}, rc::Rc, time::{Duration, UNIX_EPOCH}
 };
 
 use anyhow::{bail, Result};
@@ -733,7 +733,13 @@ impl Frame {
             self.capture_size * 8
         )
     }
-
+    pub fn get_protocol(&self) -> String {
+        self.summary.borrow().protocol.to_lowercase()
+    }
+    pub fn do_match(&self, protos: &HashSet<String>) -> bool {
+        let proto = self.get_protocol();
+        protos.contains(&proto)
+    }
     pub fn info(&self) -> String {
         let list = self.eles.borrow();
         let the_last = list.last();
