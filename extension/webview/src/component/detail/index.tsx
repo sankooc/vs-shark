@@ -27,7 +27,7 @@ function HexView(props: { data?: HexV }) {
     return '';
   }
   const data = props.data;
-  const hasData = !!data?.data;
+  let hasData = !!data?.data;
   const texts = [];
   if (data) {
     const lent = data.data.length;
@@ -55,7 +55,8 @@ function HexView(props: { data?: HexV }) {
       }
     }
   }
-  if (!hasData) {
+  
+  if (!hasData || !indexes.length) {
     return <div id="detail"></div>
   }
   return (<div id="detail">

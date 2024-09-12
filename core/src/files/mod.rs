@@ -445,21 +445,6 @@ impl Endpoint {
             ..Default::default()
         }
     }
-
-    // fn add_segment(&mut self, tcp: &TCP, frame: &Frame, data: &[u8]){
-    //     let segment = Segment{index: frame.summary.borrow().index, data: Rc::new(data.to_vec())};
-    //     match &mut self.segments {
-    //         Some(seg) => {
-    //             seg.push(segment)
-    //         },
-    //         None => {
-    //             let mut list = Vec::new();
-    //             list.push(segment);
-    //             self.segments = Some(list);
-    //         }
-
-    //     }
-    // }
     pub fn segment_count(&mut self) -> usize {
         self._seg_len
     }
@@ -684,7 +669,7 @@ pub struct FrameSummary {
     pub source: String,
     pub target: String,
     pub protocol: String,
-    pub link_type: u16,
+    pub link_type: u32,
     pub ip: Option<Ref2<dyn IPPacket>>,
     pub tcp: Option<Ref2<TCP>>,
 }
@@ -706,7 +691,7 @@ impl Frame {
         capture_size: u32,
         origin_size: u32,
         index: u32,
-        link_type: u16,
+        link_type: u32,
     ) -> Frame {
         let f = Frame {
             ctx,
@@ -787,7 +772,7 @@ impl Frame {
         let ltype = self.summary.borrow().link_type;
         lists.push(Field::new3(format!(
             "Encapsulation type: {} ({})",
-            link_type_mapper(ltype),
+            link_type_mapper(ltype as u16),
             ltype
         )));
         lists.push(Field::new3(format!(

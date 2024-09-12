@@ -62,6 +62,10 @@ $t-tcp: #005f73;
 $t-tcp-font: #edf2f4;
 
 
+$t-errdata: #C7253E;
+$t-errdata-font: #aeb6b0;
+
+
 $t-arp: #84a98c;
 $t-arp-font: #001219;
 
@@ -78,12 +82,30 @@ $t-tls-font: #001219;
 $t-udp: #A0937D;
 $t-udp-font: #001219;
 
+
+$t-dns: #C0D6E8;
+$t-dns-font: #A34343;
+
+
+@keyframes example {
+    0%   {background-color: var(--vscode-list-focusBackground);}
+    50%  {background-color: var(--vscode-list-deemphasizedForeground);}
+    100% {background-color: var(--vscode-list-focusBackground);}
+  }
+
 tr[role=row]{
     background-color: $t-def;
     color: $t-def-font;
     &.active{
+        animation-name: example;
+        animation-duration: 3s;
+        animation-iteration-count: infinite;
         background-color: var(--vscode-list-focusBackground);
         color: var(--vscode-list-focusForeground);
+    }
+    &.errdata{
+        background-color: $t-errdata;
+        color: $t-errdata-font;
     }
     &.tcp{
         background-color: $t-tcp;
@@ -108,6 +130,10 @@ tr[role=row]{
     &.udp{
         background-color: $t-udp;
         color: $t-udp-font;
+    }
+    &.dns{
+        background-color: $t-dns;
+        color: $t-dns-font;
     }
 }
 .paging {

@@ -53,7 +53,7 @@ pub fn parse(data: &[u8]) -> Result<Instance> {
                 "0x00000001" => {
                     let mut info = context.info.borrow_mut();
                     let ltype = parse_interface(&raw)?;
-                    info.link_type = ltype;
+                    info.link_type = ltype as u32;
                 }
                 "0x00000006" => {
                     parse_enhance(&ctx, &raw)?;

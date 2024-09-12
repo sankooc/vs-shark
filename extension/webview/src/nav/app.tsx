@@ -11,7 +11,6 @@ class Client extends PCAPClient {
         console.log(log.level, log.msg);
     }
     emitMessage(msg: ComMessage<any>): void {
-        console.log('nav emit', msg);
         this.ref.current.contentWindow.postMessage(msg, '*');
     }
 

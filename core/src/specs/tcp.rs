@@ -75,6 +75,9 @@ impl TCPState {
     pub fn check(&self, mask: u8) -> bool {
         (self.head & mask) == mask
     }
+    pub fn _match(&self, mask: u8) -> bool {
+        (self.head & mask) > 0
+    }
 }
 // struct TCPExtra {
 //     dump: bool,
@@ -192,6 +195,9 @@ impl crate::files::InfoPacket for TCP {
     }
 
     fn status(&self) -> String {
+        if self.state._match(RESET) {
+            return "reset".into();
+        }
         let mut rs = "info";
         match &self.info {
             Some(_info) => match &_info.detail {

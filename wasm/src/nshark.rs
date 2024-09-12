@@ -114,7 +114,7 @@ impl DNSRecord {
 
 #[wasm_bindgen]
 pub struct WFileInfo {
-    pub link_type: u16,
+    pub link_type: u32,
     file_type: String,
     pub start_time: u64,
     version: String,

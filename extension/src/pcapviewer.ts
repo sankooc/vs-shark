@@ -89,7 +89,6 @@ export class Client extends PCAPClient {
 	}
 	emitMessage(msg: ComMessage<any>): void {
 		this.view.postMessage(msg);
-		console.log('emit', msg?.type);
 	}
 }
 
@@ -102,17 +101,6 @@ export class PcapViewerProvider implements vscode.CustomReadonlyEditorProvider<P
 	public get output(): vscode.LogOutputChannel { return this.output };
 
 	public static register(context: vscode.ExtensionContext): vscode.Disposable {
-		// vscode.window.registerTreeDataProvider('pcap.tree', PcapViewerProvider.pcapProvider);
-		// vscode.commands.registerCommand('pcaptree.load', (no: number, items: CTreeItem[], data: Uint8Array) => { PcapViewerProvider.pcapProvider.refresh(items, data) });
-		// const detailProvider = new DetailProvider(context);
-		// vscode.commands.registerCommand('detail.load', (data: Uint8Array, index: [number, number]) => {
-		// 	detailProvider.load(data, index);
-		// });
-		// vscode.window.registerWebviewViewProvider("pcap.detail", detailProvider, {
-		// 	webviewOptions: {
-		// 		retainContextWhenHidden: true,
-		// 	},
-		// });
 		return vscode.window.registerCustomEditorProvider(
 			PcapViewerProvider.viewType,
 			new PcapViewerProvider(context),
@@ -153,7 +141,7 @@ export class PcapViewerProvider implements vscode.CustomReadonlyEditorProvider<P
 
 		this.webviews.add(document.uri, webviewPanel);
 	
-
+		webviewPanel.title = '';
 		webviewPanel.webview.options = {
 			enableScripts: true,
 		};
@@ -164,34 +152,6 @@ export class PcapViewerProvider implements vscode.CustomReadonlyEditorProvider<P
 			document.client = client;
 			webviewPanel.webview.onDidReceiveMessage(client.handle.bind(client));
 		}
-		// webviewPanel.webview.onDidReceiveMessage((msg) => {
-		// 	const { type, body } = msg
-		// 	try {
-		// 		switch (type) {
-		// 			case 'ready':
-		// 				try {
-		// 					// console.log('inited');
-		// 					const start = Date.now();
-		// 					webviewPanel.webview.postMessage({ type: 'raw-data', body: document.documentData });
-		// 					// console.log('spend', Date.now() - start);
-		// 				} catch (e) {
-		// 					console.error(e);
-		// 				}
-		// 				break;
-		// 			case 'log':
-		// 				// console.log(body);
-		// 				if (body.level === 'error') {
-		// 					vscode.window.showErrorMessage(body.msg?.toString());
-		// 				}
-		// 				this.output.appendLine(JSON.stringify(body));
-		// 				break;
-		// 			default:
-		// 			// console.log('unknown type', msg.type);
-		// 		}
-		// 	} catch (e) {
-		// 		console.error(e);
-		// 	}
-		// });
 	}
 
 	private _requestId = 1;

@@ -16,7 +16,7 @@ use anyhow::Result;
 use enum_dispatch::enum_dispatch;
 use strum_macros::Display;
 
-pub fn execute(link_type: u16, frame: &Frame, reader: &Reader)-> Result<()>{
+pub fn execute(link_type: u32, frame: &Frame, reader: &Reader)-> Result<()>{
   match link_type {
     0 => {
       let _head = reader._slice(16);

@@ -1,8 +1,7 @@
-
 use std::fmt::Display;
 //https://www.rfc-editor.org/rfc/rfc1035
-use pcap_derive::{Packet, NINFO};
 use anyhow::Result;
+use pcap_derive::{Packet, NINFO};
 
 use crate::common::{IPv4Address, IPv6Address, Reader};
 use crate::constants::{dns_class_mapper, dns_type_mapper};
@@ -15,7 +14,6 @@ type Answers = Ref2<MultiBlock<RecordResource>>;
 type Authority = Ref2<MultiBlock<RecordResource>>;
 #[derive(Default, Packet, NINFO)]
 pub struct DNS {
-    
     transaction_id: u16,
     flag: u16,
     questions: u16,
@@ -60,7 +58,6 @@ impl DNS {
     }
 }
 
-
 #[derive(Default, Clone, Packet)]
 pub struct Question {
     name: String,
@@ -69,15 +66,7 @@ pub struct Question {
 }
 impl Display for Question {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        f.write_str(
-            format!(
-                "{}: type: {}, class: {}",
-                self.name,
-                dns_type_mapper(self._type),
-                dns_class_mapper(self.class)
-            )
-            .as_str(),
-        )?;
+        f.write_str(format!("{}: type: {}, class: {}", self.name, dns_type_mapper(self._type), dns_class_mapper(self.class)).as_str())?;
         Ok(())
     }
 }
@@ -109,11 +98,11 @@ impl ResourceType {
     fn content(&self) -> String {
         match self {
             ResourceType::EMPTY => "".into(),
-            ResourceType::A(addr) =>  addr.to_string(),
-            ResourceType::CNAME(str) =>  str.into(),
-            ResourceType::PTR(str) =>  str.into(),
-            ResourceType::SOA(str) =>  str.into(),
-            ResourceType::AAAA(str) =>  str.to_string(),
+            ResourceType::A(addr) => addr.to_string(),
+            ResourceType::CNAME(str) => str.into(),
+            ResourceType::PTR(str) => str.into(),
+            ResourceType::SOA(str) => str.into(),
+            ResourceType::AAAA(str) => str.to_string(),
         }
     }
 }
@@ -149,20 +138,10 @@ impl RecordResource {
 }
 impl Display for RecordResource {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        f.write_str(
-            format!(
-                "{}: type: {}, class: {}",
-                self.name,
-                dns_type_mapper(self._type),
-                dns_class_mapper(self.class)
-            )
-            .as_str(),
-        )?;
+        f.write_str(format!("{}: type: {}, class: {}", self.name, dns_type_mapper(self._type), dns_class_mapper(self.class)).as_str())?;
         Ok(())
     }
 }
-
-
 
 impl DomainService for RecordResource {
     fn name(&self) -> String {
@@ -184,7 +163,7 @@ impl DomainService for RecordResource {
     fn ttl(&self) -> u32 {
         self.ttl
     }
-    
+
     fn class(&self) -> String {
         dns_class_mapper(self.class)
     }
@@ -207,7 +186,7 @@ impl DNSVisitor {
         let packet: PacketContext<MultiBlock<Question>> = Frame::create_packet();
         let mut p = packet.get().borrow_mut();
         for _ in 0..count {
-            let item = packet.build_packet(reader, DNSVisitor::read_question,None, None)?;
+            let item = packet.build_packet(reader, DNSVisitor::read_question, None, None)?;
             p.push(item);
         }
         drop(p);
@@ -219,8 +198,7 @@ impl DNSVisitor {
         let mut p: std::cell::RefMut<RecordResource> = packet.get().borrow_mut();
         let name_ref = reader.read16(true)?;
         let _read = |reader: &Reader| {
-            
-            return  reader.read_dns_compress_string(archor, "", name_ref);
+            return reader.read_dns_compress_string(archor, "", name_ref);
         };
         p.name = packet.build_lazy(reader, _read, RecordResource::name)?;
         p._type = packet.build_lazy(reader, Reader::_read16_be, RecordResource::_type)?;
@@ -234,30 +212,27 @@ impl DNSVisitor {
                 } else {
                     reader.slice(p.len as usize);
                 }
-            },
+            }
             5 => {
-                let _read = |reader: &Reader| reader._read_compress(archor); 
+                let _read = |reader: &Reader| reader._read_compress(archor);
                 p.data = ResourceType::CNAME(packet.build_format(reader, _read, "CNAME: {}")?);
-            },
+            }
             28 => {
                 if p.len == 16 {
                     p.data = ResourceType::AAAA(packet.build_format(reader, Reader::_read_ipv6, "Address: {}")?);
                 } else {
                     reader.slice(p.len as usize);
                 }
-            },
-            _ => {reader.slice(p.len as usize);},
+            }
+            _ => {
+                reader.slice(p.len as usize);
+            }
         };
         // reader.slice(p.len as usize);
         drop(p);
         Ok(packet)
     }
-    fn read_rrs(
-        frame: &Frame,
-        reader: &Reader,
-        count: u16,
-        archor: usize,
-    ) -> Result<PacketContext<MultiBlock<RecordResource>>> {
+    fn read_rrs(frame: &Frame, reader: &Reader, count: u16, archor: usize) -> Result<PacketContext<MultiBlock<RecordResource>>> {
         let packet: PacketContext<MultiBlock<RecordResource>> = Frame::create_packet();
         let mut p = packet.get().borrow_mut();
         for _ in 0..count {
@@ -272,7 +247,7 @@ impl DNSVisitor {
 }
 
 impl Visitor for DNSVisitor {
-    fn visit(&self, frame: &Frame, reader: &Reader)  -> Result<()>{
+    fn visit(&self, frame: &Frame, reader: &Reader) -> Result<()> {
         let packet: PacketContext<DNS> = Frame::create_packet();
         // info!("# index:{}", frame.summary.borrow().index);
         let mut p = packet.get().borrow_mut();
@@ -280,8 +255,7 @@ impl Visitor for DNSVisitor {
         // if frame.summary.borrow().index == 86 {
         //     println!("--")
         // }
-        p.transaction_id =
-            packet.build_lazy(reader, Reader::_read16_be, DNS::transaction_id)?;
+        p.transaction_id = packet.build_lazy(reader, Reader::_read16_be, DNS::transaction_id)?;
         let flag = packet.build_lazy(reader, Reader::_read16_be, DNS::flag)?;
         let questions = packet.build_lazy(reader, Reader::_read16_be, DNS::questions)?;
         let answer_rr = packet.build_lazy(reader, Reader::_read16_be, DNS::answer_rr)?;
@@ -302,7 +276,7 @@ impl Visitor for DNSVisitor {
             p.answers_ref = Some(qs);
         }
         if authority_rr > 0 {
-            let _read = |reader: &Reader, _: Option<()>| DNSVisitor::read_rrs(frame,reader, authority_rr, _cur);
+            let _read = |reader: &Reader, _: Option<()>| DNSVisitor::read_rrs(frame, reader, authority_rr, _cur);
             p.authorities_ref = packet.build_packet(reader, _read, None, Some("Authorities".into())).ok();
         }
         // if additional_rr > 0 {

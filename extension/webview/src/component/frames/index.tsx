@@ -14,7 +14,6 @@ function FrameList() {
   const [stacks, setStack] = useState<CField[]>([]);
   const [index, setIndex] = useState(0);
   const [hex, setHex] = useState<HexV>(null);
-  const convertFilter = () => {}
   const mountHook = () => {
     const remv = onMessage('message', (e: any) => {
       const { type, body, requestId } = e.data;
@@ -54,9 +53,19 @@ function FrameList() {
   const onSelect = (item: any): void => {
     setIndex(item.index);
     emitMessage(new ComMessage('fields', item.index - 1));
+    setHex(new HexV(new Uint8Array()));
   };
   const getStyle = (item) => {
-    return (item.protocol || '').toLowerCase();
+    switch(item.status){
+      case 'deactive':
+        return item.status
+      case 'reset':
+          return 'errdata';
+      default: {
+        return (item.protocol || '').toLowerCase();
+
+      }
+    }
   }
   const onStackSelect = (index, key, _f) => {
     emitMessage(new ComMessage('hex',{index: index - 1, key}));
@@ -81,7 +90,7 @@ function FrameList() {
     </div>
     <div className="viewer flex-grow-1 flex flex-row">
       <div className="treemap h-full flex-shrink-0">
-      <Stack frame={index} items={stacks} onSelect={onStackSelect}/>
+      <Stack key={'stack'+index} frame={index} items={stacks} onSelect={onStackSelect}/>
       </div>
       <div className="hexvewer">
         <HexView data={hex}/>

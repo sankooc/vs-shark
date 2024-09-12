@@ -15,8 +15,8 @@ pub fn parse(data: &[u8]) -> Result<Instance> {
     info.version = format!("{}-{}", major, minor);
     reader._move(8);
     let _snap_len = reader.read32(false)?;
-    reader._move(2);
-    let linktype = reader.read16(true)?;
+    // reader._move(2);
+    let linktype = reader.read32(false)? & 0x0fffffff;
     info.link_type = linktype;
     drop(info);
     while reader.has() {
