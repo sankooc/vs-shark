@@ -1,7 +1,7 @@
 use std::fmt::Formatter;
 
 use pcap_derive::{Packet2, NINFO};
-use anyhow::Result;
+use anyhow::{bail, Result};
 
 use crate::{
     common::{Description, IPPacket, IPv4Address, Reader, TtypePacket}, files::{Frame, Initer, PacketContext, PacketOpt, Visitor}
@@ -58,6 +58,9 @@ impl IPv4 {
             reader.slice((ext * 4) as usize);
         }
         let _stop = reader.left()?;
+        if total_len < (_start - _stop) as u16 {
+            bail!("error_len");
+        }
         p.payload_len = total_len - (_start - _stop) as u16;
         Ok(())
     }
@@ -111,10 +114,16 @@ pub struct IP4Visitor;
 
 impl crate::files::Visitor for IP4Visitor {
     fn visit(&self, frame: &Frame, reader: &Reader) -> Result<()> {
-        let packet= IPv4::create(reader, None)?;
-        let p = packet.get();
-        let ipproto = p.borrow().t_protocol;
-        frame.add_element(super::ProtocolData::IPV4(packet));
-        excute(ipproto, frame, reader)
+        // info!("{}", frame.summary.borrow().index);
+        let _packet= IPv4::create(reader, None);
+        match _packet {
+            Ok(packet) => {
+                let p = packet.get();
+                let ipproto = p.borrow().t_protocol;
+                frame.add_element(super::ProtocolData::IPV4(packet));
+                excute(ipproto, frame, reader)
+            },
+            Err(_) => Ok(()),
+        }
     }
 }

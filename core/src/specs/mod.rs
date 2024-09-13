@@ -16,7 +16,7 @@ use anyhow::Result;
 use enum_dispatch::enum_dispatch;
 use strum_macros::Display;
 
-pub fn execute(link_type: u32, frame: &Frame, reader: &Reader)-> Result<()>{
+pub fn execute(link_type: u32, frame: &Frame, reader: &Reader)-> Result<()> {
   match link_type {
     0 => {
       let _head = reader._slice(16);
@@ -30,6 +30,7 @@ pub fn execute(link_type: u32, frame: &Frame, reader: &Reader)-> Result<()>{
       }
       ethernet::EthernetVisitor.visit(frame, reader)
     },
+    127 => ethernet::radiotap::IEE80211Visitor.visit(frame, reader),
     113 => ethernet::SSLVisitor.visit(frame, reader),
     _ => ethernet::EthernetVisitor.visit(frame, reader),
   }
@@ -51,6 +52,7 @@ type HTTP = PacketContext<http::HTTP>;
 type IGMP = PacketContext<igmp::IGMP>;
 type TLS = PacketContext<tls::TLS>;
 type IEEE1905A = PacketContext<ethernet::IEEE1905A>;
+type IEE80211 = PacketContext<ethernet::radiotap::IEE80211>;
 
 
 #[enum_dispatch]
@@ -73,4 +75,5 @@ pub enum ProtocolData {
     HTTP,
     TLS,
     IEEE1905A,
+    IEE80211,
 }
