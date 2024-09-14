@@ -1,5 +1,5 @@
 import { linktypeMap, DHCP_OPTION_TYPE_MAP, IGMP_TYPE_MAP, DHCP_TYPE_MAP, SLL_TYPE, ipProtocolMap, etypeMap, DNS_CLASS_MAP, ARP_HARDWARE_TYPE_MAP, TCP_OPTION_KIND_MAP, ARP_OPER_TYPE_MAP, ICMPV6_TYPE_MAP } from  './cons.js';
-import { TLS_CONTENT_TYPE_MAP,TLS_MIN_VERSION_MAP,TLS_HS_MESSAGE_TYPE,TLS_CIPHER_SUITES_MAP,TLS_EXTENSION_MAP } from  './cons.js';
+import { TLS_CONTENT_TYPE_MAP,TLS_MIN_VERSION_MAP,TLS_HS_MESSAGE_TYPE,TLS_CIPHER_SUITES_MAP,TLS_EXTENSION_MAP, NBNS_TYPE_MAP } from  './cons.js';
 import fs from 'node:fs';
 
 import { rebuild } from './wireshark.js';
@@ -43,6 +43,8 @@ const items = [
   ['tls_hs_message_type', TLS_HS_MESSAGE_TYPE, k => parseInt(k, 10), 'u8'],
   ['tls_cipher_suites', TLS_CIPHER_SUITES_MAP, k => parseInt(k, 16), 'u16'],
   ['tls_extension', TLS_EXTENSION_MAP, k => parseInt(k, 10), 'u16'],
+  ['nbns_type', NBNS_TYPE_MAP, k => parseInt(k, 10), 'u16'],
+
 ];
 //DHCP_OPTION_TYPE
 const conts = items.map((item) => buildConstants(item[0]+'_map', item[1], item[2], item[3]));

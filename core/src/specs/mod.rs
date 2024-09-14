@@ -12,7 +12,7 @@ pub mod dhcp;
 pub mod http;
 pub mod igmp;
 pub mod tls;
-pub mod mdns;
+pub mod nbns;
 use anyhow::Result;
 use enum_dispatch::enum_dispatch;
 use strum_macros::Display;
@@ -54,6 +54,7 @@ type IGMP = PacketContext<igmp::IGMP>;
 type TLS = PacketContext<tls::TLS>;
 type IEEE1905A = PacketContext<ethernet::IEEE1905A>;
 type IEE80211 = PacketContext<ethernet::radiotap::IEE80211>;
+type NBNS = PacketContext<nbns::NBNS>;
 
 
 #[enum_dispatch]
@@ -77,4 +78,5 @@ pub enum ProtocolData {
     TLS,
     IEEE1905A,
     IEE80211,
+    NBNS,
 }

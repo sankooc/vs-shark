@@ -1,7 +1,8 @@
 use std::fmt::Display;
 //https://www.rfc-editor.org/rfc/rfc1035
 use anyhow::Result;
-use pcap_derive::{Packet, NINFO};
+use log::info;
+use pcap_derive::{Packet, Packet2, Packet3, NINFO};
 
 use crate::common::{IPv4Address, IPv6Address, Reader};
 use crate::constants::{dns_class_mapper, dns_type_mapper};
@@ -9,22 +10,21 @@ use crate::files::{DomainService, Frame, Initer, MultiBlock, PacketContext, Pack
 
 use super::ProtocolData;
 
-type Questions = Ref2<MultiBlock<Question>>;
 type Answers = Ref2<MultiBlock<RecordResource>>;
 type Authority = Ref2<MultiBlock<RecordResource>>;
-#[derive(Default, Packet, NINFO)]
+#[derive(Default, Packet2, NINFO)]
 pub struct DNS {
     transaction_id: u16,
     flag: u16,
     questions: u16,
-    answer_rr: u16,
+    pub answer_rr: u16,
     authority_rr: u16,
     additional_rr: u16,
     opcode: u16,
     is_response: bool,
-    questions_ref: Option<Questions>,
-    answers_ref: Option<Answers>,
-    authorities_ref: Option<Authority>,
+    questions_ref: MultiBlock<Questions>,
+    pub answers_ref: Option<Answers>,
+    pub authorities_ref: Option<Authority>,
 }
 impl Display for DNS {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
@@ -56,9 +56,37 @@ impl DNS {
     fn additional_rr(packet: &DNS) -> String {
         format!("Additional RRs: {}", packet.additional_rr)
     }
+    fn _create<PacketOpt>(reader: &Reader, packet: &PacketContext<Self>, p: &mut std::cell::RefMut<Self>, _: Option<PacketOpt>) -> Result<()> {
+        let _cur = reader.cursor();
+        p.transaction_id = packet.build_lazy(reader, Reader::_read16_be, DNS::transaction_id)?;
+        let flag = packet.build_lazy(reader, Reader::_read16_be, DNS::flag)?;
+        let questions = packet.build_lazy(reader, Reader::_read16_be, DNS::questions)?;
+        let answer_rr = packet.build_lazy(reader, Reader::_read16_be, DNS::answer_rr)?;
+        let authority_rr = packet.build_lazy(reader, Reader::_read16_be, DNS::authority_rr)?;
+        let additional_rr = packet.build_lazy(reader, Reader::_read16_be, DNS::additional_rr)?;
+        p.is_response = (flag >> 15) > 0;
+        p.opcode = (flag >> 11) & 0xf;
+        let qs = packet.build_packet(reader, Questions::create, Some((questions,_cur)), None)?;
+        p.questions_ref.push(qs);
+        if answer_rr > 0 {
+            let _read = |reader: &Reader, _: Option<()>| DNSVisitor::read_rrs(reader, answer_rr, _cur);
+            let qs: Ref2<Vec<Ref2<RecordResource>>> = packet.build_packet(reader, _read, None, Some("Answers".into()))?;
+            p.answers_ref = Some(qs);
+        }
+        if authority_rr > 0 {
+            let _read = |reader: &Reader, _: Option<()>| DNSVisitor::read_rrs(reader, authority_rr, _cur);
+            p.authorities_ref = packet.build_packet(reader, _read, None, Some("Authorities".into())).ok();
+        }
+        p.flag = flag;
+        p.questions = questions;
+        p.answer_rr = answer_rr;
+        p.authority_rr = authority_rr;
+        p.additional_rr = additional_rr;
+        Ok(())
+    }
 }
 
-#[derive(Default, Clone, Packet)]
+#[derive(Default, Clone, Packet2)]
 pub struct Question {
     name: String,
     _type: u16,
@@ -81,6 +109,49 @@ impl Question {
     fn class(q: &Question) -> String {
         format!("Class: {} ({:#06x})", dns_class_mapper(q.class), q.class)
     }
+    fn _create(reader: &Reader, packet: &PacketContext<Self>, p: &mut std::cell::RefMut<Self>, opt:Option<usize>) -> Result<()> {
+        let archor = opt.unwrap();
+        
+        let _read = |reader: &Reader| {
+            let name_ref = reader.read16(true)?;
+            return reader.read_dns_compress_string(archor, "", name_ref);
+        };
+        p.name = packet.build_lazy(reader, _read, Question::name)?;
+        p._type = packet.build_lazy(reader, Reader::_read16_be, Question::_type)?;
+        p.class = packet.build_lazy(reader, Reader::_read16_be, Question::class)?;
+        Ok(())
+    }
+}
+
+#[derive(Default, Clone, Packet)]
+pub struct Questions {
+    items: MultiBlock<Question>,
+}
+
+impl Display for Questions {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        f.write_str("Questions")
+    }
+}
+impl Questions {
+    fn create(reader: &Reader,  opt:Option<(u16, usize)>) -> Result<PacketContext<Self>> {
+        let packet: PacketContext<Self> = Frame::create_packet();
+        let mut p = packet.get().borrow_mut();
+        let rs = Self::_create(reader, &packet, &mut p, opt);
+        drop(p);
+        rs?;
+        Ok(packet)
+
+    }
+    fn _create(reader: &Reader, packet: &PacketContext<Self>, p: &mut std::cell::RefMut<Self>, _count:Option<(u16, usize)>) -> Result<()> {
+        let (count, archor) = _count.unwrap();
+        for _ in 0..count {
+           let item = packet.build_packet(reader, Question::create, Some(archor), None)?;
+           p.items.push(item);
+        }
+        Ok(())
+    }
+
 }
 
 #[derive(Default)]
@@ -107,7 +178,29 @@ impl ResourceType {
     }
 }
 
-#[derive(Default, Packet)]
+
+#[derive(Default, Packet2)]
+pub struct RecordResources {
+    items: MultiBlock<RecordResource>,
+}
+
+impl Display for RecordResources {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        f.write_str("RecordResources")
+    }
+}
+impl RecordResources {
+    fn _create(reader: &Reader, packet: &PacketContext<Self>, p: &mut std::cell::RefMut<Self>, _count:Option<usize>) -> Result<()> {
+        let count = _count.unwrap();
+        for _ in 0..count {
+           let item = packet.build_packet(reader, RecordResource::create, None, None)?;
+           p.items.push(item);
+        }
+        Ok(())
+    }
+
+}
+#[derive(Default, Packet2)]
 pub struct RecordResource {
     name: String,
     _type: u16,
@@ -132,9 +225,14 @@ impl RecordResource {
     fn len(p: &RecordResource) -> String {
         format!("Data length: {}", p.len)
     }
-    // fn address(&self) -> String {
-    //     format!("Address: {}", p.len)
-    // }
+    fn _create(reader: &Reader, packet: &PacketContext<Self>, p: &mut std::cell::RefMut<Self>, _count:Option<usize>) -> Result<()> {
+        // let count = _count.unwrap();
+        // for _ in 0..count {
+        //    let item = packet.build_packet(reader, Question::create, None, None)?;
+        //    p.items.push(item);
+        // }
+        Ok(())
+    }
 }
 impl Display for RecordResource {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
@@ -167,31 +265,33 @@ impl DomainService for RecordResource {
     fn class(&self) -> String {
         dns_class_mapper(self.class)
     }
+    
 }
 
 pub struct DNSVisitor;
 
 impl DNSVisitor {
-    fn read_question(reader: &Reader, _: Option<PacketOpt>) -> Result<PacketContext<Question>> {
-        let packet: PacketContext<Question> = Frame::create_packet();
-        let mut p = packet.get().borrow_mut();
-        p.name = packet.build_lazy(reader, Reader::_read_dns_query, Question::name)?;
-        p._type = packet.build_lazy(reader, Reader::_read16_be, Question::_type)?;
-        p.class = packet.build_lazy(reader, Reader::_read16_be, Question::class)?;
-        drop(p);
-        Ok(packet)
-    }
-    fn read_questions(reader: &Reader, opt: Option<u16>) -> Result<PacketContext<MultiBlock<Question>>> {
-        let count = opt.unwrap();
-        let packet: PacketContext<MultiBlock<Question>> = Frame::create_packet();
-        let mut p = packet.get().borrow_mut();
-        for _ in 0..count {
-            let item = packet.build_packet(reader, DNSVisitor::read_question, None, None)?;
-            p.push(item);
-        }
-        drop(p);
-        Ok(packet)
-    }
+    // fn read_question(reader: &Reader, _: Option<PacketOpt>) -> Result<PacketContext<Question>> {
+    //     let packet: PacketContext<Question> = Frame::create_packet();
+    //     let mut p = packet.get().borrow_mut();
+    //     p.name = packet.build_lazy(reader, Reader::_read_dns_query, Question::name)?;
+    //     p._type = packet.build_lazy(reader, Reader::_read16_be, Question::_type)?;
+    //     p.class = packet.build_lazy(reader, Reader::_read16_be, Question::class)?;
+    //     drop(p);
+    //     Ok(packet)
+    // }
+    // fn read_questions(reader: &Reader, opt: Option<(u16, usize)>) -> Result<PacketContext<Questions>> {
+    //     let (count, archer) = opt.unwrap();
+    //     let packet: PacketContext<Questions> = Frame::create_packet();
+    //     let mut p = packet.get().borrow_mut();
+    //     for _ in 0..count {
+    //         let item = packet.build_packet(reader, DNSVisitor::read_question, None, None)?;
+            
+    //         // p.push(item);
+    //     }
+    //     drop(p);
+    //     Ok(packet)
+    // }
     fn read_rr(reader: &Reader, opt: Option<PacketOpt>) -> Result<PacketContext<RecordResource>> {
         let archor = opt.unwrap();
         let packet: PacketContext<RecordResource> = Frame::create_packet();
@@ -232,13 +332,11 @@ impl DNSVisitor {
         drop(p);
         Ok(packet)
     }
-    fn read_rrs(frame: &Frame, reader: &Reader, count: u16, archor: usize) -> Result<PacketContext<MultiBlock<RecordResource>>> {
+    fn read_rrs(reader: &Reader, count: u16, archor: usize) -> Result<PacketContext<MultiBlock<RecordResource>>> {
         let packet: PacketContext<MultiBlock<RecordResource>> = Frame::create_packet();
         let mut p = packet.get().borrow_mut();
         for _ in 0..count {
             let item: Ref2<RecordResource> = packet.build_packet(reader, DNSVisitor::read_rr, Some(archor), None)?;
-            let ctx = frame.ctx.clone();
-            ctx.add_dns_record(item.clone());
             p.push(item);
         }
         drop(p);
@@ -248,49 +346,18 @@ impl DNSVisitor {
 
 impl Visitor for DNSVisitor {
     fn visit(&self, frame: &Frame, reader: &Reader) -> Result<()> {
-        let packet: PacketContext<DNS> = Frame::create_packet();
-        // info!("# index:{}", frame.summary.borrow().index);
-        let mut p = packet.get().borrow_mut();
-        let _cur = reader.cursor();
-        // if frame.summary.borrow().index == 86 {
-        //     println!("--")
+        let packet = DNS::create(reader, None)?;
+        frame.add_element(ProtocolData::DNS(packet));
+        Ok(())
+    }
+}
+pub struct MDNSVisitor;
+impl Visitor for MDNSVisitor {
+    fn visit(&self, frame: &Frame, reader: &Reader) -> Result<()> {
+        // if frame.summary.borrow().index >= 11253 {
+        //     println!("");
         // }
-        p.transaction_id = packet.build_lazy(reader, Reader::_read16_be, DNS::transaction_id)?;
-        let flag = packet.build_lazy(reader, Reader::_read16_be, DNS::flag)?;
-        let questions = packet.build_lazy(reader, Reader::_read16_be, DNS::questions)?;
-        let answer_rr = packet.build_lazy(reader, Reader::_read16_be, DNS::answer_rr)?;
-        let authority_rr = packet.build_lazy(reader, Reader::_read16_be, DNS::authority_rr)?;
-        let additional_rr = packet.build_lazy(reader, Reader::_read16_be, DNS::additional_rr)?;
-        p.is_response = (flag >> 15) > 0;
-        p.opcode = (flag >> 11) & 0xf;
-        if questions > 0 {
-            let qs = packet.build_packet(reader, DNSVisitor::read_questions, Some(questions), Some("Questions".into()))?;
-            p.questions_ref = Some(qs);
-        }
-        if answer_rr > 0 {
-            let _read = |reader: &Reader, _: Option<()>| DNSVisitor::read_rrs(frame, reader, answer_rr, _cur);
-            let qs: Ref2<Vec<Ref2<RecordResource>>> = packet.build_packet(reader, _read, None, Some("Answers".into()))?;
-            for r in qs.as_ref().borrow().iter() {
-                frame.ctx.add_dns_record(r.clone());
-            }
-            p.answers_ref = Some(qs);
-        }
-        if authority_rr > 0 {
-            let _read = |reader: &Reader, _: Option<()>| DNSVisitor::read_rrs(frame, reader, authority_rr, _cur);
-            p.authorities_ref = packet.build_packet(reader, _read, None, Some("Authorities".into())).ok();
-        }
-        // if additional_rr > 0 {
-        //     let _read = |reader: &Reader| DNSVisitor::read_rrs(frame,reader, additional_rr, _cur);
-        //     p.authorities_ref = Some(packet.build_packet(reader, _read, Some("Additionals".into())));
-        // }
-
-        // p.transaction_id = transaction_id;
-        p.flag = flag;
-        p.questions = questions;
-        p.answer_rr = answer_rr;
-        p.authority_rr = authority_rr;
-        p.additional_rr = additional_rr;
-        drop(p);
+        let packet = DNS::create(reader, None)?;
         frame.add_element(ProtocolData::DNS(packet));
         Ok(())
     }

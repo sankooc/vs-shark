@@ -1,4 +1,4 @@
-use pcap_derive::{Packet2, NINFO};
+use pcap_derive::{Packet, Packet2, NINFO};
 
 use crate::common::{Description, MacAddress, MacPacket, PtypePacket, DEF_EMPTY_MAC};
 use crate::constants::{etype_mapper, link_type_mapper, ssl_type_mapper};
@@ -22,9 +22,8 @@ pub struct Ethernet {
     len: u16,
     ptype: u16,
 }
-
 impl Ethernet{
-    fn _create(reader: &Reader, packet: &PacketContext<Self>, p: &mut std::cell::RefMut<Self>, _:Option<PacketOpt>) -> Result<()> {
+    fn _create<PacketOpt>(reader: &Reader, packet: &PacketContext<Self>, p: &mut std::cell::RefMut<Self>, _:Option<PacketOpt>) -> Result<()> {
         p.source_mac = packet.build_lazy(reader, Reader::_read_mac, Description::source_mac).ok();
         p.target_mac = packet.build_lazy(reader, Reader::_read_mac, Description::target_mac).ok();
         let ptype = packet.build_lazy(reader, Reader::_read16_be, Description::ptype)?;
@@ -36,6 +35,14 @@ impl Ethernet{
         p.ptype = ptype;
         Ok(())
     }
+    // pub fn create<PacketOpt>(reader: &Reader, opt: Option<PacketOpt>) -> Result<PacketContext<Self>> {
+    //     let packet: PacketContext<Self> = Frame::create_packet();
+    //     let mut p = packet.get().borrow_mut();
+    //     let rs = Self::_create(reader, &packet, &mut p, opt);
+    //     drop(p);
+    //     rs?;
+    //     Ok(packet)
+    // }
 }
 
 impl Display for Ethernet {
@@ -102,7 +109,7 @@ impl Display for PPPoESS {
 }
 
 impl PPPoESS {
-    fn _create(reader: &Reader, packet: &PacketContext<Self>, p: &mut std::cell::RefMut<Self>,_:Option<PacketOpt>) -> Result<()> {
+    fn _create(reader: &Reader, packet: &PacketContext<Self>, p: &mut std::cell::RefMut<Self>,_:Option<usize>) -> Result<()> {
         let head = reader.read8()?;
         p.version = head >> 4;
         p._type = head & 0x0f;

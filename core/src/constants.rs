@@ -1191,6 +1191,15 @@ lazy_static! {
 		m.insert(65486, "encrypted_server_name");
 		m
 	};
+	pub static ref nbns_type_map: HashMap<u16, &'static str> = {
+		let mut m = HashMap::new();
+		m.insert(1, "A");
+		m.insert(2, "NS");
+		m.insert(10, "NULL");
+		m.insert(32, "NB");
+		m.insert(33, "NBSTAT");
+		m
+	};
 }pub fn link_type_mapper(code:u16) -> String {
     (*link_type_map.get(&code).unwrap_or(&"unknown")).into()
   }
@@ -1244,4 +1253,7 @@ pub fn tls_cipher_suites_mapper(code:u16) -> String {
   }
 pub fn tls_extension_mapper(code:u16) -> String {
     (*tls_extension_map.get(&code).unwrap_or(&"unknown")).into()
+  }
+pub fn nbns_type_mapper(code:u16) -> String {
+    (*nbns_type_map.get(&code).unwrap_or(&"unknown")).into()
   }

@@ -13,10 +13,14 @@ use crate::{
 fn execute(source: u16, target: u16, frame: &Frame, reader: &Reader)  -> Result<()>{
     match source {
         53 => return super::dns::DNSVisitor.visit(frame, reader),
+        5353 => return super::dns::MDNSVisitor.visit(frame, reader),
+        137 => return super::nbns::NBNSVisitor.visit(frame, reader),
         _ => (),
     }
     match target {
         53 => return super::dns::DNSVisitor.visit(frame, reader),
+        5353 => return super::dns::MDNSVisitor.visit(frame, reader),
+        137 => return super::nbns::NBNSVisitor.visit(frame, reader),
         _ => (),
     }
     Ok(())

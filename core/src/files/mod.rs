@@ -5,7 +5,7 @@ use crate::{
     common::{IPPacket, PortPacket},
     constants::link_type_mapper,
     specs::{
-        dns::RecordResource,
+        dns::{RecordResource, DNS},
         tcp::{TCPOptionKind, ACK, TCP},
         ProtocolData,
     },
@@ -756,6 +756,20 @@ impl Frame {
         s.tcp = Some(packet);
         drop(s);
     }
+    fn add_dns(&self, packet: Ref2<DNS>) {
+        let val = packet.as_ref().borrow();
+        if val.answer_rr > 0 {
+            match &val.answers_ref {
+                Some(ans) => {
+                    for cel in ans.as_ref().borrow().iter() {
+                        self.ctx.add_dns_record(cel.clone());
+                    }
+                },
+                _ => {}
+            }
+        }
+        drop(val);
+    }
     pub fn update_tcp(&self, packet: &TCP, data: &[u8]) -> TCPInfo {
         let ippacket = self.get_ip();
         let refer = ippacket.deref().borrow();
@@ -842,6 +856,9 @@ impl Frame {
             }
             ProtocolData::TCP(packet) => {
                 self.add_tcp(packet._clone_obj());
+            }
+            ProtocolData::DNS(packet) => {
+                self.add_dns(packet._clone_obj());
             }
             _ => {}
         }
