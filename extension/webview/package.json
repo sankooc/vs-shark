@@ -8,7 +8,8 @@
     "serve": "npx webpack serve -c webpack.dev.config.js",
     "css": "npx sass src --no-source-map",
     "css-watch": "npx sass src --no-source-map --watch",
-    "build": "npx webpack "
+    "build": "npx webpack ",
+    "build-web": "npx webpack -c webpack.web.config.js"
   },
   "dependencies": {
     "@vscode/webview-ui-toolkit": "^1.2.2",

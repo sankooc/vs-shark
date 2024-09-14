@@ -1,6 +1,6 @@
 [package]
 name = "nshark"
-version = "0.2.0"
+version = "0.3.1"
 authors = ["sankooc <sankooc@163.com>"]
 description = "pcap/pcapng file analyzer"
 edition = "2021"
