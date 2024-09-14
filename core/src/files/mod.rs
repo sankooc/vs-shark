@@ -106,11 +106,6 @@ pub trait FieldBuilder<T> {
 
 pub type MultiBlock<T> = Vec<Ref2<T>>;
 
-pub struct COption {
-    summary: String,
-    limit: usize,
-}
-
 pub type PacketOpt = usize;
 
 impl<T> Initer for MultiBlock<T> {
@@ -949,7 +944,6 @@ impl Instance {
             Err(e) => {
                 error!("parse_frame_failed index:[{}]", count);
                 error!("msg:[{}]", e.to_string());
-                panic!("parse_failed");
             }
         }
         ctx.count.set(count + 1);

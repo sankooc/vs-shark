@@ -12,6 +12,7 @@ pub mod dhcp;
 pub mod http;
 pub mod igmp;
 pub mod tls;
+pub mod mdns;
 use anyhow::Result;
 use enum_dispatch::enum_dispatch;
 use strum_macros::Display;
