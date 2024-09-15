@@ -8,6 +8,8 @@ use crate::{
 };
 use anyhow::Result;
 
+use super::ProtocolData;
+
 struct Request {
     method: String,
     path: String,
@@ -66,9 +68,10 @@ impl HTTPVisitor {
 }
 
 impl crate::files::Visitor for HTTPVisitor {
-    fn visit(&self, frame: &Frame, reader: &Reader) -> Result<()> {
+    fn visit(&self, _: &Frame, reader: &Reader) -> Result<(ProtocolData, &'static str)> {
         let packet: PacketContext<HTTP> = Frame::create_packet();
         let mut p = packet.get().borrow_mut();
+        // panic!("panic test");
         let v = packet.build_format(reader, Reader::_read_enter, "{}")?;
         p.head = v.clone();
         let spl: Vec<_> = v.split(" ").collect();
@@ -104,7 +107,6 @@ impl crate::files::Visitor for HTTPVisitor {
         let dlen = reader.left()?;
         packet._build(reader, reader.cursor(), dlen, format!("File Data: {} bytes",dlen));
         drop(p);
-        frame.add_element(super::ProtocolData::HTTP(packet));
-        Ok(())
+        Ok((super::ProtocolData::HTTP(packet), "none"))
     }
 }

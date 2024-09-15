@@ -1,22 +1,33 @@
 use std::fmt::Formatter;
 
-use pcap_derive::{Packet2, NINFO};
 use anyhow::{bail, Result};
+use pcap_derive::{Packet2, NINFO};
 
 use crate::{
-    common::{Description, IPPacket, IPv4Address, Reader, TtypePacket}, files::{Frame, Initer, PacketContext, PacketOpt, Visitor}
+    common::{Description, IPPacket, IPv4Address, Reader, TtypePacket},
+    files::{Frame, Initer, PacketContext, PacketOpt, Visitor},
 };
 
-pub fn excute(ipprototype: u8, frame: &Frame, reader: &Reader) -> Result<()> {
+use super::ProtocolData;
+
+// pub fn excute(ipprototype: u8, frame: &Frame, reader: &Reader) -> Result<()> {
+//     match ipprototype {
+//         1 => super::icmp::ICMPVisitor.visit(frame, reader),
+//         2 => super::igmp::IGMPVisitor.visit(frame, reader),
+//         6 => super::tcp::TCPVisitor.visit(frame, reader),
+//         17 => super::udp::UDPVisitor.visit(frame, reader),
+//         _ => Ok(()),
+//     }
+// }
+pub fn excute(ipprototype: u8) -> &'static str {
     match ipprototype {
-        1 => super::icmp::ICMPVisitor.visit(frame, reader),
-        2 => super::igmp::IGMPVisitor.visit(frame, reader),
-        6 => super::tcp::TCPVisitor.visit(frame, reader),
-        17 => super::udp::UDPVisitor.visit(frame, reader),
-        _ => Ok(()),
+        1 => "icmp",
+        2 => "igmp",
+        6 => "tcp",
+        17 => "udp",
+        _ => "none",
     }
 }
-
 
 #[derive(Default, Packet2, NINFO)]
 pub struct IPv4 {
@@ -32,13 +43,13 @@ pub struct IPv4 {
 }
 
 impl IPv4 {
-    fn _create(reader: &Reader, packet: &PacketContext<Self>, p: &mut std::cell::RefMut<Self>,_:Option<PacketOpt>) -> Result<()> {
+    fn _create(reader: &Reader, packet: &PacketContext<Self>, p: &mut std::cell::RefMut<Self>, _: Option<PacketOpt>) -> Result<()> {
         let _start = reader.left()?;
         let head = reader.read8()?;
         let head_len = head & 0x0f;
-        let _ = reader.read8();//tos
-        let total_len = packet.build_lazy(reader, Reader::_read16_be, | val| format!("Total Length: {}", val.total_len))?;
-        let identification = packet.build_lazy(reader, Reader::_read16_be, | val| format!("Identification: {:#06x}", val.identification))?;
+        let _ = reader.read8(); //tos
+        let total_len = packet.build_lazy(reader, Reader::_read16_be, |val| format!("Total Length: {}", val.total_len))?;
+        let identification = packet.build_lazy(reader, Reader::_read16_be, |val| format!("Identification: {:#06x}", val.identification))?;
         let flag = reader.read16(false)?;
         let ttl = packet.build_lazy(reader, Reader::_read8, |val| format!("Time To Live: {}", val.ttl))?;
         let ipproto = packet.build_lazy(reader, Reader::_read8, Description::t_protocol)?;
@@ -64,7 +75,6 @@ impl IPv4 {
         p.payload_len = total_len - (_start - _stop) as u16;
         Ok(())
     }
-
 }
 
 impl IPPacket for IPv4 {
@@ -79,7 +89,7 @@ impl IPPacket for IPv4 {
     }
 }
 
-impl TtypePacket for IPv4{
+impl TtypePacket for IPv4 {
     fn t_protocol_type(&self) -> u16 {
         self.t_protocol as u16
     }
@@ -95,35 +105,25 @@ impl std::fmt::Display for IPv4 {
             Some(ip) => ip.to_string(),
             _ => "".into(),
         };
-        let mn = format!(
-            "Internet Protocol Version 4, Src: {}, Dst: {}",
-            source, target
-        );
+        let mn = format!("Internet Protocol Version 4, Src: {}, Dst: {}", source, target);
         fmt.write_str(mn.as_str())
     }
 }
 impl IPv4 {
     fn _info(&self) -> String {
-        return self.to_string()
+        return self.to_string();
     }
     fn _summary(&self) -> String {
-        return self.to_string()
+        return self.to_string();
     }
 }
 pub struct IP4Visitor;
 
 impl crate::files::Visitor for IP4Visitor {
-    fn visit(&self, frame: &Frame, reader: &Reader) -> Result<()> {
-        // info!("{}", frame.summary.borrow().index);
-        let _packet= IPv4::create(reader, None);
-        match _packet {
-            Ok(packet) => {
-                let p = packet.get();
-                let ipproto = p.borrow().t_protocol;
-                frame.add_element(super::ProtocolData::IPV4(packet));
-                excute(ipproto, frame, reader)
-            },
-            Err(_) => Ok(()),
-        }
+    fn visit(&self, _: &Frame, reader: &Reader) -> Result<(ProtocolData, &'static str)> {
+        let packet = IPv4::create(reader, None)?;
+        let p = packet.get();
+        let ipproto = p.borrow().t_protocol;
+        Ok((ProtocolData::IPV4(packet), excute(ipproto)))
     }
 }

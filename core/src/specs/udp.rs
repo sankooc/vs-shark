@@ -1,37 +1,57 @@
 use std::fmt::Display;
 
-use pcap_derive::{Packet, NINFO};
 use anyhow::Result;
+use pcap_derive::{Packet, Packet2, NINFO};
 
 use crate::common::{Description, PlayloadPacket, PortPacket};
-use crate::files::Visitor;
+use crate::files::{PacketOpt, Visitor};
 use crate::{
     common::Reader,
     files::{Frame, Initer, PacketContext},
 };
 
-fn execute(source: u16, target: u16, frame: &Frame, reader: &Reader)  -> Result<()>{
-    match source {
-        53 => return super::dns::DNSVisitor.visit(frame, reader),
-        5353 => return super::dns::MDNSVisitor.visit(frame, reader),
-        137 => return super::nbns::NBNSVisitor.visit(frame, reader),
-        _ => (),
+use super::ProtocolData;
+
+fn execute(source: u16, target: u16) -> &'static str {
+    let pp = match source {
+        53 => "dns",
+        5353 => "mdns",
+        137 => "nbns",
+        _ => "none",
+    };
+    if pp == "none" {
+        return match target {
+            53 => "dns",
+            5353 => "mdns",
+            137 => "nbns",
+            _ => "none",
+        };
     }
-    match target {
-        53 => return super::dns::DNSVisitor.visit(frame, reader),
-        5353 => return super::dns::MDNSVisitor.visit(frame, reader),
-        137 => return super::nbns::NBNSVisitor.visit(frame, reader),
-        _ => (),
-    }
-    Ok(())
+    "none"
 }
 
-#[derive(Default, Packet, NINFO)]
+#[derive(Default, Packet2, NINFO)]
 pub struct UDP {
     source_port: u16,
     target_port: u16,
     len: u16,
     crc: u16,
+}
+
+impl UDP {
+    fn _create(reader: &Reader, packet: &PacketContext<Self>, p: &mut std::cell::RefMut<Self>, _:Option<PacketOpt>) -> Result<()> {
+        let source = packet.build_lazy(reader, Reader::_read16_be, Description::source_port)?;
+        let target = packet.build_lazy(reader, Reader::_read16_be, Description::target_port)?;
+        let len = packet.build_lazy(reader, Reader::_read16_be, Description::packet_length)?;
+        let crc = reader.read16(false)?;
+        let playload_size = len - 8;
+        packet._build(reader, reader.cursor(), playload_size as usize, format!("UDP payload ({} bytes)", playload_size));
+        p.source_port = source;
+        p.target_port = target;
+        p.len = len;
+        p.crc = crc;
+        Ok(())
+    }
 }
 
 impl PortPacket for UDP {
@@ -52,39 +72,27 @@ impl PlayloadPacket for UDP {
 
 impl Display for UDP {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        f.write_str(
-            format!(
-                "User Datagram Protocol, Src Port: {}, Dst Port: {}",
-                self.source_port, self.target_port
-            )
-            .as_str(),
-        )?;
+        f.write_str(format!("User Datagram Protocol, Src Port: {}, Dst Port: {}", self.source_port, self.target_port).as_str())?;
         Ok(())
     }
 }
 pub struct UDPVisitor;
 
 impl Visitor for UDPVisitor {
-    fn visit(&self, frame: &Frame, reader: &Reader) -> Result<()> {
+    fn visit(&self, _: &Frame, reader: &Reader) -> Result<(ProtocolData, &'static str)> {
         let packet: PacketContext<UDP> = Frame::create_packet();
+        let mut p = packet.get().borrow_mut();
         let source = packet.build_lazy(reader, Reader::_read16_be, Description::source_port)?;
         let target = packet.build_lazy(reader, Reader::_read16_be, Description::target_port)?;
         let len = packet.build_lazy(reader, Reader::_read16_be, Description::packet_length)?;
         let crc = reader.read16(false)?;
         let playload_size = len - 8;
-        packet._build(
-            reader,
-            reader.cursor(),
-            playload_size as usize,
-            format!("UDP payload ({} bytes)", playload_size)
-        );
-        let mut p = packet.get().borrow_mut();
+        packet._build(reader, reader.cursor(), playload_size as usize, format!("UDP payload ({} bytes)", playload_size));
         p.source_port = source;
         p.target_port = target;
         p.len = len;
         p.crc = crc;
         drop(p);
-        frame.add_element(super::ProtocolData::UDP(packet));
-        execute(source, target, frame, reader)
+        Ok((super::ProtocolData::UDP(packet), execute(source, target)))
     }
 }

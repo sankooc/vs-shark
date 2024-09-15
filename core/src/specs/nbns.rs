@@ -102,9 +102,8 @@ impl Questions {
 pub struct NBNSVisitor;
 
 impl crate::files::Visitor for NBNSVisitor {
-    fn visit(&self, frame: &Frame, reader: &Reader) -> Result<()> {
+    fn visit(&self, _: &Frame, reader: &Reader) -> Result<(ProtocolData, &'static str)> {
         let packet = NBNS::create(reader, None)?;
-        frame.add_element(ProtocolData::NBNS(packet));
-        Ok(())
+        Ok((ProtocolData::NBNS(packet), "none"))
     }
 }

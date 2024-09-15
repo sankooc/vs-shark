@@ -13,7 +13,7 @@ use crate::{
         tls_cipher_suites_mapper, tls_content_type_mapper, tls_extension_mapper,
         tls_hs_message_type_mapper, tls_min_type_mapper,
     },
-    files::{Endpoint, Frame, Initer, PacketContext, PacketOpt, Ref2, TCPPAYLOAD},
+    files::{Endpoint, Frame, Initer, PacketContext, PacketOpt, Ref2, Visitor, TCPPAYLOAD},
 };
 
 #[derive(Default, Packet)]
@@ -240,8 +240,8 @@ fn proc(
     }
     Ok(())
 }
-impl TLSVisitor {
-    pub fn visit(&self, frame: &Frame, reader: &Reader) -> Result<()> {
+impl Visitor for TLSVisitor {
+    fn visit(&self, frame: &Frame, reader: &Reader) -> Result<(ProtocolData, &'static str)> {
         let packet: PacketContext<TLS> = Frame::create_packet();
         let mut p = packet.get().borrow_mut();
 
@@ -249,11 +249,6 @@ impl TLSVisitor {
         let mut ep = _info.as_ref().borrow_mut();
         let _len = reader.left()?;
         let _reader = reader;
-
-        // info!("tls frame {}", frame.summary.borrow().index);
-        // if frame.summary.borrow().index == 3040 {
-        //     println!("")
-        // }
         match ep._seg_type {
             TCPPAYLOAD::TLS => {
                 let head = ep.get_segment()?;
@@ -279,9 +274,6 @@ impl TLSVisitor {
         let _len = p.records.len();
         drop(ep);
         drop(p);
-        // if _len > 0 {
-        frame.add_element(ProtocolData::TLS(packet));
-        // }
-        Ok(())
+        Ok((ProtocolData::TLS(packet), "none"))
     }
 }

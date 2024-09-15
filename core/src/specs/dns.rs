@@ -66,7 +66,7 @@ impl DNS {
         let additional_rr = packet.build_lazy(reader, Reader::_read16_be, DNS::additional_rr)?;
         p.is_response = (flag >> 15) > 0;
         p.opcode = (flag >> 11) & 0xf;
-        let qs = packet.build_packet(reader, Questions::create, Some((questions,_cur)), None)?;
+        let qs = packet.build_packet(reader, Questions::create, Some((questions, _cur)), None)?;
         p.questions_ref.push(qs);
         if answer_rr > 0 {
             let _read = |reader: &Reader, _: Option<()>| DNSVisitor::read_rrs(reader, answer_rr, _cur);
@@ -109,9 +109,9 @@ impl Question {
     fn class(q: &Question) -> String {
         format!("Class: {} ({:#06x})", dns_class_mapper(q.class), q.class)
     }
-    fn _create(reader: &Reader, packet: &PacketContext<Self>, p: &mut std::cell::RefMut<Self>, opt:Option<usize>) -> Result<()> {
+    fn _create(reader: &Reader, packet: &PacketContext<Self>, p: &mut std::cell::RefMut<Self>, opt: Option<usize>) -> Result<()> {
         let archor = opt.unwrap();
-        
+
         let _read = |reader: &Reader| {
             let name_ref = reader.read16(true)?;
             return reader.read_dns_compress_string(archor, "", name_ref);
@@ -134,24 +134,22 @@ impl Display for Questions {
     }
 }
 impl Questions {
-    fn create(reader: &Reader,  opt:Option<(u16, usize)>) -> Result<PacketContext<Self>> {
+    fn create(reader: &Reader, opt: Option<(u16, usize)>) -> Result<PacketContext<Self>> {
         let packet: PacketContext<Self> = Frame::create_packet();
         let mut p = packet.get().borrow_mut();
         let rs = Self::_create(reader, &packet, &mut p, opt);
         drop(p);
         rs?;
         Ok(packet)
-
     }
-    fn _create(reader: &Reader, packet: &PacketContext<Self>, p: &mut std::cell::RefMut<Self>, _count:Option<(u16, usize)>) -> Result<()> {
+    fn _create(reader: &Reader, packet: &PacketContext<Self>, p: &mut std::cell::RefMut<Self>, _count: Option<(u16, usize)>) -> Result<()> {
         let (count, archor) = _count.unwrap();
         for _ in 0..count {
-           let item = packet.build_packet(reader, Question::create, Some(archor), None)?;
-           p.items.push(item);
+            let item = packet.build_packet(reader, Question::create, Some(archor), None)?;
+            p.items.push(item);
         }
         Ok(())
     }
-
 }
 
 #[derive(Default)]
@@ -178,7 +176,6 @@ impl ResourceType {
     }
 }
 
-
 #[derive(Default, Packet2)]
 pub struct RecordResources {
     items: MultiBlock<RecordResource>,
@@ -190,15 +187,14 @@ impl Display for RecordResources {
     }
 }
 impl RecordResources {
-    fn _create(reader: &Reader, packet: &PacketContext<Self>, p: &mut std::cell::RefMut<Self>, _count:Option<usize>) -> Result<()> {
+    fn _create(reader: &Reader, packet: &PacketContext<Self>, p: &mut std::cell::RefMut<Self>, _count: Option<usize>) -> Result<()> {
         let count = _count.unwrap();
         for _ in 0..count {
-           let item = packet.build_packet(reader, RecordResource::create, None, None)?;
-           p.items.push(item);
+            let item = packet.build_packet(reader, RecordResource::create, None, None)?;
+            p.items.push(item);
         }
         Ok(())
     }
-
 }
 #[derive(Default, Packet2)]
 pub struct RecordResource {
@@ -225,7 +221,7 @@ impl RecordResource {
     fn len(p: &RecordResource) -> String {
         format!("Data length: {}", p.len)
     }
-    fn _create(reader: &Reader, packet: &PacketContext<Self>, p: &mut std::cell::RefMut<Self>, _count:Option<usize>) -> Result<()> {
+    fn _create(reader: &Reader, packet: &PacketContext<Self>, p: &mut std::cell::RefMut<Self>, _count: Option<usize>) -> Result<()> {
         // let count = _count.unwrap();
         // for _ in 0..count {
         //    let item = packet.build_packet(reader, Question::create, None, None)?;
@@ -265,7 +261,6 @@ impl DomainService for RecordResource {
     fn class(&self) -> String {
         dns_class_mapper(self.class)
     }
-    
 }
 
 pub struct DNSVisitor;
@@ -286,7 +281,7 @@ impl DNSVisitor {
     //     let mut p = packet.get().borrow_mut();
     //     for _ in 0..count {
     //         let item = packet.build_packet(reader, DNSVisitor::read_question, None, None)?;
-            
+
     //         // p.push(item);
     //     }
     //     drop(p);
@@ -345,20 +340,15 @@ impl DNSVisitor {
 }
 
 impl Visitor for DNSVisitor {
-    fn visit(&self, frame: &Frame, reader: &Reader) -> Result<()> {
+    fn visit(&self, _: &Frame, reader: &Reader) -> Result<(ProtocolData, &'static str)> {
         let packet = DNS::create(reader, None)?;
-        frame.add_element(ProtocolData::DNS(packet));
-        Ok(())
+        Ok((ProtocolData::DNS(packet), "none"))
     }
 }
 pub struct MDNSVisitor;
 impl Visitor for MDNSVisitor {
-    fn visit(&self, frame: &Frame, reader: &Reader) -> Result<()> {
-        // if frame.summary.borrow().index >= 11253 {
-        //     println!("");
-        // }
+    fn visit(&self, _: &Frame, reader: &Reader) -> Result<(ProtocolData, &'static str)> {
         let packet = DNS::create(reader, None)?;
-        frame.add_element(ProtocolData::DNS(packet));
-        Ok(())
+        Ok((ProtocolData::DNS(packet), "none"))
     }
 }

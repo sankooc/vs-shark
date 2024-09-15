@@ -1,9 +1,8 @@
-use log::info;
 use pcap_derive::{Packet2, NINFO};
 
 use crate::common::MacAddress;
 use crate::constants::etype_mapper;
-use crate::files::PacketOpt;
+use crate::files::{PacketOpt, Visitor};
 use crate::specs::ProtocolData;
 use crate::{
     common::Reader,
@@ -11,6 +10,8 @@ use crate::{
 };
 use anyhow::{Ok, Result};
 use std::fmt::Display;
+
+use super::get_next_from_type;
 
 #[derive(Default, Packet2, NINFO)]
 pub struct IEE80211 {
@@ -66,7 +67,6 @@ impl IEE80211 {
         p.control_field = reader.read8()?;
         reader._move(3);
         p.ptype = packet.build_lazy(reader, Reader::_read16_be, IEE80211::ptype_str)?;
-        // info!("len: {:#06x}", p.ptype);
         Ok(())
     }
 }
@@ -78,13 +78,11 @@ impl Display for IEE80211 {
 }
 
 pub struct IEE80211Visitor;
-impl IEE80211Visitor {
-    pub fn visit(&self, frame: &Frame, reader: &Reader) -> Result<()> {
-        // info!("frame:{}", frame.summary.borrow().index);
+impl Visitor for IEE80211Visitor {
+    fn visit(&self, _f: &Frame, reader: &Reader) -> Result<(ProtocolData, &'static str)>{
         let packet = IEE80211::create(reader, None)?;
         let p = packet.get();
         let ptype = p.borrow().ptype;
-        frame.add_element(ProtocolData::IEE80211(packet));
-        super::excute(ptype, frame, reader)
+        Ok((ProtocolData::IEE80211(packet), get_next_from_type(ptype)))
     }
 }
