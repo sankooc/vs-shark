@@ -136,9 +136,8 @@ impl std::fmt::Display for Certificate {
 }
 impl Certificate {
     fn _create(reader: &Reader, packet: &PacketContext<Self>, p: &mut std::cell::RefMut<Self>, _: Option<PacketOpt>) -> Result<()> {
-        // let finish = opt.unwrap();
         let len = read24(reader)?;
-        reader.slice(len as usize);
+        packet.build_skip(reader, len as usize);
         Ok(())
     }
 }

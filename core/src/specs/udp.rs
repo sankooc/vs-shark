@@ -27,7 +27,7 @@ fn execute(source: u16, target: u16) -> &'static str {
             _ => "none",
         };
     }
-    "none"
+    pp
 }
 
 #[derive(Default, Packet2, NINFO)]

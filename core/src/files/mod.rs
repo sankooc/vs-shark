@@ -177,6 +177,13 @@ where
         self.fields.borrow_mut().push(Box::new(StringPosition { start, size, data: reader.get_raw(), render }));
     }
 
+    pub fn build_skip(&self, reader: &Reader, size: usize) {
+        let start = reader.cursor();
+        let content = format!("resolve later [{}]", size);
+        reader.slice(size);
+        self._build(reader, start, size, content);
+    }
+
     pub fn build_lazy<K>(&self, reader: &Reader, opt: impl Fn(&Reader) -> Result<K>, render: fn(&T) -> String) -> Result<K> {
         let start = reader.cursor();
         let val: K = opt(reader)?;

@@ -488,7 +488,7 @@ impl IPv6Address {
         let mut args:[u16; 8] = [0; 8];
         for inx in 0..8 {
             let _inx = (inx * 2) as usize;
-            args[inx] = (data[_inx] as u16) << 8 + data[_inx + 1];
+            args[inx] = ((data[_inx] as u16) * 0x0100) + (data[_inx + 1] as u16);
         }
         let _ins = Ipv6Addr::new(args[0], args[1],args[2],args[3],args[4],args[5],args[6],args[7]);
         Self{ _ins }

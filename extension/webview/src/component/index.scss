@@ -62,8 +62,8 @@ $t-tcp: #005f73;
 $t-tcp-font: #edf2f4;
 
 
-$t-errdata: #C7253E;
-$t-errdata-font: #aeb6b0;
+$t-errdata: #C96868;
+$t-errdata-font: #F5F5F5;
 
 
 $t-arp: #84a98c;
@@ -86,6 +86,9 @@ $t-udp-font: #001219;
 $t-dns: #C0D6E8;
 $t-dns-font: #A34343;
 
+
+$t-icmp: #604CC3;
+$t-icmp-font: #F5F5F5;
 
 @keyframes example {
     0%   {background-color: var(--vscode-list-focusBackground);}
@@ -135,7 +138,12 @@ tr[role=row]{
         background-color: $t-dns;
         color: $t-dns-font;
     }
+    &.icmp, &.icmpv6{
+        background-color: $t-icmp;
+        color: $t-icmp-font;
+    }
 }
+
 .paging {
     button{
         margin: 0;

@@ -1,7 +1,6 @@
 use std::fmt::Display;
 //https://www.rfc-editor.org/rfc/rfc1035
 use anyhow::Result;
-use log::info;
 use pcap_derive::{Packet, Packet2, Packet3, NINFO};
 
 use crate::common::{IPv4Address, IPv6Address, Reader};
@@ -266,27 +265,6 @@ impl DomainService for RecordResource {
 pub struct DNSVisitor;
 
 impl DNSVisitor {
-    // fn read_question(reader: &Reader, _: Option<PacketOpt>) -> Result<PacketContext<Question>> {
-    //     let packet: PacketContext<Question> = Frame::create_packet();
-    //     let mut p = packet.get().borrow_mut();
-    //     p.name = packet.build_lazy(reader, Reader::_read_dns_query, Question::name)?;
-    //     p._type = packet.build_lazy(reader, Reader::_read16_be, Question::_type)?;
-    //     p.class = packet.build_lazy(reader, Reader::_read16_be, Question::class)?;
-    //     drop(p);
-    //     Ok(packet)
-    // }
-    // fn read_questions(reader: &Reader, opt: Option<(u16, usize)>) -> Result<PacketContext<Questions>> {
-    //     let (count, archer) = opt.unwrap();
-    //     let packet: PacketContext<Questions> = Frame::create_packet();
-    //     let mut p = packet.get().borrow_mut();
-    //     for _ in 0..count {
-    //         let item = packet.build_packet(reader, DNSVisitor::read_question, None, None)?;
-
-    //         // p.push(item);
-    //     }
-    //     drop(p);
-    //     Ok(packet)
-    // }
     fn read_rr(reader: &Reader, opt: Option<PacketOpt>) -> Result<PacketContext<RecordResource>> {
         let archor = opt.unwrap();
         let packet: PacketContext<RecordResource> = Frame::create_packet();

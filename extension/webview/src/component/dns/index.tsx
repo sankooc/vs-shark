@@ -18,7 +18,7 @@ const DNSList = (props: Proto) => {
     { field: 'content', header: 'address' }
   ];
   return (<div className="flex flex-nowrap h-full w-full" id="frame-page">
-    <DTable cols={columes} result={{ items: props.items, page: 1, size: props.items.length, total: props.items.length }} />
+    <DTable multi cols={columes} result={{ items: props.items.map((it, inx) => ({index: (inx + 1), ...it})), page: 1, size: props.items.length, total: props.items.length }} />
   </div>
   );
 };

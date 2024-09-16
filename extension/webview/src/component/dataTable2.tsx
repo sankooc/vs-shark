@@ -15,18 +15,27 @@ class Props {
   scrollHeight?: number;
   size?: 'small' | 'normal' | 'large';
   className?: string;
+  multi?: boolean;
   request?: (event:any) => void;
   filter?: any;
 }
 const DTable = (props: Props) => {
   const [select, setSelect] = useState<number>(0);
+  const [selects, setSelects] = useState<number[]>([1]);
   const [loading, setLoading] = useState<boolean>(false);
   const onSelectionChange = (e: DataTableSelectionSingleChangeEvent<any[]>) => {
     const { index } = e.value;
-    setSelect(index);
-    if(props.onSelect) {
-      props.onSelect(e.value);
+    if(index !== undefined) {
+      setSelect(index);
+      if(props.onSelect) {
+        props.onSelect(e.value);
+      }
     }
+  }
+  const onMultiSelectChange = (e) => {
+    // console.log(e);
+    // const values = (e.value || []).map(inx => inx.index);
+    setSelects(e.value);
   }
   const scrollHeight = props.scrollHeight || 99;
   const result = props.result || { total: 0, size : 0, items: [], page: 1};
@@ -62,12 +71,49 @@ const DTable = (props: Props) => {
     maxSelectedLabels: 10,
     ...props.filter
   };
+
+  const tableProps = {
+    loading,
+    style: {height: inSight, overflow: "auto"},
+    value: items,
+    showHeaders: true,
+    rowClassName,
+    virtualScrollerOptions: { itemSize: 20 },
+    scrollHeight: inSight,
+    // onSelectionChange,
+    showGridlines: true,
+    scrollable: true,
+    // size: 'small',
+    className: 'pcap-table flex-grow-1 w-full',
+  };
+  if (props.multi){
+    return (<>
+      <DataTable {...tableProps}
+        size={"small"}
+        onSelectionChange={onMultiSelectChange}
+        selection={selects}
+        selectionMode="checkbox"
+        >
+          <Column selectionMode="multiple" headerStyle={{ width: '3.3rem' }}></Column>
+        {props.cols.map((c: ColumnProps, inx: number): ReactElement => {
+          return (<Column {...c} key={'col' + inx}></Column>)
+        })}
+      </DataTable>
+      {hasFootbar && <div className="flex justify-content-between" style={{height: `${space}px`}}>
+        {!!props.filter && <IconField className="filter w-3 flex">
+            <MultiSelect {...opt} className="p-inputtext-sm" />
+          </IconField>}
+          {hasPaging && <Paginator pageLinkSize={16} first={first} onPageChange={onPageChange}  className="paging" rows={size} totalRecords={total} />}
+        </div>}
+    </>
+    );
+  }
   return (<>
-    <DataTable loading={loading} style={{height: inSight, overflow: "auto"}} value={items} showHeaders selectionMode="single" rowClassName={rowClassName}
-    virtualScrollerOptions={{ itemSize: 20 }}
-      scrollHeight={inSight} 
-      onSelectionChange={onSelectionChange} showGridlines scrollable
-      size={"small"} className={"pcap-table flex-grow-1 w-full"}>
+    <DataTable {...tableProps}
+      size={"small"}
+      onSelectionChange = {onSelectionChange}
+      selectionMode="single"
+      >
       {props.cols.map((c: ColumnProps, inx: number): ReactElement => {
         return (<Column {...c} key={'col' + inx}></Column>)
       })}
