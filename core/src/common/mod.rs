@@ -2,6 +2,7 @@ use thiserror::Error;
 
 use crate::constants::{etype_mapper, ip_protocol_type_mapper};
 use std::cell::Cell;
+use std::net::{Ipv4Addr, Ipv6Addr};
 use std::rc::Rc;
 use std::{fmt, str};
 use std::str::from_utf8;
@@ -335,7 +336,7 @@ impl Reader<'_> {
         let mut data: [u8; 4] = [0; 4];
         data.copy_from_slice(self._slice(len));
         self._move(len);
-        Ok(IPv4Address { data })
+        Ok(IPv4Address::new(data))
     }
     pub fn read_ipv6(&self) -> Result<IPv6Address> {
         let len = 16;
@@ -463,92 +464,39 @@ pub const DEF_EMPTY_MAC: MacAddress = MacAddress { data: [0; 6] };
 
 #[derive(Debug)]
 pub struct IPv4Address {
-    pub data: [u8; 4],
+    _ins: Ipv4Addr,
 }
 
+impl IPv4Address {
+    pub fn new(data: [u8; 4]) -> Self {
+        let _ins = Ipv4Addr::new(data[0], data[1], data[2], data[3]);
+        Self{_ins}
+    }
+}
 impl fmt::Display for IPv4Address {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
-        let str = (&self.data)
-            .iter()
-            .map(|x| format!("{}", x))
-            .collect::<Vec<String>>()
-            .join(".");
-        if str == "255.255.255.255"{
-            fmt.write_str("Boardcast")?;
-        } else {
-            fmt.write_str(str.as_str())?;
-        }
-        Ok(())
+        fmt.write_str(&self._ins.to_string())
     }
 }
 
-pub struct Sou {
-    inx: usize,
-    cur: usize,
-    count: usize,
-    _count: usize,
-}
-impl Sou {
-    fn new() -> Self {
-        Sou {
-            inx: 0,
-            cur: 0,
-            count: 0,
-            _count: 0,
-        }
-    }
-    fn inc(&mut self) {
-        self._count += 1;
-        self.cur += 1;
-    }
-    fn end(&mut self) {
-        if self.count < self._count {
-            self.inx = self.cur;
-            self.count = self._count;
-        }
-        self._count = 0;
-        self.cur += 1;
-    }
-}
 pub struct IPv6Address {
-    _data: [u8; 16],
-    _str: String,
+    _ins: Ipv6Addr
 }
 
 impl IPv6Address {
-    fn to_str(data: &[u8; 16]) -> String {
-        let mut list = Vec::new();
-        let mut tmp = String::from("");
-        let mut s = Sou::new();
-        for inx in 0..data.len() {
-            if inx % 2 == 0 {
-                tmp = format!("{:x}", data[inx]);
-            } else {
-                let tok = format!("{}{:02x}", tmp, data[inx]);
-                match tok.as_str() {
-                    "000" => s.inc(),
-                    _ => s.end(),
-                }
-                list.push(tok);
-            }
+    fn new(data: [u8; 16]) -> Self {
+        let mut args:[u16; 8] = [0; 8];
+        for inx in 0..8 {
+            let _inx = (inx * 2) as usize;
+            args[inx] = (data[_inx] as u16) << 8 + data[_inx + 1];
         }
-        s.end();
-        if s.count > 0 {
-            let fr = s.inx - s.count;
-            list.splice(fr..s.inx as usize, ["".into()]);
-            list.join(":")
-        } else {
-            list.join(":")
-        }
-    }
-    fn new(data: [u8; 16]) -> Self{
-        let str = IPv6Address::to_str(&data);
-        Self{_data: data, _str: str}
+        let _ins = Ipv6Addr::new(args[0], args[1],args[2],args[3],args[4],args[5],args[6],args[7]);
+        Self{ _ins }
     }
 }
 impl std::fmt::Display for IPv6Address {
     fn fmt(&self, fmt: &mut std::fmt::Formatter) -> std::fmt::Result {
-        fmt.write_str(self._str.as_str())?;
+        fmt.write_str(&self._ins.to_string())?;
         Ok(())
     }
 }
