@@ -229,7 +229,7 @@ impl HandshakeCertificate {
         let finish = opt.unwrap();
         let len = read24(reader)?;
         if finish != reader.cursor() + len as usize {
-            error!("Certificate parse error");
+            // error!("Certificate parse error");
             bail!("Certificate parse error")
         }
         packet._build(reader, reader.cursor() - 3, 3, format!("Certificates Length: {}", len));

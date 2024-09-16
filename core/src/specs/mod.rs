@@ -16,6 +16,7 @@ pub mod nbns;
 pub mod tcp;
 pub mod tls;
 pub mod udp;
+pub mod error;
 use anyhow::bail;
 use enum_dispatch::enum_dispatch;
 use strum_macros::Display;
@@ -40,6 +41,7 @@ pub fn execute(link_type: u32, _: &Frame, reader: &Reader) -> &'static str {
     }
 }
 
+type ERROR = PacketContext<error::Error>;
 type ETHERNET = PacketContext<ethernet::ii::Ethernet>;
 type PPPoESS = PacketContext<ethernet::pppoes::PPPoESS>;
 type SSL = PacketContext<ethernet::ssl::SSL>;
@@ -63,6 +65,7 @@ type NBNS = PacketContext<nbns::NBNS>;
 #[derive(Display)]
 // #[strum(serialize_all = "snake_case")]
 pub enum ProtocolData {
+    ERROR,
     ETHERNET,
     PPPoESS,
     SSL,

@@ -14,7 +14,14 @@ use chrono::{DateTime, Utc};
 use enum_dispatch::enum_dispatch;
 use log::{error, info};
 use std::{
-    borrow::Borrow, cell::{Cell, Ref, RefCell}, collections::{HashMap, HashSet}, fmt::Display, ops::{Deref, Range}, panic::UnwindSafe, rc::Rc, time::{Duration, UNIX_EPOCH}
+    borrow::Borrow,
+    cell::{Cell, Ref, RefCell},
+    collections::{HashMap, HashSet},
+    fmt::Display,
+    ops::{Deref, Range},
+    panic::UnwindSafe,
+    rc::Rc,
+    time::{Duration, UNIX_EPOCH},
 };
 
 use anyhow::{bail, Result};
@@ -816,31 +823,38 @@ impl Instance {
         };
         Instance { ctx: Rc::new(ctx), frames: RefCell::new(Vec::new()) }
     }
-    pub fn create(&self, data: &[u8], ts: u64, capture_size: u32, origin_size: u32) {
+    pub fn create(&self, data: Vec<u8>, ts: u64, capture_size: u32, origin_size: u32) {
         let ctx = self.context();
         let count = ctx.count.get();
         let link_type = ctx.info.borrow().link_type;
-        let f = Frame::new(ctx.clone(), data.to_vec(), ts, capture_size, origin_size, count, link_type);
+        let f = Frame::new(ctx.clone(), data, ts, capture_size, origin_size, count, link_type);
         let reader = f.get_reader();
         let mut next = crate::specs::execute(link_type, &f, &reader);
         'ins: loop {
-            let rs =  crate::specs::parse(&f, &reader, next);
-            match rs {
-                Ok(_rs) => {
-                    match _rs {
+            // let rs =  crate::specs::parse(&f, &reader, next);
+            let _result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| crate::specs::parse(&f, &reader, next)));
+            match _result {
+                Ok(rs) => match rs {
+                    Ok(_rs) => match _rs {
                         Some((data, _next)) => {
                             f.add_element(data);
                             next = _next;
-                        },
-                        None => {
-                            break 'ins
                         }
+                        None => break 'ins,
+                    },
+                    Err(e) => {
+                        error!("parse_frame_failed index:[{}] at {}", count, next);
+                        error!("msg:[{}]", e.to_string());
+                        let (ep, _) = super::specs::error::ErrorVisitor.visit(&f, &reader, &next).unwrap();
+                        f.add_element(ep);
+                        break 'ins;
                     }
                 },
-                Err(e) => {
-                    error!("parse_frame_failed index:[{}]", count);
-                    error!("msg:[{}]", e.to_string());
-                    break 'ins
+                Err(_) => {
+                    // error!("parse_err: index[{}] at {}", count, next);
+                    // let (ep, _) = super::specs::error::ErrorVisitor.visit(&f, &reader).unwrap();
+                    // f.add_element(ep);
+                    break 'ins;
                 }
             }
         }

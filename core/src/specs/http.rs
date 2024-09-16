@@ -6,7 +6,7 @@ use crate::{
     common::Reader,
     files::{Frame, Initer, PacketContext},
 };
-use anyhow::Result;
+use anyhow::{bail, Result};
 
 use super::ProtocolData;
 
@@ -71,7 +71,6 @@ impl crate::files::Visitor for HTTPVisitor {
     fn visit(&self, _: &Frame, reader: &Reader) -> Result<(ProtocolData, &'static str)> {
         let packet: PacketContext<HTTP> = Frame::create_packet();
         let mut p = packet.get().borrow_mut();
-        // panic!("panic test");
         let v = packet.build_format(reader, Reader::_read_enter, "{}")?;
         p.head = v.clone();
         let spl: Vec<_> = v.split(" ").collect();

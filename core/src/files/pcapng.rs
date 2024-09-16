@@ -31,7 +31,10 @@ fn parse_enhance(ctx: &Instance, data: &[u8]) -> Result<()>{
     if _mod > 0 {
         reader._move((4 - _mod) as usize);
     }
-    ctx.create(raw, ts, captured, origin);
+    let rss = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        ctx.create(raw.to_vec(), ts, captured, origin);
+    }));
+    // ctx.create(raw.to_vec(), ts, captured, origin);
     Ok(())
 }
 pub fn parse(data: &[u8]) -> Result<Instance> {
