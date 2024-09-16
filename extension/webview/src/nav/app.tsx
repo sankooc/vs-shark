@@ -46,7 +46,7 @@ export default function CommandDemo() {
     };
     const items = [
         {
-            label: 'file',
+            label: 'File',
             icon: 'pi pi-file',
             items: [
                 {

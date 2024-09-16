@@ -851,9 +851,9 @@ impl Instance {
                     }
                 },
                 Err(_) => {
-                    // error!("parse_err: index[{}] at {}", count, next);
-                    // let (ep, _) = super::specs::error::ErrorVisitor.visit(&f, &reader).unwrap();
-                    // f.add_element(ep);
+                    error!("parse_err: index[{}] at {}", count, next);
+                    let (ep, _) = super::specs::error::ErrorVisitor.visit(&f, &reader, &next).unwrap();
+                    f.add_element(ep);
                     break 'ins;
                 }
             }
