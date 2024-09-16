@@ -27,7 +27,9 @@ pub fn parse(data: &[u8]) -> Result<Instance> {
         let captured = reader.read32(false)?;
         let origin = reader.read32(false)?;
         let raw = reader.slice(origin as usize);
-        ctx.create(raw, ts, captured, origin);
+        let rss = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            ctx.create(raw.to_vec(), ts, captured, origin)
+        }));
     }
     Ok(ctx)
 }

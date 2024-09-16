@@ -18,7 +18,7 @@ pure pcap/pcapng analyzer
 <td>ETHERNET II</td>
 <td>PPPOE</td>
 <td>SSL</td>
-<td>IEE 1905.1a</td>
+<td>IEEE 1905.1a</td>
 </tr>
 <tr>
 <td style="font-weight: bold">network</td>

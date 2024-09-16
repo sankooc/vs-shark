@@ -9,10 +9,10 @@ use pcap_derive::Packet;
 use crate::{
     common::{Description, PortPacket, Reader},
     constants::tcp_option_kind_mapper,
-    files::{
-        Frame, Initer, MultiBlock, PacketContext, Ref2, TCPDetail, TCPInfo, Visitor, TCPPAYLOAD,
-    },
+    files::{Frame, Initer, MultiBlock, PacketContext, Ref2, TCPDetail, TCPInfo, TCPPAYLOAD},
 };
+
+use super::ProtocolData;
 
 #[derive(Default)]
 pub struct TCPState {
@@ -127,11 +127,7 @@ impl Display for TCPOption {
 }
 impl TCPOption {
     fn kind(&self) -> String {
-        format!(
-            "Kind: {} ({})",
-            tcp_option_kind_mapper(self.kind as u16),
-            self.kind
-        )
+        format!("Kind: {} ({})", tcp_option_kind_mapper(self.kind as u16), self.kind)
     }
 }
 
@@ -155,10 +151,7 @@ pub struct TCP {
 
 impl std::fmt::Display for TCP {
     fn fmt(&self, fmt: &mut Formatter) -> std::fmt::Result {
-        fmt.write_fmt(format_args!(
-            "Transmission Control Protocol, Src Port: {}, Dst Port: {}, Seq: {}, Ack: {}, Len: {}",
-            self.source_port, self.target_port, self.sequence, self.acknowledge, self.len
-        ))
+        fmt.write_fmt(format_args!("Transmission Control Protocol, Src Port: {}, Dst Port: {}, Seq: {}, Ack: {}, Len: {}", self.source_port, self.target_port, self.sequence, self.acknowledge, self.len))
     }
 }
 impl PortPacket for TCP {
@@ -172,16 +165,7 @@ impl PortPacket for TCP {
 }
 impl crate::files::InfoPacket for TCP {
     fn info(&self) -> String {
-        let mut info = format!(
-            "{} → {} {} Seq={} Ack={} Win={} Len={}",
-            self.source_port,
-            self.target_port,
-            self.state.to_string(),
-            self.sequence,
-            self.acknowledge,
-            self.window,
-            self.payload_len
-        );
+        let mut info = format!("{} → {} {} Seq={} Ack={} Win={} Len={}", self.source_port, self.target_port, self.state.to_string(), self.sequence, self.acknowledge, self.window, self.payload_len);
         match &self.info {
             Some(_info) => match _info.detail {
                 TCPDetail::KEEPALIVE => info = format!("[{}] {}", "Keeplive", info),
@@ -228,11 +212,7 @@ impl TCP {
             Some(info) => {
                 let _seq = info._seq;
                 if _seq <= self.sequence {
-                    return format!(
-                        "Sequence Number : {} (raw: {})",
-                        self.sequence - _seq,
-                        self.sequence
-                    );
+                    return format!("Sequence Number : {} (raw: {})", self.sequence - _seq, self.sequence);
                 }
                 format!("Sequence Number (raw): {}", self.sequence)
             }
@@ -246,11 +226,7 @@ impl TCP {
             Some(info) => {
                 let _ack = info._ack;
                 if _ack <= self.acknowledge {
-                    return format!(
-                        "Acknowlagde Number : {} (raw: {})",
-                        self.acknowledge - _ack,
-                        self.acknowledge
-                    );
+                    return format!("Acknowlagde Number : {} (raw: {})", self.acknowledge - _ack, self.acknowledge);
                 }
                 format!("Acknowlagde Number (raw): {}", self.acknowledge)
             }
@@ -260,10 +236,7 @@ impl TCP {
         }
     }
     fn len_desc(&self) -> String {
-        format!(
-            "{:04b} .... = Header Length: 32 bytes ({})",
-            self.len, self.len
-        )
+        format!("{:04b} .... = Header Length: 32 bytes ({})", self.len, self.len)
     }
 }
 pub struct TCPVisitor;
@@ -305,8 +278,7 @@ impl TCPVisitor {
                 let len = packet.build_format(reader, Reader::_read8, "Length: {}")?;
                 match len {
                     10 => {
-                        let sender =
-                            packet.build_format(reader, Reader::_read32_be, "sender: {}")?;
+                        let sender = packet.build_format(reader, Reader::_read32_be, "sender: {}")?;
                         let reply = packet.build_format(reader, Reader::_read32_be, "reply: {}")?;
                         option.data = TCPOptionKind::TIMESTAMP(TCPTIMESTAMP { sender, reply })
                     }
@@ -344,7 +316,7 @@ impl TCPVisitor {
 }
 
 impl crate::files::Visitor for TCPVisitor {
-    fn visit(&self, frame: &Frame, reader: &Reader) -> Result<()> {
+    fn visit(&self, frame: &Frame, reader: &Reader) -> Result<(ProtocolData, &'static str)> {
         let ip_packet = frame.get_ip();
         let unwap = ip_packet.deref().borrow();
         let total = unwap.payload_len();
@@ -370,12 +342,8 @@ impl crate::files::Visitor for TCPVisitor {
         if _start > total {
             p.payload_len = total + left_size - _start;
         }
-        packet._build(
-            reader,
-            reader.cursor(),
-            p.payload_len.into(),
-            format!("TCP payload ({} bytes)", left_size),
-        );
+        packet._build(reader, reader.cursor(), p.payload_len.into(), format!("TCP payload ({} bytes)", left_size));
+        frame.add_tcp(packet._clone_obj());
         let _data = reader._slice(left_size as usize);
         let info = frame.update_tcp(p.deref(), _data);
         match &info.detail {
@@ -384,66 +352,36 @@ impl crate::files::Visitor for TCPVisitor {
                 drop(p);
                 handle(frame, reader, packet)
             }
-            // TCPDetail::SEGMENTS(segs) => {
-            //     let mut _raw:Vec<&[u8]> = Vec::new();
-            //     for seg in segs.iter() {
-            //         let cp = seg.data.clone();
-            //         packet.build_compact(seg.to_string(), cp);
-            //         _raw.push(&seg.data);
-            //     }
-            //     let _reader = Reader::new_raw(Rc::new(_raw.concat()));
-            //     p.info = Some(info);
-            //     drop(p);
-            //     handle(frame, &_reader, packet)
-            // }
             _ => {
                 p.info = Some(info);
                 drop(p);
-                frame.add_element(super::ProtocolData::TCP(packet));
-                Ok(())
+                Ok((ProtocolData::TCP(packet), "none"))
             }
         }
     }
 }
 
-fn handle(frame: &Frame, reader: &Reader, packet: PacketContext<TCP>) -> Result<()> {
-    frame.add_element(super::ProtocolData::TCP(packet));
+fn handle(frame: &Frame, reader: &Reader, packet: PacketContext<TCP>) -> Result<(ProtocolData, &'static str)> {
     let _len = reader.left()?;
     if _len < 1 {
-        return Ok(());
+        return Ok((ProtocolData::TCP(packet), "none"));
     }
     let _info = frame.get_tcp_info()?;
-    let mut ep = _info.as_ref().borrow_mut();
-    match ep._seg_type {
+    let ep = _info.as_ref().borrow_mut();
+    match &ep._seg_type {
         TCPPAYLOAD::TLS => {
             drop(ep);
-            return super::tls::TLSVisitor.visit(frame, reader);
-            // let head = ep.get_segment()?;
-            // let seg_length = head.len();
-            // let (_, len) = super::tls::TLS::_check(&head[0..5])?;
-            // let data = reader.slice(_len);
-            // if len + 5 > seg_length + _len {
-            //     ep.add_segment(frame, TCPPAYLOAD::TLS, data);
-            //     drop(ep);
-            // } else {
-            //     let mut _data = ep.take_segment();
-            //     drop(ep);
-            //     _data.extend_from_slice(data);
-            //     let _reader = Reader::new_raw(Rc::new(_data));
-            //     super::tls::TLSVisitor.visit(frame, &_reader)?;
-            // }
-            
+            return Ok((ProtocolData::TCP(packet), "tls"));
         }
         TCPPAYLOAD::NONE => {
             drop(ep);
             let (is_tls, _) = super::tls::TLS::check(reader)?;
             if is_tls {
-                return super::tls::TLSVisitor.visit(frame, reader);
+                return Ok((ProtocolData::TCP(packet), "tls"));
             } else if super::http::HTTPVisitor::check(reader) {
-                return super::http::HTTPVisitor.visit(frame, reader);
+                return Ok((ProtocolData::TCP(packet), "http"));
             }
+            Ok((ProtocolData::TCP(packet), "none"))
         }
     }
-
-    Ok(())
 }

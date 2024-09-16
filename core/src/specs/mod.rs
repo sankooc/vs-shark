@@ -1,44 +1,50 @@
-use crate::{common::{Reader, IO}, files::{Element, Field, Frame, PacketContext, Visitor}};
+use crate::{
+    common::Reader,
+    files::{Element, Field, Frame, PacketContext, Visitor},
+};
 
+pub mod arp;
+pub mod dhcp;
+pub mod dns;
 pub mod ethernet;
+pub mod http;
+pub mod icmp;
+pub mod igmp;
 pub mod ip4;
 pub mod ip6;
-pub mod arp;
-pub mod icmp;
-pub mod udp;
-pub mod dns;
+pub mod nbns;
 pub mod tcp;
-pub mod dhcp;
-pub mod http;
-pub mod igmp;
 pub mod tls;
-use anyhow::Result;
+pub mod udp;
+pub mod error;
+use anyhow::bail;
 use enum_dispatch::enum_dispatch;
 use strum_macros::Display;
 
-pub fn execute(link_type: u32, frame: &Frame, reader: &Reader)-> Result<()> {
-  match link_type {
-    0 => {
-      let _head = reader._slice(16);
-      if _head[0] == 0 && _head[5] == 6 {
-        let lat = &_head[14..16];
-        let _flag = u16::from_be_bytes(lat.try_into().unwrap());
-        return match _flag {
-          0x0806 | 0x0800 | 0x86dd | 0x8864 => ethernet::SSLVisitor.visit(frame, reader),
-          _ => ethernet::EthernetVisitor.visit(frame, reader),
+pub fn execute(link_type: u32, _: &Frame, reader: &Reader) -> &'static str {
+    match link_type {
+        0 => {
+            let _head = reader._slice(16);
+            if _head[0] == 0 && _head[5] == 6 {
+                let lat = &_head[14..16];
+                let _flag = u16::from_be_bytes(lat.try_into().unwrap());
+                return match _flag {
+                    0x0806 | 0x0800 | 0x86dd | 0x8864 => "ssl",
+                    _ => "ethernet",
+                };
+            }
+            "ethernet"
         }
-      }
-      ethernet::EthernetVisitor.visit(frame, reader)
-    },
-    127 => ethernet::radiotap::IEE80211Visitor.visit(frame, reader),
-    113 => ethernet::SSLVisitor.visit(frame, reader),
-    _ => ethernet::EthernetVisitor.visit(frame, reader),
-  }
+        127 => "ieee802.11",
+        113 => "ssl",
+        _ => "ethernet",
+    }
 }
 
-type ETHERNET = PacketContext<ethernet::Ethernet>;
-type PPPoESS = PacketContext<ethernet::PPPoESS>;
-type SSL = PacketContext<ethernet::SSL>;
+type ERROR = PacketContext<error::Error>;
+type ETHERNET = PacketContext<ethernet::ii::Ethernet>;
+type PPPoESS = PacketContext<ethernet::pppoes::PPPoESS>;
+type SSL = PacketContext<ethernet::ssl::SSL>;
 type IPV4 = PacketContext<ip4::IPv4>;
 type IPV6 = PacketContext<ip6::IPv6>;
 type ARP = PacketContext<arp::ARP>;
@@ -51,14 +57,15 @@ type DHCP = PacketContext<dhcp::DHCP>;
 type HTTP = PacketContext<http::HTTP>;
 type IGMP = PacketContext<igmp::IGMP>;
 type TLS = PacketContext<tls::TLS>;
-type IEEE1905A = PacketContext<ethernet::IEEE1905A>;
+type IEEE1905A = PacketContext<ethernet::ieee1905a::IEEE1905A>;
 type IEE80211 = PacketContext<ethernet::radiotap::IEE80211>;
-
+type NBNS = PacketContext<nbns::NBNS>;
 
 #[enum_dispatch]
 #[derive(Display)]
 // #[strum(serialize_all = "snake_case")]
 pub enum ProtocolData {
+    ERROR,
     ETHERNET,
     PPPoESS,
     SSL,
@@ -76,4 +83,43 @@ pub enum ProtocolData {
     TLS,
     IEEE1905A,
     IEE80211,
+    NBNS,
+}
+
+pub fn _parse(proto: &'static str) -> anyhow::Result<&dyn Visitor>{
+    let rs:&dyn Visitor = match proto {
+        "ethernet" => &ethernet::ii::EthernetVisitor,
+        "pppoess" => &ethernet::pppoes::PPPoESSVisitor,
+        "ssl" => &ethernet::ssl::SSLVisitor,
+        "ieee802.11" => &ethernet::radiotap::IEE80211Visitor,
+        "ieee1905.a" => &ethernet::ieee1905a::IEEE1905AVisitor,
+        "ipv4" => &ip4::IP4Visitor,
+        "ipv6" => &ip6::IP6Visitor,
+        "arp" => &arp::ARPVisitor,
+        "tcp" => &tcp::TCPVisitor,
+        "udp" => &udp::UDPVisitor,
+        "icmp" => &icmp::ICMPVisitor,
+        "icmpv6" => &icmp::ICMPv6Visitor,
+        "igmp" => &igmp::IGMPVisitor,
+        "nbns" => &nbns::NBNSVisitor,
+        "dns" => &dns::DNSVisitor,
+        // "mdns" => &dns::MDNSVisitor,
+        "dhcp" => &dhcp::DHCPVisitor,
+        "tls" => &tls::TLSVisitor,
+        "http" => &http::HTTPVisitor,
+        _ => bail!("none"),
+    };
+    Ok(rs)
+}
+
+pub fn parse(frame: &Frame, reader: &Reader, proto: &'static str) -> anyhow::Result<Option<(ProtocolData, &'static str)>> {
+    let v = _parse(proto);
+    match v {
+        Ok(visitor) => {
+            visitor.visit(frame, reader).map(|op| Some(op))
+        },
+        Err(_) => {
+            Ok(None)
+        }
+    }
 }

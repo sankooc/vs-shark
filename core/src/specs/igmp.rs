@@ -4,8 +4,12 @@ use anyhow::Result;
 use pcap_derive::Packet;
 
 use crate::{
-    common::Reader, constants::igmp_type_mapper, files::{Frame, Initer, PacketContext}
+    common::Reader,
+    constants::igmp_type_mapper,
+    files::{Frame, Initer, PacketContext},
 };
+
+use super::ProtocolData;
 
 #[derive(Default, Packet)]
 pub struct IGMP {
@@ -23,20 +27,20 @@ impl crate::files::InfoPacket for IGMP {
     fn info(&self) -> String {
         self._type()
     }
-    
+
     fn status(&self) -> String {
         "info".into()
     }
 }
 impl IGMP {
     fn _type(&self) -> String {
-        format!("Type: {} ({})", igmp_type_mapper(self._type),self._type)
+        format!("Type: {} ({})", igmp_type_mapper(self._type), self._type)
     }
 }
 pub struct IGMPVisitor;
 
 impl crate::files::Visitor for IGMPVisitor {
-    fn visit(&self, frame: &Frame, reader: &Reader) -> Result<()> {
+    fn visit(&self, _: &Frame, reader: &Reader) -> Result<(ProtocolData, &'static str)> {
         let packet: PacketContext<IGMP> = Frame::create_packet();
         let mut p = packet.get().borrow_mut();
         p._type = packet.build_lazy(reader, Reader::_read8, IGMP::_type)?;
@@ -44,7 +48,6 @@ impl crate::files::Visitor for IGMPVisitor {
         p.checksum = packet.build_format(reader, Reader::_read16_be, "Checksum: {}")?;
         //TODO ADD
         drop(p);
-        frame.add_element(super::ProtocolData::IGMP(packet));
-        Ok(())
+        Ok((super::ProtocolData::IGMP(packet), "none"))
     }
 }

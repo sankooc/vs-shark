@@ -192,6 +192,22 @@ impl Reader<'_> {
         let str = from_utf8(_data)?;
         Ok(str.into())
     }
+    pub fn read_nbns_string(&self, size: usize) -> Result<String>{
+        let words: usize = size /2;
+        let mut rs = Vec::new();
+        for _ in 0..words {
+            let h = self.read8()? - 65;
+            let l = self.read8()? - 65;
+            let v = h * 16 + l;
+            match v {
+                32 | 0 => {},
+                _ => {
+                    rs.push(v);
+                },
+            }
+        }
+        Ok(from_utf8(&rs)?.into())
+    }
     pub fn read_dns_query(&self) -> Result<String> {
         let mut list = Vec::new();
         loop {
@@ -264,6 +280,28 @@ impl Reader<'_> {
     pub fn _read_compress(&self, archor: usize) -> Result<String> {
         let (pre, str_ref) = self.read_compress_string()?;
         self.read_dns_compress_string(archor, &pre, str_ref)
+    }
+    pub fn read_netbios_string(&self) -> Result<String> {
+        let mut list:Vec<String> = Vec::new();
+        loop {
+            if self.left()? < 1 {
+                return Ok(list.join(""));
+            }
+            let next = self._get_data()[self.cursor.get()] as usize;
+            if next == 0 {
+                self._move(1);
+                return Ok(list.join(""));
+            }
+            if next > self.left()? {
+                return Ok(list.join(""));
+            }
+            let _size = self.read8()? as usize;
+            if _size > 0 {
+                let str = self.read_nbns_string(_size)?;
+                list.push(str);
+            }
+        }
+
     }
     pub fn read16(&self, endian: bool) -> Result<u16> {
         let len = 2;
@@ -395,6 +433,12 @@ impl Reader<'_> {
     }
     pub fn _read_dns_query(reader: &Reader) -> Result<String> {
         reader.read_dns_query()
+    }
+    pub fn _read_compress_string(reader: &Reader) -> Result<(String, u16)> {
+        reader.read_compress_string()
+    }
+    pub fn _read_netbios_string(reader: &Reader) -> Result<String> {
+        reader.read_netbios_string()
     }
 }
 

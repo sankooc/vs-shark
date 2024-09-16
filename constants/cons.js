@@ -1312,3 +1312,11 @@ export const PPP_DLL_NUMBER_MAP = {
     "c26f": "Stampede Bridging Authorization Protocol",
     "c281": "Proprietary Authentication Protocol",
 }
+
+export const NBNS_TYPE_MAP = {
+    1: 'A',
+    2: 'NS',
+    10: 'NULL',
+    32: 'NB',
+    33: 'NBSTAT',
+}

@@ -27,6 +27,7 @@ export default function CommandDemo() {
         if (files.length) {
             const {name} = files[0];
             setName(name);
+            document.title = name;
             const reader = new FileReader();
             reader.onload = function () {
                 const arrayBuffer: ArrayBuffer = this.result as ArrayBuffer;
@@ -45,11 +46,11 @@ export default function CommandDemo() {
     };
     const items = [
         {
-            label: 'File',
+            label: 'file',
             icon: 'pi pi-file',
             items: [
                 {
-                    label: 'Load PCAP',
+                    label: 'Select pcap',
                     icon: 'pi pi-plus',
                     command: () => {
                         inputRef.current.click();
@@ -58,7 +59,7 @@ export default function CommandDemo() {
             ]
         },
     ];
-
+    
     return (
         <>
             <Menubar model={items} style={{ padding: 0 }} />

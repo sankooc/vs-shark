@@ -4,8 +4,12 @@ use anyhow::Result;
 use pcap_derive::{Packet, Packet2, NINFO};
 
 use crate::{
-    common::Reader, constants::icmpv6_type_mapper, files::{Frame, Initer, PacketContext, PacketOpt}
+    common::Reader,
+    constants::icmpv6_type_mapper,
+    files::{Frame, Initer, PacketContext, PacketOpt},
 };
+
+use super::ProtocolData;
 //https://datatracker.ietf.org/doc/html/rfc792
 #[derive(Default, Packet2, NINFO)]
 pub struct ICMP {
@@ -20,16 +24,11 @@ impl std::fmt::Display for ICMP {
     }
 }
 impl ICMP {
-    fn _create(
-        reader: &Reader,
-        packet: &PacketContext<Self>,
-        p: &mut std::cell::RefMut<Self>,
-        _: Option<PacketOpt>,
-    ) -> Result<()> {
+    fn _create(reader: &Reader, packet: &PacketContext<Self>, p: &mut std::cell::RefMut<Self>, _: Option<PacketOpt>) -> Result<()> {
         p._type = packet.build_lazy(reader, Reader::_read8, ICMP::type_desc)?;
         p.code = packet.build_format(reader, Reader::_read8, "Code {}")?;
         p.checksum = reader.read16(false)?;
-        packet._build(reader, reader.cursor() - 2, 2, format!("Checksum: {:#06x}",p.checksum));
+        packet._build(reader, reader.cursor() - 2, 2, format!("Checksum: {:#06x}", p.checksum));
         Ok(())
     }
     fn _type(&self) -> String {
@@ -91,24 +90,19 @@ impl ICMP {
             },
             _ => def,
         }
-        
     }
     fn type_desc(&self) -> String {
-        format!(
-            "Type: {} ({})", self.code, self._type()
-        )
+        format!("Type: {} ({})", self.code, self._type())
     }
 }
 pub struct ICMPVisitor;
 
 impl crate::files::Visitor for ICMPVisitor {
-    fn visit(&self, frame: &Frame, reader: &Reader) -> Result<()> {
+    fn visit(&self, _: &Frame, reader: &Reader) -> Result<(ProtocolData, &'static str)> {
         let packet = ICMP::create(reader, None)?;
-        frame.add_element(super::ProtocolData::ICMP(packet));
-        Ok(())
+        Ok((super::ProtocolData::ICMP(packet), "none"))
     }
 }
-
 
 #[derive(Default, Packet, NINFO)]
 pub struct ICMP6 {
@@ -126,26 +120,23 @@ impl ICMP6 {
         icmpv6_type_mapper(self._type as u16)
     }
     fn type_desc(&self) -> String {
-        format!(
-            "Type: {} ({})", self.code, self._type()
-        )
+        format!("Type: {} ({})", self.code, self._type())
     }
-    fn checksum(&self) -> String{
-        format!("Checksum: {:#06x}",self.checksum)
+    fn checksum(&self) -> String {
+        format!("Checksum: {:#06x}", self.checksum)
     }
 }
 
 pub struct ICMPv6Visitor;
 
 impl crate::files::Visitor for ICMPv6Visitor {
-    fn visit(&self, frame: &Frame, reader: &Reader) -> Result<()> {
+    fn visit(&self, _: &Frame, reader: &Reader) -> Result<(ProtocolData, &'static str)> {
         let packet: PacketContext<ICMP6> = Frame::create_packet();
         let mut p = packet.get().borrow_mut();
         p._type = packet.build_lazy(reader, Reader::_read8, ICMP6::type_desc)?;
         p.code = packet.build_format(reader, Reader::_read8, "Code {}")?;
         p.checksum = packet.build_lazy(reader, Reader::_read16_be, ICMP6::checksum)?;
         drop(p);
-        frame.add_element(super::ProtocolData::ICMPv6(packet));
-        Ok(())
+        Ok((super::ProtocolData::ICMPv6(packet), "none"))
     }
 }

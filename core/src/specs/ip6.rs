@@ -1,24 +1,26 @@
 use std::fmt::Formatter;
 
-use pcap_derive::{Packet2, NINFO};
 use anyhow::Result;
+use pcap_derive::{Packet2, NINFO};
 
 use crate::{
-    common::{Description, IPPacket, IPv6Address, Reader, TtypePacket}, files::{Frame, Initer, PacketContext, PacketOpt, Visitor}
+    common::{Description, IPPacket, IPv6Address, Reader, TtypePacket},
+    files::{Frame, Initer, PacketContext, PacketOpt, Visitor},
 };
 
-pub fn excute(ipprototype: u8, frame: &Frame, reader: &Reader) -> Result<()> {
+use super::ProtocolData;
+
+pub fn excute(ipprototype: u8) -> &'static str {
     match ipprototype {
-        17 => super::udp::UDPVisitor.visit(frame, reader),
-        6 => super::tcp::TCPVisitor.visit(frame, reader),
-        58 => super::icmp::ICMPv6Visitor.visit(frame, reader),
-        _ => Ok(()),
+        17 => "udp",
+        6 => "tcp",
+        58 => "icmpv6",
+        _ => "none",
     }
 }
 
 #[derive(Default, Packet2, NINFO)]
 pub struct IPv6 {
-    
     source_ip: Option<IPv6Address>,
     target_ip: Option<IPv6Address>,
     total_len: u16,
@@ -27,7 +29,7 @@ pub struct IPv6 {
 }
 
 impl IPv6 {
-    fn _create(reader: &Reader, packet: &PacketContext<Self>, p: &mut std::cell::RefMut<Self>,_:Option<PacketOpt>) -> Result<()> {
+    fn _create(reader: &Reader, packet: &PacketContext<Self>, p: &mut std::cell::RefMut<Self>, _: Option<PacketOpt>) -> Result<()> {
         let _ = reader.read32(true);
         let plen = packet.build_format(reader, Reader::_read16_be, "Payload Length: {}")?;
         let ipproto = packet.build_lazy(reader, Reader::_read8, Description::t_protocol)?;
@@ -56,7 +58,7 @@ impl IPPacket for IPv6 {
     }
 }
 
-impl TtypePacket for IPv6{
+impl TtypePacket for IPv6 {
     fn t_protocol_type(&self) -> u16 {
         self.t_protocol as u16
     }
@@ -72,10 +74,7 @@ impl std::fmt::Display for IPv6 {
             Some(ip) => ip.to_string(),
             _ => "".into(),
         };
-        let mn = format!(
-            "Internet Protocol Version 6, Src: {}, Dst: {}",
-            source, target
-        );
+        let mn = format!("Internet Protocol Version 6, Src: {}, Dst: {}", source, target);
         fmt.write_str(mn.as_str())?;
         Ok(())
     }
@@ -83,11 +82,10 @@ impl std::fmt::Display for IPv6 {
 pub struct IP6Visitor;
 
 impl crate::files::Visitor for IP6Visitor {
-    fn visit(&self, frame: &Frame, reader: &Reader) -> Result<()> {
+    fn visit(&self, _: &Frame, reader: &Reader) -> Result<(ProtocolData, &'static str)> {
         let packet: PacketContext<IPv6> = IPv6::create(reader, None)?;
         let p = packet.get();
         let ipproto = p.borrow().t_protocol;
-        frame.add_element(super::ProtocolData::IPV6(packet));
-        excute(ipproto,frame, reader)
+        Ok((ProtocolData::IPV6(packet), excute(ipproto)))
     }
 }
