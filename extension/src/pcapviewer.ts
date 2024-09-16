@@ -76,7 +76,7 @@ class PcapDocument extends Disposable implements vscode.CustomDocument {
 
 
 export class Client extends PCAPClient {
-	constructor(private view: vscode.Webview, private output: vscode.LogOutputChannel ){
+	constructor(private view: vscode.Webview, private output: vscode.LogOutputChannel) {
 		super();
 	}
 	printLog(log: ComLog): void {
@@ -140,13 +140,13 @@ export class PcapViewerProvider implements vscode.CustomReadonlyEditorProvider<P
 	): Promise<void> {
 
 		this.webviews.add(document.uri, webviewPanel);
-	
+
 		webviewPanel.title = '';
 		webviewPanel.webview.options = {
 			enableScripts: true,
 		};
 		webviewPanel.webview.html = createWebviewHtml(this._context, webviewPanel.webview, ENTRY);
-		if(!document.client){
+		if (!document.client) {
 			const client = new Client(webviewPanel.webview, PcapViewerProvider.output);
 			client.initData(document.documentData);
 			document.client = client;

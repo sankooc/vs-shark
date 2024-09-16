@@ -18,7 +18,7 @@ const TCPList = (props: Proto) => {
     { field: 'throughput', header: 'throughput', style: { width: '7%' } }
   ];
   return (<div className="flex flex-nowrap h-full w-full">
-    <DTable cols={columes} result={{ items: items, page: 1, size: items.length, total: items.length }} />
+    <DTable multi cols={columes} result={{ items: items.map((it, inx) => ({index: (inx + 1), ...it})), page: 1, size: items.length, total: items.length }} />
   </div>
   );
 }

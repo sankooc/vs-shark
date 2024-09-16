@@ -100,7 +100,7 @@ fn impl_ninfo_macro(ast: &syn::DeriveInput) -> TokenStream {
 }
 #[proc_macro_derive(NINFO)]
 pub fn ninfo_macro_derive(input: TokenStream) -> TokenStream {
-    // println!("input: \"{input}\"");
+    
     let ast = syn::parse(input).unwrap();
     impl_ninfo_macro(&ast)
 }
