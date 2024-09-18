@@ -4,9 +4,10 @@ use crate::common::{Description, MacAddress, MacPacket, PtypePacket, DEF_EMPTY_M
 use crate::files::{PacketOpt, Visitor};
 use crate::specs::ProtocolData;
 use crate::{
-    common::Reader,
+    common::io::Reader,
     files::{Frame, Initer, PacketContext},
 };
+use crate::common::io::AReader;
 use anyhow::{Ok, Result};
 use std::cell::RefCell;
 use std::fmt::Display;
@@ -18,7 +19,7 @@ pub struct Ethernet {
     source_mac: Option<MacAddress>,
     target_mac: Option<MacAddress>,
     len: u16,
-    ptype: u16,
+    pub ptype: u16,
 }
 impl Ethernet {
     fn _create<PacketOpt>(reader: &Reader, packet: &PacketContext<Self>, p: &mut std::cell::RefMut<Self>, _: Option<PacketOpt>) -> Result<()> {

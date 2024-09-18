@@ -4,10 +4,9 @@ use anyhow::Result;
 use pcap_derive::{Packet, Packet2, NINFO};
 
 use crate::{
-    common::Reader,
-    constants::icmpv6_type_mapper,
-    files::{Frame, Initer, PacketContext, PacketOpt},
+    common::io::Reader, constants::icmpv6_type_mapper, files::{Frame, Initer, PacketContext, PacketOpt}
 };
+use crate::common::io::AReader;
 
 use super::ProtocolData;
 //https://datatracker.ietf.org/doc/html/rfc792

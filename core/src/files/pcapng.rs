@@ -1,11 +1,12 @@
-use crate::common::{FileType, Reader};
+use crate::common::FileType;
+use crate::common::io::{AReader, SliceReader};
 use anyhow::Result;
 use log::info;
 
 use super::Instance;
 
 fn parse_head(data: &[u8]) -> Result<String> {
-    let reader = Reader::new(data);
+    let reader = SliceReader::new(data);
     let _magic = reader.read32(false)?;
     let major = reader.read16(false)?;
     let minor = reader.read16(false)?;
@@ -13,12 +14,12 @@ fn parse_head(data: &[u8]) -> Result<String> {
 }
 
 fn parse_interface(data: &[u8]) -> Result<u16> {
-    let reader = Reader::new(data);
+    let reader = SliceReader::new(data);
     reader.read16(false)
 }
 
 fn parse_enhance(ctx: &Instance, data: &[u8]) -> Result<()>{
-    let reader = Reader::new(data);
+    let reader = SliceReader::new(data);
     let _interface_id = reader.read32(false);
     let mut ts = reader.read32(false)? as u64;
     let low_ts = reader.read32(false)? as u64;
@@ -39,7 +40,7 @@ fn parse_enhance(ctx: &Instance, data: &[u8]) -> Result<()>{
 }
 pub fn parse(data: &[u8]) -> Result<Instance> {
     let ctx = Instance::new(FileType::PCAPNG);
-    let reader = Reader::new(data);
+    let reader = SliceReader::new(data);
 
     loop {
         let block_type = format!("{:#010x}", reader.read32(false)?);

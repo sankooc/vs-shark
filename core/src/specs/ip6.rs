@@ -4,7 +4,7 @@ use anyhow::Result;
 use pcap_derive::{Packet2, NINFO};
 
 use crate::{
-    common::{Description, IPPacket, IPv6Address, Reader, TtypePacket},
+    common::{io::{AReader, Reader}, Description, IPPacket, IPv6Address, TtypePacket},
     files::{Frame, Initer, PacketContext, PacketOpt, Visitor},
 };
 

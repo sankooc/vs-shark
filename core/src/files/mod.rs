@@ -2,7 +2,7 @@ pub mod pcap;
 pub mod pcapng;
 
 use crate::{
-    common::{IPPacket, PortPacket},
+    common::{io::AReader, IPPacket, PortPacket},
     constants::link_type_mapper,
     specs::{
         dns::{RecordResource, DNS},
@@ -14,20 +14,13 @@ use chrono::{DateTime, Utc};
 use enum_dispatch::enum_dispatch;
 use log::{error, info};
 use std::{
-    borrow::Borrow,
-    cell::{Cell, Ref, RefCell},
-    collections::{HashMap, HashSet},
-    fmt::Display,
-    ops::{Deref, Range},
-    panic::UnwindSafe,
-    rc::Rc,
-    time::{Duration, UNIX_EPOCH},
+    borrow::Borrow, cell::{Cell, Ref, RefCell}, collections::{HashMap, HashSet}, fmt::Display, ops::{Deref, Range}, panic::UnwindSafe, process, rc::Rc, time::{Duration, UNIX_EPOCH}
 };
 
 use anyhow::{bail, Result};
 // pub mod pcapng;
-use crate::common::{FileInfo, FileType, Reader};
-
+use crate::common::{FileInfo, FileType};
+use crate::common::io::Reader;
 pub type Ref2<T> = Rc<RefCell<T>>;
 
 #[derive(Default, Clone)]
@@ -854,6 +847,7 @@ impl Instance {
                         error!("msg:[{}]", e.to_string());
                         let (ep, _) = super::specs::error::ErrorVisitor.visit(&f, &reader, &next).unwrap();
                         f.add_element(ep);
+                        // process::exit(0x0100);
                         break 'ins;
                     }
                 },
@@ -861,6 +855,7 @@ impl Instance {
                     error!("parse_err: index[{}] at {}", count, next);
                     let (ep, _) = super::specs::error::ErrorVisitor.visit(&f, &reader, &next).unwrap();
                     f.add_element(ep);
+                    // process::exit(0x0100);
                     break 'ins;
                 }
             }

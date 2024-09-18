@@ -1,14 +1,16 @@
-mod extension;
-mod handshake;
+pub mod extension;
+pub mod handshake;
+pub mod der;
 use std::{fmt::Formatter, ops::DerefMut, rc::Rc};
 
 use anyhow::Result;
 use handshake::{HandshakeProtocol, HandshakeType};
 use pcap_derive::{Packet, Packet2};
+use crate::common::io::AReader;
 
 use super::ProtocolData;
 use crate::{
-    common::Reader,
+    common::io::Reader,
     constants::{
         tls_cipher_suites_mapper, tls_content_type_mapper, tls_extension_mapper,
         tls_hs_message_type_mapper, tls_min_type_mapper,

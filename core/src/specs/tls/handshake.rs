@@ -3,9 +3,10 @@ use std::fmt::Formatter;
 use anyhow::{bail, Result};
 use log::{info,error};
 use pcap_derive::Packet2;
+use crate::common::io::AReader;
 
 use crate::{
-    common::Reader,
+    common::io::Reader,
     constants::{tls_cipher_suites_mapper, tls_extension_mapper, tls_hs_message_type_mapper, tls_min_type_mapper},
     files::{Frame, Initer, PacketContext, PacketOpt, Ref2},
 };
@@ -126,15 +127,15 @@ fn hexlize(data: &[u8]) -> String {
 
 
 #[derive(Default, Packet2)]
-struct Certificate {
+pub struct Certificates {
 
 }
-impl std::fmt::Display for Certificate {
+impl std::fmt::Display for Certificates {
     fn fmt(&self, fmt: &mut Formatter) -> std::fmt::Result {
         fmt.write_str("Certificate")
     }
 }
-impl Certificate {
+impl Certificates {
     //https://www.ietf.org/rfc/rfc2246.txt
     //https://www.cryptologie.net/article/262/what-are-x509-certificates-rfc-asn1-der/
     fn _create(reader: &Reader, packet: &PacketContext<Self>, p: &mut std::cell::RefMut<Self>, _: Option<PacketOpt>) -> Result<()> {
@@ -145,6 +146,26 @@ impl Certificate {
 }
 
 
+#[derive(Default, Packet2)]
+pub struct Certificate {
+
+}
+impl std::fmt::Display for Certificate {
+    fn fmt(&self, fmt: &mut Formatter) -> std::fmt::Result {
+        fmt.write_str("Certificate")
+    }
+}
+impl Certificate {
+    fn _create(reader: &Reader, packet: &PacketContext<Self>, p: &mut std::cell::RefMut<Self>, _: Option<PacketOpt>) -> Result<()> {
+        let len = read24(reader)?;
+        let der_len = reader.read_der()?;
+        let der_len2 = reader.read_der()?;
+        println!("{}, {}, {}", len, der_len, der_len2);
+        reader.slice(der_len2);
+        // packet.build_skip(reader, len as usize);
+        Ok(())
+    }
+}
 
 #[derive(Clone)]
 struct HandshakeClientHello {
@@ -218,7 +239,7 @@ fn read24(reader: &Reader) -> Result<u32> {
 
 #[derive(Default, Packet2)]
 struct HandshakeCertificate {
-    items: Vec<Ref2<Certificate>>,
+    items: Vec<Ref2<Certificates>>,
 }
 impl std::fmt::Display for HandshakeCertificate {
     fn fmt(&self, fmt: &mut Formatter) -> std::fmt::Result {
@@ -238,7 +259,7 @@ impl HandshakeCertificate {
             if finish >= reader.cursor() {
                 break;
             }
-            let item = packet.build_packet(reader, Certificate::create, None, None)?;
+            let item = packet.build_packet(reader, Certificates::create, None, None)?;
             p.items.push(item);
         }
         Ok(())

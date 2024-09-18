@@ -3,10 +3,10 @@ use std::fmt::Display;
 use anyhow::Result;
 use pcap_derive::{Packet, Packet2, NINFO};
 
+use crate::common::io::{AReader, Reader};
 use crate::common::{Description, PlayloadPacket, PortPacket};
 use crate::files::{PacketOpt, Visitor};
 use crate::{
-    common::Reader,
     files::{Frame, Initer, PacketContext},
 };
 
