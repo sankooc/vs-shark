@@ -135,6 +135,8 @@ impl std::fmt::Display for Certificate {
     }
 }
 impl Certificate {
+    //https://www.ietf.org/rfc/rfc2246.txt
+    //https://www.cryptologie.net/article/262/what-are-x509-certificates-rfc-asn1-der/
     fn _create(reader: &Reader, packet: &PacketContext<Self>, p: &mut std::cell::RefMut<Self>, _: Option<PacketOpt>) -> Result<()> {
         let len = read24(reader)?;
         packet.build_skip(reader, len as usize);
@@ -269,12 +271,23 @@ pub struct HandshakeProtocol {
 }
 impl std::fmt::Display for HandshakeProtocol {
     fn fmt(&self, fmt: &mut Formatter) -> std::fmt::Result {
-        fmt.write_str("Transport Layer Security")
+        fmt.write_str(self.msg())
     }
 }
 impl HandshakeProtocol {
     fn _type(&self) -> String {
         tls_hs_message_type_mapper(self._type)
+    }
+    fn msg_desc(&self) -> String {
+        format!("Handshake Type: {} ({})", self.msg(), self._type)
+    }
+    fn msg(&self) -> &'static str {
+        match &(self.msg) {
+            HandshakeType::Certificate => "Certificate",
+            HandshakeType::ClientHello(_) => "Client Hello",
+            HandshakeType::ServerHello(_) => "Server Hello",
+            _ => "Encrypted"
+        }
     }
     fn _create(reader: &Reader, packet: &PacketContext<Self>, p: &mut std::cell::RefMut<Self>, opt: Option<PacketOpt>) -> Result<()> {
         let finish = opt.unwrap();
@@ -297,8 +310,10 @@ impl HandshakeProtocol {
                 p.msg = HandshakeType::Encrypted;
                 return Ok(());
             }
-            // let h_type_desc = format!("Handshake Type: {} ({})", tls_hs_message_type_mapper(head_type), head_type);
-            // let h_len_desc = format!("Length: {}", head_len);
+            let h_type_desc = format!("Handshake Type: {} ({})", tls_hs_message_type_mapper(head_type), head_type);
+            let h_len_desc = format!("Length: {}", head_len);
+            packet._build(reader, current-4, 1, h_type_desc);
+            packet._build(reader, current-3, 3, h_len_desc);
             let _finish = reader.cursor() + head_len as usize;
 
             match head_type {

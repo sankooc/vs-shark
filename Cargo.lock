@@ -146,7 +146,6 @@ dependencies = [
  "chrono",
  "enum_dispatch",
  "env_logger",
- "js-sys",
  "lazy_static",
  "log",
  "pcap_derive",

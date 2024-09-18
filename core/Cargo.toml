@@ -13,7 +13,6 @@ crate-type = ["lib"]
 
 [dependencies]
 chrono = "0.4.38"
-js-sys = "0.3.69"
 lazy_static = "1.5.0"
 log = "0.4.22"
 pcap_derive = { path = "../derive" }
@@ -28,5 +27,4 @@ strum_macros = "0.26.3"
 panic = "unwind"
 
 [dev-dependencies]
-js-sys = "0.3.69"
 env_logger = "0.11.3"
