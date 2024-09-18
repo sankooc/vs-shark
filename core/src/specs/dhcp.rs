@@ -4,10 +4,11 @@ use anyhow::Result;
 use pcap_derive::Packet;
 
 use crate::{
-    common::{IPv4Address, MacAddress, Reader},
+    common::{io::AReader, IPv4Address, MacAddress},
     constants::{arp_hardware_type_mapper, dhcp_option_type_mapper, dhcp_type_mapper},
     files::{Frame, Initer, PacketContext, Ref2},
 };
+use crate::common::io::Reader;
 
 use super::ProtocolData;
 

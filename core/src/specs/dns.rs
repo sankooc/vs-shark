@@ -3,7 +3,9 @@ use std::fmt::Display;
 use anyhow::Result;
 use pcap_derive::{Packet, Packet2, Packet3, NINFO};
 
-use crate::common::{IPv4Address, IPv6Address, Reader};
+use crate::common::io::Reader;
+use crate::common::io::AReader;
+use crate::common::{IPv4Address, IPv6Address};
 use crate::constants::{dns_class_mapper, dns_type_mapper};
 use crate::files::{DomainService, Frame, Initer, MultiBlock, PacketContext, PacketOpt, Ref2, Visitor};
 

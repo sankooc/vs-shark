@@ -5,9 +5,10 @@ use crate::constants::etype_mapper;
 use crate::files::{PacketOpt, Visitor};
 use crate::specs::ProtocolData;
 use crate::{
-    common::Reader,
+    common::io::Reader,
     files::{Frame, Initer, PacketContext},
 };
+use crate::common::io::AReader;
 use anyhow::{Ok, Result};
 use std::fmt::Display;
 

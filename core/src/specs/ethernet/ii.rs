@@ -4,9 +4,10 @@ use crate::common::{Description, MacAddress, MacPacket, PtypePacket, DEF_EMPTY_M
 use crate::files::{PacketOpt, Visitor};
 use crate::specs::ProtocolData;
 use crate::{
-    common::Reader,
+    common::io::Reader,
     files::{Frame, Initer, PacketContext},
 };
+use crate::common::io::AReader;
 use anyhow::{Ok, Result};
 use std::cell::RefCell;
 use std::fmt::Display;
@@ -18,19 +19,23 @@ pub struct Ethernet {
     source_mac: Option<MacAddress>,
     target_mac: Option<MacAddress>,
     len: u16,
-    ptype: u16,
+    pub ptype: u16,
 }
 impl Ethernet {
     fn _create<PacketOpt>(reader: &Reader, packet: &PacketContext<Self>, p: &mut std::cell::RefMut<Self>, _: Option<PacketOpt>) -> Result<()> {
         p.source_mac = packet.build_lazy(reader, Reader::_read_mac, Description::source_mac).ok();
         p.target_mac = packet.build_lazy(reader, Reader::_read_mac, Description::target_mac).ok();
-        let ptype = packet.build_lazy(reader, Reader::_read16_be, Description::ptype)?;
+        // let ptype = packet.build_lazy(reader, Reader::_read16_be, Description::ptype)?;
+        let ptype = reader.read16(true)?;
         if reader.left()? == ptype as usize {
             p.len = ptype;
-            // info!("{}", ptype); // IEEE 802.3
+            p.ptype = 1010;// IEEE 802.3
+            packet._build(reader, reader.cursor() - 2, 2, format!("Length: {}", ptype));
             return Ok(());
+        } else {
+            p.ptype = ptype;
+            packet._build_lazy(reader, reader.cursor() - 2, 2, Description::ptype);
         }
-        p.ptype = ptype;
         Ok(())
     }
 }
@@ -39,6 +44,9 @@ impl Display for Ethernet {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         let source = self.source_mac.as_ref().unwrap_or(&DEF_EMPTY_MAC).to_string();
         let target = self.target_mac.as_ref().unwrap_or(&DEF_EMPTY_MAC).to_string();
+        if self.ptype == 1010 {
+            return f.write_str("IEEE 802.3 Ethernet");
+        }
         f.write_str(format!("Ethernet II, Src: {}, Dst: {}", source, target).as_str())
     }
 }

@@ -3,8 +3,7 @@ use std::fmt::Formatter;
 use pcap_derive::Packet;
 
 use crate::{
-    common::Reader,
-    files::{Frame, Initer, PacketContext},
+    common::io::{AReader, Reader}, files::{Frame, Initer, PacketContext}
 };
 use anyhow::{bail, Result};
 

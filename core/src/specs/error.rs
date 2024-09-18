@@ -4,9 +4,9 @@ use anyhow::Result;
 use pcap_derive::Packet;
 
 use crate::{
-    common::Reader,
-    files::{Frame, Initer, PacketContext},
+    common::io::Reader, files::{Frame, Initer, PacketContext}
 };
+use crate::common::io::AReader;
 
 use super::ProtocolData;
 

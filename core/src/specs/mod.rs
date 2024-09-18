@@ -1,6 +1,5 @@
 use crate::{
-    common::Reader,
-    files::{Element, Field, Frame, PacketContext, Visitor},
+    common::io::Reader, files::{Element, Field, Frame, PacketContext, Visitor}
 };
 
 pub mod arp;
@@ -21,6 +20,7 @@ use anyhow::bail;
 use enum_dispatch::enum_dispatch;
 use strum_macros::Display;
 
+use crate::common::io::AReader;
 pub fn execute(link_type: u32, _: &Frame, reader: &Reader) -> &'static str {
     match link_type {
         0 => {

@@ -7,7 +7,7 @@ use anyhow::Result;
 use pcap_derive::Packet;
 
 use crate::{
-    common::{Description, PortPacket, Reader},
+    common::{io::{AReader, Reader}, Description, PortPacket},
     constants::tcp_option_kind_mapper,
     files::{Frame, Initer, MultiBlock, PacketContext, Ref2, TCPDetail, TCPInfo, TCPPAYLOAD},
 };
@@ -342,7 +342,9 @@ impl crate::files::Visitor for TCPVisitor {
         if _start > total {
             p.payload_len = total + left_size - _start;
         }
-        packet._build(reader, reader.cursor(), p.payload_len.into(), format!("TCP payload ({} bytes)", left_size));
+        if left_size > 0 {
+            packet._build(reader, reader.cursor(), p.payload_len.into(), format!("TCP payload ({} bytes)", left_size));
+        }
         frame.add_tcp(packet._clone_obj());
         let _data = reader._slice(left_size as usize);
         let info = frame.update_tcp(p.deref(), _data);

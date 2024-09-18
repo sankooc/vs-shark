@@ -3,7 +3,8 @@ use anyhow::Result;
 
 use pcap_derive::Packet2;
 use crate::files::{Frame, Initer, PacketContext, PacketOpt};
-use crate::common::Reader;
+use crate::common::io::Reader;
+use crate::common::io::AReader;
 
 
 pub enum ExtensionType {

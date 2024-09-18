@@ -1,7 +1,6 @@
-use crate::files::*;
+use crate::{common::io::IO, files::*};
 
 use crate::files::Instance;
-use crate::common::IO;
 use crate::common::DataError;
 use anyhow::{bail, Result};
 
