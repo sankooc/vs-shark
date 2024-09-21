@@ -2,7 +2,7 @@ pub mod pcap;
 pub mod pcapng;
 
 use crate::{
-    common::{io::AReader, IPPacket, PortPacket},
+    common::{io::AReader, IPPacket, MultiBlock, PortPacket, Ref2},
     constants::link_type_mapper,
     specs::{
         dns::{RecordResource, DNS},
@@ -21,7 +21,6 @@ use anyhow::{bail, Result};
 // pub mod pcapng;
 use crate::common::{FileInfo, FileType};
 use crate::common::io::Reader;
-pub type Ref2<T> = Rc<RefCell<T>>;
 
 #[derive(Default, Clone)]
 pub struct Field {
@@ -92,7 +91,7 @@ pub trait Element {
     fn info(&self) -> String;
 }
 
-pub trait Visitor: UnwindSafe {
+pub trait Visitor {
     fn visit(&self, frame: &Frame, reader: &Reader) -> Result<(ProtocolData, &'static str)>;
 }
 
@@ -101,7 +100,6 @@ pub trait FieldBuilder<T> {
     fn data(&self) -> Rc<Vec<u8>>;
 }
 
-pub type MultiBlock<T> = Vec<Ref2<T>>;
 
 pub type PacketOpt = usize;
 
@@ -115,7 +113,7 @@ impl<T> Initer for MultiBlock<T> {
     }
 }
 
-pub struct PacketContext<T> {
+pub struct PacketContext<T: ?Sized> {
     val: Ref2<T>,
     fields: RefCell<Vec<Box<dyn FieldBuilder<T>>>>,
 }
@@ -127,7 +125,7 @@ impl<T> PacketContext<T> {
     pub fn get(&self) -> &RefCell<T> {
         &self.val
     }
-    fn get_fields(&self) -> Vec<Field> {
+    pub fn get_fields(&self) -> Vec<Field> {
         let t: &T = &self.get().borrow();
         let mut rs: Vec<Field> = Vec::new();
         for pos in self.fields.borrow().iter() {
@@ -199,6 +197,15 @@ where
         let size = end - start;
         self._build(reader, start, size, content);
         val
+    }
+    
+    pub fn build_backward(&self, reader: &Reader, step: usize, content: String) {
+        let cur = reader.cursor();
+        if cur < step {
+            return;
+        }
+        let from = cur - step;
+        self._build(reader, from, cur, content);
     }
 
     pub fn build_format<K>(&self, reader: &Reader, opt: impl Fn(&Reader) -> Result<K>, tmp: &str) -> Result<K>

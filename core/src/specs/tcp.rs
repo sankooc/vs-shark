@@ -7,9 +7,9 @@ use anyhow::Result;
 use pcap_derive::Packet;
 
 use crate::{
-    common::{io::{AReader, Reader}, Description, PortPacket},
+    common::{io::{AReader, Reader}, Description, MultiBlock, PortPacket, Ref2},
     constants::tcp_option_kind_mapper,
-    files::{Frame, Initer, MultiBlock, PacketContext, Ref2, TCPDetail, TCPInfo, TCPPAYLOAD},
+    files::{Frame, Initer, PacketContext, TCPDetail, TCPInfo, TCPPAYLOAD},
 };
 
 use super::ProtocolData;

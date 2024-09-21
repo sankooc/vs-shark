@@ -1,11 +1,15 @@
 use thiserror::Error;
 
 use crate::constants::{etype_mapper, ip_protocol_type_mapper};
+use std::cell::RefCell;
 use std::net::{Ipv4Addr, Ipv6Addr};
 use std::fmt;
+use std::rc::Rc;
 
 pub mod io;
 
+pub type Ref2<T> = Rc<RefCell<T>>;
+pub type MultiBlock<T> = Vec<Ref2<T>>;
 #[derive(Error, Debug)]
 pub enum DataError {
     #[error("unsupport file type")]
@@ -47,11 +51,6 @@ pub trait TtypePacket {
 pub struct Description;
 
 impl Description {
-    // pub fn swap<T>(getter: fn(&T) -> String) -> impl Fn(usize, usize, &T) -> Field {
-    //     move |start: usize, size: usize, t: &T| {
-    //         return Field::new(start, size, getter(t));
-    //     }
-    // }
     pub fn source_mac(packet: &impl MacPacket) -> String {
         format!("Source: {}", packet.source_mac())
     }

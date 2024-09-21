@@ -330,21 +330,34 @@ pub trait AReader:Clone {
         }
         None
     }
-    fn read_der(&self) -> Result<usize> {
+    fn read_tlv(&self) -> Result<usize> {
         let a = self._get_data()[self.cursor()];
-        if a != DER_SEQUENCE {
-            bail!("not_der_format");
-        }
+        // if a != DER_SEQUENCE {
+        //     bail!("not_der_format");
+        // }
         let b = self._get_data()[self.cursor() + 1];
-        match b {
+        let len: usize = match b {
             0x82 => {
                 self._move(2);
-                Ok(self.read16(true)? as usize)
+                self.read16(true)? as usize
+            }
+            0x83 => {
+                self._move(2);
+                let a = self.read8()? as usize;
+                let b = self.read16(true)? as usize;
+                (a << 8) + b
+            }
+            0x84 => {
+                self._move(2);
+                self.read32(true)? as usize
             }
             _ => {
-                bail!("not_der_format")
+                self._move(1);
+                let l = self.read8()? as usize;
+                l
             }
-        }
+        };
+        Ok(len)
     }
     fn enter_flag(&self, inx: usize) -> bool {
         let a = self._get_data()[self.cursor() + inx];

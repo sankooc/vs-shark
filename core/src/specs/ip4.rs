@@ -5,7 +5,7 @@ use pcap_derive::{Packet2, NINFO};
 
 use crate::{
     common::{io::Reader, Description, IPPacket, IPv4Address, TtypePacket},
-    files::{Frame, Initer, PacketContext, PacketOpt, Visitor},
+    files::{Frame, Initer, PacketContext, PacketOpt},
 };
 use crate::common::io::AReader;
 

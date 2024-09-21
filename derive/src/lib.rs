@@ -104,3 +104,36 @@ pub fn ninfo_macro_derive(input: TokenStream) -> TokenStream {
     let ast = syn::parse(input).unwrap();
     impl_ninfo_macro(&ast)
 }
+
+#[proc_macro_derive(Packet4)]
+pub fn packet4_macro_derive(input: TokenStream) -> TokenStream {
+    let ast:syn::DeriveInput = syn::parse(input).unwrap();
+    let name = &ast.ident;
+    let gen = quote! {
+        impl Initer for #name {
+            fn new() -> Self {
+                Self {
+                    ..Default::default()
+                }
+            }
+            fn summary(&self) -> String {
+                self._summary().into()
+            }
+        }
+        impl #name {
+            pub fn create(reader: &Reader, opt: Option<PacketOpt>) -> Result<PacketContext<Self>> {
+                let packet: PacketContext<Self> = Frame::create_packet();
+                let mut p = packet.get().borrow_mut();
+                let rs = Self::_create(reader, &packet, &mut p, opt);
+                drop(p);
+                rs?;
+                Ok(packet)
+            }
+            fn _create(reader: &Reader, packet: &PacketContext<Self>, p: &mut std::cell::RefMut<Self>, _len: Option<PacketOpt>) -> Result<()> {
+                p._decode(packet, reader,_len.unwrap())?;
+                Ok(())
+            }
+        }
+    };
+    gen.into()
+}
