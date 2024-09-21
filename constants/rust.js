@@ -4,6 +4,8 @@ import fs from 'node:fs';
 
 import { rebuild } from './wireshark.js';
 
+import { oid_map } from './wireshark/oid/dump.js';
+
 const str = `use lazy_static::lazy_static;
 use std::collections::HashMap;
 `;
@@ -44,7 +46,7 @@ const items = [
   ['tls_cipher_suites', TLS_CIPHER_SUITES_MAP, k => parseInt(k, 16), 'u16'],
   ['tls_extension', TLS_EXTENSION_MAP, k => parseInt(k, 10), 'u16'],
   ['nbns_type', NBNS_TYPE_MAP, k => parseInt(k, 10), 'u16'],
-
+  ['oid_map', oid_map, k => `"${k}"`, "&'static str"],
 ];
 //DHCP_OPTION_TYPE
 const conts = items.map((item) => buildConstants(item[0]+'_map', item[1], item[2], item[3]));

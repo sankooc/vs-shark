@@ -34,11 +34,11 @@ pure pcap/pcapng analyzer
 <table >
 <tr>
 <td style="font-weight: bold">file type</td>
-<td>PCAP</td>
-<td>PCAPNG</td>
+<td span="2">PCAP</td>
+<td span="3">PCAPNG</td>
 </tr>
 <tr>
-<td style="font-weight: bold">ehternet</td>
+<td style="font-weight: bold">link type</td>
 <td>ETHERNET II</td>
 <td>PPPOE</td>
 <td>IEE 1905.1a</td>

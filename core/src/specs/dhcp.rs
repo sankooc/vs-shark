@@ -4,9 +4,9 @@ use anyhow::Result;
 use pcap_derive::Packet;
 
 use crate::{
-    common::{io::AReader, IPv4Address, MacAddress},
+    common::{io::AReader, IPv4Address, MacAddress, Ref2},
     constants::{arp_hardware_type_mapper, dhcp_option_type_mapper, dhcp_type_mapper},
-    files::{Frame, Initer, PacketContext, Ref2},
+    files::{Frame, Initer, PacketContext},
 };
 use crate::common::io::Reader;
 

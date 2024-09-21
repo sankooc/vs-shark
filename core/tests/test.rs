@@ -1,8 +1,9 @@
 #[cfg(test)]
 mod unit {
+    use log::info;
+
     use super::*;
-    use core::common::io::AReader;
-    use core::{common::{io::Reader, FileType}, files::{Frame, Instance, Visitor}, specs::{self, ProtocolData}};
+    use core::{common::{io::Reader, FileType}, files::{Field, Frame, Instance, PacketContext, Visitor}, specs::{self, ProtocolData}};
     use std::{fs, rc::Rc, str::from_utf8};
     fn build_reader(name: &str) -> Vec<u8> {
       let fname = format!("./tests/bin/{}.in", name);
@@ -17,6 +18,20 @@ mod unit {
       rs
     }
     
+    fn _dis(inx: usize, field: &Field) {
+        //assert_eq!("hello       ", format!("{:width$}", "hello", width=12));
+        info!("{:pad$}- {}", "", field.summary(), pad = inx);
+        let fields = field.children();
+        for f in fields.iter() {
+            _dis(inx + 1, f);
+        }
+    } 
+    fn inspect<T>(packet: &PacketContext<T>){
+      let field = packet.get_fields();
+      for f in field.iter() {
+        _dis(1, f);
+      }
+    }
 
     fn mock_frame() -> Frame {
       let instance = Instance::new(FileType::PCAPNG);
@@ -28,7 +43,7 @@ mod unit {
       let data: Vec<u8> = build_reader("ethernet");
       let reader = Reader::new_raw(Rc::new(data));
       let (prop, next) = specs::ethernet::ii::EthernetVisitor.visit(&frame, &reader).unwrap();
-      
+       
       assert_eq!(next, "ipv4");
       match &prop {
         ProtocolData::ETHERNET(el) => {
@@ -42,18 +57,20 @@ mod unit {
     }
     #[test]
     fn test_certificate() {
+      env_logger::builder().is_test(true).try_init().unwrap();
       let data: Vec<u8> = build_reader("certificate");
       let reader = Reader::new_raw(Rc::new(data));
-      let ins = specs::tls::handshake::Certificate::create(&reader, None).unwrap();
-      println!("--");
+      let ins = specs::tls::handshake::Certificate::create(&reader, Some(1425)).unwrap();
+      inspect(&ins);
+      println!("finish");
     }
 
     #[test]
     fn test_certificates() {
-      let data: Vec<u8> = build_reader("certificates");
-      let reader = Reader::new_raw(Rc::new(data));
-      let ins = specs::tls::handshake::Certificates::create(&reader, None).unwrap();
-      println!("--");
+      // let data: Vec<u8> = build_reader("certificates");
+      // let reader = Reader::new_raw(Rc::new(data));
+      // let ins = specs::tls::handshake::Certificates::create(&reader, Some(1425)).unwrap();
+      // println!("--");
     }
 
 }

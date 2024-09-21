@@ -1,15 +1,24 @@
 use std::fmt::Formatter;
+use std::str::from_utf8;
 
-use anyhow::{bail, Result};
-use log::{info,error};
-use pcap_derive::Packet2;
 use crate::common::io::AReader;
+use crate::constants::oid_map_mapper;
+use anyhow::{bail, Result};
+use log::{error, info};
+use pcap_derive::Packet2;
+use pcap_derive::Packet4;
 
+use crate::common::Ref2;
 use crate::{
     common::io::Reader,
     constants::{tls_cipher_suites_mapper, tls_extension_mapper, tls_hs_message_type_mapper, tls_min_type_mapper},
-    files::{Frame, Initer, PacketContext, PacketOpt, Ref2},
+    files::{Frame, Initer, PacketContext, PacketOpt},
 };
+
+use super::ber::to_oid;
+use super::ber::BITSTRING;
+use super::ber::SEQUENCE;
+use super::ber::TLVOBJ;
 
 #[derive(Default, Clone, Packet2)]
 struct CupherSuites {
@@ -125,22 +134,305 @@ fn hexlize(data: &[u8]) -> String {
     data.iter().map(|f| format!("{:02x}", f)).collect::<String>()
 }
 
+// #[derive(Default, Packet2)]
+// pub struct Certificates {}
+// impl std::fmt::Display for Certificates {
+//     fn fmt(&self, fmt: &mut Formatter) -> std::fmt::Result {
+//         fmt.write_str("Certificate")
+//     }
+// }
+// impl Certificates {
+//     //https://www.rfc-editor.org/rfc/rfc2459#appendix-A
+//     //https://www.rfc-editor.org/rfc/rfc3280#appendix-A
+//     //https://www.rfc-editor.org/rfc/rfc5280#appendix-A
+//     //https://www.ietf.org/rfc/rfc2246.txt
+//     //https://www.cryptologie.net/article/262/what-are-x509-certificates-rfc-asn1-der/
+//     //https://letsencrypt.org/zh-cn/docs/a-warm-welcome-to-asn1-and-der/
+//     fn _create(reader: &Reader, packet: &PacketContext<Self>, p: &mut std::cell::RefMut<Self>, _: Option<PacketOpt>) -> Result<()> {
+//         let len = read24(reader)?;
+//         packet.build_skip(reader, len as usize);
+//         Ok(())
+//     }
+// }
 
-#[derive(Default, Packet2)]
-pub struct Certificates {
-
+#[derive(Default, Packet4)]
+pub struct SExtension {
+    id: TLVOBJ,
 }
-impl std::fmt::Display for Certificates {
-    fn fmt(&self, fmt: &mut Formatter) -> std::fmt::Result {
-        fmt.write_str("Certificate")
+impl SExtension {
+    fn _summary(&self) -> &'static str {
+        "Extension"
     }
 }
-impl Certificates {
-    //https://www.ietf.org/rfc/rfc2246.txt
-    //https://www.cryptologie.net/article/262/what-are-x509-certificates-rfc-asn1-der/
-    fn _create(reader: &Reader, packet: &PacketContext<Self>, p: &mut std::cell::RefMut<Self>, _: Option<PacketOpt>) -> Result<()> {
-        let len = read24(reader)?;
-        packet.build_skip(reader, len as usize);
+impl SEQUENCE for SExtension {
+    fn _sequence(&mut self, packet: &PacketContext<Self>, index: usize, reader: &Reader, _type: u8, len: usize) -> Result<()> {
+        match index {
+            0 => {
+                let val = super::ber::parse(_type, reader.slice(len))?;
+                packet.build_backward(reader, len, format!("Extension Id: {}", val.desc()));
+                self.id = val;
+            }
+            _ => {}
+        }
+        Ok(())
+    }
+}
+
+#[derive(Default, Packet4)]
+pub struct Extensions {
+    items: Vec<SExtension>,
+}
+impl Extensions {
+    fn _summary(&self) -> &'static str {
+        "Extensions"
+    }
+}
+impl SEQUENCE for Extensions {
+    fn _sequence(&mut self, packet: &PacketContext<Self>, _: usize, reader: &Reader, _type: u8, len: usize) -> Result<()> {
+        let item = packet.build_packet(reader, SExtension::create, Some(len), None)?;
+        self.items.push(item.take());
+        Ok(())
+    }
+}
+
+#[derive(Default, Packet4)]
+pub struct SubjectPublicKey {
+
+}
+impl SubjectPublicKey {
+    fn _summary(&self) -> &'static str {
+        "SubjectPublicKey"
+    }
+}
+impl SEQUENCE for SubjectPublicKey {
+    fn _sequence(&mut self, packet: &PacketContext<Self>, index: usize, reader: &Reader, _type: u8, len: usize) -> Result<()> {
+        let val = super::ber::parse(_type, reader.slice(len))?;
+        match index {
+            0 => {
+                packet.build_backward(reader, len, format!("modulus: {}", val));
+            }
+            1 => {
+                packet.build_backward(reader, len, format!("publicExponent: {}", val));
+            }
+            _ => {}
+        }
+        Ok(())
+    }
+}
+
+#[derive(Default, Packet4)]
+pub struct SubjectPublicKeyInfo {
+    signature: Option<Signature>
+
+}
+impl SubjectPublicKeyInfo {
+    fn _summary(&self) -> &'static str {
+        "SubjectPublicKeyInfo"
+    }
+}
+impl SEQUENCE for SubjectPublicKeyInfo {
+    fn _sequence(&mut self, packet: &PacketContext<Self>, index: usize, reader: &Reader, _type: u8, len: usize) -> Result<()> {
+        match index {
+            0 => {
+                let item = packet.build_packet(reader, Signature::create, Some(len), None)?.take();
+                self.signature = Some(item);
+            }
+            1 => {
+
+            }
+            _ => {}
+        }
+        Ok(())
+    }
+}
+
+#[derive(Default, Packet4)]
+pub struct Validity {
+    before: TLVOBJ,
+    after: TLVOBJ,
+}
+impl Validity {
+    fn _summary(&self) -> &'static str {
+        "Validity"
+    }
+}
+impl SEQUENCE for Validity {
+    fn _sequence(&mut self, packet: &PacketContext<Self>, index: usize, reader: &Reader, _type: u8, len: usize) -> Result<()> {
+        let val = super::ber::parse(_type, reader.slice(len))?;
+        match index {
+            0 => {
+                packet.build_backward(reader, len, format!("notBefore: utcTime ({})", val));
+                self.before = val;
+            }
+            1 => {
+                packet.build_backward(reader, len, format!("notAfter: utcTime ({})", val));
+                self.after = val;
+            }
+            _ => {}
+        }
+        Ok(())
+    }
+}
+
+#[derive(Default, Packet4)]
+pub struct RdnSequence {
+    object_id: TLVOBJ,
+    val: TLVOBJ,
+}
+impl RdnSequence {
+
+    fn _summary(&self) -> &'static str {
+        "RdnSequence"
+    }
+}
+impl SEQUENCE for RdnSequence {
+    fn _sequence(&mut self, packet: &PacketContext<Self>, index: usize, reader: &Reader, _type: u8, len: usize) -> Result<()> {
+        match index {
+            0 => {
+                let val = super::ber::parse(_type, reader.slice(len))?;
+                packet.build_backward(reader, len, format!("Object Id: {}", val.desc()));
+                self.object_id = val;
+            }
+            _ => {
+                let val = super::ber::parse(_type, reader.slice(len))?;
+                packet.build_backward(reader, len, format!("Printable String: {}", val));
+                self.val = val;
+            },
+        }
+        Ok(())
+    }
+}
+#[derive(Default, Packet4)]
+pub struct RdnSequenceList {
+    items: Vec<RdnSequence>
+}
+impl RdnSequenceList {
+    fn _summary(&self) -> &'static str {
+        "rdnSequence"
+    }
+}
+impl SEQUENCE for RdnSequenceList {
+    fn _sequence(&mut self, packet: &PacketContext<Self>, _: usize, reader: &Reader, _type: u8, len: usize) -> Result<()> {
+        let item = packet.build_packet(reader, RdnSequence::create, Some(len), None)?.take();
+        self.items.push(item);
+        Ok(())
+    }
+}
+
+#[derive(Default, Packet4)]
+pub struct Rdn {
+    list: Option<RdnSequenceList>
+}
+impl Rdn {
+    fn _summary(&self) -> &'static str {
+        "rdnSequence"
+    }
+}
+impl SEQUENCE for Rdn {
+    fn _sequence(&mut self, packet: &PacketContext<Self>, index: usize, reader: &Reader, _type: u8, len: usize) -> Result<()> {
+        match index {
+            _ => {
+                self.list = Some(packet.build_packet(reader, RdnSequenceList::create, Some(len), None)?.take());
+            }
+        }
+        Ok(())
+    }
+}
+
+#[derive(Default, Packet4)]
+pub struct Signature {
+    algorithm: TLVOBJ,
+}
+
+impl Signature {
+    fn _summary(&self) -> &'static str {
+        "Signature"
+    }
+}
+
+impl SEQUENCE for Signature {
+    fn _sequence(&mut self, packet: &PacketContext<Self>, index: usize, reader: &Reader, _type: u8, len: usize) -> Result<()> {
+        match index {
+            0 => {
+                let val = super::ber::parse(_type, reader.slice(len))?;
+                packet.build_backward(reader, len, format!("Algorithm Id: {}", val.desc()));
+                self.algorithm = val;
+            }
+            1 => {
+                // 0x0500
+            }
+            _ => {
+            }
+        }
+        Ok(())
+    }
+}
+
+#[derive(Default, Packet4)]
+pub struct TBSCertificate {
+    vesion: &'static str,
+    serial_number: String,
+    signature: Option<Signature>,
+    issuer: Option<Rdn>,
+    validity: Option<Validity>,
+    subject: Option<Rdn>,
+    key_info: Option<SubjectPublicKeyInfo>,
+    extensions: Option<Extensions>,
+}
+impl TBSCertificate {
+    fn _summary(&self) -> &'static str {
+        "TBSCertificate"
+    }
+    fn version(v: u8) -> &'static str {
+        match v {
+            1 => "v2",
+            2 => "v3",
+            _ => "v1",
+        }
+    }
+}
+
+impl SEQUENCE for TBSCertificate {
+    fn _sequence(&mut self, packet: &PacketContext<Self>, index: usize, reader: &Reader, _type: u8, len: usize) -> Result<()> {
+        match index {
+            0 => {
+                reader._move(2);
+                let v = reader.read8()?;
+                let version = TBSCertificate::version(v);
+                packet.build_backward(reader, 1, format!("version: {} ({})", version, v));
+                self.vesion = version;
+            }
+            1 => {
+                let val = super::ber::parse(_type, reader.slice(len))?;
+                self.serial_number = val.to_string();
+                packet.build_backward(reader, len, format!("serialNumber: {}", val))
+            }
+            2 => {
+                let val = packet.build_packet(reader, Signature::create, Some(len), None)?.take();
+                self.signature = Some(val);
+            }
+            3 => {
+                self.issuer = Some(packet.build_packet(reader, Rdn::create, Some(len), Some("Issuer: rdnSequence".into()))?.take());
+            }
+            4 => {
+                let val = packet.build_packet(reader, Validity::create, Some(len), None)?;
+                self.validity = Some(val.take());
+            }
+            5 => {
+                let val = packet.build_packet(reader, Rdn::create, Some(len), Some("Subject: rdnSequence".into()))?;
+                self.subject = Some(val.take());
+            }
+            6 => {
+                let val = packet.build_packet(reader, SubjectPublicKeyInfo::create, Some(len), None)?;
+                self.key_info = Some(val.take());
+            }
+            7 => {
+                let (_type, _len) = super::ber::TLV::decode(reader, len)?;
+                let val = packet.build_packet(reader, Extensions::create, Some(_len), None)?;
+                self.extensions = Some(val.take());
+            }
+            _ => {}
+        }
         Ok(())
     }
 }
@@ -148,25 +440,46 @@ impl Certificates {
 
 #[derive(Default, Packet2)]
 pub struct Certificate {
+    tbs_certificate: Option<TBSCertificate>,
+    signature: Option<Signature>,
+    value: TLVOBJ,
 
+    // sign
 }
 impl std::fmt::Display for Certificate {
     fn fmt(&self, fmt: &mut Formatter) -> std::fmt::Result {
-        fmt.write_str("Certificate")
+        fmt.write_str(self._summary())
     }
 }
 impl Certificate {
-    fn _create(reader: &Reader, packet: &PacketContext<Self>, p: &mut std::cell::RefMut<Self>, _: Option<PacketOpt>) -> Result<()> {
-        let len = read24(reader)?;
-        let der_len = reader.read_der()?;
-        let der_len2 = reader.read_der()?;
-        println!("{}, {}, {}", len, der_len, der_len2);
-        reader.slice(der_len2);
-        // packet.build_skip(reader, len as usize);
+    fn _summary(&self) -> &'static str {
+        "Certificate"
+    }
+    fn _create(reader: &Reader, packet: &PacketContext<Self>, p: &mut std::cell::RefMut<Self>, _len: Option<PacketOpt>) -> Result<()> {
+        p.decode(packet, reader, _len.unwrap())?;
         Ok(())
     }
 }
 
+impl SEQUENCE for Certificate {
+    fn _sequence(&mut self, packet: &PacketContext<Self>, index: usize, reader: &Reader, _type: u8, len: usize) -> Result<()> {
+        match index {
+            0 => {
+                let val = packet.build_packet(reader, TBSCertificate::create, Some(len), None)?;
+                self.tbs_certificate = Some(val.take());
+            }
+            1 => {
+                let val = packet.build_packet(reader, Signature::create, Some(len), None)?;
+                self.signature = Some(val.take());
+            }
+            2 => {
+                self.value = super::ber::parse(_type, reader.slice(len))?;
+            }
+            _ => {}
+        }
+        Ok(())
+    }
+}
 #[derive(Clone)]
 struct HandshakeClientHello {
     random: Vec<u8>,
@@ -239,7 +552,7 @@ fn read24(reader: &Reader) -> Result<u32> {
 
 #[derive(Default, Packet2)]
 struct HandshakeCertificate {
-    items: Vec<Ref2<Certificates>>,
+    items: Vec<Ref2<Certificate>>,
 }
 impl std::fmt::Display for HandshakeCertificate {
     fn fmt(&self, fmt: &mut Formatter) -> std::fmt::Result {
@@ -251,15 +564,15 @@ impl HandshakeCertificate {
         let finish = opt.unwrap();
         let len = read24(reader)?;
         if finish != reader.cursor() + len as usize {
-            // error!("Certificate parse error");
             bail!("Certificate parse error")
         }
         packet._build(reader, reader.cursor() - 3, 3, format!("Certificates Length: {}", len));
         loop {
-            if finish >= reader.cursor() {
+            if finish <= reader.cursor() {
                 break;
             }
-            let item = packet.build_packet(reader, Certificates::create, None, None)?;
+            let len = read24(reader)? as usize;
+            let item = packet.build_packet(reader, Certificate::create, Some(len), None)?;
             p.items.push(item);
         }
         Ok(())
@@ -276,7 +589,7 @@ pub enum HandshakeType {
     ServerHello(HandshakeServerHello),
     NewSessionTicket,
     EncryptedExtensions,
-    Certificate,
+    Certificate(Ref2<HandshakeCertificate>),
     ServerKeyExchange,
     CertificateRequest,
     ServerHelloDone,
@@ -299,15 +612,12 @@ impl HandshakeProtocol {
     fn _type(&self) -> String {
         tls_hs_message_type_mapper(self._type)
     }
-    fn msg_desc(&self) -> String {
-        format!("Handshake Type: {} ({})", self.msg(), self._type)
-    }
     fn msg(&self) -> &'static str {
         match &(self.msg) {
-            HandshakeType::Certificate => "Certificate",
+            HandshakeType::Certificate(_) => "Certificate",
             HandshakeType::ClientHello(_) => "Client Hello",
             HandshakeType::ServerHello(_) => "Server Hello",
-            _ => "Encrypted"
+            _ => "Encrypted",
         }
     }
     fn _create(reader: &Reader, packet: &PacketContext<Self>, p: &mut std::cell::RefMut<Self>, opt: Option<PacketOpt>) -> Result<()> {
@@ -333,8 +643,8 @@ impl HandshakeProtocol {
             }
             let h_type_desc = format!("Handshake Type: {} ({})", tls_hs_message_type_mapper(head_type), head_type);
             let h_len_desc = format!("Length: {}", head_len);
-            packet._build(reader, current-4, 1, h_type_desc);
-            packet._build(reader, current-3, 3, h_len_desc);
+            packet._build(reader, current - 4, 1, h_type_desc);
+            packet._build(reader, current - 3, 3, h_len_desc);
             let _finish = reader.cursor() + head_len as usize;
 
             match head_type {
@@ -345,17 +655,10 @@ impl HandshakeProtocol {
                     p.msg = HandshakeType::ServerHello(HandshakeServerHello::create(reader, packet)?);
                 }
                 11 => {
-                    HandshakeCertificate::create(reader, Some(_finish))?;
+                    let pk = packet.build_packet(reader, HandshakeCertificate::create, Some(_finish), None)?;
+                    p.msg = HandshakeType::Certificate(pk);
                 }
-                _ => {
-                    // if len - head_len as u16 > 4 {
-                    //     info!("type:{}", _mes);
-                    //     info!(
-                    //         "handshake {:#10x} {},  {} {}",
-                    //         head, head_type, len, head_len
-                    //     );
-                    // }
-                }
+                _ => {}
             }
 
             if _finish > reader.cursor() {
