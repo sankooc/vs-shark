@@ -205,7 +205,7 @@ where
             return;
         }
         let from = cur - step;
-        self._build(reader, from, cur, content);
+        self._build(reader, from, step, content);
     }
 
     pub fn build_format<K>(&self, reader: &Reader, opt: impl Fn(&Reader) -> Result<K>, tmp: &str) -> Result<K>

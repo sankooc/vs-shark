@@ -1,8 +1,7 @@
 use std::fmt::Formatter;
-use std::str::from_utf8;
+use std::rc::Rc;
 
 use crate::common::io::AReader;
-use crate::constants::oid_map_mapper;
 use anyhow::{bail, Result};
 use log::{error, info};
 use pcap_derive::Packet2;
@@ -15,8 +14,6 @@ use crate::{
     files::{Frame, Initer, PacketContext, PacketOpt},
 };
 
-use super::ber::to_oid;
-use super::ber::BITSTRING;
 use super::ber::SEQUENCE;
 use super::ber::TLVOBJ;
 
@@ -589,7 +586,7 @@ pub enum HandshakeType {
     ServerHello(HandshakeServerHello),
     NewSessionTicket,
     EncryptedExtensions,
-    Certificate(Ref2<HandshakeCertificate>),
+    Certificate(Rc<HandshakeCertificate>),
     ServerKeyExchange,
     CertificateRequest,
     ServerHelloDone,
@@ -656,7 +653,8 @@ impl HandshakeProtocol {
                 }
                 11 => {
                     let pk = packet.build_packet(reader, HandshakeCertificate::create, Some(_finish), None)?;
-                    p.msg = HandshakeType::Certificate(pk);
+                    let cert = pk.take();
+                    p.msg = HandshakeType::Certificate(Rc::new(cert));
                 }
                 _ => {}
             }
