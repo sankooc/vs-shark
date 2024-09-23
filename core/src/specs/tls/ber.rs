@@ -128,14 +128,14 @@ pub fn to_oid(slice: &[u8]) -> String {
 }
 
 //https://learn.microsoft.com/zh-cn/windows/win32/seccertenroll/about-object-identifier
-pub trait OBJECTIDENDITY {
-    fn _decode(&mut self, packet: &PacketContext<Self>, reader: &Reader, len: usize) -> Result<()> {
-        let slice = reader.slice(len);
-        let str = format!("{:x?}", slice);
-        // self.parsed(packet, str); //Algorithm Id: 1.2.840.113549.1.1.11 (sha256WithRSAEncryption)
-        Ok(())
-    }
-}
+// pub trait OBJECTIDENDITY {
+//     fn _decode(&mut self, packet: &PacketContext<Self>, reader: &Reader, len: usize) -> Result<()> {
+//         let slice = reader.slice(len);
+//         let str = format!("{:x?}", slice);
+//         // self.parsed(packet, str); //Algorithm Id: 1.2.840.113549.1.1.11 (sha256WithRSAEncryption)
+//         Ok(())
+//     }
+// }
 
 pub trait SEQUENCE {
     fn decode(&mut self, packet: &PacketContext<Self>, reader: &Reader, len: usize) -> Result<()> {

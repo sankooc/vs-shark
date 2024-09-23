@@ -12,7 +12,7 @@ pub enum ExtensionType {
 }
 
 //rfc6066
-#[derive(Default, Clone, Packet2)]
+#[derive(Default, Packet2)]
 pub struct ServerName {
     list_len: u16,
     names: Vec<String>,

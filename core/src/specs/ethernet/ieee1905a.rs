@@ -10,7 +10,7 @@ use crate::common::io::AReader;
 use anyhow::{Ok, Result};
 use std::fmt::Display;
 
-#[derive(Clone, Default, Packet2, NINFO)]
+#[derive(Default, Packet2, NINFO)]
 pub struct IEEE1905A {
     version: u8,
     message_type: u16,

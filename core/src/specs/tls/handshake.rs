@@ -17,7 +17,7 @@ use crate::{
 use super::ber::SEQUENCE;
 use super::ber::TLVOBJ;
 
-#[derive(Default, Clone, Packet2)]
+#[derive(Default, Packet2)]
 struct CupherSuites {
     size: usize,
     suites: Vec<u16>,
@@ -42,7 +42,7 @@ impl CupherSuites {
     }
 }
 
-#[derive(Default, Clone, Packet2)]
+#[derive(Default, Packet2)]
 struct CompressMethod {
     size: usize,
     methods: Vec<u8>,
@@ -63,7 +63,7 @@ impl CompressMethod {
     }
 }
 
-#[derive(Default, Clone, Packet2)]
+#[derive(Default, Packet2)]
 struct ExtenstionPack {
     size: usize,
     items: Vec<Ref2<Extenstion>>,
@@ -90,7 +90,7 @@ impl ExtenstionPack {
         Ok(())
     }
 }
-#[derive(Default, Clone, Packet2)]
+#[derive(Default, Packet2)]
 struct Extenstion {
     _type: u16,
     len: u16,
@@ -471,14 +471,14 @@ impl SEQUENCE for Certificate {
             }
             2 => {
                 self.value = super::ber::parse(_type, reader.slice(len))?;
+                packet.build_backward(reader, len, format!("encrypted: {}", self.value));
             }
             _ => {}
         }
         Ok(())
     }
 }
-#[derive(Clone)]
-struct HandshakeClientHello {
+pub struct HandshakeClientHello {
     random: Vec<u8>,
     session: Vec<u8>,
     ciper_suites: Ref2<CupherSuites>,
@@ -509,8 +509,7 @@ impl HandshakeClientHello {
     }
 }
 
-#[derive(Clone)]
-struct HandshakeServerHello {
+pub struct HandshakeServerHello {
     random: Vec<u8>,
     session: Vec<u8>,
     ciper_suite: u16,
@@ -548,7 +547,7 @@ fn read24(reader: &Reader) -> Result<u32> {
 }
 
 #[derive(Default, Packet2)]
-struct HandshakeCertificate {
+pub struct HandshakeCertificate {
     items: Vec<Ref2<Certificate>>,
 }
 impl std::fmt::Display for HandshakeCertificate {
@@ -575,15 +574,39 @@ impl HandshakeCertificate {
         Ok(())
     }
 }
+// #[derive(Default, Packet2)]
+// struct HandshakeServerKeyExchange{
+//     curve_type: u8,
+//     named_curv: u16
+// }
+// impl std::fmt::Display for HandshakeServerKeyExchange {
+//     fn fmt(&self, fmt: &mut Formatter) -> std::fmt::Result {
+//         fmt.write_str("ServerKeyExchange (12)")
+//     }
+// }
 
-#[derive(Default, Clone)]
+// impl HandshakeServerKeyExchange {
+//     fn _create(reader: &Reader, packet: &PacketContext<Self>, p: &mut std::cell::RefMut<Self>, opt: Option<PacketOpt>) -> Result<()> {
+//         Ok(())
+//     }
+//     fn curve_type(&self) -> &'static str {
+//         match self.curve_type {
+//             1 => "explicit_prime",
+//             2 => "explicit_char2",
+//             3 => "named_curve",
+//             _ => "NULL",
+//         }
+//     }
+// }
+
+#[derive(Default)]
 pub enum HandshakeType {
     #[default]
     UNKNOWN,
     Encrypted,
     HELLOREQUEST,
-    ClientHello(HandshakeClientHello),
-    ServerHello(HandshakeServerHello),
+    ClientHello(Rc<HandshakeClientHello>),
+    ServerHello(Rc<HandshakeServerHello>),
     NewSessionTicket,
     EncryptedExtensions,
     Certificate(Rc<HandshakeCertificate>),
@@ -594,7 +617,7 @@ pub enum HandshakeType {
     ClientKeyExchange,
     Finished,
 }
-#[derive(Default, Clone, Packet2)]
+#[derive(Default, Packet2)]
 pub struct HandshakeProtocol {
     _type: u8,
     len: u32,
@@ -646,15 +669,14 @@ impl HandshakeProtocol {
 
             match head_type {
                 1 => {
-                    p.msg = HandshakeType::ClientHello(HandshakeClientHello::create(reader, packet)?);
+                    p.msg = HandshakeType::ClientHello(Rc::new(HandshakeClientHello::create(reader, packet)?));
                 }
                 2 => {
-                    p.msg = HandshakeType::ServerHello(HandshakeServerHello::create(reader, packet)?);
+                    p.msg = HandshakeType::ServerHello(Rc::new(HandshakeServerHello::create(reader, packet)?));
                 }
                 11 => {
                     let pk = packet.build_packet(reader, HandshakeCertificate::create, Some(_finish), None)?;
-                    let cert = pk.take();
-                    p.msg = HandshakeType::Certificate(Rc::new(cert));
+                    p.msg = HandshakeType::Certificate(Rc::new(pk.take()));
                 }
                 _ => {}
             }

@@ -47,7 +47,7 @@ impl NBNS {
     }
 }
 
-#[derive(Default, Clone, Packet2)]
+#[derive(Default, Packet2)]
 pub struct Question {
     name: String,
     _type: u16,
@@ -78,7 +78,7 @@ impl Question {
     }
 }
 
-#[derive(Default, Clone, Packet2)]
+#[derive(Default, Packet2)]
 pub struct Questions {
     items: MultiBlock<Question>,
 }

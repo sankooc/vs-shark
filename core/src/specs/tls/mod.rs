@@ -1,33 +1,30 @@
+pub mod ber;
 pub mod extension;
 pub mod handshake;
-pub mod ber;
 use std::{fmt::Formatter, ops::DerefMut, rc::Rc};
 
+use crate::common::{io::AReader, Ref2};
 use anyhow::Result;
 use handshake::{HandshakeProtocol, HandshakeType};
 use pcap_derive::{Packet, Packet2};
-use crate::common::{io::AReader, Ref2};
 
 use super::ProtocolData;
 use crate::{
     common::io::Reader,
-    constants::{
-        tls_cipher_suites_mapper, tls_content_type_mapper, tls_extension_mapper,
-        tls_hs_message_type_mapper, tls_min_type_mapper,
-    },
+    constants::{tls_content_type_mapper, tls_min_type_mapper},
     files::{Endpoint, Frame, Initer, PacketContext, PacketOpt, Visitor, TCPPAYLOAD},
 };
 
 #[derive(Default, Packet)]
 pub struct TLS {
-    records: Vec<Ref2<TLSRecord>>,
+    records: Vec<TLSRecord>,
 }
 impl crate::files::InfoPacket for TLS {
     fn info(&self) -> String {
         let len = self.records.len();
         if len > 0 {
             let one = self.records.get(0).unwrap();
-            one.borrow()._type()
+            one._type()
         } else {
             String::from("TLS segment")
         }
@@ -37,7 +34,7 @@ impl crate::files::InfoPacket for TLS {
         "info".into()
     }
 }
-#[derive(Default, Clone, Packet2)]
+#[derive(Default, Packet2)]
 pub struct TLSRecord {
     _type: u8,
     min: u8,
@@ -71,12 +68,7 @@ impl TLSRecord {
             _ => String::from("Encrypted Message"),
         }
     }
-    fn _create(
-        reader: &Reader,
-        packet: &PacketContext<Self>,
-        p: &mut std::cell::RefMut<Self>,
-        _: Option<PacketOpt>,
-    ) -> Result<()> {
+    fn _create(reader: &Reader, packet: &PacketContext<Self>, p: &mut std::cell::RefMut<Self>, _: Option<PacketOpt>) -> Result<()> {
         p._type = packet.build_lazy(reader, Reader::_read8, TLSRecord::_type_desc)?;
         reader.read8()?;
         p.min = packet.build_lazy(reader, Reader::_read8, TLSRecord::version_desc)?;
@@ -98,7 +90,8 @@ impl TLSRecord {
                 packet.build_lazy(reader, _read, TLSRecord::message)?;
             }
             22 => {
-                packet.build_packet(reader,TLSHandshake::create, Some(finish), None)?;
+                let pk = packet.build_packet(reader, TLSHandshake::create, Some(finish), None)?;
+                p.message = TLSRecorMessage::HANDSHAKE(Rc::new(pk.take()));
             }
             23 => {
                 p.message = TLSRecorMessage::APPLICAION;
@@ -116,12 +109,7 @@ impl TLSRecord {
 }
 impl std::fmt::Display for TLSRecord {
     fn fmt(&self, fmt: &mut Formatter) -> std::fmt::Result {
-        fmt.write_fmt(format_args!(
-            "{} Record Layer: {} Protocol: {}",
-            self.version(),
-            self._type(),
-            self.message()
-        ))
+        fmt.write_fmt(format_args!("{} Record Layer: {} Protocol: {}", self.version(), self._type(), self.message()))
     }
 }
 impl std::fmt::Display for TLS {
@@ -148,23 +136,18 @@ impl TLS {
     }
 }
 
-#[derive(Default, Clone, Packet2)]
+#[derive(Default, Packet2)]
 pub struct TLSHandshake {
-    items: Vec<Ref2<HandshakeProtocol>>,
+    items: Vec<HandshakeProtocol>,
 }
 impl TLSHandshake {
-    fn _create(
-        reader: &Reader,
-        packet: &PacketContext<Self>,
-        p: &mut std::cell::RefMut<Self>,
-        opt: Option<PacketOpt>,
-    ) -> Result<()> {
+    fn _create(reader: &Reader, packet: &PacketContext<Self>, p: &mut std::cell::RefMut<Self>, opt: Option<PacketOpt>) -> Result<()> {
         let finish = opt.unwrap();
         'outer: loop {
             if reader.cursor() >= finish {
                 break;
             }
-            let _rs = packet.build_packet(reader,HandshakeProtocol::create, Some(finish), None);
+            let _rs = packet.build_packet(reader, HandshakeProtocol::create, Some(finish), None);
             match &_rs {
                 Ok(_protocol) => {
                     let item = _protocol.clone();
@@ -173,51 +156,42 @@ impl TLSHandshake {
                     match _msg {
                         HandshakeType::Encrypted => {
                             drop(reff);
-                            break 'outer
-                        },
+                            break 'outer;
+                        }
                         _ => {
                             drop(reff);
-                            p.items.push(item);
+                            p.items.push(item.take());
                         }
                     }
                 }
                 Err(_err) => break 'outer,
             }
         }
-    Ok(())
+        Ok(())
     }
 }
 impl std::fmt::Display for TLSHandshake {
     fn fmt(&self, fmt: &mut Formatter) -> std::fmt::Result {
         match self.items.first() {
-            Some(_head) => fmt.write_fmt(format_args!(
-                "Handshake Protocol: {}",
-                _head.as_ref().borrow().to_string()
-            )),
+            Some(_head) => fmt.write_fmt(format_args!("Handshake Protocol: {}", _head.to_string())),
             None => fmt.write_str("Handshake Protocol"),
         }
     }
 }
-#[derive(Default, Clone)]
+#[derive(Default)]
 pub enum TLSRecorMessage {
     #[default]
     UNKNOWN,
     CHANGECIPHERSPEC,
     ALERT,
-    HANDSHAKE(TLSHandshake),
+    HANDSHAKE(Rc<TLSHandshake>),
     APPLICAION,
     HEARTBEAT,
 }
 
 pub struct TLSVisitor;
 
-fn proc(
-    frame: &Frame,
-    reader: &Reader,
-    packet: &PacketContext<TLS>,
-    p: &mut TLS,
-    ep: &mut Endpoint,
-) -> Result<()> {
+fn proc(frame: &Frame, reader: &Reader, packet: &PacketContext<TLS>, p: &mut TLS, ep: &mut Endpoint) -> Result<()> {
     loop {
         let left_size = reader.left()?;
         if left_size == 0 {
@@ -228,8 +202,14 @@ fn proc(
         if is_tls {
             if left_size >= _len + 5 {
                 let item = packet.build_packet(reader, TLSRecord::create, None, None)?;
-                p.records.push(item);
-                // info!("comple");
+                let record = item.take();
+                match &record.message {
+                    TLSRecorMessage::HANDSHAKE(hs) => {
+                        
+                    },
+                    _ => {}
+                };
+                p.records.push(record);
             } else {
                 let left_data = reader.slice(left_size);
                 ep.add_segment(frame, TCPPAYLOAD::TLS, left_data);
