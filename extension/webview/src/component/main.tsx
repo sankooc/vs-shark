@@ -4,6 +4,8 @@ import { Badge } from 'primereact/badge';
 import { Menu } from 'primereact/menu';
 import { ComMessage, IContextInfo, IConversation, IDNSRecord } from '../common';
 import Loading from './loading';
+// import Loading from './error/loading';
+import ErrPage from './error';
 import { onMessage, log, emitMessage } from '../connect';
 
 import Overview from './overview';
@@ -23,7 +25,7 @@ const itemRenderer = (item, options) => {
 let _start = 0;
 const Main = () => {
   const [select, setSelect] = useState('overview');
-  const [loading, setLoading] = useState<boolean>(true);
+  const [status, setStatus] = useState<number>(0);
   const [meta, setMeta] = useState<IContextInfo>(null);
   const [dnsRecords, setDnsRecords] = useState<IDNSRecord[]>([]);
   const [conversations, setConversations] = useState<IConversation[]>([]);
@@ -33,7 +35,11 @@ const Main = () => {
       switch (type) {
         case '_info': {
           setMeta(body);
-          setLoading(false);
+          setStatus(1);
+          break;
+        }
+        case '_error': {
+          setStatus(2);
           break;
         }
         case '_dns': {
@@ -76,10 +82,12 @@ const Main = () => {
     }
     return <Overview/>;
   };
-  if (loading) {
+  if (status == 0) {
     return <Loading />
   }
-
+  if (status == 2) {
+    return <ErrPage />
+  }
   const navItems = convert();
   return (<>
     <div className="card h-full">

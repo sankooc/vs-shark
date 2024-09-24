@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { HexV } from "../../common";
 import { HexViewer } from 'react-hexviewer-ts';
 import './app.css';
@@ -16,6 +16,7 @@ const to_string = (data: Uint8Array): string => {
 }
 
 function HexView(props: { data?: HexV }) {
+  const ref = useRef(null);
   const indexes = [];
   const codes = [];
   let start = 0;
@@ -44,14 +45,25 @@ function HexView(props: { data?: HexV }) {
     }
     if (data.data) {
       const raw = data.data;
-      if(end > start){
-        texts.push(<pre key={"pre-1"}>{to_string(raw.slice(0, start))}</pre>);
-        texts.push(<pre key={"pre-2"} className="active">{to_string(raw.slice(start, end))}</pre>);
-        if(end < raw.length){
-          texts.push(<pre key={"pre-3"}>{to_string(raw.slice(end))}</pre>);
+      let _indx = 0;
+      while(_indx <= raw.length){
+        const _fin = Math.min(_indx + 16, raw.length);
+        if(end > start){
+          const _start = Math.max(start, _indx);
+          const _end = Math.min(end, _fin);
+          if(start > _fin || end < _indx) {
+            texts.push(<div className="asc" key={"pre-" + _indx}>{to_string(raw.slice(_indx, _fin))}</div>);
+          } else if (_start < _fin) {
+            texts.push(<div className="asc" key={"pre-" + _indx}>
+              {to_string(raw.slice(_indx, _start))}
+              <pre>{to_string(raw.slice(_start, _end))}</pre>
+              {to_string(raw.slice(_end, _fin))}
+              </div>);
+          }
+        } else {
+          texts.push(<div className="asc" key={"pre-" + _indx}>{to_string(raw.slice(_indx, _fin))}</div>);
         }
-      } else {
-        texts.push(<pre key="out">{to_string(data.data)}</pre>);
+        _indx = _fin;
       }
     }
   }
@@ -66,7 +78,7 @@ function HexView(props: { data?: HexV }) {
     <div className="hex">
       {codes.map((code, inx) => <code key={'code' + inx} className={getActive(inx)}>{code}</code>)}
     </div>
-    <div className="text flex-grow-1">
+    <div className="text">
       {texts}
     </div>
   </div>

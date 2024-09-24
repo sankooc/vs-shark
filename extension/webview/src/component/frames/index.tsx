@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { CField, ComMessage, HexV, IResult } from "../../common";
 import {emitMessage, onMessage} from '../../connect';
 import DTable from '../dataTable2';
@@ -14,6 +14,7 @@ function FrameList() {
   const [stacks, setStack] = useState<CField[]>([]);
   const [index, setIndex] = useState(0);
   const [hex, setHex] = useState<HexV>(null);
+  const ref = useRef(null);
   const mountHook = () => {
     const remv = onMessage('message', (e: any) => {
       const { type, body, requestId } = e.data;
@@ -55,6 +56,12 @@ function FrameList() {
     emitMessage(new ComMessage('fields', item.index - 1));
     setHex(new HexV(new Uint8Array()));
   };
+  if(ref?.current) {
+    ref.current.scrollIntoView({
+      behavior: "smooth",
+      block: "start"
+    })
+  }
   const getStyle = (item) => {
     switch(item.status){
       case 'deactive':
@@ -92,7 +99,7 @@ function FrameList() {
       <div className="treemap h-full flex-shrink-0">
       <Stack key={'stack'+index} frame={index} items={stacks} onSelect={onStackSelect}/>
       </div>
-      <div className="hexvewer">
+      <div ref={ref} className="hexvewer">
         <HexView data={hex}/>
       </div>
     </div>

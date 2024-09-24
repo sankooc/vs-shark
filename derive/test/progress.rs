@@ -48,7 +48,7 @@ pub trait ContainProtocol {
     fn get_protocol(&self) -> Protocol;
     // fn info(&self) -> String;
 }
-pub trait Initer {
+pub trait PacketBuilder {
     fn new() -> Self;
     fn summary(&self) -> String;
 }
@@ -69,7 +69,7 @@ pub trait Initer {
 //     }
 // }
 
-// impl Initer for Pancakes {
+// impl PacketBuilder for Pancakes {
 //     fn new(protocol: Protocol) -> Self {
 //         Self {
 //             protocol,
@@ -87,7 +87,7 @@ pub trait Initer {
 //     }
 // }
 
-// impl Initer<Pancakes> for Pancakes {
+// impl PacketBuilder<Pancakes> for Pancakes {
 //     fn new(protocol: Protocol) -> Pancakes {
 //         Pancakes {
 //             protocol,

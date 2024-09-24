@@ -36,7 +36,11 @@ export default function CommandDemo() {
                 client.initData(array);
                 setClient(client);
                 client.ready = true;
-                client.init();
+                try {
+                    client.init();
+                } catch(e){
+
+                }
                 window.onmessage = function(e) {
                     client.handle(e.data);
                 };

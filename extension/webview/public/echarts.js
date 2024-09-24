@@ -28250,7 +28250,7 @@
       normalizeRegister(dataProcessorFuncs, priority, processor, PRIORITY_PROCESSOR_DEFAULT);
     }
     /**
-     * Register postIniter
+     * Register postPacketBuilder
      * @param {Function} postInitFunc
      */
     function registerPostInit(postInitFunc) {

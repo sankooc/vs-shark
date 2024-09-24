@@ -1,26 +1,23 @@
 use std::fmt::Formatter;
-use std::str::from_utf8;
+use std::rc::Rc;
 
 use crate::common::io::AReader;
-use crate::constants::oid_map_mapper;
 use anyhow::{bail, Result};
 use log::{error, info};
 use pcap_derive::Packet2;
-use pcap_derive::Packet4;
+use pcap_derive::BerPacket;
 
 use crate::common::Ref2;
 use crate::{
     common::io::Reader,
     constants::{tls_cipher_suites_mapper, tls_extension_mapper, tls_hs_message_type_mapper, tls_min_type_mapper},
-    files::{Frame, Initer, PacketContext, PacketOpt},
+    files::{Frame, PacketBuilder, PacketContext, PacketOpt},
 };
 
-use super::ber::to_oid;
-use super::ber::BITSTRING;
 use super::ber::SEQUENCE;
 use super::ber::TLVOBJ;
 
-#[derive(Default, Clone, Packet2)]
+#[derive(Default, Packet2)]
 struct CupherSuites {
     size: usize,
     suites: Vec<u16>,
@@ -45,7 +42,7 @@ impl CupherSuites {
     }
 }
 
-#[derive(Default, Clone, Packet2)]
+#[derive(Default, Packet2)]
 struct CompressMethod {
     size: usize,
     methods: Vec<u8>,
@@ -66,7 +63,7 @@ impl CompressMethod {
     }
 }
 
-#[derive(Default, Clone, Packet2)]
+#[derive(Default, Packet2)]
 struct ExtenstionPack {
     size: usize,
     items: Vec<Ref2<Extenstion>>,
@@ -93,7 +90,7 @@ impl ExtenstionPack {
         Ok(())
     }
 }
-#[derive(Default, Clone, Packet2)]
+#[derive(Default, Packet2)]
 struct Extenstion {
     _type: u16,
     len: u16,
@@ -155,7 +152,7 @@ fn hexlize(data: &[u8]) -> String {
 //     }
 // }
 
-#[derive(Default, Packet4)]
+#[derive(Default, BerPacket)]
 pub struct SExtension {
     id: TLVOBJ,
 }
@@ -178,7 +175,7 @@ impl SEQUENCE for SExtension {
     }
 }
 
-#[derive(Default, Packet4)]
+#[derive(Default, BerPacket)]
 pub struct Extensions {
     items: Vec<SExtension>,
 }
@@ -195,7 +192,7 @@ impl SEQUENCE for Extensions {
     }
 }
 
-#[derive(Default, Packet4)]
+#[derive(Default, BerPacket)]
 pub struct SubjectPublicKey {
 
 }
@@ -220,7 +217,7 @@ impl SEQUENCE for SubjectPublicKey {
     }
 }
 
-#[derive(Default, Packet4)]
+#[derive(Default, BerPacket)]
 pub struct SubjectPublicKeyInfo {
     signature: Option<Signature>
 
@@ -246,7 +243,7 @@ impl SEQUENCE for SubjectPublicKeyInfo {
     }
 }
 
-#[derive(Default, Packet4)]
+#[derive(Default, BerPacket)]
 pub struct Validity {
     before: TLVOBJ,
     after: TLVOBJ,
@@ -274,7 +271,7 @@ impl SEQUENCE for Validity {
     }
 }
 
-#[derive(Default, Packet4)]
+#[derive(Default, BerPacket)]
 pub struct RdnSequence {
     object_id: TLVOBJ,
     val: TLVOBJ,
@@ -302,7 +299,7 @@ impl SEQUENCE for RdnSequence {
         Ok(())
     }
 }
-#[derive(Default, Packet4)]
+#[derive(Default, BerPacket)]
 pub struct RdnSequenceList {
     items: Vec<RdnSequence>
 }
@@ -319,7 +316,7 @@ impl SEQUENCE for RdnSequenceList {
     }
 }
 
-#[derive(Default, Packet4)]
+#[derive(Default, BerPacket)]
 pub struct Rdn {
     list: Option<RdnSequenceList>
 }
@@ -339,7 +336,7 @@ impl SEQUENCE for Rdn {
     }
 }
 
-#[derive(Default, Packet4)]
+#[derive(Default, BerPacket)]
 pub struct Signature {
     algorithm: TLVOBJ,
 }
@@ -368,7 +365,7 @@ impl SEQUENCE for Signature {
     }
 }
 
-#[derive(Default, Packet4)]
+#[derive(Default, BerPacket)]
 pub struct TBSCertificate {
     vesion: &'static str,
     serial_number: String,
@@ -474,14 +471,14 @@ impl SEQUENCE for Certificate {
             }
             2 => {
                 self.value = super::ber::parse(_type, reader.slice(len))?;
+                packet.build_backward(reader, len, format!("encrypted: {}", self.value));
             }
             _ => {}
         }
         Ok(())
     }
 }
-#[derive(Clone)]
-struct HandshakeClientHello {
+pub struct HandshakeClientHello {
     random: Vec<u8>,
     session: Vec<u8>,
     ciper_suites: Ref2<CupherSuites>,
@@ -512,8 +509,7 @@ impl HandshakeClientHello {
     }
 }
 
-#[derive(Clone)]
-struct HandshakeServerHello {
+pub struct HandshakeServerHello {
     random: Vec<u8>,
     session: Vec<u8>,
     ciper_suite: u16,
@@ -551,7 +547,7 @@ fn read24(reader: &Reader) -> Result<u32> {
 }
 
 #[derive(Default, Packet2)]
-struct HandshakeCertificate {
+pub struct HandshakeCertificate {
     items: Vec<Ref2<Certificate>>,
 }
 impl std::fmt::Display for HandshakeCertificate {
@@ -578,18 +574,42 @@ impl HandshakeCertificate {
         Ok(())
     }
 }
+// #[derive(Default, Packet2)]
+// struct HandshakeServerKeyExchange{
+//     curve_type: u8,
+//     named_curv: u16
+// }
+// impl std::fmt::Display for HandshakeServerKeyExchange {
+//     fn fmt(&self, fmt: &mut Formatter) -> std::fmt::Result {
+//         fmt.write_str("ServerKeyExchange (12)")
+//     }
+// }
 
-#[derive(Default, Clone)]
+// impl HandshakeServerKeyExchange {
+//     fn _create(reader: &Reader, packet: &PacketContext<Self>, p: &mut std::cell::RefMut<Self>, opt: Option<PacketOpt>) -> Result<()> {
+//         Ok(())
+//     }
+//     fn curve_type(&self) -> &'static str {
+//         match self.curve_type {
+//             1 => "explicit_prime",
+//             2 => "explicit_char2",
+//             3 => "named_curve",
+//             _ => "NULL",
+//         }
+//     }
+// }
+
+#[derive(Default)]
 pub enum HandshakeType {
     #[default]
     UNKNOWN,
     Encrypted,
     HELLOREQUEST,
-    ClientHello(HandshakeClientHello),
-    ServerHello(HandshakeServerHello),
+    ClientHello(Rc<HandshakeClientHello>),
+    ServerHello(Rc<HandshakeServerHello>),
     NewSessionTicket,
     EncryptedExtensions,
-    Certificate(Ref2<HandshakeCertificate>),
+    Certificate(Rc<HandshakeCertificate>),
     ServerKeyExchange,
     CertificateRequest,
     ServerHelloDone,
@@ -597,7 +617,7 @@ pub enum HandshakeType {
     ClientKeyExchange,
     Finished,
 }
-#[derive(Default, Clone, Packet2)]
+#[derive(Default, Packet2)]
 pub struct HandshakeProtocol {
     _type: u8,
     len: u32,
@@ -649,14 +669,14 @@ impl HandshakeProtocol {
 
             match head_type {
                 1 => {
-                    p.msg = HandshakeType::ClientHello(HandshakeClientHello::create(reader, packet)?);
+                    p.msg = HandshakeType::ClientHello(Rc::new(HandshakeClientHello::create(reader, packet)?));
                 }
                 2 => {
-                    p.msg = HandshakeType::ServerHello(HandshakeServerHello::create(reader, packet)?);
+                    p.msg = HandshakeType::ServerHello(Rc::new(HandshakeServerHello::create(reader, packet)?));
                 }
                 11 => {
                     let pk = packet.build_packet(reader, HandshakeCertificate::create, Some(_finish), None)?;
-                    p.msg = HandshakeType::Certificate(pk);
+                    p.msg = HandshakeType::Certificate(Rc::new(pk.take()));
                 }
                 _ => {}
             }

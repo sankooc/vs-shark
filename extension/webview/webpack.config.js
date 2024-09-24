@@ -1,5 +1,5 @@
 module.exports = {
-    entry: { 
+    entry: {
         // app: "./src/editor/index.tsx",
         app: './src/component/index.tsx',
         // main: './src/nav/index.tsx',
@@ -12,11 +12,15 @@ module.exports = {
         path: __dirname + "/../media"
     },
     resolve: {
-        extensions: [".ts", ".tsx", ".js", ".json", ".less"]
+        extensions: [".ts", ".tsx", ".js", ".json", ".less", ".svg"]
     },
     module: {
         rules: [
             { test: /\.tsx?$/, loader: "awesome-typescript-loader" },
+            {
+                test: /\.svg$/,
+                loader: 'svg-react-loader'
+            },
             {
                 test: /\.(scss|less|css)$/,
                 use: [

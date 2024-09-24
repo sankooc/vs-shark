@@ -2,7 +2,7 @@ use std::fmt::Display;
 use anyhow::Result;
 
 use pcap_derive::Packet2;
-use crate::files::{Frame, Initer, PacketContext, PacketOpt};
+use crate::files::{Frame, PacketBuilder, PacketContext, PacketOpt};
 use crate::common::io::Reader;
 use crate::common::io::AReader;
 
@@ -12,7 +12,7 @@ pub enum ExtensionType {
 }
 
 //rfc6066
-#[derive(Default, Clone, Packet2)]
+#[derive(Default, Packet2)]
 pub struct ServerName {
     list_len: u16,
     names: Vec<String>,

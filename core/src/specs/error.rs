@@ -4,7 +4,7 @@ use anyhow::Result;
 use pcap_derive::Packet;
 
 use crate::{
-    common::io::Reader, files::{Frame, Initer, PacketContext}
+    common::io::Reader, files::{Frame, PacketBuilder, PacketContext}
 };
 use crate::common::io::AReader;
 

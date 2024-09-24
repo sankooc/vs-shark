@@ -7,7 +7,7 @@ use pcap_derive::{Packet, Packet2, NINFO};
 use anyhow::Result;
 
 use crate::{
-    common::{io::Reader, IPPacket, IPv4Address, MacAddress, MultiBlock}, constants::{dns_class_mapper, etype_mapper, nbns_type_mapper}, files::{Frame, Initer, PacketContext, PacketOpt}
+    common::{io::Reader, IPPacket, IPv4Address, MacAddress, MultiBlock}, constants::{dns_class_mapper, etype_mapper, nbns_type_mapper}, files::{Frame, PacketBuilder, PacketContext, PacketOpt}
 };
 
 use super::ProtocolData;
@@ -47,7 +47,7 @@ impl NBNS {
     }
 }
 
-#[derive(Default, Clone, Packet2)]
+#[derive(Default, Packet2)]
 pub struct Question {
     name: String,
     _type: u16,
@@ -78,7 +78,7 @@ impl Question {
     }
 }
 
-#[derive(Default, Clone, Packet2)]
+#[derive(Default, Packet2)]
 pub struct Questions {
     items: MultiBlock<Question>,
 }

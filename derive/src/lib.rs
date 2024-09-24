@@ -4,7 +4,7 @@ use quote::quote;
 fn impl_packet_macro(ast: &syn::DeriveInput) -> TokenStream {
     let name = &ast.ident;
     let gen = quote! {
-        impl Initer for #name {
+        impl PacketBuilder for #name {
             fn new() -> Self {
                 Self {
                     ..Default::default()
@@ -29,7 +29,7 @@ pub fn packet2_macro_derive(input: TokenStream) -> TokenStream {
     let ast:syn::DeriveInput = syn::parse(input).unwrap();
     let name = &ast.ident;
     let gen = quote! {
-        impl Initer for #name {
+        impl PacketBuilder for #name {
             fn new() -> Self {
                 Self {
                     ..Default::default()
@@ -59,7 +59,7 @@ pub fn packet3_macro_derive(input: TokenStream) -> TokenStream {
     let ast:syn::DeriveInput = syn::parse(input).unwrap();
     let name = &ast.ident;
     let gen = quote! {
-        impl Initer for #name {
+        impl PacketBuilder for #name {
             fn new() -> Self {
                 Self {
                     ..Default::default()
@@ -105,12 +105,12 @@ pub fn ninfo_macro_derive(input: TokenStream) -> TokenStream {
     impl_ninfo_macro(&ast)
 }
 
-#[proc_macro_derive(Packet4)]
+#[proc_macro_derive(BerPacket)]
 pub fn packet4_macro_derive(input: TokenStream) -> TokenStream {
     let ast:syn::DeriveInput = syn::parse(input).unwrap();
     let name = &ast.ident;
     let gen = quote! {
-        impl Initer for #name {
+        impl PacketBuilder for #name {
             fn new() -> Self {
                 Self {
                     ..Default::default()

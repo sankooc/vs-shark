@@ -7,6 +7,7 @@ pub mod dhcp;
 pub mod dns;
 pub mod ethernet;
 pub mod http;
+pub mod ssdp;
 pub mod icmp;
 pub mod igmp;
 pub mod ip4;
@@ -19,6 +20,10 @@ pub mod error;
 use anyhow::bail;
 use enum_dispatch::enum_dispatch;
 use strum_macros::Display;
+
+
+
+pub const DEF_STATUS: &str = "info";
 
 use crate::common::io::AReader;
 pub fn execute(link_type: u32, _: &Frame, reader: &Reader) -> &'static str {
@@ -55,6 +60,7 @@ type ICMPv6 = PacketContext<icmp::ICMP6>;
 type DNS = PacketContext<dns::DNS>;
 type DHCP = PacketContext<dhcp::DHCP>;
 type HTTP = PacketContext<http::HTTP>;
+type SSDP = PacketContext<ssdp::SSDP>;
 type IGMP = PacketContext<igmp::IGMP>;
 type TLS = PacketContext<tls::TLS>;
 type IEEE1905A = PacketContext<ethernet::ieee1905a::IEEE1905A>;
@@ -80,6 +86,7 @@ pub enum ProtocolData {
     DNS,
     DHCP,
     HTTP,
+    SSDP,
     TLS,
     IEEE1905A,
     IEE80211,
@@ -103,6 +110,7 @@ pub fn _parse(proto: &'static str) -> anyhow::Result<&dyn Visitor>{
         "igmp" => &igmp::IGMPVisitor,
         "nbns" => &nbns::NBNSVisitor,
         "dns" => &dns::DNSVisitor,
+        "ssdp" => &ssdp::SSDPVisitor,
         // "mdns" => &dns::MDNSVisitor,
         "dhcp" => &dhcp::DHCPVisitor,
         "tls" => &tls::TLSVisitor,

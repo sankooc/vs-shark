@@ -7,7 +7,7 @@ use crate::common::io::{AReader, Reader};
 use crate::common::{Description, PlayloadPacket, PortPacket};
 use crate::files::{PacketOpt, Visitor};
 use crate::{
-    files::{Frame, Initer, PacketContext},
+    files::{Frame, PacketBuilder, PacketContext},
 };
 
 use super::ProtocolData;
