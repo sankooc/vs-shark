@@ -8,7 +8,6 @@ use crate::{
     constants::{arp_hardware_type_mapper, arp_oper_type_mapper, etype_mapper},
     files::{Frame, Initer, PacketContext, PacketOpt},
 };
-use crate::common::io::AReader;
 use crate::common::io::Reader;
 use super::ProtocolData;
 
