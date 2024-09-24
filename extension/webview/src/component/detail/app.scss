@@ -40,19 +40,24 @@
 }
 #detail>.text {
     padding: 1rem;
+    flex-basis: 16rem; 
     overflow-x: hidden;
     white-space: break-spaces;
     word-break: break-all;
 }
-#detail>.text pre {
+#detail>.text .asc {
     font-family: $base-family;
     white-space: break-spaces;
     word-break: break-all;
+    height: 1.5rem;
     display: inline;
-    margin: 0 14px;
+    margin: 0 .3rem; 
     padding: 0;
-    text-align: right;
-    &.active {
+    display: block;
+    text-align: left;
+    flex-shrink: 0;
+    pre{
+        display: inline;
         background-color: darkgoldenrod;
         color: darkblue;
     }

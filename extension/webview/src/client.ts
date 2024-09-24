@@ -120,9 +120,13 @@ export abstract class PCAPClient {
   }
   init(): void {
     if (!this.ctx && this.data) {
-      this.ctx = load(this.data as Uint8Array);
+      try {
+        this.ctx = load(this.data as Uint8Array);
+        this._info();
+      }catch(e){
+        this.emitMessage(new ComMessage('_error', "failed to open file"));
+      }
     }
-    this._info();
   }
   getInfo(): IContextInfo {
     const frame = this.ctx.get_frames().length;

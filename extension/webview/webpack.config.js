@@ -1,5 +1,5 @@
 module.exports = {
-    entry: { 
+    entry: {
         // app: "./src/editor/index.tsx",
         app: './src/component/index.tsx',
         // main: './src/nav/index.tsx',
@@ -17,15 +17,10 @@ module.exports = {
     module: {
         rules: [
             { test: /\.tsx?$/, loader: "awesome-typescript-loader" },
-            // {
-            //   test: /\.svg$/,
-            //   loader: 'url-loader'
-            // },
-                        {
-              test: /\.svg$/,
-              loader: 'svg-react-loader'
+            {
+                test: /\.svg$/,
+                loader: 'svg-react-loader'
             },
-            
             {
                 test: /\.(scss|less|css)$/,
                 use: [
