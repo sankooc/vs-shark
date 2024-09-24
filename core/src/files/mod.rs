@@ -5,7 +5,7 @@ use crate::{
     common::{io::AReader, IPPacket, MultiBlock, PortPacket, Ref2},
     constants::link_type_mapper,
     specs::{
-        dns::{RecordResource, DNS}, tcp::{TCPOptionKind, ACK, TCP}, tls::handshake::HandshakeType, ProtocolData
+        dns::{RecordResource, DNS}, tcp::{TCPOptionKind, ACK, TCP}, tls::{handshake::HandshakeType, TLSHandshake}, ProtocolData
     },
 };
 use chrono::{DateTime, Utc};
@@ -372,7 +372,7 @@ pub struct Endpoint {
     _ack: u32,
     _checksum: u16,
     mss: u16,
-    pub handshake: Vec<Rc<HandshakeType>>,
+    pub handshake: Vec<Rc<TLSHandshake>>,
     _seg: Option<Vec<u8>>,
     _seg_len: usize,
     _segments: Option<Vec<Segment>>,

@@ -4,6 +4,7 @@ import { Badge } from 'primereact/badge';
 import { Menu } from 'primereact/menu';
 import { ComMessage, IContextInfo, IConversation, IDNSRecord } from '../common';
 import Loading from './loading';
+import ErrPage from './error';
 import { onMessage, log, emitMessage } from '../connect';
 
 import Overview from './overview';
@@ -77,7 +78,7 @@ const Main = () => {
     return <Overview/>;
   };
   if (loading) {
-    return <Loading />
+    return <ErrPage />
   }
 
   const navItems = convert();

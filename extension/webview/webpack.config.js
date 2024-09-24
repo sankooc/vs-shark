@@ -12,11 +12,20 @@ module.exports = {
         path: __dirname + "/../media"
     },
     resolve: {
-        extensions: [".ts", ".tsx", ".js", ".json", ".less"]
+        extensions: [".ts", ".tsx", ".js", ".json", ".less", ".svg"]
     },
     module: {
         rules: [
             { test: /\.tsx?$/, loader: "awesome-typescript-loader" },
+            // {
+            //   test: /\.svg$/,
+            //   loader: 'url-loader'
+            // },
+                        {
+              test: /\.svg$/,
+              loader: 'svg-react-loader'
+            },
+            
             {
                 test: /\.(scss|less|css)$/,
                 use: [

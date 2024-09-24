@@ -205,7 +205,7 @@ fn proc(frame: &Frame, reader: &Reader, packet: &PacketContext<TLS>, p: &mut TLS
                 let record = item.take();
                 match &record.message {
                     TLSRecorMessage::HANDSHAKE(hs) => {
-                        
+                        ep.handshake.push(hs.clone());
                     },
                     _ => {}
                 };

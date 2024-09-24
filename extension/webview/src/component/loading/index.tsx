@@ -7,6 +7,6 @@ function Loading() {
   <div className="loader-section section-right"></div>
 </div>
   );
-}
+}//https://codepen.io/kathykato/pen/YzKGrqd
 
 export default Loading;
