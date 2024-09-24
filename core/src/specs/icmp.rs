@@ -4,7 +4,7 @@ use anyhow::Result;
 use pcap_derive::{Packet, Packet2, NINFO};
 
 use crate::{
-    common::io::Reader, constants::icmpv6_type_mapper, files::{Frame, Initer, PacketContext, PacketOpt}
+    common::io::Reader, constants::icmpv6_type_mapper, files::{Frame, PacketBuilder, PacketContext, PacketOpt}
 };
 use crate::common::io::AReader;
 

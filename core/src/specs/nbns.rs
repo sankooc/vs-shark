@@ -7,7 +7,7 @@ use pcap_derive::{Packet, Packet2, NINFO};
 use anyhow::Result;
 
 use crate::{
-    common::{io::Reader, IPPacket, IPv4Address, MacAddress, MultiBlock}, constants::{dns_class_mapper, etype_mapper, nbns_type_mapper}, files::{Frame, Initer, PacketContext, PacketOpt}
+    common::{io::Reader, IPPacket, IPv4Address, MacAddress, MultiBlock}, constants::{dns_class_mapper, etype_mapper, nbns_type_mapper}, files::{Frame, PacketBuilder, PacketContext, PacketOpt}
 };
 
 use super::ProtocolData;

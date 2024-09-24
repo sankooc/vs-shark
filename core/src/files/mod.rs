@@ -101,7 +101,7 @@ pub trait FieldBuilder<T> {
 
 pub type PacketOpt = usize;
 
-impl<T> Initer for MultiBlock<T> {
+impl<T> PacketBuilder for MultiBlock<T> {
     fn new() -> MultiBlock<T> {
         Vec::new()
     }
@@ -135,7 +135,7 @@ impl<T> PacketContext<T> {
 
 impl<T> Element for PacketContext<T>
 where
-    T: Initer + InfoPacket,
+    T: PacketBuilder + InfoPacket,
 {
     fn summary(&self) -> String {
         self.get().borrow().summary()
@@ -156,7 +156,7 @@ where
 }
 impl<T> PacketContext<T>
 where
-    T: Initer + 'static,
+    T: PacketBuilder + 'static,
 {
     pub fn _build(&self, reader: &Reader, start: usize, size: usize, content: String) {
         self.fields.borrow_mut().push(Box::new(TXTPosition { start, size, data: reader.get_raw(), content }));
@@ -233,7 +233,7 @@ where
     }
     pub fn build_packet<K, M>(&self, reader: &Reader, opt: impl Fn(&Reader, Option<M>) -> Result<PacketContext<K>>, packet_opt: Option<M>, head: Option<String>) -> Result<Ref2<K>>
     where
-        K: Initer + 'static,
+        K: PacketBuilder + 'static,
         FieldPosition<K>: FieldBuilder<T>,
     {
         let start = reader.cursor();
@@ -264,7 +264,7 @@ impl<T> FieldBuilder<T> for Position<T> {
 
 pub struct FieldPosition<T>
 where
-    T: Initer,
+    T: PacketBuilder,
 {
     pub start: usize,
     pub size: usize,
@@ -274,7 +274,7 @@ where
 }
 impl<T, K> FieldBuilder<T> for FieldPosition<K>
 where
-    K: Initer,
+    K: PacketBuilder,
 {
     fn build(&self, _: &T) -> Field {
         let summary = match self.head.clone() {
@@ -581,7 +581,7 @@ impl TCPConnection {
     }
 }
 
-pub trait Initer {
+pub trait PacketBuilder {
     fn new() -> Self;
     fn summary(&self) -> String;
 }
@@ -712,7 +712,7 @@ impl Frame {
     }
     pub fn create_packet<K>() -> PacketContext<K>
     where
-        K: Initer,
+        K: PacketBuilder,
     {
         let val = K::new();
         PacketContext {

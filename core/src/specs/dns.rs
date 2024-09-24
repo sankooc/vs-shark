@@ -9,7 +9,7 @@ use crate::common::MultiBlock;
 use crate::common::Ref2;
 use crate::common::{IPv4Address, IPv6Address};
 use crate::constants::{dns_class_mapper, dns_type_mapper};
-use crate::files::{DomainService, Frame, Initer, PacketContext, PacketOpt, Visitor};
+use crate::files::{DomainService, Frame, PacketBuilder, PacketContext, PacketOpt, Visitor};
 
 use super::ProtocolData;
 

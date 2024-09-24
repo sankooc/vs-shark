@@ -5,13 +5,13 @@ use crate::common::io::AReader;
 use anyhow::{bail, Result};
 use log::{error, info};
 use pcap_derive::Packet2;
-use pcap_derive::Packet4;
+use pcap_derive::BerPacket;
 
 use crate::common::Ref2;
 use crate::{
     common::io::Reader,
     constants::{tls_cipher_suites_mapper, tls_extension_mapper, tls_hs_message_type_mapper, tls_min_type_mapper},
-    files::{Frame, Initer, PacketContext, PacketOpt},
+    files::{Frame, PacketBuilder, PacketContext, PacketOpt},
 };
 
 use super::ber::SEQUENCE;
@@ -152,7 +152,7 @@ fn hexlize(data: &[u8]) -> String {
 //     }
 // }
 
-#[derive(Default, Packet4)]
+#[derive(Default, BerPacket)]
 pub struct SExtension {
     id: TLVOBJ,
 }
@@ -175,7 +175,7 @@ impl SEQUENCE for SExtension {
     }
 }
 
-#[derive(Default, Packet4)]
+#[derive(Default, BerPacket)]
 pub struct Extensions {
     items: Vec<SExtension>,
 }
@@ -192,7 +192,7 @@ impl SEQUENCE for Extensions {
     }
 }
 
-#[derive(Default, Packet4)]
+#[derive(Default, BerPacket)]
 pub struct SubjectPublicKey {
 
 }
@@ -217,7 +217,7 @@ impl SEQUENCE for SubjectPublicKey {
     }
 }
 
-#[derive(Default, Packet4)]
+#[derive(Default, BerPacket)]
 pub struct SubjectPublicKeyInfo {
     signature: Option<Signature>
 
@@ -243,7 +243,7 @@ impl SEQUENCE for SubjectPublicKeyInfo {
     }
 }
 
-#[derive(Default, Packet4)]
+#[derive(Default, BerPacket)]
 pub struct Validity {
     before: TLVOBJ,
     after: TLVOBJ,
@@ -271,7 +271,7 @@ impl SEQUENCE for Validity {
     }
 }
 
-#[derive(Default, Packet4)]
+#[derive(Default, BerPacket)]
 pub struct RdnSequence {
     object_id: TLVOBJ,
     val: TLVOBJ,
@@ -299,7 +299,7 @@ impl SEQUENCE for RdnSequence {
         Ok(())
     }
 }
-#[derive(Default, Packet4)]
+#[derive(Default, BerPacket)]
 pub struct RdnSequenceList {
     items: Vec<RdnSequence>
 }
@@ -316,7 +316,7 @@ impl SEQUENCE for RdnSequenceList {
     }
 }
 
-#[derive(Default, Packet4)]
+#[derive(Default, BerPacket)]
 pub struct Rdn {
     list: Option<RdnSequenceList>
 }
@@ -336,7 +336,7 @@ impl SEQUENCE for Rdn {
     }
 }
 
-#[derive(Default, Packet4)]
+#[derive(Default, BerPacket)]
 pub struct Signature {
     algorithm: TLVOBJ,
 }
@@ -365,7 +365,7 @@ impl SEQUENCE for Signature {
     }
 }
 
-#[derive(Default, Packet4)]
+#[derive(Default, BerPacket)]
 pub struct TBSCertificate {
     vesion: &'static str,
     serial_number: String,

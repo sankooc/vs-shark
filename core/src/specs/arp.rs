@@ -6,7 +6,7 @@ use pcap_derive::Packet2;
 use crate::{
     common::{IPPacket, IPv4Address, MacAddress},
     constants::{arp_hardware_type_mapper, arp_oper_type_mapper, etype_mapper},
-    files::{Frame, Initer, PacketContext, PacketOpt},
+    files::{Frame, PacketBuilder, PacketContext, PacketOpt},
 };
 use crate::common::io::Reader;
 use super::ProtocolData;
