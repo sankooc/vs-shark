@@ -5,8 +5,9 @@ use pcap_derive::{Packet2, NINFO};
 
 use crate::{
     common::{io::{AReader, Reader}, Description, IPPacket, IPv6Address, TtypePacket},
-    files::{Frame, PacketBuilder, PacketContext, PacketOpt, Visitor},
+    files::{Frame, PacketBuilder, PacketContext, PacketOpt},
 };
+use crate::common::FIELDSTATUS;
 
 use super::ProtocolData;
 

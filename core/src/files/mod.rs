@@ -2,7 +2,7 @@ pub mod pcap;
 pub mod pcapng;
 
 use crate::{
-    common::{io::AReader, IPPacket, MultiBlock, PortPacket, Ref2},
+    common::{io::AReader, IPPacket, MultiBlock, PortPacket, Ref2, FIELDSTATUS},
     constants::link_type_mapper,
     specs::{
         dns::{RecordResource, DNS}, tcp::{TCPOptionKind, ACK, TCP}, tls::{handshake::HandshakeType, TLSHandshake}, ProtocolData
@@ -84,8 +84,7 @@ pub fn date_str(ts: u64) -> String {
 pub trait Element {
     fn summary(&self) -> String;
     fn get_fields(&self) -> Vec<Field>;
-    // fn add_next(&mut self, ele: Box<dyn Element>);
-    fn status(&self) -> String;
+    fn status(&self) -> FIELDSTATUS;
     fn info(&self) -> String;
 }
 
@@ -132,7 +131,13 @@ impl<T> PacketContext<T> {
         rs
     }
 }
-
+fn _convert(f_status: FIELDSTATUS) -> &'static str {
+    match f_status {
+        FIELDSTATUS::WARN => "deactive",
+        FIELDSTATUS::ERROR => "errordata",
+        _ => "info"
+    }
+}
 impl<T> Element for PacketContext<T>
 where
     T: PacketBuilder + InfoPacket,
@@ -143,14 +148,11 @@ where
     fn get_fields(&self) -> Vec<Field> {
         self.get_fields()
     }
-    // fn get_protocol(&self) -> Protocol {
-    //     self.get().borrow().get_protocol()
-    // }
     fn info(&self) -> String {
         self.get().borrow().info()
     }
 
-    fn status(&self) -> String {
+    fn status(&self) -> FIELDSTATUS {
         self.get().borrow().status()
     }
 }
@@ -587,7 +589,7 @@ pub trait PacketBuilder {
 }
 pub trait InfoPacket {
     fn info(&self) -> String;
-    fn status(&self) -> String;
+    fn status(&self) -> FIELDSTATUS;
 }
 
 #[derive(Default)]

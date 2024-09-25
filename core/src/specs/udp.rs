@@ -1,16 +1,14 @@
 use std::fmt::Display;
 
 use anyhow::Result;
-use pcap_derive::{Packet, Packet2, NINFO};
+use pcap_derive::{Packet2, NINFO};
 
 use crate::common::io::{AReader, Reader};
 use crate::common::{Description, PlayloadPacket, PortPacket};
-use crate::files::{PacketOpt, Visitor};
-use crate::{
-    files::{Frame, PacketBuilder, PacketContext},
-};
-
+use crate::files::{Frame, PacketContext, PacketOpt, Visitor, PacketBuilder};
 use super::ProtocolData;
+
+use crate::common::FIELDSTATUS;
 
 fn execute(source: u16, target: u16) -> &'static str {
     let pp = match source {

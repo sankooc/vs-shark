@@ -7,3 +7,8 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 ## [Unreleased]
 
 - Initial release
+
+- 0.3.4
+  * add tls->handshake->cetificate parse
+  * add ssdp 
+  * fix hex view

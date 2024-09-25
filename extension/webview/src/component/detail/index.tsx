@@ -16,7 +16,6 @@ const to_string = (data: Uint8Array): string => {
 }
 
 function HexView(props: { data?: HexV }) {
-  const ref = useRef(null);
   const indexes = [];
   const codes = [];
   let start = 0;
@@ -43,10 +42,10 @@ function HexView(props: { data?: HexV }) {
     for (let i = 0; i < lent; i += 1) {
       codes.push(data.data[i].toString(16).padStart(2, '0'));
     }
-    if (data.data) {
+    if (data.data && data.data.length) {
       const raw = data.data;
       let _indx = 0;
-      while(_indx <= raw.length){
+      while(_indx < raw.length){
         const _fin = Math.min(_indx + 16, raw.length);
         if(end > start){
           const _start = Math.max(start, _indx);
@@ -56,9 +55,11 @@ function HexView(props: { data?: HexV }) {
           } else if (_start < _fin) {
             texts.push(<div className="asc" key={"pre-" + _indx}>
               {to_string(raw.slice(_indx, _start))}
-              <pre>{to_string(raw.slice(_start, _end))}</pre>
+              <span>{to_string(raw.slice(_start, _end))}</span>
               {to_string(raw.slice(_end, _fin))}
               </div>);
+          } else {
+            texts.push(<div className="asc" key={"pre-" + _indx}>{to_string(raw.slice(_indx, _fin))}</div>);
           }
         } else {
           texts.push(<div className="asc" key={"pre-" + _indx}>{to_string(raw.slice(_indx, _fin))}</div>);

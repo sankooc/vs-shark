@@ -26,6 +26,7 @@ use strum_macros::Display;
 pub const DEF_STATUS: &str = "info";
 
 use crate::common::io::AReader;
+use crate::common::FIELDSTATUS;
 pub fn execute(link_type: u32, _: &Frame, reader: &Reader) -> &'static str {
     match link_type {
         0 => {

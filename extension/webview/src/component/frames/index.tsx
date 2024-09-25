@@ -56,12 +56,12 @@ function FrameList() {
     emitMessage(new ComMessage('fields', item.index - 1));
     setHex(new HexV(new Uint8Array()));
   };
-  if(ref?.current) {
-    ref.current.scrollIntoView({
-      behavior: "smooth",
-      block: "start"
-    })
-  }
+  // if(ref?.current) {
+  //   ref.current.scrollIntoView({
+  //     behavior: "smooth",
+  //     block: "start"
+  //   })
+  // }
   const getStyle = (item) => {
     switch(item.status){
       case 'deactive':

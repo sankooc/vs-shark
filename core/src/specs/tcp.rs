@@ -7,7 +7,7 @@ use anyhow::Result;
 use pcap_derive::Packet;
 
 use crate::{
-    common::{io::{AReader, Reader}, Description, MultiBlock, PortPacket, Ref2},
+    common::{io::{AReader, Reader}, Description, MultiBlock, PortPacket, Ref2, FIELDSTATUS},
     constants::tcp_option_kind_mapper,
     files::{Frame, PacketBuilder, PacketContext, TCPDetail, TCPInfo, TCPPAYLOAD},
 };
@@ -178,27 +178,20 @@ impl crate::files::InfoPacket for TCP {
         info
     }
 
-    fn status(&self) -> String {
+    fn status(&self) -> FIELDSTATUS {
         if self.state._match(RESET) {
-            return "reset".into();
+            return FIELDSTATUS::ERROR
         }
-        let mut rs = "info";
         match &self.info {
             Some(_info) => match &_info.detail {
-                TCPDetail::DUMP => {
-                    rs = "deactive";
-                }
-                TCPDetail::NOPREVCAPTURE => {
-                    rs = "deactive";
-                }
-                TCPDetail::RETRANSMISSION => {
-                    rs = "deactive";
-                }
-                _ => {}
+                TCPDetail::DUMP => FIELDSTATUS::WARN,
+                TCPDetail::NOPREVCAPTURE => FIELDSTATUS::WARN,
+                TCPDetail::RETRANSMISSION => FIELDSTATUS::WARN,
+                _ => FIELDSTATUS::INFO
             },
-            None => {}
+            None => FIELDSTATUS::INFO
         }
-        rs.into()
+        
     }
 }
 impl TCP {

@@ -3,7 +3,7 @@ use std::fmt::Formatter;
 use pcap_derive::Packet;
 
 use crate::{
-    common::io::{AReader, Reader}, files::{Frame, PacketBuilder, PacketContext}
+    common::{io::{AReader, Reader}, FIELDSTATUS}, files::{Frame, PacketBuilder, PacketContext}
 };
 use anyhow::{bail, Result};
 
@@ -38,8 +38,8 @@ impl crate::files::InfoPacket for HTTP {
         self.head.clone()
     }
     
-    fn status(&self) -> String {
-        "info".into()
+    fn status(&self) -> FIELDSTATUS {
+        FIELDSTATUS::INFO
     }
 }
 impl std::fmt::Display for HTTP {

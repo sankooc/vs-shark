@@ -4,7 +4,7 @@ use anyhow::Result;
 use pcap_derive::Packet;
 
 use crate::{
-    common::{io::AReader, IPv4Address, MacAddress, Ref2},
+    common::{io::AReader, IPv4Address, MacAddress, Ref2, FIELDSTATUS},
     constants::{arp_hardware_type_mapper, dhcp_option_type_mapper, dhcp_type_mapper},
     files::{Frame, PacketBuilder, PacketContext},
 };
@@ -40,8 +40,8 @@ impl crate::files::InfoPacket for DHCP {
         format!("{} - Transaction ID {:#010x}", self._type(), self.transaction_id)
     }
 
-    fn status(&self) -> String {
-        "info".into()
+    fn status(&self) -> FIELDSTATUS {
+        FIELDSTATUS::INFO
     }
 }
 impl DHCP {

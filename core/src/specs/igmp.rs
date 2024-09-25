@@ -4,7 +4,7 @@ use anyhow::Result;
 use pcap_derive::Packet;
 
 use crate::{
-    common::io::Reader, constants::igmp_type_mapper, files::{Frame, PacketBuilder, PacketContext}
+    common::{io::Reader, FIELDSTATUS}, constants::igmp_type_mapper, files::{Frame, PacketBuilder, PacketContext}
 };
 use crate::common::io::AReader;
 
@@ -27,8 +27,8 @@ impl crate::files::InfoPacket for IGMP {
         self._type()
     }
 
-    fn status(&self) -> String {
-        "info".into()
+    fn status(&self) -> FIELDSTATUS {
+        FIELDSTATUS::INFO
     }
 }
 impl IGMP {

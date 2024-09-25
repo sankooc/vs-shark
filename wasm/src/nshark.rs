@@ -4,7 +4,7 @@ use std::cmp;
 use std::ops::Deref;
 use std::collections::HashSet;
 
-use core::common::FileInfo;
+use core::common::{FileInfo, FIELDSTATUS};
 use core::files::{DomainService, Element, Frame, Instance};
 use core::{entry::*, files};
 use js_sys::Uint8Array;
@@ -226,6 +226,14 @@ impl TCPConversation {
     }
 }
 
+fn _convert(f_status: FIELDSTATUS) -> &'static str {
+    match f_status {
+        FIELDSTATUS::WARN => "deactive",
+        FIELDSTATUS::ERROR => "errordata",
+        _ => "info"
+    }
+}
+
 #[wasm_bindgen]
 impl WContext {
     #[wasm_bindgen(constructor)]
@@ -266,7 +274,7 @@ impl WContext {
         item.status = "info".into();
         match frame.eles.borrow().last() {
             Some(ele) => {
-                item.status = ele.status();
+                item.status = _convert(ele.status()).into();
             },
             _ => {}
         }

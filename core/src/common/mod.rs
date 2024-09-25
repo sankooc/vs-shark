@@ -158,3 +158,9 @@ pub enum FileType {
     #[default]
     NONE,
 }
+
+pub enum FIELDSTATUS {
+    INFO,
+    WARN,
+    ERROR,
+}

@@ -7,6 +7,7 @@ use crate::common::io::Reader;
 use crate::common::io::AReader;
 use crate::common::MultiBlock;
 use crate::common::Ref2;
+use crate::common::FIELDSTATUS;
 use crate::common::{IPv4Address, IPv6Address};
 use crate::constants::{dns_class_mapper, dns_type_mapper};
 use crate::files::{DomainService, Frame, PacketBuilder, PacketContext, PacketOpt, Visitor};
