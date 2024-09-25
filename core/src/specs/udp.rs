@@ -15,6 +15,7 @@ fn execute(source: u16, target: u16) -> &'static str {
         53 => "dns",
         5353 => "mdns",
         137 => "nbns",
+        1900 => "ssdp",
         _ => "none",
     };
     if pp == "none" {
@@ -22,6 +23,7 @@ fn execute(source: u16, target: u16) -> &'static str {
             53 => "dns",
             5353 => "mdns",
             137 => "nbns",
+            1900 => "ssdp",
             _ => "none",
         };
     }
