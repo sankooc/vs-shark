@@ -5,7 +5,7 @@ use pcap_derive::Packet;
 use crate::{
     common::{io::{AReader, Reader}, FIELDSTATUS}, files::{Frame, PacketBuilder, PacketContext}
 };
-use anyhow::{bail, Result};
+use anyhow::Result;
 
 use super::ProtocolData;
 

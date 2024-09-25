@@ -5,14 +5,14 @@ use crate::{
     common::{io::AReader, IPPacket, MultiBlock, PortPacket, Ref2, FIELDSTATUS},
     constants::link_type_mapper,
     specs::{
-        dns::{RecordResource, DNS}, tcp::{TCPOptionKind, ACK, TCP}, tls::{handshake::HandshakeType, TLSHandshake}, ProtocolData
+        dns::{RecordResource, DNS}, tcp::{TCPOptionKind, ACK, TCP}, tls::TLSHandshake, ProtocolData
     },
 };
 use chrono::{DateTime, Utc};
 use enum_dispatch::enum_dispatch;
-use log::{error, info};
+use log::error;
 use std::{
-    borrow::Borrow, cell::{Cell, Ref, RefCell}, collections::{HashMap, HashSet}, fmt::Display, ops::{Deref, Range}, panic::UnwindSafe, process, rc::Rc, time::{Duration, UNIX_EPOCH}
+    borrow::Borrow, cell::{Cell, Ref, RefCell}, collections::{HashMap, HashSet}, fmt::Display, ops::{Deref, Range}, rc::Rc, time::{Duration, UNIX_EPOCH}
 };
 
 use anyhow::{bail, Result};
@@ -429,7 +429,7 @@ impl Endpoint {
         self._seg_type = TCPPAYLOAD::NONE;
     }
 
-    fn update(&mut self, tcp: &TCP, frame: &Frame, data: &[u8]) -> TCPDetail {
+    fn update(&mut self, tcp: &TCP, _: &Frame, _: &[u8]) -> TCPDetail {
         let sequence = tcp.sequence;
         if self._checksum == tcp.crc {
             self.clear_segment();
@@ -751,9 +751,9 @@ impl Frame {
             ProtocolData::ARP(packet) => {
                 self.update_ip(packet._clone_obj());
             }
-            ProtocolData::TCP(packet) => {
-                // self.add_tcp(packet._clone_obj());
-            }
+            // ProtocolData::TCP(packet) => {
+            //     // self.add_tcp(packet._clone_obj());
+            // }
             ProtocolData::DNS(packet) => {
                 self.add_dns(packet._clone_obj());
             }

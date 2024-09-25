@@ -225,7 +225,7 @@ impl RecordResource {
     fn len(p: &RecordResource) -> String {
         format!("Data length: {}", p.len)
     }
-    fn _create(reader: &Reader, packet: &PacketContext<Self>, p: &mut std::cell::RefMut<Self>, _count: Option<usize>) -> Result<()> {
+    fn _create(_: &Reader, _: &PacketContext<Self>, _: &mut std::cell::RefMut<Self>, _count: Option<usize>) -> Result<()> {
         // let count = _count.unwrap();
         // for _ in 0..count {
         //    let item = packet.build_packet(reader, Question::create, None, None)?;

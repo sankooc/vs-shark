@@ -3,7 +3,6 @@ use std::rc::Rc;
 
 use crate::common::io::AReader;
 use anyhow::{bail, Result};
-use log::{error, info};
 use pcap_derive::Packet2;
 use pcap_derive::BerPacket;
 

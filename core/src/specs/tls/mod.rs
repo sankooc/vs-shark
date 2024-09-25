@@ -3,7 +3,7 @@ pub mod extension;
 pub mod handshake;
 use std::{fmt::Formatter, ops::DerefMut, rc::Rc};
 
-use crate::common::{io::AReader, Ref2, FIELDSTATUS};
+use crate::common::{io::AReader, FIELDSTATUS};
 use anyhow::Result;
 use handshake::{HandshakeProtocol, HandshakeType};
 use pcap_derive::{Packet, Packet2};

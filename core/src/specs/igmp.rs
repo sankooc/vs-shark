@@ -6,7 +6,6 @@ use pcap_derive::Packet;
 use crate::{
     common::{io::Reader, FIELDSTATUS}, constants::igmp_type_mapper, files::{Frame, PacketBuilder, PacketContext}
 };
-use crate::common::io::AReader;
 
 use super::ProtocolData;
 

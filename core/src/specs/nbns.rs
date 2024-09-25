@@ -9,7 +9,7 @@ use pcap_derive::{Packet2, NINFO};
 
 use crate::{
     common::{io::Reader, MultiBlock},
-    constants::{dns_class_mapper, etype_mapper, nbns_type_mapper},
+    constants::{dns_class_mapper, nbns_type_mapper},
     files::{Frame, PacketBuilder, PacketContext, PacketOpt},
 };
 
@@ -23,7 +23,7 @@ pub struct NBNS {
     answer_rr: u16,
     authority_rr: u16,
     additional_rr: u16,
-    questions_ref: MultiBlock<Questions>,
+    // questions_ref: MultiBlock<Questions>,
     // answers_ref: Option<Answers>,
     // authorities_ref: Option<Authority>,
 }
