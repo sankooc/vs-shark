@@ -13,7 +13,6 @@ import FrameList from './frames';
 import TCPList from './tcp';
 import DNSList from './dns';
 import HttpComponnet from './http';
-import { BreadCrumb } from 'primereact/breadcrumb';
 
 
 const itemRenderer = (item, options) => {
@@ -22,7 +21,7 @@ const itemRenderer = (item, options) => {
     <span className={`mx-2 ${item.items && 'font-semibold'}`}>{item.label}</span>
     {item.data && <Badge className="ml-auto" value={item.data} />}
   </a>
-}; //pi-chart-bar
+};
 
 let _start = 0;
 const Main = () => {
@@ -36,8 +35,15 @@ const Main = () => {
       const { type, body, requestId } = e.data;
       switch (type) {
         case '_info': {
+          // console.log(JSON.stringify(body));
           setMeta(body);
           setStatus(1);
+          
+          emitMessage(new ComMessage('http', ''));
+          break;
+        }
+        case '_http': {
+          console.log(JSON.stringify(body));
           break;
         }
         case '_error': {

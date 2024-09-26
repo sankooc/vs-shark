@@ -86,13 +86,17 @@ pub struct WStatistic {
     http_status: Vec<WCase>,
     http_type: Vec<WCase>,
 }
+#[wasm_bindgen]
 impl WStatistic {
+    #[wasm_bindgen(getter)]
     pub fn http_method(&self) -> Vec<WCase> {
         self.http_method.clone()
     }
+    #[wasm_bindgen(getter)]
     pub fn http_status(&self) -> Vec<WCase> {
         self.http_status.clone()
     }
+    #[wasm_bindgen(getter)]
     pub fn http_type(&self) -> Vec<WCase> {
         self.http_type.clone()
     }

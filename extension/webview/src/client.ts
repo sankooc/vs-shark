@@ -132,7 +132,8 @@ export abstract class PCAPClient {
     const frame = this.ctx.get_frames().length;
     const conversation = this.ctx.get_conversations_count();
     const dns = this.ctx.get_dns_count();
-    return { frame, conversation, dns }
+    const statistic = this.ctx.statistic();
+    return { frame, conversation, dns, statistic:JSON.parse(statistic) }
   }
   _protocols(): void {
     if (this.ready && this.ctx) {
@@ -231,7 +232,15 @@ export abstract class PCAPClient {
     this.emitMessage(new ComMessage('_fields', this.getFields(index)));
   }
   http(): IHttp [] {
-    return this.ctx.select_http(0, 1000, []).map(f => pick(f, 'head', 'header'));
+    const rs = this.ctx.select_http(0, 1000, []).map(f => {
+      const _rs = pick(f, 'req', 'res');
+      return {
+        req: pick(_rs.req, 'host', 'port', 'head', 'header'),
+        res: pick(_rs.res, 'host', 'port', 'head', 'header'),
+      }
+    });
+
+    return rs;
   }
   _http(): void {
     this.emitMessage(new ComMessage('_http', this.http()));

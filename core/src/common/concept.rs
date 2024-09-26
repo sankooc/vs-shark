@@ -1,5 +1,7 @@
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
+use serde::Serialize;
+
 use crate::{files::Endpoint, specs::http::HTTP};
 
 use super::Ref2;
@@ -26,6 +28,12 @@ impl HttpRequest {
   }
   
 }
+#[derive(Serialize)]
+pub struct StatisticV {
+  http_method: Vec<Case>,
+  http_status: Vec<Case>,
+  http_type: Vec<Case>,
+}
 
 #[derive(Default)]
 pub struct Statistic {
@@ -38,8 +46,17 @@ impl Statistic {
   pub fn new() -> Self{
     Self{..Default::default()}
   }
+  pub fn to_json(&self) -> String {
+    let enti = StatisticV{
+      http_method: self.http_method.to_list(),
+      http_status: self.http_status.to_list(),
+      http_type: self.http_type.to_list(),
+    };
+    serde_json::to_string(&enti).unwrap()
+  }
 }
 
+#[derive(Serialize)]
 pub struct Case {
   pub label: String,
   pub value: usize,

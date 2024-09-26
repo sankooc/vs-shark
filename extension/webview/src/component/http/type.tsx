@@ -2,11 +2,10 @@ import React from "react";
 import ReactECharts from 'echarts-for-react';
 import bt from '../ui';
 
-
-
 class Proto {
     items: any[]
     title?: string
+    tooltip: string
 }
 const Pie = (props: Proto) => {
 
@@ -27,7 +26,7 @@ const Pie = (props: Proto) => {
         width: '90%',
         series: [
             {
-                name: 'Access From',
+                name: props.tooltip,
                 type: 'pie',
                 radius: ['40%', '70%'],
                 avoidLabelOverlap: false,

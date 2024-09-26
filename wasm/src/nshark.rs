@@ -10,7 +10,7 @@ use core::{entry::*, files};
 use js_sys::Uint8Array;
 use wasm_bindgen::prelude::*;
 
-use crate::entity::{HttpConversation, HttpEntity, WStatistic};
+use crate::entity::{HttpConversation};
 
 #[wasm_bindgen]
 pub struct WContext {
@@ -407,10 +407,10 @@ impl WContext {
         rs
     }
     #[wasm_bindgen]
-    pub fn statistic(&self) -> WStatistic {
+    pub fn statistic(&self) -> String {
         let ctx = self.ctx.context();
         let stat = ctx.get_statistc();
-        WStatistic::new(stat)
+        stat.to_json()
     }
 }
 

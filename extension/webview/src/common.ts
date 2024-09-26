@@ -58,6 +58,7 @@ export interface IContextInfo {
     frame: number,
     conversation: number,
     dns: number,
+    statistic: any
 }
 
 export interface IOverviewData {
@@ -112,6 +113,6 @@ export interface CField {
 }
 
 export interface IHttp {
-    head: string,
-    header: string[],
+    req: any,
+    res: any,
 }
