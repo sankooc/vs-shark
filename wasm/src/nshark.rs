@@ -10,7 +10,7 @@ use core::{entry::*, files};
 use js_sys::Uint8Array;
 use wasm_bindgen::prelude::*;
 
-use crate::entity::HttpEntity;
+use crate::entity::{HttpConversation, HttpEntity, WStatistic};
 
 #[wasm_bindgen]
 pub struct WContext {
@@ -326,7 +326,7 @@ impl WContext {
         list.len()
     }
     #[wasm_bindgen]
-    pub fn select_http(&self, start: usize, size: usize,_criteria: Vec<String>) -> Vec<HttpEntity>{
+    pub fn select_http(&self, start: usize, size: usize,_criteria: Vec<String>) -> Vec<HttpConversation>{
         let ctx = self.ctx.context();
         let len =  ctx.get_http().len();
         if start >= len {
@@ -341,8 +341,7 @@ impl WContext {
                 break;
             }
             let _http = _list.get(index).unwrap();
-            let aa = _http.as_ref().borrow();
-            list.push(HttpEntity::new(aa));
+            list.push(HttpConversation::new(_http));
             index += 1;
         }
         list
@@ -406,6 +405,12 @@ impl WContext {
             rs.push(TCPConversation{source, dest, count, throughput})
         }
         rs
+    }
+    #[wasm_bindgen]
+    pub fn statistic(&self) -> WStatistic {
+        let ctx = self.ctx.context();
+        let stat = ctx.get_statistc();
+        WStatistic::new(stat)
     }
 }
 

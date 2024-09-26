@@ -227,7 +227,7 @@ impl Visitor for TLSVisitor {
         let packet: PacketContext<TLS> = Frame::create_packet();
         let mut p = packet.get().borrow_mut();
 
-        let _info = frame.get_tcp_info()?;
+        let _info = frame.get_tcp_info(true)?;
         let mut ep = _info.as_ref().borrow_mut();
         let _len = reader.left()?;
         let _reader = reader;

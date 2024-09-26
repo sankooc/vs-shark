@@ -359,7 +359,7 @@ fn handle(frame: &Frame, reader: &Reader, packet: PacketContext<TCP>) -> Result<
     if _len < 1 {
         return Ok((ProtocolData::TCP(packet), "none"));
     }
-    let _info = frame.get_tcp_info()?;
+    let _info = frame.get_tcp_info(true)?;
     let ep = _info.as_ref().borrow_mut();
     match &ep._seg_type {
         TCPPAYLOAD::TLS => {
