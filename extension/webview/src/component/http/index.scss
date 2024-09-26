@@ -1,0 +1,18 @@
+#http-page {
+    padding: 3rem;
+    .p-panel{
+        border: 1px solid #555;
+    }
+    .p-panel-header{
+        background-color: indianred;
+        flex-direction: row-reverse;
+    }
+    .p-panel-content{
+        padding: 30px;
+    }
+}
+.head-card>.p-card-body>.p-card-content {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+}

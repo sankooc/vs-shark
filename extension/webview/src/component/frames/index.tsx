@@ -66,7 +66,7 @@ function FrameList() {
     switch(item.status){
       case 'deactive':
         return item.status
-      case 'reset':
+      case 'errordata':
           return 'errdata';
       default: {
         return (item.protocol || '').toLowerCase();

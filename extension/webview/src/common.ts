@@ -110,3 +110,8 @@ export interface CField {
     summary: string,
     children?: CField[],
 }
+
+export interface IHttp {
+    head: string,
+    header: string[],
+}

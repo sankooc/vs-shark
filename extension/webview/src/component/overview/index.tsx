@@ -4,13 +4,6 @@ import {emitMessage, onMessage} from '../../connect';
 import { TabView, TabPanel } from 'primereact/tabview';
 import './index.css';
 import { ComMessage, IOverviewData } from "../../common";
-// import {
-//   VSCodeBadge,
-//   VSCodePanels,
-//   VSCodePanelTab,
-//   VSCodePanelView,
-//   VSCodeDivider,
-// } from "@vscode/webview-ui-toolkit/react";
 const bytesFormater = (v) => {
   let h = 0;
   let l = 0;

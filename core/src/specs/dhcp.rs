@@ -79,7 +79,7 @@ impl DHCPOption {
 }
 
 #[derive(Default)]
-enum DHCPExtention {
+pub enum DHCPExtention {
     DEFAULT(Vec<u8>),
     MESSAGETYPE(u8),
     PAD,

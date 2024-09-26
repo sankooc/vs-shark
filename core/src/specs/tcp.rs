@@ -89,14 +89,14 @@ pub struct TCPOption {
     pub data: TCPOptionKind,
 }
 
-pub struct TCPOptionKindBlock {
-    data: Vec<u8>,
-}
+// pub struct TCPOptionKindBlock {
+//     data: Vec<u8>,
+// }
 //
-pub struct TCPTIMESTAMP {
-    sender: u32,
-    reply: u32,
-}
+// pub struct TCPTIMESTAMP {
+//     sender: u32,
+//     reply: u32,
+// }
 pub struct TCPUserTimeout;
 impl TCPUserTimeout {
     fn desc(data: u16) -> String {
@@ -116,9 +116,9 @@ pub enum TCPOptionKind {
     MSS(u16),
     SCALE(u8),
     SACK,
-    TIMESTAMP(TCPTIMESTAMP),
+    TIMESTAMP((u32, u32)),
     USERTIMEOUT(u16),
-    BLOCK(TCPOptionKindBlock),
+    BLOCK(Vec<u8>),
 }
 impl Display for TCPOption {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
@@ -235,7 +235,7 @@ impl TCP {
 pub struct TCPVisitor;
 
 impl TCPVisitor {
-    fn read_option(reader: &Reader, opt: Option<()>) -> Result<PacketContext<TCPOption>> {
+    fn read_option(reader: &Reader, _: Option<()>) -> Result<PacketContext<TCPOption>> {
         let packet: PacketContext<TCPOption> = Frame::create_packet();
         let mut option = packet.get().borrow_mut();
         option.kind = packet.build_lazy(reader, Reader::_read8, TCPOption::kind)?;
@@ -244,8 +244,7 @@ impl TCPVisitor {
                 let len = packet.build_format(reader, Reader::_read8, "Length: {}")?;
                 option.len = len;
                 let raw = reader.slice((len - 2) as usize);
-                let block = TCPOptionKindBlock { data: raw.to_vec() };
-                option.data = TCPOptionKind::BLOCK(block);
+                option.data = TCPOptionKind::BLOCK(raw.to_vec());
             }
             0 => {
                 option.data = TCPOptionKind::EOL;
@@ -273,12 +272,11 @@ impl TCPVisitor {
                     10 => {
                         let sender = packet.build_format(reader, Reader::_read32_be, "sender: {}")?;
                         let reply = packet.build_format(reader, Reader::_read32_be, "reply: {}")?;
-                        option.data = TCPOptionKind::TIMESTAMP(TCPTIMESTAMP { sender, reply })
+                        option.data = TCPOptionKind::TIMESTAMP((sender, reply))
                     }
                     _ => {
                         let raw = reader.slice((len - 2) as usize);
-                        let block = TCPOptionKindBlock { data: raw.to_vec() };
-                        option.data = TCPOptionKind::BLOCK(block);
+                        option.data = TCPOptionKind::BLOCK(raw.to_vec());
                     }
                 }
             }

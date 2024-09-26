@@ -9,18 +9,18 @@ use anyhow::Result;
 
 use super::ProtocolData;
 
-struct Request {
+pub struct Request {
     method: String,
     path: String,
     version: String,
 }
-struct Response {
+pub struct Response {
     version: String,
     code: String,
     status: String,
 }
 #[derive(Default)]
-enum HttpType {
+pub enum HttpType {
     #[default]
     NONE,
     REQUEST(Request),
@@ -32,6 +32,15 @@ pub struct HTTP {
     header: Vec<String>,
     head: String,
     _type: HttpType,
+}
+impl HTTP {
+    pub fn head(&self) -> String {
+        self.head.clone()
+    }
+    
+    pub fn header(&self) -> Vec<String> {
+        self.header.clone()
+    }
 }
 impl crate::files::InfoPacket for HTTP {
     fn info(&self) -> String {

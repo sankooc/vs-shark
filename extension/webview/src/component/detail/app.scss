@@ -44,6 +44,7 @@
     overflow-x: hidden;
     white-space: break-spaces;
     word-break: break-all;
+    background-color: gray;
 }
 #detail>.text .asc {
     font-family: $base-family;
@@ -91,4 +92,7 @@ code {
         background-color: darkgoldenrod;
         color: darkblue;
     }
+}
+.detail-tab .p-tabview-panels{
+    padding: 0;
 }

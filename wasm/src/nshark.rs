@@ -10,6 +10,8 @@ use core::{entry::*, files};
 use js_sys::Uint8Array;
 use wasm_bindgen::prelude::*;
 
+use crate::entity::HttpEntity;
+
 #[wasm_bindgen]
 pub struct WContext {
     ctx: Box<Instance>,
@@ -284,14 +286,14 @@ impl WContext {
 
     
     #[wasm_bindgen]
-    pub fn select_frames(&mut self, start: usize, size: usize, protos: Vec<String>) -> FrameResult {
+    pub fn select_frames(&mut self, start: usize, size: usize, criteria: Vec<String>) -> FrameResult {
         let start_ts = self.get_info().start_time;
         let _fs = self.ctx.get_frames();
         let mut total = 0;
         let mut items = Vec::new();
-        if protos.len() > 0 {
+        if criteria.len() > 0 {
             let mut left = size;
-            let _filters = HashSet::from_iter(protos.iter().cloned());
+            let _filters = HashSet::from_iter(criteria.iter().cloned());
             for frame in _fs.iter() {
                 if frame.do_match(&_filters) {
                     total += 1;
@@ -317,6 +319,34 @@ impl WContext {
         FrameResult::new(start, total, items)
     }
 
+    #[wasm_bindgen]
+    pub fn select_http_count(&self, _: Vec<String>) -> usize {
+        let ctx = self.ctx.context();
+        let list = ctx.get_http();
+        list.len()
+    }
+    #[wasm_bindgen]
+    pub fn select_http(&self, start: usize, size: usize,_criteria: Vec<String>) -> Vec<HttpEntity>{
+        let ctx = self.ctx.context();
+        let len =  ctx.get_http().len();
+        if start >= len {
+
+        }
+        let f = cmp::min(len, start + size);
+        let mut list = Vec::new();
+        let mut index: usize = start;
+        let _list = ctx.get_http();
+        loop {
+            if index >= f {
+                break;
+            }
+            let _http = _list.get(index).unwrap();
+            let aa = _http.as_ref().borrow();
+            list.push(HttpEntity::new(aa));
+            index += 1;
+        }
+        list
+    }
     #[wasm_bindgen]
     pub fn get_aval_protocals(&self) -> Vec<String> {
         let mut set = HashSet::new();

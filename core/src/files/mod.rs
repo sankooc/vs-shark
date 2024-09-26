@@ -5,7 +5,7 @@ use crate::{
     common::{io::AReader, IPPacket, MultiBlock, PortPacket, Ref2, FIELDSTATUS},
     constants::link_type_mapper,
     specs::{
-        dns::{RecordResource, DNS}, tcp::{TCPOptionKind, ACK, TCP}, tls::TLSHandshake, ProtocolData
+        dns::{RecordResource, DNS}, http::HTTP, tcp::{TCPOptionKind, ACK, TCP}, tls::TLSHandshake, ProtocolData
     },
 };
 use chrono::{DateTime, Utc};
@@ -362,7 +362,9 @@ pub enum TCPPAYLOAD {
     #[default]
     NONE,
     TLS,
+    // HTTP,
 }
+
 #[derive(Default)]
 pub struct Endpoint {
     pub host: String,
@@ -521,6 +523,7 @@ pub struct TCPConnection {
     pub throughput: Cell<u32>,
     pub ep1: Ref2<Endpoint>,
     pub ep2: Ref2<Endpoint>,
+    // pub http_connections: 
 }
 
 pub struct TCPInfo {
@@ -751,6 +754,9 @@ impl Frame {
             ProtocolData::ARP(packet) => {
                 self.update_ip(packet._clone_obj());
             }
+            ProtocolData::HTTP(packet) => {
+                self.ctx.add_http(packet._clone_obj());
+            }
             // ProtocolData::TCP(packet) => {
             //     // self.add_tcp(packet._clone_obj());
             // }
@@ -768,9 +774,16 @@ pub struct Context {
     info: RefCell<FileInfo>,
     pub dns: RefCell<Vec<Ref2<RecordResource>>>,
     conversation_map: RefCell<HashMap<String, TCPConnection>>,
+    http_list: RefCell<Vec<Ref2<HTTP>>>,
 }
 
 impl Context {
+    pub fn get_http(&self) -> Ref<Vec<Ref2<HTTP>>>{
+        self.http_list.borrow()
+    }
+    pub fn add_http(&self, t: Ref2<HTTP>){
+        self.http_list.borrow_mut().push(t);
+    }
     pub fn add_dns_record(&self, rr: Ref2<RecordResource>) {
         self.dns.borrow_mut().push(rr);
     }
@@ -826,6 +839,7 @@ impl Instance {
             count: Cell::new(1),
             dns: RefCell::new(Vec::new()),
             info: RefCell::new(FileInfo { file_type: ftype, ..Default::default() }),
+            http_list: RefCell::new(Vec::new()),
             conversation_map: RefCell::new(HashMap::new()),
         };
         Instance { ctx: Rc::new(ctx), frames: RefCell::new(Vec::new()) }

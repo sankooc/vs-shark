@@ -12,6 +12,8 @@ import Overview from './overview';
 import FrameList from './frames';
 import TCPList from './tcp';
 import DNSList from './dns';
+import HttpComponnet from './http';
+import { BreadCrumb } from 'primereact/breadcrumb';
 
 
 const itemRenderer = (item, options) => {
@@ -55,6 +57,7 @@ const Main = () => {
     _start = Date.now();
     emitMessage(new ComMessage('ready', 'demo'));
   }, []);
+  
 
   const convert = (): MenuItem[] => {
     const mitems: MenuItem[] = [];
@@ -79,18 +82,23 @@ const Main = () => {
         return <TCPList items={conversations}/>
       case 'dns':
         return <DNSList items={dnsRecords}/>
+      case 'http':
+        return <DNSList items={dnsRecords}/>
     }
     return <Overview/>;
   };
   if (status == 0) {
-    return <Loading />
+    return <HttpComponnet />
   }
   if (status == 2) {
     return <ErrPage />
   }
   const navItems = convert();
+  const items = [{ label: select }];
+    const home = { icon: 'pi pi-home' }
   return (<>
     <div className="card h-full">
+      {/* <BreadCrumb model={items} home={home} /> */}
       <div className="flex flex-row h-full">
         <div className="w-full flex flex-grow-1">
           {buildPage()}

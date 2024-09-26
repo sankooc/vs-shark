@@ -1,6 +1,6 @@
 import init, { load, WContext, FrameInfo, Field } from 'rshark';
 import { pick } from 'lodash';
-import { ComLog, ComMessage, IContextInfo, OverviewSource, IOverviewData, IFrameInfo, Pagination, IResult, IConversation, IDNSRecord, CField, HexV } from './common';
+import { ComLog, ComMessage, IContextInfo, OverviewSource, IOverviewData, IFrameInfo, Pagination, IResult, IConversation, IDNSRecord, CField, HexV, IHttp } from './common';
 
 
 const convert = (frames: FrameInfo[]): any => {
@@ -230,6 +230,12 @@ export abstract class PCAPClient {
   _fields(index: number): void {
     this.emitMessage(new ComMessage('_fields', this.getFields(index)));
   }
+  http(): IHttp [] {
+    return this.ctx.select_http(0, 1000, []).map(f => pick(f, 'head', 'header'));
+  }
+  _http(): void {
+    this.emitMessage(new ComMessage('_http', this.http()));
+  }
   handle(msg: ComMessage<any>) {
     if (!msg) return;
     const { type, body } = msg
@@ -267,6 +273,9 @@ export abstract class PCAPClient {
           break;
         case 'fields':
           this._fields(body);
+          break;
+        case 'http':
+          this._http();
           break;
         case 'hex':
           this._hex(body.index, body.key);

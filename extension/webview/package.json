@@ -21,7 +21,6 @@
     "primereact": "^10.7.0",
     "react": "^18.3.0",
     "react-dom": "^18.3.0",
-    "react-hexviewer-ts": "^0.2.3",
     "rshark": "file:../../wasm/pkg"
   },
   "devDependencies": {
