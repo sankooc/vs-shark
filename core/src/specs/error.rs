@@ -4,7 +4,7 @@ use anyhow::Result;
 use pcap_derive::Packet;
 
 use crate::{
-    common::io::Reader, files::{Frame, PacketBuilder, PacketContext}
+    common::{io::Reader, FIELDSTATUS}, files::{Frame, PacketBuilder, PacketContext}
 };
 use crate::common::io::AReader;
 
@@ -25,8 +25,8 @@ impl crate::files::InfoPacket for Error {
         self.to_string()
     }
 
-    fn status(&self) -> String {
-        "reset".into()
+    fn status(&self) -> FIELDSTATUS {
+        FIELDSTATUS::ERROR
     }
 }
 impl Error {

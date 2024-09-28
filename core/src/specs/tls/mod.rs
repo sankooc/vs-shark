@@ -3,7 +3,7 @@ pub mod extension;
 pub mod handshake;
 use std::{fmt::Formatter, ops::DerefMut, rc::Rc};
 
-use crate::common::{io::AReader, Ref2};
+use crate::common::{io::AReader, FIELDSTATUS};
 use anyhow::Result;
 use handshake::{HandshakeProtocol, HandshakeType};
 use pcap_derive::{Packet, Packet2};
@@ -30,8 +30,8 @@ impl crate::files::InfoPacket for TLS {
         }
     }
 
-    fn status(&self) -> String {
-        "info".into()
+    fn status(&self) -> FIELDSTATUS {
+        FIELDSTATUS::INFO
     }
 }
 #[derive(Default, Packet2)]
@@ -227,7 +227,7 @@ impl Visitor for TLSVisitor {
         let packet: PacketContext<TLS> = Frame::create_packet();
         let mut p = packet.get().borrow_mut();
 
-        let _info = frame.get_tcp_info()?;
+        let _info = frame.get_tcp_info(true)?;
         let mut ep = _info.as_ref().borrow_mut();
         let _len = reader.left()?;
         let _reader = reader;

@@ -1,7 +1,6 @@
 use crate::common::FileType;
 use crate::common::io::{AReader, SliceReader};
 use anyhow::Result;
-use log::info;
 
 use super::Instance;
 
@@ -32,7 +31,7 @@ fn parse_enhance(ctx: &Instance, data: &[u8]) -> Result<()>{
     if _mod > 0 {
         reader._move((4 - _mod) as usize);
     }
-    let rss = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+    let _ = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
         ctx.create(raw.to_vec(), ts, captured, origin);
     }));
     // ctx.create(raw.to_vec(), ts, captured, origin);

@@ -44,6 +44,7 @@
     overflow-x: hidden;
     white-space: break-spaces;
     word-break: break-all;
+    background-color: gray;
 }
 #detail>.text .asc {
     font-family: $base-family;
@@ -56,8 +57,9 @@
     display: block;
     text-align: left;
     flex-shrink: 0;
-    pre{
+    span{
         display: inline;
+        height: 1.5rem;
         background-color: darkgoldenrod;
         color: darkblue;
     }
@@ -73,7 +75,7 @@
         color: darkblue;
     }
 }
-code {
+#detail code {
     text-align: center;
     margin: 0;
     padding: 0;
@@ -82,7 +84,7 @@ code {
     line-height: 1.5rem;
     cursor: pointer;
     font-family: $base-family;
-    &:hover{
+    &:hover {
         color: var(--vscode-list-focusOutline);
         background-color: var(--vscode-list-focusForeground);
     }
@@ -90,4 +92,7 @@ code {
         background-color: darkgoldenrod;
         color: darkblue;
     }
+}
+.detail-tab .p-tabview-panels{
+    padding: 0;
 }

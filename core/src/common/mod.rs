@@ -5,7 +5,7 @@ use std::cell::RefCell;
 use std::net::{Ipv4Addr, Ipv6Addr};
 use std::fmt;
 use std::rc::Rc;
-
+pub mod concept;
 pub mod io;
 
 pub type Ref2<T> = Rc<RefCell<T>>;
@@ -157,4 +157,10 @@ pub enum FileType {
     PCAPNG,
     #[default]
     NONE,
+}
+
+pub enum FIELDSTATUS {
+    INFO,
+    WARN,
+    ERROR,
 }

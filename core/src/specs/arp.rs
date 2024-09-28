@@ -4,7 +4,7 @@ use anyhow::Result;
 use pcap_derive::Packet2;
 
 use crate::{
-    common::{IPPacket, IPv4Address, MacAddress},
+    common::{IPPacket, IPv4Address, MacAddress, FIELDSTATUS},
     constants::{arp_hardware_type_mapper, arp_oper_type_mapper, etype_mapper},
     files::{Frame, PacketBuilder, PacketContext, PacketOpt},
 };
@@ -54,8 +54,8 @@ impl crate::files::InfoPacket for ARP {
         }
     }
 
-    fn status(&self) -> String {
-        "info".into()
+    fn status(&self) -> FIELDSTATUS {
+        FIELDSTATUS::INFO
     }
 }
 impl ARP {

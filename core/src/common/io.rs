@@ -32,8 +32,6 @@ impl IO {
     }
 }
 
-const DER_SEQUENCE: u8 = 0x30;
-
 #[derive(Clone)]
 pub struct SliceReader<'a> {
     _data: Option<&'a [u8]>,
@@ -331,7 +329,7 @@ pub trait AReader:Clone {
         None
     }
     fn read_tlv(&self) -> Result<usize> {
-        let a = self._get_data()[self.cursor()];
+        // let a = self._get_data()[self.cursor()];
         // if a != DER_SEQUENCE {
         //     bail!("not_der_format");
         // }

@@ -2,6 +2,7 @@ use std::fmt::Formatter;
 
 use anyhow::{bail, Result};
 use pcap_derive::{Packet2, NINFO};
+use crate::common::FIELDSTATUS;
 
 use crate::{
     common::{io::Reader, Description, IPPacket, IPv4Address, TtypePacket},

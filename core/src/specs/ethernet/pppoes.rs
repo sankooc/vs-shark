@@ -9,6 +9,7 @@ use crate::{
 use crate::common::io::AReader;
 use anyhow::{Ok, Result};
 use std::fmt::Display;
+use crate::common::FIELDSTATUS;
 
 #[derive(Default, Packet2, NINFO)]
 pub struct PPPoESS {

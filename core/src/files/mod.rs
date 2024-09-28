@@ -2,23 +2,37 @@ pub mod pcap;
 pub mod pcapng;
 
 use crate::{
-    common::{io::AReader, IPPacket, MultiBlock, PortPacket, Ref2},
+    common::{
+        concept::{HttpRequest, Statistic},
+        io::AReader,
+        IPPacket, MultiBlock, PortPacket, Ref2, FIELDSTATUS,
+    },
     constants::link_type_mapper,
     specs::{
-        dns::{RecordResource, DNS}, tcp::{TCPOptionKind, ACK, TCP}, tls::{handshake::HandshakeType, TLSHandshake}, ProtocolData
+        dns::{RecordResource, DNS},
+        http::{HttpType, HTTP},
+        tcp::{TCPOptionKind, ACK, TCP},
+        tls::TLSHandshake,
+        ProtocolData,
     },
 };
 use chrono::{DateTime, Utc};
 use enum_dispatch::enum_dispatch;
-use log::{error, info};
+use log::error;
 use std::{
-    borrow::Borrow, cell::{Cell, Ref, RefCell}, collections::{HashMap, HashSet}, fmt::Display, ops::{Deref, Range}, panic::UnwindSafe, process, rc::Rc, time::{Duration, UNIX_EPOCH}
+    borrow::Borrow,
+    cell::{Cell, Ref, RefCell},
+    collections::{HashMap, HashSet},
+    fmt::Display,
+    ops::{Deref, Range},
+    rc::Rc,
+    time::{Duration, UNIX_EPOCH},
 };
 
 use anyhow::{bail, Result};
 // pub mod pcapng;
-use crate::common::{FileInfo, FileType};
 use crate::common::io::Reader;
+use crate::common::{FileInfo, FileType};
 
 #[derive(Default, Clone)]
 pub struct Field {
@@ -84,8 +98,7 @@ pub fn date_str(ts: u64) -> String {
 pub trait Element {
     fn summary(&self) -> String;
     fn get_fields(&self) -> Vec<Field>;
-    // fn add_next(&mut self, ele: Box<dyn Element>);
-    fn status(&self) -> String;
+    fn status(&self) -> FIELDSTATUS;
     fn info(&self) -> String;
 }
 
@@ -97,7 +110,6 @@ pub trait FieldBuilder<T> {
     fn build(&self, t: &T) -> Field;
     fn data(&self) -> Rc<Vec<u8>>;
 }
-
 
 pub type PacketOpt = usize;
 
@@ -132,7 +144,13 @@ impl<T> PacketContext<T> {
         rs
     }
 }
-
+fn _convert(f_status: FIELDSTATUS) -> &'static str {
+    match f_status {
+        FIELDSTATUS::WARN => "deactive",
+        FIELDSTATUS::ERROR => "errordata",
+        _ => "info",
+    }
+}
 impl<T> Element for PacketContext<T>
 where
     T: PacketBuilder + InfoPacket,
@@ -143,14 +161,11 @@ where
     fn get_fields(&self) -> Vec<Field> {
         self.get_fields()
     }
-    // fn get_protocol(&self) -> Protocol {
-    //     self.get().borrow().get_protocol()
-    // }
     fn info(&self) -> String {
         self.get().borrow().info()
     }
 
-    fn status(&self) -> String {
+    fn status(&self) -> FIELDSTATUS {
         self.get().borrow().status()
     }
 }
@@ -196,7 +211,7 @@ where
         self._build(reader, start, size, content);
         val
     }
-    
+
     pub fn build_backward(&self, reader: &Reader, step: usize, content: String) {
         let cur = reader.cursor();
         if cur < step {
@@ -360,7 +375,9 @@ pub enum TCPPAYLOAD {
     #[default]
     NONE,
     TLS,
+    // HTTP,
 }
+
 #[derive(Default)]
 pub struct Endpoint {
     pub host: String,
@@ -372,6 +389,7 @@ pub struct Endpoint {
     _ack: u32,
     _checksum: u16,
     mss: u16,
+    _request: Option<HttpRequest>,
     pub handshake: Vec<Rc<TLSHandshake>>,
     _seg: Option<Vec<u8>>,
     _seg_len: usize,
@@ -382,6 +400,17 @@ impl Endpoint {
     fn new(host: String, port: u16) -> Self {
         Self { host, port, ..Default::default() }
     }
+
+    // fn add_or_update_http(&mut self, http: Ref2<HTTP>) -> Option<HttpRequest>{
+    //     let reff = http.deref().borrow();
+    //     match &reff._type() {
+    //         HttpType::REQUEST(_) => {
+    //             self._request = Some();
+    //         }
+    //         HttpType::RESPONSE(_) => {}
+    //         _ => None
+    //     }
+    // }
     pub fn segment_count(&mut self) -> usize {
         self._seg_len
     }
@@ -427,7 +456,7 @@ impl Endpoint {
         self._seg_type = TCPPAYLOAD::NONE;
     }
 
-    fn update(&mut self, tcp: &TCP, frame: &Frame, data: &[u8]) -> TCPDetail {
+    fn update(&mut self, tcp: &TCP, _: &Frame, _: &[u8]) -> TCPDetail {
         let sequence = tcp.sequence;
         if self._checksum == tcp.crc {
             self.clear_segment();
@@ -519,6 +548,7 @@ pub struct TCPConnection {
     pub throughput: Cell<u32>,
     pub ep1: Ref2<Endpoint>,
     pub ep2: Ref2<Endpoint>,
+    // pub http_connections:
 }
 
 pub struct TCPInfo {
@@ -587,7 +617,7 @@ pub trait PacketBuilder {
 }
 pub trait InfoPacket {
     fn info(&self) -> String;
-    fn status(&self) -> String;
+    fn status(&self) -> FIELDSTATUS;
 }
 
 #[derive(Default)]
@@ -650,6 +680,19 @@ impl Frame {
             }
         }
     }
+
+    pub fn get_ip_address(&self) -> (String, String) {
+        let ip = self.get_ip();
+        let _ip = ip.deref().borrow();
+        (_ip.source_ip_address(), _ip.target_ip_address())
+    }
+    pub fn get_port(&self) -> (u16, u16) {
+        let sum = self.summary.borrow();
+        let tcp = sum.tcp.clone().expect("no_tcp_layer");
+        let _tcp = tcp.deref().borrow();
+        (_tcp.source_port, _tcp.target_port)
+    }
+    
     pub fn update_host(&self, src: &str, dst: &str) {
         let mut s = self.summary.borrow_mut();
         s.source = src.into();
@@ -726,14 +769,19 @@ impl Frame {
             fields: RefCell::new(Vec::new()),
         }
     }
-    pub fn get_tcp_info(&self) -> Result<Ref2<Endpoint>> {
+    pub fn get_tcp_info(&self, flag:bool) -> Result<Ref2<Endpoint>> {
         let sum = self.summary.borrow();
         let _ip = sum.ip.clone().expect("no_ip_layer");
         let _tcp = sum.tcp.clone().expect("no_tcp_layer");
         let refer = _ip.deref().borrow();
         let tcp_refer = _tcp.deref().borrow();
         drop(sum);
-        self.ctx.get_tcp(refer.deref(), tcp_refer.deref())
+        self.ctx.get_tcp(refer.deref(), tcp_refer.deref(), flag)
+    }
+    fn _create_http_request(&self) -> HttpRequest {
+        let (source,dest) = self.get_ip_address();
+        let (srp, dsp) = self.get_port();
+        HttpRequest::new(source, dest, srp, dsp)
     }
     pub fn add_element(&self, ele: ProtocolData) {
         let mut mref = self.summary.borrow_mut();
@@ -749,9 +797,38 @@ impl Frame {
             ProtocolData::ARP(packet) => {
                 self.update_ip(packet._clone_obj());
             }
-            ProtocolData::TCP(packet) => {
-                // self.add_tcp(packet._clone_obj());
+            ProtocolData::HTTP(packet) => {
+                let http = packet._clone_obj();
+                let _http = http.deref().borrow();
+                let __type = _http._type();
+                match __type {
+                    HttpType::REQUEST(request) => {
+                        let ep = self.get_tcp_info(true).unwrap();
+                        let mut _ep = ep.deref().borrow_mut();
+                        let mut rq = self._create_http_request();
+                        rq.set_request(http.clone(), request);
+                        _ep._request = Some(rq);
+                    }
+                    HttpType::RESPONSE(response) => {
+                        let ep = self.get_tcp_info(false).unwrap();
+                        let mut _ep = ep.deref().borrow_mut();
+                        let request = _ep._request.take();
+                        match request {
+                            Some(mut req) => {
+                                req.set_response(http.clone(),response);
+                                self.ctx.add_http(req);
+                            }
+                            _ => {}
+                        }
+                    }
+                    _ => {}
+                }
+                self.ctx.http_statistic(http.clone());
+                drop(_http);
             }
+            // ProtocolData::TCP(packet) => {
+            //     // self.add_tcp(packet._clone_obj());
+            // }
             ProtocolData::DNS(packet) => {
                 self.add_dns(packet._clone_obj());
             }
@@ -766,9 +843,43 @@ pub struct Context {
     info: RefCell<FileInfo>,
     pub dns: RefCell<Vec<Ref2<RecordResource>>>,
     conversation_map: RefCell<HashMap<String, TCPConnection>>,
+    http_list: RefCell<Vec<HttpRequest>>,
+    statistic: RefCell<Statistic>,
 }
 
 impl Context {
+    pub fn get_statistc(&self) -> Ref<Statistic> {
+        self.statistic.borrow()
+    }
+    pub fn get_http(&self) -> Ref<Vec<HttpRequest>> {
+        self.http_list.borrow()
+    }
+    pub fn http_statistic(&self, t: Ref2<HTTP>) {
+        let reff = t.as_ref().borrow();
+        let ref_statis = self.statistic.borrow_mut();
+        match reff._type() {
+            HttpType::REQUEST(req) => {
+                ref_statis.http_method.inc(&req.method.clone());
+            }
+            HttpType::RESPONSE(res) => {
+                ref_statis.http_status.inc(&res.code);
+            }
+            _ => {}
+        }
+        match &reff.content_type {
+            Some(ct) => {
+                ref_statis.http_type.inc(ct);
+            }
+            _ => {}
+        }
+        drop(ref_statis);
+        drop(reff);
+    }
+    pub fn add_http(&self, req: HttpRequest) {
+        let mut list = self.http_list.borrow_mut();
+        list.push(req);
+        drop(list);
+    }
     pub fn add_dns_record(&self, rr: Ref2<RecordResource>) {
         self.dns.borrow_mut().push(rr);
     }
@@ -805,11 +916,16 @@ impl Context {
         };
         conn.update(arch, packet, frame, data)
     }
-    fn get_tcp(&self, ip: &dyn IPPacket, packet: &TCP) -> Result<Ref2<Endpoint>> {
+    fn get_tcp(&self, ip: &dyn IPPacket, packet: &TCP, flag: bool) -> Result<Ref2<Endpoint>> {
         let (key, arch) = Context::tcp_key(ip, packet);
         let mut _map = self.conversation_map.borrow_mut();
         let conn = _map.get(&key).expect("no_tcp_connection");
-        let ep = conn.get_endpoint(arch);
+        let ep;
+        if flag {
+            ep = conn.get_endpoint(arch);
+        } else {
+            ep = conn.get_endpoint(!arch);
+        }
         drop(_map);
         Ok(ep)
     }
@@ -824,7 +940,9 @@ impl Instance {
             count: Cell::new(1),
             dns: RefCell::new(Vec::new()),
             info: RefCell::new(FileInfo { file_type: ftype, ..Default::default() }),
+            http_list: RefCell::new(Vec::new()),
             conversation_map: RefCell::new(HashMap::new()),
+            statistic: RefCell::new(Statistic::new()),
         };
         Instance { ctx: Rc::new(ctx), frames: RefCell::new(Vec::new()) }
     }

@@ -1,6 +1,6 @@
 import { load, WContext, FrameInfo, Field } from 'rshark';
 import { pick } from 'lodash';
-import { ComLog, ComMessage, IContextInfo, OverviewSource, IOverviewData, IFrameInfo, Pagination, IResult, IConversation, IDNSRecord, CField, HexV } from './common';
+import { ComLog, ComMessage, IContextInfo, OverviewSource, IOverviewData, IFrameInfo, Pagination, IResult, IConversation, IDNSRecord, CField, HexV, IHttp } from './common';
 
 
 const convert = (frames: FrameInfo[]): any => {
@@ -119,15 +119,21 @@ export abstract class PCAPClient {
   }
   init(): void {
     if (!this.ctx && this.data) {
-      this.ctx = load(this.data as Uint8Array);
+      try {
+        this.ctx = load(this.data as Uint8Array);
+        this._info();
+      }catch(e){
+        this.emitMessage(new ComMessage('_error', "failed to open file"));
+      }
     }
-    this._info();
   }
   getInfo(): IContextInfo {
     const frame = this.ctx.get_frames().length;
     const conversation = this.ctx.get_conversations_count();
     const dns = this.ctx.get_dns_count();
-    return { frame, conversation, dns }
+    const statistic = this.ctx.statistic();
+    const http = this.ctx.select_http_count([]);
+    return { frame, conversation, dns, http, statistic:JSON.parse(statistic) }
   }
   _protocols(): void {
     if (this.ready && this.ctx) {
@@ -225,6 +231,22 @@ export abstract class PCAPClient {
   _fields(index: number): void {
     this.emitMessage(new ComMessage('_fields', this.getFields(index)));
   }
+  http(): IHttp [] {
+    const rs = this.ctx.select_http(0, 1000, []).map(f => {
+      const _rs = pick(f, 'req', 'res', 'status', 'method');
+      return {
+        status: _rs.status,
+        method: _rs.method,
+        req: pick(_rs.req, 'host', 'port', 'head', 'header'),
+        res: pick(_rs.res, 'host', 'port', 'head', 'header'),
+      }
+    });
+
+    return rs;
+  }
+  _http(): void {
+    this.emitMessage(new ComMessage('_http', this.http()));
+  }
   handle(msg: ComMessage<any>) {
     if (!msg) return;
     const { type, body } = msg
@@ -262,6 +284,9 @@ export abstract class PCAPClient {
           break;
         case 'fields':
           this._fields(body);
+          break;
+        case 'http':
+          this._http();
           break;
         case 'hex':
           this._hex(body.index, body.key);

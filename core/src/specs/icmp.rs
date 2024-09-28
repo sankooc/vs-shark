@@ -2,6 +2,7 @@ use std::fmt::Formatter;
 
 use anyhow::Result;
 use pcap_derive::{Packet, Packet2, NINFO};
+use crate::common::FIELDSTATUS;
 
 use crate::{
     common::io::Reader, constants::icmpv6_type_mapper, files::{Frame, PacketBuilder, PacketContext, PacketOpt}

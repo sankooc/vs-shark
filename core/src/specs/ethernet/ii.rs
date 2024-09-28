@@ -11,6 +11,7 @@ use crate::common::io::AReader;
 use anyhow::{Ok, Result};
 use std::cell::RefCell;
 use std::fmt::Display;
+use crate::common::FIELDSTATUS;
 
 use super::get_next_from_type;
 

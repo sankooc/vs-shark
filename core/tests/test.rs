@@ -2,7 +2,6 @@
 mod unit {
     use log::info;
 
-    use super::*;
     use core::{common::{io::Reader, FileType}, files::{Field, Frame, Instance, PacketContext, Visitor}, specs::{self, ProtocolData}};
     use std::{fs, rc::Rc, str::from_utf8};
     fn build_reader(name: &str) -> Vec<u8> {

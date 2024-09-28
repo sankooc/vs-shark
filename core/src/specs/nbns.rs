@@ -1,13 +1,16 @@
-        //https://datatracker.ietf.org/doc/html/rfc1001
-        //https://datatracker.ietf.org/doc/html/rfc1002
-        //https://blog.csdn.net/CodingMen/article/details/105056639
-        use std::fmt::{Display, Formatter};
+//https://datatracker.ietf.org/doc/html/rfc1001
+//https://datatracker.ietf.org/doc/html/rfc1002
+//https://blog.csdn.net/CodingMen/article/details/105056639
+use std::fmt::{Display, Formatter};
 
-use pcap_derive::{Packet, Packet2, NINFO};
+use crate::common::FIELDSTATUS;
 use anyhow::Result;
+use pcap_derive::{Packet2, NINFO};
 
 use crate::{
-    common::{io::Reader, IPPacket, IPv4Address, MacAddress, MultiBlock}, constants::{dns_class_mapper, etype_mapper, nbns_type_mapper}, files::{Frame, PacketBuilder, PacketContext, PacketOpt}
+    common::{io::Reader, MultiBlock},
+    constants::{dns_class_mapper, nbns_type_mapper},
+    files::{Frame, PacketBuilder, PacketContext, PacketOpt},
 };
 
 use super::ProtocolData;
@@ -20,7 +23,7 @@ pub struct NBNS {
     answer_rr: u16,
     authority_rr: u16,
     additional_rr: u16,
-    questions_ref: MultiBlock<Questions>,
+    // questions_ref: MultiBlock<Questions>,
     // answers_ref: Option<Answers>,
     // authorities_ref: Option<Authority>,
 }
@@ -31,19 +34,14 @@ impl std::fmt::Display for NBNS {
     }
 }
 impl NBNS {
-    fn _create(
-        reader: &Reader,
-        packet: &PacketContext<Self>,
-        p: &mut std::cell::RefMut<Self>,
-        _: Option<PacketOpt>,
-    ) -> Result<()> {
+    fn _create(reader: &Reader, packet: &PacketContext<Self>, p: &mut std::cell::RefMut<Self>, _: Option<PacketOpt>) -> Result<()> {
         p.transaction_id = packet.build_format(reader, Reader::_read16_be, "Transaction ID: {}")?;
         p.flag = packet.build_format(reader, Reader::_read16_be, "Flags: {}")?;
         p.questions = packet.build_format(reader, Reader::_read16_be, "Questions: {}")?;
         p.answer_rr = packet.build_format(reader, Reader::_read16_be, "Answer RRs: {}")?;
         p.authority_rr = packet.build_format(reader, Reader::_read16_be, "Authority RRs: {}")?;
         p.additional_rr = packet.build_format(reader, Reader::_read16_be, "Additional RRs: {}")?;
-    Ok(())
+        Ok(())
     }
 }
 
@@ -70,7 +68,7 @@ impl Question {
     fn class(q: &Question) -> String {
         format!("Class: {} ({:#06x})", dns_class_mapper(q.class), q.class)
     }
-    fn _create(reader: &Reader, packet: &PacketContext<Self>, p: &mut std::cell::RefMut<Self>, _:Option<PacketOpt>) -> Result<()> {
+    fn _create(reader: &Reader, packet: &PacketContext<Self>, p: &mut std::cell::RefMut<Self>, _: Option<PacketOpt>) -> Result<()> {
         p.name = packet.build_lazy(reader, Reader::_read_netbios_string, Question::name)?;
         p._type = packet.build_lazy(reader, Reader::_read16_be, Question::_type)?;
         p.class = packet.build_lazy(reader, Reader::_read16_be, Question::class)?;
@@ -89,15 +87,14 @@ impl Display for Questions {
     }
 }
 impl Questions {
-    fn _create(reader: &Reader, packet: &PacketContext<Self>, p: &mut std::cell::RefMut<Self>, _count:Option<PacketOpt>) -> Result<()> {
+    fn _create(reader: &Reader, packet: &PacketContext<Self>, p: &mut std::cell::RefMut<Self>, _count: Option<PacketOpt>) -> Result<()> {
         let count = _count.unwrap();
         for _ in 0..count {
-           let item = packet.build_packet(reader, Question::create, None, None)?;
-           p.items.push(item);
+            let item = packet.build_packet(reader, Question::create, None, None)?;
+            p.items.push(item);
         }
         Ok(())
     }
-
 }
 pub struct NBNSVisitor;
 

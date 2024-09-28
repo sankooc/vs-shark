@@ -3,7 +3,7 @@ use std::fmt::Formatter;
 use pcap_derive::Packet2;
 
 use crate::{
-    common::io::{AReader, Reader}, files::{Frame, PacketBuilder, PacketContext, PacketOpt}
+    common::{io::{AReader, Reader}, FIELDSTATUS}, files::{Frame, PacketBuilder, PacketContext, PacketOpt}
 };
 use anyhow::Result;
 
@@ -20,8 +20,8 @@ impl crate::files::InfoPacket for SSDP {
         self.to_string()
     }
 
-    fn status(&self) -> String {
-        "info".into()
+    fn status(&self) -> FIELDSTATUS {
+        FIELDSTATUS::INFO
     }
 }
 impl std::fmt::Display for SSDP {

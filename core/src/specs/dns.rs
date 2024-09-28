@@ -7,6 +7,7 @@ use crate::common::io::Reader;
 use crate::common::io::AReader;
 use crate::common::MultiBlock;
 use crate::common::Ref2;
+use crate::common::FIELDSTATUS;
 use crate::common::{IPv4Address, IPv6Address};
 use crate::constants::{dns_class_mapper, dns_type_mapper};
 use crate::files::{DomainService, Frame, PacketBuilder, PacketContext, PacketOpt, Visitor};
@@ -224,7 +225,7 @@ impl RecordResource {
     fn len(p: &RecordResource) -> String {
         format!("Data length: {}", p.len)
     }
-    fn _create(reader: &Reader, packet: &PacketContext<Self>, p: &mut std::cell::RefMut<Self>, _count: Option<usize>) -> Result<()> {
+    fn _create(_: &Reader, _: &PacketContext<Self>, _: &mut std::cell::RefMut<Self>, _count: Option<usize>) -> Result<()> {
         // let count = _count.unwrap();
         // for _ in 0..count {
         //    let item = packet.build_packet(reader, Question::create, None, None)?;

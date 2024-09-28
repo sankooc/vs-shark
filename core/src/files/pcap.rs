@@ -1,4 +1,4 @@
-use crate::common::{FileType};
+use crate::common::FileType;
 use crate::common::io::{AReader, SliceReader};
 use anyhow::Result;
 
@@ -28,7 +28,7 @@ pub fn parse(data: &[u8]) -> Result<Instance> {
         let captured = reader.read32(false)?;
         let origin = reader.read32(false)?;
         let raw = reader.slice(origin as usize);
-        let rss = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        let _ = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
             ctx.create(raw.to_vec(), ts, captured, origin)
         }));
     }

@@ -91,8 +91,8 @@ fn impl_ninfo_macro(ast: &syn::DeriveInput) -> TokenStream {
                 self.to_string()
             }
             
-            fn status(&self) -> String {
-                "info".into()
+            fn status(&self) -> FIELDSTATUS {
+                FIELDSTATUS::INFO
             }
         }
     };

@@ -1,29 +1,25 @@
-use std::fmt::Display;
+// #[derive(Default, Packet)]
+// struct Ethernet {
+//     pub protocol: Protocol,
+//     pub len: u16,
+//     pub ptype: u16,
+// }
 
-use pcap_derive::Packet;
+// impl Ethernet {
+//     fn _info(&self) -> String {
+//         return self.to_string()
+//     }
+//     fn _summary(&self) -> String {
+//         return self.to_string()
+//     }
+// }
 
-#[derive(Default, Packet)]
-struct Ethernet {
-    protocol: Protocol,
-    len: u16,
-    ptype: u16,
-}
-
-impl Ethernet {
-    fn _info(&self) -> String {
-        return self.to_string()
-    }
-    fn _summary(&self) -> String {
-        return self.to_string()
-    }
-}
-
-impl Display for Ethernet {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        f.write_str("ousize")?;
-        Ok(())
-    }
-}
+// impl Display for Ethernet {
+//     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+//         f.write_str("ousize")?;
+//         Ok(())
+//     }
+// }
 #[derive(Default, Debug, Copy, Clone)]
 pub enum Protocol {
     ETHERNET,

@@ -1,13 +1,10 @@
-use std::{cmp, ops::Range, path::Display, str::from_utf8};
+use std::{ops::Range, str::from_utf8};
 
 use crate::{
     common::io::{AReader, Reader}, constants::oid_map_mapper, files::PacketContext
 };
 use anyhow::{bail, Result};
 
-trait Decoder {
-    fn decode(reader: &Reader);
-}
 
 pub const BER_SEQUENCE: u8 = 0x30;
 pub const BER_SEQUENCE_OF: u8 = 0x0a;
@@ -26,8 +23,6 @@ pub const BER_GENERALIZED_TIME: u8 = 0x18;
 // pub enum BER_TYPE {
 //     BER_SEQUENCE(30u8),
 // }
-struct DER {}
-
 pub struct TLV;
 impl TLV {
     pub fn _read_len(reader: &Reader) -> Result<usize> {
@@ -198,11 +193,11 @@ pub trait INT {
 
 pub fn parse(_type: u8, data: &[u8]) -> anyhow::Result<TLVOBJ> {
     match _type {
-        0x17 => Ok(TLVOBJ::UTC_TIME(from_utf8(data)?.into())),
-        0x06 => Ok(TLVOBJ::OBJECT_IDENTIFIER(to_oid(data))),
+        0x17 => Ok(TLVOBJ::UTCTime(from_utf8(data)?.into())),
+        0x06 => Ok(TLVOBJ::ObjectIdentifier(to_oid(data))),
         0x02 => Ok(TLVOBJ::INT(data.to_vec())),
-        0x13 => Ok(TLVOBJ::PRINTABLE_STR(from_utf8(data)?.into())),
-        BER_BIT_STRING => Ok(TLVOBJ::BIT_STRING(data.to_vec())),
+        0x13 => Ok(TLVOBJ::PrintableStr(from_utf8(data)?.into())),
+        BER_BIT_STRING => Ok(TLVOBJ::BITString(data.to_vec())),
         _ => Ok(TLVOBJ::UNKNOWN(data.to_vec()))
     }
 }
@@ -211,11 +206,11 @@ pub enum TLVOBJ {
     #[default]
     DEF,
     UNKNOWN(Vec<u8>),
-    OBJECT_IDENTIFIER(String),
+    ObjectIdentifier(String),
     INT(Vec<u8>),
-    PRINTABLE_STR(String),
-    UTC_TIME(String),
-    BIT_STRING(Vec<u8>),
+    PrintableStr(String),
+    UTCTime(String),
+    BITString(Vec<u8>),
 }
 
 
@@ -230,7 +225,7 @@ fn _dis(data: &[u8]) -> String {
 impl TLVOBJ {
     pub fn desc(&self)-> &'static str { 
         match self {
-            TLVOBJ::OBJECT_IDENTIFIER(data) => {
+            TLVOBJ::ObjectIdentifier(data) => {
                 let v = data.clone();
                 let s_slice: &'static str = v.leak();
                 let outc = format!("{} ({})", data, oid_map_mapper(s_slice));
@@ -243,12 +238,12 @@ impl TLVOBJ {
 impl std::fmt::Display  for TLVOBJ {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            TLVOBJ::PRINTABLE_STR(data) => f.write_str(&data),
-            TLVOBJ::OBJECT_IDENTIFIER(data) => f.write_str(&data),
-            TLVOBJ::UTC_TIME(data) => f.write_fmt(format_args!("20{}", data)),
+            TLVOBJ::PrintableStr(data) => f.write_str(&data),
+            TLVOBJ::ObjectIdentifier(data) => f.write_str(&data),
+            TLVOBJ::UTCTime(data) => f.write_fmt(format_args!("20{}", data)),
             TLVOBJ::INT(data) => f.write_str(&_dis(data)),
             TLVOBJ::UNKNOWN(data) => f.write_str(&_dis(data)),
-            TLVOBJ::BIT_STRING(data) => f.write_str(&_dis(data)),
+            TLVOBJ::BITString(data) => f.write_str(&_dis(data)),
             TLVOBJ::DEF => f.write_str(""),
         }
     }

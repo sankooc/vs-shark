@@ -12,6 +12,7 @@ use crate::common::io::AReader;
 use std::fmt::Display;
 use anyhow::{Ok, Result};
 
+use crate::common::FIELDSTATUS;
 use super::get_next_from_type;
 
 #[derive(Default, Packet2, NINFO)]
