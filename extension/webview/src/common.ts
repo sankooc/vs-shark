@@ -54,11 +54,21 @@ export class OverviewSource {
     counts!: number[];
     valMap: any;
 }
+export interface ICase{
+    name: string;
+    value: number;
+}
+export interface IStatistic{
+    http_method: ICase[];
+    http_status: ICase[];
+    http_type: ICase[];
+}
 export interface IContextInfo {
     frame: number,
     conversation: number,
     dns: number,
-    statistic: any
+    http: number,
+    statistic: IStatistic,
 }
 
 export interface IOverviewData {
@@ -112,7 +122,15 @@ export interface CField {
     children?: CField[],
 }
 
+export interface IHttpEnity {
+    host: string,
+    port: number,
+    head: string,
+    header: string[]
+}
 export interface IHttp {
-    req: any,
-    res: any,
+    method: string,
+    status: string,
+    req: IHttpEnity,
+    res: IHttpEnity,
 }

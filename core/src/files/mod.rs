@@ -800,21 +800,22 @@ impl Frame {
             ProtocolData::HTTP(packet) => {
                 let http = packet._clone_obj();
                 let _http = http.deref().borrow();
-                match _http._type() {
-                    HttpType::REQUEST(_) => {
+                let __type = _http._type();
+                match __type {
+                    HttpType::REQUEST(request) => {
                         let ep = self.get_tcp_info(true).unwrap();
                         let mut _ep = ep.deref().borrow_mut();
                         let mut rq = self._create_http_request();
-                        rq.set_request(http.clone());
+                        rq.set_request(http.clone(), request);
                         _ep._request = Some(rq);
                     }
-                    HttpType::RESPONSE(_) => {
+                    HttpType::RESPONSE(response) => {
                         let ep = self.get_tcp_info(false).unwrap();
                         let mut _ep = ep.deref().borrow_mut();
                         let request = _ep._request.take();
                         match request {
                             Some(mut req) => {
-                                req.set_response(http.clone());
+                                req.set_response(http.clone(),response);
                                 self.ctx.add_http(req);
                             }
                             _ => {}

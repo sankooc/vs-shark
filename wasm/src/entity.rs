@@ -1,13 +1,19 @@
-use core::{common::{concept::{Case, HttpRequest, Statistic}, Ref2}, specs::http::HTTP};
-use std::{borrow::Borrow, cell::Ref};
+use core::{
+    common::{
+        concept::{Case, HttpRequest, Statistic},
+        Ref2,
+    },
+    specs::http::HTTP,
+};
+use std::cell::Ref;
 
 // use js_sys::Uint8Array;
 use wasm_bindgen::prelude::*;
 
-
-
 #[wasm_bindgen]
-pub struct HttpConversation{
+pub struct HttpConversation {
+    method: Option<String>,
+    status: Option<String>,
     req: HttpEntity,
     res: HttpEntity,
 }
@@ -21,6 +27,14 @@ impl HttpConversation {
     pub fn res(&self) -> HttpEntity {
         self.res.clone()
     }
+    #[wasm_bindgen(getter)]
+    pub fn method(&self) -> String {
+        self.method.clone().unwrap_or(String::from(""))
+    }
+    #[wasm_bindgen(getter)]
+    pub fn status(&self) -> String {
+        self.status.clone().unwrap_or(String::from(""))
+    }
 }
 #[derive(Clone)]
 #[wasm_bindgen]
@@ -29,16 +43,21 @@ pub struct HttpEntity {
     pub port: u16,
     http: Ref2<HTTP>,
 }
-impl HttpEntity{
-    pub fn new(host: String, port: u16, http: Ref2<HTTP>,) -> Self{
-        Self{host, port, http}
+impl HttpEntity {
+    pub fn new(host: String, port: u16, http: Ref2<HTTP>) -> Self {
+        Self { host, port, http }
     }
 }
 impl HttpConversation {
     pub fn new(http: &HttpRequest) -> Self {
         let req = HttpEntity::new(http.source.clone(), http.srp, http.request.clone().unwrap());
         let res = HttpEntity::new(http.dest.clone(), http.dsp, http.response.clone().unwrap());
-        Self{ req, res }
+        Self {
+            req,
+            res,
+            method: http.method.clone(),
+            status: http.status.clone(),
+        }
     }
 }
 #[wasm_bindgen]
@@ -47,7 +66,7 @@ impl HttpEntity {
     pub fn host(&self) -> String {
         self.host.clone()
     }
-    
+
     #[wasm_bindgen(getter)]
     pub fn head(&self) -> String {
         self.http.as_ref().borrow().head()
@@ -60,24 +79,24 @@ impl HttpEntity {
 #[wasm_bindgen]
 #[derive(Clone)]
 pub struct WCase {
-    label: String,
+    name: String,
     value: usize,
 }
 
 #[wasm_bindgen]
 impl WCase {
     #[wasm_bindgen(getter)]
-    pub fn label(&self) -> String{
-        self.label.clone()
+    pub fn name(&self) -> String {
+        self.name.clone()
     }
     #[wasm_bindgen(getter)]
-    pub fn value(&self) -> usize{
+    pub fn value(&self) -> usize {
         self.value
     }
 }
 impl WCase {
     pub fn new(cs: &Case) -> Self {
-        Self{label: cs.label.clone(), value: cs.value}
+        Self { name: cs.name.clone(), value: cs.value }
     }
 }
 #[wasm_bindgen]
@@ -106,6 +125,6 @@ impl WStatistic {
         let http_method = stat.http_method.to_list().iter().map(|f| WCase::new(f)).collect::<Vec<_>>();
         let http_status = stat.http_status.to_list().iter().map(|f| WCase::new(f)).collect::<Vec<_>>();
         let http_type = stat.http_type.to_list().iter().map(|f| WCase::new(f)).collect::<Vec<_>>();
-        Self{http_method,http_status,http_type}
+        Self { http_method, http_status, http_type }
     }
 }

@@ -42,8 +42,8 @@ impl CupherSuites {
 }
 
 #[derive(Default, Packet2)]
-struct CompressMethod {
-    size: usize,
+pub struct CompressMethod {
+    pub size: usize,
     methods: Vec<u8>,
 }
 impl std::fmt::Display for CompressMethod {
@@ -63,8 +63,8 @@ impl CompressMethod {
 }
 
 #[derive(Default, Packet2)]
-struct ExtenstionPack {
-    size: usize,
+pub struct ExtenstionPack {
+    pub size: usize,
     items: Vec<Ref2<Extenstion>>,
 }
 impl std::fmt::Display for ExtenstionPack {
@@ -477,6 +477,7 @@ impl SEQUENCE for Certificate {
         Ok(())
     }
 }
+#[allow(dead_code)]
 pub struct HandshakeClientHello {
     random: Vec<u8>,
     session: Vec<u8>,
@@ -507,7 +508,7 @@ impl HandshakeClientHello {
         })
     }
 }
-
+#[allow(dead_code)]
 pub struct HandshakeServerHello {
     random: Vec<u8>,
     session: Vec<u8>,

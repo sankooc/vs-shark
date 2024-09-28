@@ -2,9 +2,8 @@ import React, { ReactElement, useEffect, useState } from "react";
 import { MenuItem } from 'primereact/menuitem';
 import { Badge } from 'primereact/badge';
 import { Menu } from 'primereact/menu';
-import { ComMessage, IContextInfo, IConversation, IDNSRecord } from '../common';
+import { ComMessage, IContextInfo, IConversation, IDNSRecord, IHttp } from '../common';
 import Loading from './loading';
-// import Loading from './error/loading';
 import ErrPage from './error';
 import { onMessage, log, emitMessage } from '../connect';
 
@@ -30,20 +29,18 @@ const Main = () => {
   const [meta, setMeta] = useState<IContextInfo>(null);
   const [dnsRecords, setDnsRecords] = useState<IDNSRecord[]>([]);
   const [conversations, setConversations] = useState<IConversation[]>([]);
+  const [https, setHttps] = useState<IHttp[]>([]);
   useEffect(() => {
     onMessage('message', (e: any) => {
       const { type, body, requestId } = e.data;
       switch (type) {
         case '_info': {
-          // console.log(JSON.stringify(body));
           setMeta(body);
           setStatus(1);
-          
-          emitMessage(new ComMessage('http', ''));
           break;
         }
         case '_http': {
-          console.log(JSON.stringify(body));
+          setHttps(body);
           break;
         }
         case '_error': {
@@ -78,6 +75,7 @@ const Main = () => {
     if (meta.frame) addPanel('frame', 'Frame', meta.frame + '', 'pi pi-list');
     if (meta.conversation) addPanel('tcp', 'TCP', meta.conversation + '', 'pi pi-server');
     if (meta.dns) addPanel('dns', 'DNS', meta.dns + '', 'pi pi-address-book');
+    if (meta.http) addPanel('http', 'Http', meta.http + '', 'pi pi-sort-alt');
     return mitems;
   };
   const buildPage = (): ReactElement => {
@@ -89,12 +87,12 @@ const Main = () => {
       case 'dns':
         return <DNSList items={dnsRecords}/>
       case 'http':
-        return <DNSList items={dnsRecords}/>
+        return <HttpComponnet items={https} statistic={meta.statistic} />
     }
     return <Overview/>;
   };
   if (status == 0) {
-    return <HttpComponnet />
+    return <Loading />
   }
   if (status == 2) {
     return <ErrPage />

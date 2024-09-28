@@ -10,7 +10,7 @@ use core::{entry::*, files};
 use js_sys::Uint8Array;
 use wasm_bindgen::prelude::*;
 
-use crate::entity::{HttpConversation};
+use crate::entity::HttpConversation;
 
 #[wasm_bindgen]
 pub struct WContext {

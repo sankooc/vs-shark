@@ -114,7 +114,7 @@ impl crate::files::Visitor for HTTPVisitor {
         let v = packet.build_format(reader, Reader::_read_enter, "{}")?;
         p.head = v.clone();
         let spl: Vec<_> = v.split(" ").collect();
-        if spl.len() == 3 {
+        if spl.len() > 2 {
             let head = *spl.get(0).unwrap();
             let head2 = *spl.get(1).unwrap();
             let head3 = *spl.get(2).unwrap();

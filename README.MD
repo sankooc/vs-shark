@@ -53,17 +53,36 @@ pure pcap/pcapng analyzer
 [PcapViewer](https://sankooc.github.io/pcap/)
 
 ---
-### Install
 
-* vscode
-* manually 
+### Features
 
 
----
-### VSCode Extention
+#### ip packet overview
+
+<img src="assets/overview.png" width="80%"/>
+
+#### ip packet list
 
 <img src="assets/frame.png" width="80%"/>
 
+#### tcp conversations
+
+<img src="assets/conv.png" width="80%"/>
+
+### http connection
+
+<img src="assets/http.png" width="80%"/>
+
+#### dns response
+
+<img src="assets/dns.png" width="80%"/>
+
+---
+
+
+### VSCode Extention
+
+ Install from  [VSCode Marketplace](https://marketplace.visualstudio.com/items?itemName=sankooc.pcapviewer)
 
 ### ZED Extention
 

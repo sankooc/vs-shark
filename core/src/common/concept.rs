@@ -1,8 +1,8 @@
-use std::{cell::RefCell, collections::HashMap, rc::Rc};
+use std::{cell::RefCell, collections::HashMap};
 
 use serde::Serialize;
 
-use crate::{files::Endpoint, specs::http::HTTP};
+use crate::specs::http::{Request, Response, HTTP};
 
 use super::Ref2;
 
@@ -12,19 +12,23 @@ pub struct HttpRequest {
   pub dest: String,
   pub srp: u16,
   pub dsp: u16,
+  pub method: Option<String>,
+  pub status: Option<String>,
   pub request: Option<Ref2<HTTP>>,
   pub response: Option<Ref2<HTTP>>,
 }
 
 impl HttpRequest {
   pub fn new(source: String, dest: String, srp: u16, dsp: u16 ) -> Self {
-    Self{source, dest, srp, dsp, request: None,response:None }
+    Self{source, dest, srp, dsp, ..Default::default()}
   }
-  pub fn set_request(&mut self, http: Ref2<HTTP>){
+  pub fn set_request(&mut self, http: Ref2<HTTP>, req: &Request){
     self.request = Some(http);
+    self.method = Some(req.method.clone());
   }
-  pub fn set_response(&mut self, http: Ref2<HTTP>){
+  pub fn set_response(&mut self, http: Ref2<HTTP>, res: &Response){
     self.response = Some(http);
+    self.status = Some(res.code.clone());
   }
   
 }
@@ -58,7 +62,7 @@ impl Statistic {
 
 #[derive(Serialize)]
 pub struct Case {
-  pub label: String,
+  pub name: String,
   pub value: usize,
 }
 
@@ -82,7 +86,7 @@ impl CaseGroup {
     let bind = self._map.borrow();
     let mut list = Vec::new();
     for (k, v) in bind.iter() {
-      list.push(Case{label: k.into(), value: *v})
+      list.push(Case{name: k.into(), value: *v})
     }
     list
   }
