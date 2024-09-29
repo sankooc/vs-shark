@@ -1,6 +1,6 @@
 use core::{
     common::{
-        concept::{Case, HttpRequest, Statistic},
+        concept::{Case, HttpRequestBuilder, Statistic},
         Ref2,
     },
     specs::http::HTTP,
@@ -14,6 +14,7 @@ use wasm_bindgen::prelude::*;
 pub struct HttpConversation {
     method: Option<String>,
     status: Option<String>,
+    pub ttr: u64,
     req: HttpEntity,
     res: HttpEntity,
 }
@@ -49,12 +50,17 @@ impl HttpEntity {
     }
 }
 impl HttpConversation {
-    pub fn new(http: &HttpRequest) -> Self {
+    pub fn new(http: &HttpRequestBuilder) -> Self {
         let req = HttpEntity::new(http.source.clone(), http.srp, http.request.clone().unwrap());
         let res = HttpEntity::new(http.dest.clone(), http.dsp, http.response.clone().unwrap());
+        let mut ttr = 0;
+        if http.end > http.start {
+            ttr = http.end - http.start; 
+        }
         Self {
             req,
             res,
+            ttr,
             method: http.method.clone(),
             status: http.status.clone(),
         }
@@ -66,7 +72,6 @@ impl HttpEntity {
     pub fn host(&self) -> String {
         self.host.clone()
     }
-
     #[wasm_bindgen(getter)]
     pub fn head(&self) -> String {
         self.http.as_ref().borrow().head()

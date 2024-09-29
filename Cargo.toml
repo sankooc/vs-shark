@@ -5,3 +5,5 @@ members = [
   "core",
   "wasm"
 ]
+[profile.release]
+panic = "unwind"

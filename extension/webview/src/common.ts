@@ -129,8 +129,10 @@ export interface IHttpEnity {
     header: string[]
 }
 export interface IHttp {
+    index?: number,
     method: string,
     status: string,
+    ttr: number,
     req: IHttpEnity,
     res: IHttpEnity,
 }

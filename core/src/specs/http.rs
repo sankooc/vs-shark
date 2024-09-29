@@ -49,6 +49,9 @@ impl HTTP {
     pub fn _type(&self) -> &HttpType {
         &self._type
     }
+    pub fn wrap(&self) {
+        
+    }
 }
 impl crate::files::InfoPacket for HTTP {
     fn info(&self) -> String {

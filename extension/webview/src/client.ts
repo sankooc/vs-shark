@@ -238,6 +238,7 @@ export abstract class PCAPClient {
       return {
         status: _rs.status,
         method: _rs.method,
+        ttr: Number(f.ttr),
         req: pick(_rs.req, 'host', 'port', 'head', 'header'),
         res: pick(_rs.res, 'host', 'port', 'head', 'header'),
       }

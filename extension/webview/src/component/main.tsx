@@ -13,6 +13,7 @@ import TCPList from './tcp';
 import DNSList from './dns';
 import HttpComponnet from './http';
 
+import json from './http/demo.json';
 
 const itemRenderer = (item, options) => {
   return <a className="flex align-items-center px-3 py-2 cursor-pointer" onClick={options.onClick}>
@@ -35,11 +36,13 @@ const Main = () => {
       const { type, body, requestId } = e.data;
       switch (type) {
         case '_info': {
+          // console.log(JSON.stringify(body));
           setMeta(body);
           setStatus(1);
           break;
         }
         case '_http': {
+          // console.log(JSON.stringify(body));
           setHttps(body);
           break;
         }
@@ -58,6 +61,7 @@ const Main = () => {
       }
     });
     _start = Date.now();
+    // setHttps(json);
     emitMessage(new ComMessage('ready', 'demo'));
   }, []);
   
@@ -92,7 +96,7 @@ const Main = () => {
     return <Overview/>;
   };
   if (status == 0) {
-    return <Loading />
+    return <HttpComponnet {...json}/>
   }
   if (status == 2) {
     return <ErrPage />

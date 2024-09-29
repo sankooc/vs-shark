@@ -6,29 +6,41 @@ use crate::specs::http::{Request, Response, HTTP};
 
 use super::Ref2;
 
+pub struct HttpMessage {
+  
+}
+
 #[derive(Default)]
-pub struct HttpRequest {
+pub struct HttpRequestBuilder {
   pub source: String,
   pub dest: String,
   pub srp: u16,
   pub dsp: u16,
+  pub start: u64,
+  pub end: u64,
   pub method: Option<String>,
   pub status: Option<String>,
   pub request: Option<Ref2<HTTP>>,
   pub response: Option<Ref2<HTTP>>,
 }
 
-impl HttpRequest {
+impl HttpRequestBuilder {
   pub fn new(source: String, dest: String, srp: u16, dsp: u16 ) -> Self {
     Self{source, dest, srp, dsp, ..Default::default()}
   }
-  pub fn set_request(&mut self, http: Ref2<HTTP>, req: &Request){
+  pub fn set_request(&mut self, http: Ref2<HTTP>, req: &Request, ts: u64){
     self.request = Some(http);
     self.method = Some(req.method.clone());
+    self.start = ts;
   }
-  pub fn set_response(&mut self, http: Ref2<HTTP>, res: &Response){
+  pub fn set_response(&mut self, http: Ref2<HTTP>, res: &Response, ts: u64) {
     self.response = Some(http);
     self.status = Some(res.code.clone());
+    self.end = ts;
+    // let request = self.request.take();
+    // let req = request?;
+    
+    // Some(())
   }
   
 }

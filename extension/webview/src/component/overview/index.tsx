@@ -135,6 +135,17 @@ function Overview() {
   return (<TabView className="w-full">
     <TabPanel header="Connection">
       <ReactECharts option={option} className="overview" />
+      {/* <Card className="http-statistic-card">
+      <Card>
+        <TypePie items={statistic.http_method} title="HTTP Method Usage" tooltip="http method" />
+      </Card>
+      <Card>
+        <TypePie items={statistic.http_status} title="Web Traffic Response Code Analysis" tooltip="status code" />
+      </Card>
+      <Card>
+        <TypePie items={statistic.http_type} title="Content-Type Distribution" tooltip="resp type" />
+      </Card>
+    </Card> */}
     </TabPanel>
     <TabPanel header="DNS">
     </TabPanel>

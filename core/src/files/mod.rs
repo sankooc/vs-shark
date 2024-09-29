@@ -3,7 +3,7 @@ pub mod pcapng;
 
 use crate::{
     common::{
-        concept::{HttpRequest, Statistic},
+        concept::{HttpRequestBuilder, Statistic},
         io::AReader,
         IPPacket, MultiBlock, PortPacket, Ref2, FIELDSTATUS,
     },
@@ -389,7 +389,7 @@ pub struct Endpoint {
     _ack: u32,
     _checksum: u16,
     mss: u16,
-    _request: Option<HttpRequest>,
+    _request: Option<HttpRequestBuilder>,
     pub handshake: Vec<Rc<TLSHandshake>>,
     _seg: Option<Vec<u8>>,
     _seg_len: usize,
@@ -401,7 +401,7 @@ impl Endpoint {
         Self { host, port, ..Default::default() }
     }
 
-    // fn add_or_update_http(&mut self, http: Ref2<HTTP>) -> Option<HttpRequest>{
+    // fn add_or_update_http(&mut self, http: Ref2<HTTP>) -> Option<HttpRequestBuilder>{
     //     let reff = http.deref().borrow();
     //     match &reff._type() {
     //         HttpType::REQUEST(_) => {
@@ -778,14 +778,15 @@ impl Frame {
         drop(sum);
         self.ctx.get_tcp(refer.deref(), tcp_refer.deref(), flag)
     }
-    fn _create_http_request(&self) -> HttpRequest {
+    fn _create_http_request(&self) -> HttpRequestBuilder {
         let (source,dest) = self.get_ip_address();
         let (srp, dsp) = self.get_port();
-        HttpRequest::new(source, dest, srp, dsp)
+        HttpRequestBuilder::new(source, dest, srp, dsp)
     }
     pub fn add_element(&self, ele: ProtocolData) {
         let mut mref = self.summary.borrow_mut();
         mref.protocol = format!("{}", ele);
+        
         drop(mref);
         match &ele {
             ProtocolData::IPV4(packet) => {
@@ -806,7 +807,7 @@ impl Frame {
                         let ep = self.get_tcp_info(true).unwrap();
                         let mut _ep = ep.deref().borrow_mut();
                         let mut rq = self._create_http_request();
-                        rq.set_request(http.clone(), request);
+                        rq.set_request(http.clone(), request, self.ts);
                         _ep._request = Some(rq);
                     }
                     HttpType::RESPONSE(response) => {
@@ -815,7 +816,7 @@ impl Frame {
                         let request = _ep._request.take();
                         match request {
                             Some(mut req) => {
-                                req.set_response(http.clone(),response);
+                                req.set_response(http.clone(),response, self.ts);
                                 self.ctx.add_http(req);
                             }
                             _ => {}
@@ -843,7 +844,7 @@ pub struct Context {
     info: RefCell<FileInfo>,
     pub dns: RefCell<Vec<Ref2<RecordResource>>>,
     conversation_map: RefCell<HashMap<String, TCPConnection>>,
-    http_list: RefCell<Vec<HttpRequest>>,
+    http_list: RefCell<Vec<HttpRequestBuilder>>,
     statistic: RefCell<Statistic>,
 }
 
@@ -851,7 +852,7 @@ impl Context {
     pub fn get_statistc(&self) -> Ref<Statistic> {
         self.statistic.borrow()
     }
-    pub fn get_http(&self) -> Ref<Vec<HttpRequest>> {
+    pub fn get_http(&self) -> Ref<Vec<HttpRequestBuilder>> {
         self.http_list.borrow()
     }
     pub fn http_statistic(&self, t: Ref2<HTTP>) {
@@ -875,7 +876,7 @@ impl Context {
         drop(ref_statis);
         drop(reff);
     }
-    pub fn add_http(&self, req: HttpRequest) {
+    pub fn add_http(&self, req: HttpRequestBuilder) {
         let mut list = self.http_list.borrow_mut();
         list.push(req);
         drop(list);
