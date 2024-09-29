@@ -129,12 +129,10 @@ export abstract class PCAPClient {
     }
   }
   getInfo(): IContextInfo {
-    const frame = this.ctx.get_frames().length;
-    const conversation = this.ctx.get_conversations_count();
-    const dns = this.ctx.get_dns_count();
-    const statistic = this.ctx.statistic();
-    const http = this.ctx.select_http_count([]);
-    return { frame, conversation, dns, http, statistic:JSON.parse(statistic) }
+    const rs = JSON.parse(this.ctx.info());
+    return rs;
+    // const statistic = this.ctx.statistic();
+    // return { frame, conversation, dns, http, statistic:JSON.parse(statistic) }
   }
   _protocols(): void {
     if (this.ready && this.ctx) {
@@ -143,29 +141,28 @@ export abstract class PCAPClient {
       this.emitMessage(new ComMessage('_protocols', options));
     }
   }
-  getOverview(): IOverviewData {
-    const { legends, labels, valMap } = convert(this.ctx.get_frames());
-    const keys = Object.keys(valMap);
-    const datas = keys.map((key) => {
-      const data = valMap[key];
-      const rs: any = {
-        name: key,
-        yAxisIndex: 1,
-        smooth: true,
-        type: 'line',
-        data
-      };
-      if (key === 'total') {
-        rs.areaStyle = {};
-      }
-      return rs;
-    });
-    return { legends, labels, datas };
-  }
+  // getOverview(): IOverviewData {
+  //   const { legends, labels, valMap } = convert(this.ctx.get_frames());
+  //   const keys = Object.keys(valMap);
+  //   const datas = keys.map((key) => {
+  //     const data = valMap[key];
+  //     const rs: any = {
+  //       name: key,
+  //       yAxisIndex: 1,
+  //       smooth: true,
+  //       type: 'line',
+  //       data
+  //     };
+  //     if (key === 'total') {
+  //       rs.areaStyle = {};
+  //     }
+  //     return rs;
+  //   });
+  //   return { legends, labels, datas };
+  // }
   _overview(): void {
     if (this.ready && this.ctx) {
-      const data = this.getOverview();
-      this.emitMessage(new ComMessage('_overview', data));
+      this.emitMessage(new ComMessage('_overview', JSON.parse(this.ctx.statistic_frames())));
     }
   }
   getHex(index: number, key: string): Field {

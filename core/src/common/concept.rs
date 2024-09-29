@@ -1,4 +1,4 @@
-use std::{cell::RefCell, collections::HashMap};
+use std::{cell::RefCell, collections::{HashMap, HashSet}};
 
 use serde::Serialize;
 
@@ -101,5 +101,53 @@ impl CaseGroup {
       list.push(Case{name: k.into(), value: *v})
     }
     list
+  }
+}
+
+
+#[derive(Serialize)]
+pub struct LineData {
+  name: String,
+  data: Vec<u32>,
+}
+impl LineData {
+  pub fn new(name: String, data: Vec<u32>) -> Self {
+    Self{name, data}
+  }
+}
+
+#[derive(Serialize)]
+pub struct Lines {
+  x: Vec<String>,
+  y: HashSet<String>,
+  data: Vec<LineData>,
+}
+
+impl Lines {
+  pub fn new(x: Vec<String>,y: HashSet<String>, data: Vec<LineData>) -> Self {
+    Self{x,y, data}
+  }
+  pub fn to_json(&self) -> String {
+    serde_json::to_string(self).unwrap()
+  }
+}
+
+#[derive(Serialize,Default)]
+pub struct PCAPInfo{
+  pub file_type: String,
+  pub start_time: u64,
+  pub end_time: u64,
+  pub frame_count: usize,
+  pub http_count: usize,
+  pub dns_count: usize,
+  pub tcp_count: usize,
+}
+
+impl PCAPInfo {
+  pub fn new() -> Self {
+    Self{..Default::default()}
+  }
+  pub fn to_json(&self) -> String {
+    serde_json::to_string(self).unwrap()
   }
 }

@@ -13,7 +13,10 @@ import TCPList from './tcp';
 import DNSList from './dns';
 import HttpComponnet from './http';
 
-import json from './http/demo.json';
+import overview_json from '../mock/overview2.json';
+import meta_json from '../mock/meta.json';
+import http_json from '../mock/stat.json';
+
 
 const itemRenderer = (item, options) => {
   return <a className="flex align-items-center px-3 py-2 cursor-pointer" onClick={options.onClick}>
@@ -36,7 +39,7 @@ const Main = () => {
       const { type, body, requestId } = e.data;
       switch (type) {
         case '_info': {
-          // console.log(JSON.stringify(body));
+          console.log(JSON.stringify(body));
           setMeta(body);
           setStatus(1);
           break;
@@ -76,10 +79,10 @@ const Main = () => {
       });
     };
     addPanel('overview', 'Overview', '', 'pi pi-chart-bar');
-    if (meta.frame) addPanel('frame', 'Frame', meta.frame + '', 'pi pi-list');
-    if (meta.conversation) addPanel('tcp', 'TCP', meta.conversation + '', 'pi pi-server');
-    if (meta.dns) addPanel('dns', 'DNS', meta.dns + '', 'pi pi-address-book');
-    if (meta.http) addPanel('http', 'Http', meta.http + '', 'pi pi-sort-alt');
+    if (meta.frame_count) addPanel('frame', 'Frame', meta.frame_count + '', 'pi pi-list');
+    if (meta.tcp_count) addPanel('tcp', 'TCP', meta.tcp_count + '', 'pi pi-server');
+    if (meta.dns_count) addPanel('dns', 'DNS', meta.dns_count + '', 'pi pi-address-book');
+    if (meta.http_count) addPanel('http', 'Http', meta.http_count + '', 'pi pi-sort-alt');
     return mitems;
   };
   const buildPage = (): ReactElement => {
@@ -91,12 +94,13 @@ const Main = () => {
       case 'dns':
         return <DNSList items={dnsRecords}/>
       case 'http':
-        return <HttpComponnet items={https} statistic={meta.statistic} />
+        return <HttpComponnet items={https} />
     }
-    return <Overview/>;
+    return <Overview framedata={overview_json} metadata={meta} httpdata={http_json} />;
   };
   if (status == 0) {
-    return <HttpComponnet {...json}/>
+    // return <Loading/>
+    return <Overview framedata={overview_json} metadata={meta_json} httpdata={http_json.statistic} />
   }
   if (status == 2) {
     return <ErrPage />

@@ -1,157 +1,41 @@
 import React, { useEffect, useState } from "react";
 import ReactECharts from 'echarts-for-react';
-import {emitMessage, onMessage} from '../../connect';
+import { emitMessage, onMessage } from '../../connect';
 import { TabView, TabPanel } from 'primereact/tabview';
 import './index.css';
-import { ComMessage, IOverviewData } from "../../common";
-const bytesFormater = (v) => {
-  let h = 0;
-  let l = 0;
-  let pt = 'kB';
-  const mod = 1024;
-  const cop = (num: number): [number, number] => {
-    return [Math.floor(num / mod), num % mod]
-  }
-  [h, l] = cop(v);
-  if (h < mod) {
-    return `${h}.${l}kB`
-  }
-  [h, l] = cop(h);
-  if (h < mod) {
-    return `${h}.${l}mB`
-  }
-  [h, l] = cop(h);
-  return `${h}.${l}gB`
-};
+import { ComMessage, IContextInfo, ILines, IOverviewData, IStatistic } from "../../common";
+import Frame from './frame';
+import Head from './head';
+import Http from './http';
 
-// const fore = 'var(--vscode-list-focusForeground)';
-const fore = '#ebdbb2';
-const lineColor = '#ebdbb2';
-
-const labelFormater = (v) => {
-  const ts = Math.floor(v);
-  const date = new Date(ts);
-  const [minutes, seconds, ms] = [
-    date.getMinutes(),
-    date.getSeconds(),
-    date.getMilliseconds()
-  ];
-  return `${minutes}:${seconds}:${ms}`
-};
-function Overview() {
-  const title = 'Network Traffic';
-  const [{legends, labels, datas}, setData] = useState<IOverviewData>({legends:[], labels: [],datas:[] });
+class Props {
+  framedata: ILines;
+  metadata: IContextInfo;
+  httpdata: IStatistic;
+}
+function Overview(props: Props) {
+  // const [framedata, setData] = useState<ILines>({ x: [], y: [], data: [] });
   const mountHook = () => {
-    const remv = onMessage('message', (e: any) => {
-      const { type, body, requestId } = e.data;
-      switch (type) {
-        case '_overview': {
-          setData(body);
-          break;
-        }
-      }
-    });
+    // const remv = onMessage('message', (e: any) => {
+    //   const { type, body, requestId } = e.data;
+    //   switch (type) {
+    //     case '_overview': {
+    //       setData(body);
+    //       break;
+    //     }
+    //   }
+    // });
     emitMessage(new ComMessage('overview', null));
-    return remv;
+    // setData(overview_json);
+    // return remv;
   };
   useEffect(mountHook, []);
-  const option = {
-    title: {
-      textStyle: {color: fore },
-      text: title
-    },
-    textStyle: {color: fore},
-    legend: {
-      right: 50,
-      textStyle: {color: fore },
-      data: legends
-    },
-    tooltip: {
-      trigger: 'axis',
-      valueFormatter: bytesFormater,
-      axisPointer: {
-        type: 'cross',
-        label: {
-          backgroundColor: '#6a7985'
-        }
-      }
-    },
-    toolbox: {
-      feature: {
-        saveAsImage: {}
-      }
-    },
-    grid: {
-      left: '1%',
-      right: '2%',
-      bottom: '3%',
-      borderColor: fore,
-      containLabel: true
-    },
-    animation: true,
-    animationDuration: 1400,
-    xAxis: [
-      {
-        type: 'category',
-        boundaryGap: false,
-        axisLabel: {
-          formatter: labelFormater
-        },
-        // nameTextStyle: {color: 'white'},
-        data: labels,
-      }
-    ],
-    yAxis: [
-      {
-        type: 'value',
-        name: '',
-        position: 'right',
-        alignTicks: true,
-        axisLine: {
-          show: true,
-        },
-        // nameTextStyle: {color: 'white'},
-        axisLabel: {
-          formatter: '{value}'
-        }
-      },
-      {
-        type: 'value',
-        name: '',
-        position: 'left',
-        alignTicks: true,
-        axisLine: {
-          show: true,
-        },
-        axisLabel: {
-          formatter: bytesFormater
-        }
-      }
-    ],
-    series: [
-      ...datas
-    ]
-  };
-  return (<TabView className="w-full">
-    <TabPanel header="Connection">
-      <ReactECharts option={option} className="overview" />
-      {/* <Card className="http-statistic-card">
-      <Card>
-        <TypePie items={statistic.http_method} title="HTTP Method Usage" tooltip="http method" />
-      </Card>
-      <Card>
-        <TypePie items={statistic.http_status} title="Web Traffic Response Code Analysis" tooltip="status code" />
-      </Card>
-      <Card>
-        <TypePie items={statistic.http_type} title="Content-Type Distribution" tooltip="resp type" />
-      </Card>
-    </Card> */}
-    </TabPanel>
-    <TabPanel header="DNS">
-    </TabPanel>
-    <TabPanel header="TLS">
-    </TabPanel>
-  </TabView>);
+
+  return (<div className="w-full overview">
+    <Head data={props.metadata}/>
+    <Frame data={props.framedata}/>
+    <Http data={props.httpdata}/>
+  </div>);
 }
 
 export default Overview;

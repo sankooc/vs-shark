@@ -1,11 +1,16 @@
 .overview {
-    height: 73vh !important;
-    min-height: 300px;
-    // width: 80%;
-    padding: 13px;
+  padding: 13px;
+  .overview-frames {
+    height: 35vh !important;
+    min-height: 200px;
     margin: 30px 10px;
     border: 1px solid #ddd ;
     box-shadow: rgba(0, 0, 0, 0.15) 0px 2px 8px;
     border-radius: 5px;
-    // background-color: #e9d8a6;
   }
+  .overview-head {
+    .p-card-body{
+      background-color: var(--vscode-banner-background);
+    }
+  }
+}

@@ -3,7 +3,7 @@ pub mod pcapng;
 
 use crate::{
     common::{
-        concept::{HttpRequestBuilder, Statistic},
+        concept::{HttpRequestBuilder, LineData, Lines, PCAPInfo, Statistic},
         io::AReader,
         IPPacket, MultiBlock, PortPacket, Ref2, FIELDSTATUS,
     },
@@ -1000,8 +1000,76 @@ impl Instance {
         let ctx = self.context();
         let mut info = ctx.info.borrow_mut();
         if info.start_time > 0 {
+            info.end_time = ts;
             return;
         }
         info.start_time = ts;
     }
+    pub fn info(&self) -> PCAPInfo {
+        let mut _info = PCAPInfo::new();
+        let ctx = self.context();
+        let info = ctx.info.borrow();
+        _info.file_type = format!("{:?}", info.file_type);
+        _info.end_time = info.end_time;
+        _info.start_time = info.start_time;
+        _info.frame_count = self.get_frames().len();
+        _info.dns_count = ctx.get_dns_count();
+        _info.tcp_count = ctx.conversations().len();
+        _info.http_count = ctx.get_http().len();
+        _info
+    }
+    pub fn statistic_frames(&self) -> Result<Lines> {
+        let list = self.frames.borrow();
+        if list.len() < 30 {
+            bail!("no no no ");
+        }
+        let ctx = self.context();
+        let info = ctx.info.borrow();
+        let duration = info.end_time - info.start_time;
+        drop(info);
+        let zone = (duration / 25) + 1;
+        let mut cur: u64 = list.first().unwrap().ts;
+        let mut next = cur + zone;
+        let mut t_list = Vec::new();
+        let mut protos:HashMap<String, u32> = HashMap::new();
+        let mut y = HashSet::new();
+        let mut x = Vec::new();
+        let mut counter:usize = 1;
+        x.push(format!("tick{}", counter));
+        let total = "total";
+        y.insert(total.into());
+        for f in list.iter() {
+            let _ts = f.ts;
+            if _ts > next {
+                cur = _ts;
+                next = cur + zone;
+                t_list.push(protos);
+                counter += 1;
+                x.push(format!("tick{}", counter));
+                protos = HashMap::new();
+            }
+            let protocol = f.get_protocol();
+            let mount = f.capture_size;
+            _insert_map(&mut protos, "total".into(), mount);
+            y.insert(protocol.clone());
+            _insert_map(&mut protos, protocol.clone(), mount);
+        }
+        t_list.push(protos);
+
+        let mut _data = Vec::new();
+        for pro in y.iter() {
+            let mut data = Vec::new();
+            for it in t_list.iter() {
+                let mount = *it.get(pro).unwrap_or(&0);
+                data.push(mount);
+            }
+            _data.push(LineData::new(pro.clone(), data));
+        }
+        Ok(Lines::new(x, y, _data))
+    }
+}
+
+fn _insert_map(protos: &mut HashMap<String, u32>, protocol: String, mount: u32){
+    let _mount = *protos.get(protocol.as_str()).unwrap_or(&0);
+    protos.insert(protocol, _mount + mount);
 }

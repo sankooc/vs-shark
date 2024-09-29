@@ -1,0 +1,9 @@
+{
+    "file_type": "PCAPNG",
+    "start_time": 1697680451132887,
+    "end_time": 1697680490297613,
+    "frame_count": 1713,
+    "http_count": 3,
+    "dns_count": 4,
+    "tcp_count": 62
+}

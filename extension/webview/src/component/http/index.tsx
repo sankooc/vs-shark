@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import "./index.css";
-import { ComMessage, IHttp, IHttpEnity, IStatistic } from "../../common";
+import { ComMessage, IHttp, IHttpEnity } from "../../common";
 import { emitMessage } from "../../connect";
 import Mult from '../input/select';
 import { filter } from 'lodash';
@@ -8,7 +8,6 @@ import SubComponnet from './subview';
 
 class Proto {
   items: IHttp[];
-  statistic: IStatistic;
 }
 const toSim = (entity: IHttpEnity) => {
   return `${entity.host}:${entity.port}`;
@@ -84,15 +83,18 @@ const HttpComponnet = (props: Proto) => {
     total: items.length
   };
   const header = <div className="card flex flex-nowrap gap-3 p-fluid">
-    <Mult label="method" _options={opts[0]} select={setMethods} ></Mult>
-    <Mult label="status" _options={opts[1]} select={setStatus} ></Mult>
-    <Mult label="from" _options={opts[2]} select={setSource} ></Mult>
-    <Mult label="to" _options={opts[3]} select={setDest} ></Mult>
+    <Mult label="Method: " _options={opts[0]} select={setMethods} ></Mult>
+    <Mult label="Status: " _options={opts[1]} select={setStatus} ></Mult>
+    <Mult label="From: " _options={opts[2]} select={setSource} ></Mult>
+    <Mult label="To:" _options={opts[3]} select={setDest} ></Mult>
   </div>;
   const _props = {
     header,
     scrollHeight: 80,
     cols: columes,
+    getStyle: (item) => {
+      return `status-${item.status}`
+    },
     result
   };
   return (<div className="flex flex-column h-full w-full" id="http-page">

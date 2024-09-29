@@ -247,6 +247,10 @@ impl WContext {
         }
     }
     #[wasm_bindgen]
+    pub fn info(&self) -> String {
+        self.ctx.info().to_json()
+    }
+    
     pub fn get_info(&mut self) -> WFileInfo {
         WFileInfo::new(self.ctx.get_info())
     }
@@ -411,6 +415,15 @@ impl WContext {
         let ctx = self.ctx.context();
         let stat = ctx.get_statistc();
         stat.to_json()
+    }
+    #[wasm_bindgen]
+    pub fn statistic_frames(&self) -> String {
+        match self.ctx.statistic_frames() {
+            Ok(_data) => {
+                _data.to_json()
+            }
+            _ => String::from("{}"),
+        }
     }
 }
 

@@ -90,6 +90,7 @@ pub struct FileInfo {
     pub link_type: u32,
     pub file_type: FileType,
     pub start_time: u64,
+    pub end_time: u64,
     pub version: String,
 }
 

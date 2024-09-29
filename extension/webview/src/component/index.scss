@@ -51,45 +51,6 @@ tr td {
 .pcap-table table{
     table-layout: fixed;
 }
-$t-select :#94d2bd;
-$t-select-font: #001219;
-
-$t-def: var(--vscode-editor-background);
-$t-def-font: var(--vscode-editor-foreground);
-
-
-$t-tcp: #005f73;
-$t-tcp-font: #edf2f4;
-
-
-$t-errdata: #C96868;
-$t-errdata-font: #F5F5F5;
-
-
-$t-arp: #84a98c;
-$t-arp-font: #001219;
-
-
-$t-http: #3AB0FF;
-$t-http-font: #edf2f4;
-
-$t-deactive: #8d99ae;
-$t-deactive-font: #001219;
-
-$t-tls: #cc6600;
-$t-tls-font: #001219;
-
-$t-udp: #A0937D;
-$t-udp-font: #001219;
-
-
-$t-dns: #C0D6E8;
-$t-dns-font: #A34343;
-
-
-$t-icmp: #604CC3;
-$t-icmp-font: #F5F5F5;
-
 @keyframes example {
     0%   {background-color: var(--vscode-list-focusBackground);}
     50%  {background-color: var(--vscode-list-deemphasizedForeground);}

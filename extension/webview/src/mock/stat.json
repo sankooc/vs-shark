@@ -1,0 +1,58 @@
+{
+    "statistic": {
+        "http_method": [
+            {
+                "name": "DELETE",
+                "value": 4
+            },
+            {
+                "name": "GET",
+                "value": 8
+            },
+            {
+                "name": "POST",
+                "value": 125
+            }
+        ],
+        "http_status": [
+            {
+                "name": "401",
+                "value": 114
+            },
+            {
+                "name": "302",
+                "value": 2
+            },
+            {
+                "name": "200",
+                "value": 21
+            },
+            {
+                "name": "204",
+                "value": 4
+            }
+        ],
+        "http_type": [
+            {
+                "name": "application/x-www-form-urlencoded",
+                "value": 117
+            },
+            {
+                "name": "application/x-debian-package",
+                "value": 5
+            },
+            {
+                "name": "multipart/form-data",
+                "value": 4
+            },
+            {
+                "name": "text/plain",
+                "value": 4
+            },
+            {
+                "name": "application/json",
+                "value": 12
+            }
+        ]
+    }
+}
