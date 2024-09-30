@@ -2,7 +2,7 @@ import React, { ReactElement, useEffect, useState } from "react";
 import { MenuItem } from 'primereact/menuitem';
 import { Badge } from 'primereact/badge';
 import { Menu } from 'primereact/menu';
-import { ComMessage, IContextInfo, IConversation, IDNSRecord, IHttp } from '../common';
+import { ComMessage, IContextInfo, IConversation, IDNSRecord, IHttp, ILines, IStatistic } from '../common';
 import Loading from './loading';
 import ErrPage from './error';
 import { onMessage, log, emitMessage } from '../connect';
@@ -26,11 +26,18 @@ const itemRenderer = (item, options) => {
   </a>
 };
 
+// framedata: ILines;
+// metadata: IContextInfo;
+// httpdata: IStatistic;
+const eventMapper = {};
+
 let _start = 0;
 const Main = () => {
   const [select, setSelect] = useState('overview');
   const [status, setStatus] = useState<number>(0);
   const [meta, setMeta] = useState<IContextInfo>(null);
+  const [framedata, setFramedata] = useState<ILines>(null);
+  const [httpdata, setHttpdata] = useState<IStatistic>(null);
   const [dnsRecords, setDnsRecords] = useState<IDNSRecord[]>([]);
   const [conversations, setConversations] = useState<IConversation[]>([]);
   const [https, setHttps] = useState<IHttp[]>([]);
@@ -39,13 +46,11 @@ const Main = () => {
       const { type, body, requestId } = e.data;
       switch (type) {
         case '_info': {
-          console.log(JSON.stringify(body));
           setMeta(body);
           setStatus(1);
           break;
         }
         case '_http': {
-          // console.log(JSON.stringify(body));
           setHttps(body);
           break;
         }
@@ -61,10 +66,17 @@ const Main = () => {
           setConversations(body);
           break;
         }
+        case '_frame_statistic': {
+          setFramedata(body)
+          break;
+        }
+        case '_http_statistic': {
+          setHttpdata(body)
+          break;
+        }
       }
     });
     _start = Date.now();
-    // setHttps(json);
     emitMessage(new ComMessage('ready', 'demo'));
   }, []);
   
@@ -96,7 +108,7 @@ const Main = () => {
       case 'http':
         return <HttpComponnet items={https} />
     }
-    return <Overview framedata={overview_json} metadata={meta} httpdata={http_json} />;
+    return <Overview framedata={framedata} metadata={meta} httpdata={httpdata} />;
   };
   if (status == 0) {
     // return <Loading/>

@@ -162,7 +162,8 @@ export abstract class PCAPClient {
   // }
   _overview(): void {
     if (this.ready && this.ctx) {
-      this.emitMessage(new ComMessage('_overview', JSON.parse(this.ctx.statistic_frames())));
+      this.emitMessage(new ComMessage('_frame_statistic', JSON.parse(this.ctx.statistic_frames())));
+      this.emitMessage(new ComMessage('_http_statistic', JSON.parse(this.ctx.statistic())));
     }
   }
   getHex(index: number, key: string): Field {
@@ -206,7 +207,7 @@ export abstract class PCAPClient {
     }
   }
   getConversations(): IConversation[] {
-    return this.ctx.get_conversations().map(f => pick(f, 'source', 'dest', 'count', 'throughput'));
+    return this.ctx.get_conversations().map(f => pick(f, 'source_ip', 'source_host','source_port', 'target_ip', 'target_host','target_port', 'count', 'throughput'));
   }
   _conversation(): void {
     if (this.ready && this.ctx) {

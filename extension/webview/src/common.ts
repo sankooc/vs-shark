@@ -120,8 +120,12 @@ export interface IResult {
 }
 
 export interface IConversation {
-    source: string,
-    dest: string,
+    source_ip: string,
+    source_port: number,
+    source_host: string,
+    target_ip: string,
+    target_port: number,
+    target_host: string,
     count: number,
     throughput: number,
 }
