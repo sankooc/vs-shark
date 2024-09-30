@@ -28,6 +28,8 @@ const DTable = (props: Props) => {
   const [loading, setLoading] = useState<boolean>(false);
   const onSelectionChange = (e: DataTableSelectionSingleChangeEvent<any[]>) => {
     const { index } = e.value;
+    
+    console.log('select_2', e);
     if(index !== undefined) {
       setSelect(index);
       if(props.onSelect) {
@@ -35,11 +37,11 @@ const DTable = (props: Props) => {
       }
     }
   }
-  const onMultiSelectChange = (e) => {
-    // console.log(e);
-    // const values = (e.value || []).map(inx => inx.index);
-    setSelects(e.value);
-  }
+  // const onMultiSelectChange = (e) => {
+  //   // console.log(e);
+  //   // const values = (e.value || []).map(inx => inx.index);
+  //   setSelects(e.value);
+  // }
   const scrollHeight = props.scrollHeight || 99;
   const result = props.result || { total: 0, size : 0, items: [], page: 1};
   const { total, size, items, page } = result;
@@ -52,12 +54,12 @@ const DTable = (props: Props) => {
     tableHeight = `calc(${scrollHeight}vh - ${space}px)`
     inSight = `calc(${scrollHeight}vh - ${space + 1}px)`;
   }
-  const onPageChange = (event) => {
-    if(props.request) {
-      setLoading(true);
-      props.request(event);
-    }
-  }
+  // const onPageChange = (event) => {
+  //   if(props.request) {
+  //     setLoading(true);
+  //     props.request(event);
+  //   }
+  // }
   const rowClassName = (data: any) => {
     if (data.index !== undefined && data.index == select){
       return 'active';
@@ -92,7 +94,6 @@ const DTable = (props: Props) => {
   return (<>
     <DataTable {...tableProps}
       size="small"
-      onSelectionChange = {onSelectionChange}
       selectionMode="single"
       header={props.header}
       footer={props.footer}

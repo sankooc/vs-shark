@@ -13,9 +13,10 @@ import TCPList from './tcp';
 import DNSList from './dns';
 import HttpComponnet from './http';
 
-import overview_json from '../mock/overview2.json';
-import meta_json from '../mock/meta.json';
-import http_json from '../mock/stat.json';
+// import overview_json from '../mock/overview2.json';
+// import meta_json from '../mock/meta.json';
+// import http_json from '../mock/stat.json';
+// import _dnsRecords from '../mock/dns.json';
 
 
 const itemRenderer = (item, options) => {
@@ -51,6 +52,7 @@ const Main = () => {
           break;
         }
         case '_http': {
+          console.log('---')
           setHttps(body);
           break;
         }
@@ -111,8 +113,9 @@ const Main = () => {
     return <Overview framedata={framedata} metadata={meta} httpdata={httpdata} />;
   };
   if (status == 0) {
-    // return <Loading/>
-    return <Overview framedata={overview_json} metadata={meta_json} httpdata={http_json.statistic} />
+    return <Loading/>
+    // return <DNSList items={_dnsRecords}/>
+    // return <Overview framedata={overview_json} metadata={meta_json} httpdata={http_json.statistic} />
   }
   if (status == 2) {
     return <ErrPage />

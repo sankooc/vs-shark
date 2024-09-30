@@ -16,11 +16,10 @@ function Overview(props: Props) {
     emitMessage(new ComMessage('overview', null));
   };
   useEffect(mountHook, []);
-
   return (<div className="w-full overview">
     {props.metadata && <Head data={props.metadata}/>}
     {props.framedata && <Frame data={props.framedata}/>}
-    {props.framedata && <Http data={props.httpdata}/>}
+    {props.httpdata && <Http data={props.httpdata}/>}
   </div>);
 }
 

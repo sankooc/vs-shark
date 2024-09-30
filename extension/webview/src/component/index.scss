@@ -122,3 +122,19 @@ tr[role=row]{
 .filter {
     margin: auto 0;
 }
+#dns-page {
+    overflow: auto;
+    td, tr {
+        padding: 1px !important;
+    }
+    // tr[aria-level='1'] {
+    //     background-color: #557C56;
+    // }
+    tr[aria-level='2']:nth-child(2n + 1) {
+        background-color: #8d99ae;
+    }
+    tr[aria-level='2']:nth-child(2n) {
+        background-color: #557C56;
+    }
+}
+

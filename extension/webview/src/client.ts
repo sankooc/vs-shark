@@ -141,25 +141,6 @@ export abstract class PCAPClient {
       this.emitMessage(new ComMessage('_protocols', options));
     }
   }
-  // getOverview(): IOverviewData {
-  //   const { legends, labels, valMap } = convert(this.ctx.get_frames());
-  //   const keys = Object.keys(valMap);
-  //   const datas = keys.map((key) => {
-  //     const data = valMap[key];
-  //     const rs: any = {
-  //       name: key,
-  //       yAxisIndex: 1,
-  //       smooth: true,
-  //       type: 'line',
-  //       data
-  //     };
-  //     if (key === 'total') {
-  //       rs.areaStyle = {};
-  //     }
-  //     return rs;
-  //   });
-  //   return { legends, labels, datas };
-  // }
   _overview(): void {
     if (this.ready && this.ctx) {
       this.emitMessage(new ComMessage('_frame_statistic', JSON.parse(this.ctx.statistic_frames())));
@@ -237,8 +218,8 @@ export abstract class PCAPClient {
         status: _rs.status,
         method: _rs.method,
         ttr: Number(f.ttr),
-        req: pick(_rs.req, 'host', 'port', 'head', 'header'),
-        res: pick(_rs.res, 'host', 'port', 'head', 'header'),
+        req: pick(_rs.req, 'host', 'port', 'head', 'header', 'content_len', 'content'),
+        res: pick(_rs.res, 'host', 'port', 'head', 'header', 'content_len', 'content'),
       }
     });
 

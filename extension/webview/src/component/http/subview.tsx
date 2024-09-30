@@ -5,11 +5,16 @@ import { Button } from 'primereact/button';
 import { Dialog } from 'primereact/dialog';
 import { Panel } from 'primereact/panel';
 import { TabView, TabPanel } from 'primereact/tabview';
+import Content from './view';
 
 const SubComponnet = (props: Props) => {
-
   const [selection, setSelect] = useState<IHttp>(null);
   const [visible, setVisible] = useState<boolean>(false);
+  const craeteContenView = (msg: IHttpEnity) => {
+    const content = msg.content;
+    const _content = Buffer.from(content).toString('base64');
+    return <span className="base64-content">{_content}</span>;
+  }
   const createMessage = (msg: IHttpEnity) => {
     return (
       <Panel header={msg.head} className={`http-panel`} toggleable>
@@ -19,8 +24,10 @@ const SubComponnet = (props: Props) => {
               {msg.header.map((l, inx) => (<code className="code-line" key={"line" + inx}>{l}</code>))}
             </div>
           </TabPanel>
-          <TabPanel header="body">
-          </TabPanel>
+          {msg.content_len > 0 ? <TabPanel header="body">
+            <Content message={msg}/>
+          </TabPanel>: null}
+          
         </TabView>
       </Panel>
     )
@@ -43,7 +50,10 @@ const SubComponnet = (props: Props) => {
     </>)
   }
   const disabled = !selection;
-  const onSelect = setSelect;
+  const onSelect = (_sel) => {
+    console.log('select', _sel);
+    setSelect(_sel);
+  };
   const footer = <div className="card flex flex-nowrap gap-3 p-fluid">
     <div className="flex align-items-right gap-3">
       <Button disabled={disabled} onClick={() => { setVisible(true) }} label="Detail" icon="pi pi-search" size="small" />

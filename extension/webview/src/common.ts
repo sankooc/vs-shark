@@ -147,7 +147,9 @@ export interface IHttpEnity {
     host: string,
     port: number,
     head: string,
-    header: string[]
+    header: string[],
+    content_len: number,
+    content: Uint8Array,
 }
 export interface IHttp {
     index?: number,

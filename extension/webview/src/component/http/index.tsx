@@ -29,6 +29,9 @@ const HttpComponnet = (props: Proto) => {
     emitMessage(new ComMessage('http', null));
   };
   useEffect(mountHook, []);
+  props.items.forEach((item, index) => {
+    item.index = index + 1;
+  })
   const [f_methods, setMethods] = useState<any[]>([]);
   const [f_status, setStatus] = useState<any[]>([]);
   const [f_source, setSource] = useState<any[]>([]);
@@ -40,7 +43,6 @@ const HttpComponnet = (props: Proto) => {
     const _source = new Set<string>();
     const _dest = new Set<string>();
     props.items.forEach((item: IHttp, index: number) => {
-      item.index = index + 1;
       _methods.add(__method(item));
       _status.add(__status(item));
       _source.add(__source(item));

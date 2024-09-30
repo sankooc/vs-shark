@@ -54,21 +54,38 @@ export class OverviewSource {
     counts!: number[];
     valMap: any;
 }
-export interface ICase{
+export interface ICase {
     name: string;
     value: number;
 }
-export interface IStatistic{
+export interface IStatistic {
     http_method: ICase[];
     http_status: ICase[];
     http_type: ICase[];
 }
 export interface IContextInfo {
-    frame: number,
-    conversation: number,
-    dns: number,
-    http: number,
-    statistic: IStatistic,
+    file_type: string;
+    start_time: number;
+    end_time: number;
+    frame_count: number;
+    http_count: number;
+    dns_count: number;
+    tcp_count: number;
+    // frame: number,
+    // conversation: number,
+    // dns: number,
+    // http: number,
+    // statistic: IStatistic,
+}
+
+export interface ILineData {
+    name: string,
+    data: number[],
+}
+export interface ILines {
+    x: string[],
+    y: string[],
+    data: ILineData[],
 }
 
 export interface IOverviewData {
@@ -103,8 +120,12 @@ export interface IResult {
 }
 
 export interface IConversation {
-    source: string,
-    dest: string,
+    source_ip: string,
+    source_port: number,
+    source_host: string,
+    target_ip: string,
+    target_port: number,
+    target_host: string,
     count: number,
     throughput: number,
 }
@@ -126,11 +147,15 @@ export interface IHttpEnity {
     host: string,
     port: number,
     head: string,
-    header: string[]
+    header: string[],
+    content_len: number,
+    content: Uint8Array,
 }
 export interface IHttp {
+    index?: number,
     method: string,
     status: string,
+    ttr: number,
     req: IHttpEnity,
     res: IHttpEnity,
 }

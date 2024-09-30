@@ -143,6 +143,7 @@ impl crate::files::Visitor for HTTPVisitor {
                 break;
             }
             if reader.enter_flag(0) {
+                reader._move(2);
                 break;
             }
             let header = packet.build_format(reader, Reader::_read_enter, "{}")?;

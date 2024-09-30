@@ -128,12 +128,10 @@ export abstract class PCAPClient {
     }
   }
   getInfo(): IContextInfo {
-    const frame = this.ctx.get_frames().length;
-    const conversation = this.ctx.get_conversations_count();
-    const dns = this.ctx.get_dns_count();
-    const statistic = this.ctx.statistic();
-    const http = this.ctx.select_http_count([]);
-    return { frame, conversation, dns, http, statistic:JSON.parse(statistic) }
+    const rs = JSON.parse(this.ctx.info());
+    return rs;
+    // const statistic = this.ctx.statistic();
+    // return { frame, conversation, dns, http, statistic:JSON.parse(statistic) }
   }
   _protocols(): void {
     if (this.ready && this.ctx) {
@@ -142,29 +140,11 @@ export abstract class PCAPClient {
       this.emitMessage(new ComMessage('_protocols', options));
     }
   }
-  getOverview(): IOverviewData {
-    const { legends, labels, valMap } = convert(this.ctx.get_frames());
-    const keys = Object.keys(valMap);
-    const datas = keys.map((key) => {
-      const data = valMap[key];
-      const rs: any = {
-        name: key,
-        yAxisIndex: 1,
-        smooth: true,
-        type: 'line',
-        data
-      };
-      if (key === 'total') {
-        rs.areaStyle = {};
-      }
-      return rs;
-    });
-    return { legends, labels, datas };
-  }
   _overview(): void {
     if (this.ready && this.ctx) {
-      const data = this.getOverview();
-      this.emitMessage(new ComMessage('_overview', data));
+      this.emitMessage(new ComMessage('_frame_statistic', JSON.parse(this.ctx.statistic_frames())));
+      const _http = JSON.parse(this.ctx.statistic());
+      this.emitMessage(new ComMessage('_http_statistic', _http));
     }
   }
   getHex(index: number, key: string): Field {
@@ -208,7 +188,7 @@ export abstract class PCAPClient {
     }
   }
   getConversations(): IConversation[] {
-    return this.ctx.get_conversations().map(f => pick(f, 'source', 'dest', 'count', 'throughput'));
+    return this.ctx.get_conversations().map(f => pick(f, 'source_ip', 'source_host','source_port', 'target_ip', 'target_host','target_port', 'count', 'throughput'));
   }
   _conversation(): void {
     if (this.ready && this.ctx) {
@@ -237,8 +217,9 @@ export abstract class PCAPClient {
       return {
         status: _rs.status,
         method: _rs.method,
-        req: pick(_rs.req, 'host', 'port', 'head', 'header'),
-        res: pick(_rs.res, 'host', 'port', 'head', 'header'),
+        ttr: Number(f.ttr),
+        req: pick(_rs.req, 'host', 'port', 'head', 'header', 'content_len', 'content'),
+        res: pick(_rs.res, 'host', 'port', 'head', 'header', 'content_len', 'content'),
       }
     });
 
