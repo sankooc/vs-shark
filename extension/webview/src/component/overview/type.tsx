@@ -12,18 +12,18 @@ const Pie = (props: Proto) => {
     const option = {
         title: {
             text: props.title,
-            left: 'center'
+            left: 'center',
+            top: 'bottom',
           },
         tooltip: {
             trigger: 'item'
         },
         legend: {
-            top: 'middle',
+            top: 'top',
             left: 'right',
             orient: 'vertical',
             textStyle: { color: bt.fore },
         },
-        width: '90%',
         series: [
             {
                 name: props.tooltip,

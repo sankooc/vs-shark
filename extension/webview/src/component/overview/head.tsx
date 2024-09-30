@@ -20,9 +20,9 @@ export default function Head(props: Props) {
                             <span className="text-secondary text-sm">{item.label}</span>
                             <span className="font-bold text-lg">{item.value}</span>
                         </div>
-                        <span className="w-2rem h-2rem border-circle inline-flex justify-content-center align-items-center text-center" style={{ backgroundColor: "#60a5fa", color: '#ffffff' }}>
+                        {/* <span className="w-2rem h-2rem border-circle inline-flex justify-content-center align-items-center text-center" style={{ backgroundColor: "#60a5fa", color: '#ffffff' }}>
                             <i className={item.icon} />
-                        </span>
+                        </span> */}
                     </div>
                 </Card>
             ))}
@@ -32,7 +32,7 @@ export default function Head(props: Props) {
     const meta = props.data;
     const values = [
         { label: 'FileType', value: meta.file_type, icon: 'pi pi-inbox'},
-        { label: 'Time', value: meta.end_time - meta.start_time, icon: 'pi pi-inbox'},
+        { label: 'Time', value: new String(meta.end_time - meta.start_time).replace(/(\d)(?=(\d\d\d)+(?!\d))/g, "$1,") + " micro", icon: 'pi pi-inbox'},
         { label: 'Frames', value: meta.frame_count, icon: 'pi pi-inbox'},
         { label: 'TCP', value: meta.tcp_count, icon: 'pi pi-inbox'},
         { label: 'DNS Record', value: meta.dns_count, icon: 'pi pi-inbox'},

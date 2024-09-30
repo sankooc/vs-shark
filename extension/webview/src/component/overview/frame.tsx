@@ -72,8 +72,10 @@ function Overview(props: Props) {
       }
     },
     grid: {
-      left: '1%',
-      right: '2%',
+      padding: '20px',
+      // top: '70',
+      left: '3%',
+      right: '3%',
       bottom: '3%',
       borderColor: fore,
       containLabel: true

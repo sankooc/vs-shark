@@ -1,7 +1,7 @@
 .overview {
   padding: 13px;
   .overview-frames {
-    height: 35vh !important;
+    height: 30vh !important;
     min-height: 200px;
     margin: 30px 10px;
     border: 1px solid #ddd ;
@@ -13,4 +13,13 @@
       background-color: var(--vscode-banner-background);
     }
   }
+  .http-statistic-card>.p-card-body>.p-card-content {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+
+    >.p-card {
+        width: 31%;
+    }
+}
 }
