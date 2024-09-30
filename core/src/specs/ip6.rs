@@ -1,10 +1,10 @@
-use std::fmt::Formatter;
+use std::{fmt::Formatter, net::Ipv6Addr};
 
 use anyhow::Result;
 use pcap_derive::{Packet2, NINFO};
 
 use crate::{
-    common::{io::{AReader, Reader}, Description, IPPacket, IPv6Address, TtypePacket},
+    common::{io::{AReader, Reader}, Description, IPPacket, TtypePacket},
     files::{Frame, PacketBuilder, PacketContext, PacketOpt},
 };
 use crate::common::FIELDSTATUS;
@@ -22,8 +22,8 @@ pub fn excute(ipprototype: u8) -> &'static str {
 
 #[derive(Default, Packet2, NINFO)]
 pub struct IPv6 {
-    source_ip: Option<IPv6Address>,
-    target_ip: Option<IPv6Address>,
+    source_ip: Option<Ipv6Addr>,
+    target_ip: Option<Ipv6Addr>,
     total_len: u16,
     hop_limit: u8,
     t_protocol: u8,

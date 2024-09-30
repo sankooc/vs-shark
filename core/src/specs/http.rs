@@ -37,6 +37,8 @@ pub struct HTTP {
     head: String,
     _type: HttpType,
     pub content_type: Option<String>,
+    pub content: Vec<u8>,
+    pub len: usize,
 }
 impl HTTP {
     pub fn head(&self) -> String {
@@ -153,7 +155,9 @@ impl crate::files::Visitor for HTTPVisitor {
             p.header.push(header);
         }
         let dlen = reader.left()?;
+        p.len =dlen;
         packet._build(reader, reader.cursor(), dlen, format!("File Data: {} bytes", dlen));
+        p.content = reader.slice(dlen).to_vec();
         drop(p);
         Ok((super::ProtocolData::HTTP(packet), "none"))
     }

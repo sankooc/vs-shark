@@ -3,13 +3,13 @@ pub mod pcapng;
 
 use crate::{
     common::{
-        concept::{HttpRequestBuilder, LineData, Lines, PCAPInfo, Statistic},
+        concept::{HttpRequestBuilder, LineData, Lines, PCAPInfo, Statistic, TCPWrap},
         io::AReader,
         IPPacket, MultiBlock, PortPacket, Ref2, FIELDSTATUS,
     },
     constants::link_type_mapper,
     specs::{
-        dns::{RecordResource, DNS},
+        dns::{RecordResource, ResourceType, DNS},
         http::{HttpType, HTTP},
         tcp::{TCPOptionKind, ACK, TCP},
         tls::TLSHandshake,
@@ -548,7 +548,6 @@ pub struct TCPConnection {
     pub throughput: Cell<u32>,
     pub ep1: Ref2<Endpoint>,
     pub ep2: Ref2<Endpoint>,
-    // pub http_connections:
 }
 
 pub struct TCPInfo {
@@ -608,6 +607,25 @@ impl TCPConnection {
         let _size = self.throughput.get();
         self.throughput.set(_size + tcp.payload_len as u32);
         TCPInfo { next, _ack, _seq, detail }
+    }
+    pub fn create_wrap(&self, mapper: &HashMap<String,String>) -> TCPWrap {
+        let mut rs = TCPWrap{..Default::default()};
+        let emp = String::from("");
+        {
+            let ep = self.ep1.as_ref().borrow();
+            rs.source_ip = ep.host.clone();
+            rs.source_port = ep.port;
+            rs.source_host = mapper.get(&ep.host).unwrap_or(&emp).clone();
+        }
+        {
+            let ep = self.ep2.as_ref().borrow();
+            rs.target_ip = ep.host.clone();
+            rs.target_port = ep.port;
+            rs.target_host = mapper.get(&ep.host).unwrap_or(&emp).clone();
+        }
+        rs.count = self.count.get();
+        rs.throughput = self.throughput.get();
+        rs
     }
 }
 
@@ -846,6 +864,7 @@ pub struct Context {
     conversation_map: RefCell<HashMap<String, TCPConnection>>,
     http_list: RefCell<Vec<HttpRequestBuilder>>,
     statistic: RefCell<Statistic>,
+    pub dns_map: RefCell<HashMap<String, String>>
 }
 
 impl Context {
@@ -882,6 +901,19 @@ impl Context {
         drop(list);
     }
     pub fn add_dns_record(&self, rr: Ref2<RecordResource>) {
+        let _rr = rr.as_ref().borrow();
+        let mut _map = self.dns_map.borrow_mut();
+        match &_rr.data {
+            ResourceType::A(ip) => {
+                _map.insert(ip.to_string(), _rr.name());
+            }
+            ResourceType::AAAA(ip) => {
+                _map.insert(ip.to_string(), _rr.name());
+            }
+            _ => {}
+        }
+        drop(_map);
+        drop(_rr);
         self.dns.borrow_mut().push(rr);
     }
     pub fn get_info(&self) -> FileInfo {
@@ -944,6 +976,7 @@ impl Instance {
             http_list: RefCell::new(Vec::new()),
             conversation_map: RefCell::new(HashMap::new()),
             statistic: RefCell::new(Statistic::new()),
+            dns_map: RefCell::new(HashMap::new()),
         };
         Instance { ctx: Rc::new(ctx), frames: RefCell::new(Vec::new()) }
     }
@@ -993,9 +1026,6 @@ impl Instance {
     pub fn get_frames(&self) -> Ref<Vec<Frame>> {
         self.frames.borrow()
     }
-    pub fn get_info(&self) -> FileInfo {
-        self.context().get_info()
-    }
     pub fn update_ts(&self, ts: u64) {
         let ctx = self.context();
         let mut info = ctx.info.borrow_mut();
@@ -1026,6 +1056,7 @@ impl Instance {
         let ctx = self.context();
         let info = ctx.info.borrow();
         let duration = info.end_time - info.start_time;
+        let start =  info.start_time;
         drop(info);
         let zone = (duration / 25) + 1;
         let mut cur: u64 = list.first().unwrap().ts;
@@ -1034,8 +1065,8 @@ impl Instance {
         let mut protos:HashMap<String, u32> = HashMap::new();
         let mut y = HashSet::new();
         let mut x = Vec::new();
-        let mut counter:usize = 1;
-        x.push(format!("tick{}", counter));
+        // let mut counter:usize = 1;
+        x.push("0".into());
         let total = "total";
         y.insert(total.into());
         for f in list.iter() {
@@ -1044,8 +1075,8 @@ impl Instance {
                 cur = _ts;
                 next = cur + zone;
                 t_list.push(protos);
-                counter += 1;
-                x.push(format!("tick{}", counter));
+                // counter += 1;
+                x.push(ts_to_str(_ts - start));
                 protos = HashMap::new();
             }
             let protocol = f.get_protocol();
@@ -1072,4 +1103,21 @@ impl Instance {
 fn _insert_map(protos: &mut HashMap<String, u32>, protocol: String, mount: u32){
     let _mount = *protos.get(protocol.as_str()).unwrap_or(&0);
     protos.insert(protocol, _mount + mount);
+}
+fn ts_to_str(ts: u64) -> String {
+    if ts < 10000 {
+        return format!("{} micSec", ts)
+    }
+    if ts < 1000000 {
+        return format!("{}.{} MS", ts/1000, ts%1000)
+    }
+    let _sec = ts/1000000;
+    if _sec < 1000 {
+        return format!("{}.{} Sec", _sec, (ts/ 1000)%1000)
+    }
+    let _min = _sec / 60;
+    if _min < 1000 {
+        return format!("{}.{} Min", _min, _sec%60);
+    }
+    format!("{}.{} H", _min/60, _min%60)
 }

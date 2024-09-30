@@ -1,4 +1,6 @@
 use std::fmt::Display;
+use std::net::Ipv4Addr;
+use std::net::Ipv6Addr;
 //https://www.rfc-editor.org/rfc/rfc1035
 use anyhow::Result;
 use pcap_derive::{Packet, Packet2, NINFO};
@@ -8,7 +10,6 @@ use crate::common::io::AReader;
 use crate::common::MultiBlock;
 use crate::common::Ref2;
 use crate::common::FIELDSTATUS;
-use crate::common::{IPv4Address, IPv6Address};
 use crate::constants::{dns_class_mapper, dns_type_mapper};
 use crate::files::{DomainService, Frame, PacketBuilder, PacketContext, PacketOpt, Visitor};
 
@@ -158,8 +159,8 @@ impl Questions {
 
 #[derive(Default)]
 pub enum ResourceType {
-    A(IPv4Address),
-    AAAA(IPv6Address),
+    A(Ipv4Addr),
+    AAAA(Ipv6Addr),
     CNAME(String),
     PTR(String),
     SOA(String),
@@ -207,7 +208,7 @@ pub struct RecordResource {
     class: u16,
     ttl: u32,
     len: u16,
-    data: ResourceType,
+    pub data: ResourceType,
 }
 impl RecordResource {
     fn name(p: &RecordResource) -> String {

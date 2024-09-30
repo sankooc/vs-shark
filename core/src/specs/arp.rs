@@ -2,9 +2,9 @@ use std::fmt::Formatter;
 
 use anyhow::Result;
 use pcap_derive::Packet2;
-
+use std::net::Ipv4Addr;
 use crate::{
-    common::{IPPacket, IPv4Address, MacAddress, FIELDSTATUS},
+    common::{IPPacket, MacAddress, FIELDSTATUS},
     constants::{arp_hardware_type_mapper, arp_oper_type_mapper, etype_mapper},
     files::{Frame, PacketBuilder, PacketContext, PacketOpt},
 };
@@ -19,9 +19,9 @@ pub struct ARP {
     protocol_size: u8,
     operation: u16,
     sender_mac: Option<MacAddress>,
-    sender_ip: Option<IPv4Address>,
+    sender_ip: Option<Ipv4Addr>,
     target_mac: Option<MacAddress>,
-    target_ip: Option<IPv4Address>,
+    target_ip: Option<Ipv4Addr>,
 }
 
 impl IPPacket for ARP {

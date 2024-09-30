@@ -1,11 +1,12 @@
 use std::fmt::Formatter;
+use std::net::Ipv4Addr;
 
 use anyhow::{bail, Result};
 use pcap_derive::{Packet2, NINFO};
 use crate::common::FIELDSTATUS;
 
 use crate::{
-    common::{io::Reader, Description, IPPacket, IPv4Address, TtypePacket},
+    common::{io::Reader, Description, IPPacket, TtypePacket},
     files::{Frame, PacketBuilder, PacketContext, PacketOpt},
 };
 use crate::common::io::AReader;
@@ -33,8 +34,8 @@ pub fn excute(ipprototype: u8) -> &'static str {
 
 #[derive(Default, Packet2, NINFO)]
 pub struct IPv4 {
-    source_ip: Option<IPv4Address>,
-    target_ip: Option<IPv4Address>,
+    pub source_ip: Option<Ipv4Addr>,
+    pub target_ip: Option<Ipv4Addr>,
     total_len: u16,
     payload_len: u16,
     identification: u16,

@@ -151,3 +151,25 @@ impl PCAPInfo {
     serde_json::to_string(self).unwrap()
   }
 }
+
+#[derive(Default)]
+pub struct TCPWrap{
+  pub source_ip: String,
+  pub source_port: u16,
+  pub source_host: String,
+  pub target_ip: String,
+  pub target_port: u16,
+  pub target_host: String,
+  pub count: u16,
+  pub throughput: u32,
+}
+
+
+#[allow(dead_code)]
+pub struct IPINFO {
+  private: usize,
+  loopback: usize,
+  broadcast: usize,
+  multicast: usize,
+  unicast: usize,
+}

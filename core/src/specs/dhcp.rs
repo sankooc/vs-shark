@@ -1,10 +1,10 @@
-use std::fmt::Formatter;
+use std::{fmt::Formatter, net::Ipv4Addr};
 
 use anyhow::Result;
 use pcap_derive::Packet;
 
 use crate::{
-    common::{io::AReader, IPv4Address, MacAddress, Ref2, FIELDSTATUS},
+    common::{io::AReader, MacAddress, Ref2, FIELDSTATUS},
     constants::{arp_hardware_type_mapper, dhcp_option_type_mapper, dhcp_type_mapper},
     files::{Frame, PacketBuilder, PacketContext},
 };
@@ -22,10 +22,10 @@ pub struct DHCP {
     transaction_id: u32,
     sec: u16,
     flag: u16,
-    client_address: Option<IPv4Address>,
-    your_address: Option<IPv4Address>,
-    next_server_address: Option<IPv4Address>,
-    relay_address: Option<IPv4Address>,
+    client_address: Option<Ipv4Addr>,
+    your_address: Option<Ipv4Addr>,
+    next_server_address: Option<Ipv4Addr>,
+    relay_address: Option<Ipv4Addr>,
     mac_address: Option<MacAddress>,
     options: Vec<Ref2<DHCPOption>>,
 }

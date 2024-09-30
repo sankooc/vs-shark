@@ -6,6 +6,7 @@ use crate::common::DataError;
 
 use super::{IPv4Address, IPv6Address, MacAddress};
 
+
 pub struct IO;
 
 impl IO {
@@ -88,10 +89,10 @@ impl Reader {
         reader.read_mac()
     }
 
-    pub fn _read_ipv4(reader: &Reader) -> Result<IPv4Address> {
+    pub fn _read_ipv4(reader: &Reader) -> Result<std::net::Ipv4Addr> {
         reader.read_ipv4()
     }
-    pub fn _read_ipv6(reader: &Reader) -> Result<IPv6Address> {
+    pub fn _read_ipv6(reader: &Reader) -> Result<std::net::Ipv6Addr> {
         reader.read_ipv6()
     }
     pub fn _read8(reader: &Reader) -> Result<u8> {
@@ -287,7 +288,7 @@ pub trait AReader:Clone {
         self._move(len);
         Ok(MacAddress { data })
     }
-    fn read_ipv4(&self) -> Result<IPv4Address> {
+    fn read_ipv4(&self) -> Result<std::net::Ipv4Addr> {
         let len = 4;
         if self.left()? < len {
             bail!("sized")
@@ -297,7 +298,7 @@ pub trait AReader:Clone {
         self._move(len);
         Ok(IPv4Address::new(data))
     }
-    fn read_ipv6(&self) -> Result<IPv6Address> {
+    fn read_ipv6(&self) -> Result<std::net::Ipv6Addr> {
         let len = 16;
         if self.left()? < len {
             bail!("sized")

@@ -58,7 +58,7 @@ const HttpComponnet = (props: Proto) => {
     { field: 'res', body: (data) => <span>{__dest(data)}</span>, header: 'dest' },
     { field: 'method', header: 'method' },
     { field: 'status', header: 'status' },
-    { field: 'ttr', header: 'ttr', sortable: true },
+    { field: 'ttr', header: 'ttr(micro sec)', sortable: true },
     { field: 'req.head', header: 'path',style: { width: '40vw' } },
   ];
 

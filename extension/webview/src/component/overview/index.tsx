@@ -32,9 +32,9 @@ function Overview(props: Props) {
   useEffect(mountHook, []);
 
   return (<div className="w-full overview">
-    <Head data={props.metadata}/>
-    <Frame data={props.framedata}/>
-    <Http data={props.httpdata}/>
+    {props.metadata && <Head data={props.metadata}/>}
+    {props.framedata && <Frame data={props.framedata}/>}
+    {props.framedata && <Http data={props.httpdata}/>}
   </div>);
 }
 

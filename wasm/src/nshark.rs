@@ -1,10 +1,11 @@
+use core::common::concept::TCPWrap;
 use std::borrow::Borrow;
 use std::cell::{Ref, RefCell};
 use std::cmp;
 use std::ops::Deref;
 use std::collections::HashSet;
 
-use core::common::{FileInfo, FIELDSTATUS};
+use core::common::FIELDSTATUS;
 use core::files::{DomainService, Element, Frame, Instance};
 use core::{entry::*, files};
 use js_sys::Uint8Array;
@@ -133,14 +134,14 @@ impl WFileInfo {
     }
 }
 impl WFileInfo {
-    fn new(info: FileInfo) -> WFileInfo {
-        WFileInfo {
-            link_type: info.link_type,
-            file_type: format!("{:?}", info.file_type),
-            start_time: info.start_time,
-            version: info.version.clone(),
-        }
-    }
+    // fn new(info: FileInfo) -> WFileInfo {
+    //     WFileInfo {
+    //         link_type: info.link_type,
+    //         file_type: format!("{:?}", info.file_type),
+    //         start_time: info.start_time,
+    //         version: info.version.clone(),
+    //     }
+    // }
 }
 #[wasm_bindgen]
 #[derive(Default,Clone)]
@@ -183,10 +184,7 @@ impl FrameInfo {
 
 #[wasm_bindgen]
 pub struct TCPConversation{
-    source: String,
-    dest: String,
-    count: u16,
-    throughput: u32,
+    _tcp: TCPWrap,
 }
 #[wasm_bindgen]
 pub struct FrameResult {
@@ -211,20 +209,36 @@ impl FrameResult {
 #[wasm_bindgen]
 impl TCPConversation {
     #[wasm_bindgen(getter)]
-    pub fn source(&self) -> String {
-        self.source.clone()
+    pub fn source_ip(&self) -> String {
+        self._tcp.source_ip.clone()
     }
     #[wasm_bindgen(getter)]
-    pub fn dest(&self) -> String {
-        self.dest.clone()
+    pub fn source_host(&self) -> String {
+        self._tcp.source_host.clone()
+    }
+    #[wasm_bindgen(getter)]
+    pub fn source_port(&self) -> u16 {
+        self._tcp.source_port
+    }
+    #[wasm_bindgen(getter)]
+    pub fn target_ip(&self) -> String {
+        self._tcp.target_ip.clone()
+    }
+    #[wasm_bindgen(getter)]
+    pub fn target_host(&self) -> String {
+        self._tcp.target_host.clone()
+    }
+    #[wasm_bindgen(getter)]
+    pub fn target_port(&self) -> u16 {
+        self._tcp.target_port
     }
     #[wasm_bindgen(getter)]
     pub fn count(&self) -> u16 {
-        self.count
+        self._tcp.count
     }
     #[wasm_bindgen(getter)]
     pub fn throughput(&self) -> u32 {
-        self.throughput
+        self._tcp.throughput
     }
 }
 
@@ -251,9 +265,9 @@ impl WContext {
         self.ctx.info().to_json()
     }
     
-    pub fn get_info(&mut self) -> WFileInfo {
-        WFileInfo::new(self.ctx.get_info())
-    }
+    // pub fn get_info(&mut self) -> WFileInfo {
+    //     WFileInfo::new(self.ctx.get_info())
+    // }
     #[wasm_bindgen]
     pub fn get_frame_count(&self) -> usize {
         self.ctx.get_frames().len()
@@ -291,7 +305,8 @@ impl WContext {
     
     #[wasm_bindgen]
     pub fn select_frames(&mut self, start: usize, size: usize, criteria: Vec<String>) -> FrameResult {
-        let start_ts = self.get_info().start_time;
+        let info = self.ctx.context().get_info();
+        let start_ts = info.start_time;
         let _fs = self.ctx.get_frames();
         let mut total = 0;
         let mut items = Vec::new();
@@ -361,7 +376,8 @@ impl WContext {
 
     #[wasm_bindgen]
     pub fn get_frames(&mut self) -> Vec<FrameInfo> {
-        let start_ts = self.get_info().start_time;
+        let info = self.ctx.context().get_info();
+        let start_ts = info.start_time;
         let mut rs = Vec::new();
         for frame in self.ctx.get_frames().iter() {
             let item = WContext::_frame(frame, start_ts);
@@ -399,14 +415,12 @@ impl WContext {
     #[wasm_bindgen]
     pub fn get_conversations(&self) -> Vec<TCPConversation>{
         let ct = self.ctx.context();
+        let mapper = ct.dns_map.borrow();
         let cons = ct.conversations();
         let mut rs = Vec::new();
         for con in cons.values().into_iter() {
-            let source = con.ep1.as_ref().borrow().stringfy();
-            let dest = con.ep2.as_ref().borrow().stringfy();
-            let count:u16 = con.count.get();
-            let throughput = con.throughput.get();
-            rs.push(TCPConversation{source, dest, count, throughput})
+            let wrap = con.create_wrap(mapper.deref());
+            rs.push(TCPConversation{_tcp: wrap});
         }
         rs
     }

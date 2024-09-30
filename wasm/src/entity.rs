@@ -7,6 +7,7 @@ use core::{
 };
 use std::cell::Ref;
 
+use js_sys::Uint8Array;
 // use js_sys::Uint8Array;
 use wasm_bindgen::prelude::*;
 
@@ -79,6 +80,20 @@ impl HttpEntity {
     #[wasm_bindgen(getter)]
     pub fn header(&self) -> Vec<String> {
         self.http.as_ref().borrow().header()
+    }
+    #[wasm_bindgen(getter)]
+    pub fn content_len(&self) -> usize {
+        let _http = self.http.as_ref().borrow();
+        _http.len
+    }
+    #[wasm_bindgen(getter)]
+    pub fn content(&self) -> Uint8Array {
+        let _http = self.http.as_ref().borrow();
+        // if _http.len > 0 {
+            
+        // }
+        let data:&[u8] = &_http.content;
+        return data.into()
     }
 }
 #[wasm_bindgen]
