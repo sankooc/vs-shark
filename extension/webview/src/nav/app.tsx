@@ -1,5 +1,7 @@
 import React, { MutableRefObject, useRef, useState } from 'react';
 import { Menubar } from 'primereact/menubar';
+import { Avatar } from 'primereact/avatar';
+import { InputText } from 'primereact/inputtext';
 import { ComLog, ComMessage } from '../common';
 import { PCAPClient } from '../client';
 import init from 'rshark';
@@ -64,12 +66,19 @@ export default function CommandDemo() {
             ]
         },
     ];
-    
+    const end = (
+        <div className="flex align-items-center gap-2" style={{paddingRight: '10px'}}>
+            <Avatar icon="pi pi-github" shape="circle" onClick={() => {
+                window.open('https://github.com/sankooc/vs-shark');
+            }}/>
+        </div>
+    );
     return (
         <>
-            <Menubar model={items} style={{ padding: 0 }} />
+            <Menubar model={items} style={{ padding: 0 }} end={end}/>
             <input type="file" ref={inputRef} style={{ display: "none" }} onChangeCapture={onFileChangeCapture} />
             <iframe id="main" ref={iframeRef} src="frame.html" style={{ width: '100' }}></iframe>
+            {/* <div className="footbar"></div> */}
         </>
     )
 }
