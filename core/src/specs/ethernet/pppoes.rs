@@ -1,10 +1,10 @@
-use pcap_derive::{Packet2, NINFO};
+use pcap_derive::{Packet2, Visitor3, NINFO};
 
-use crate::files::{PacketOpt, Visitor};
+use crate::common::base::PacketOpt;
 use crate::specs::ProtocolData;
 use crate::{
     common::io::Reader,
-    files::{Frame, PacketBuilder, PacketContext},
+    common::base::{Frame, PacketBuilder, PacketContext},
 };
 use crate::common::io::AReader;
 use anyhow::{Ok, Result};
@@ -57,9 +57,10 @@ impl PPPoESS {
         }
     }
 }
+#[derive(Visitor3)]
 pub struct PPPoESSVisitor;
-impl Visitor for PPPoESSVisitor {
-    fn visit(&self, _: &Frame, reader: &Reader) -> Result<(ProtocolData, &'static str)> {
+impl PPPoESSVisitor {
+    fn visit2(&self, reader: &Reader) -> Result<(ProtocolData, &'static str)> {
         let packet = PPPoESS::create(reader, None)?;
         let p = packet.get();
         let code = p.borrow().code;

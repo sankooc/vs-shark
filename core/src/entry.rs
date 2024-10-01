@@ -1,6 +1,7 @@
-use crate::{common::io::IO, files::*};
+use crate::files::{pcap, pcapng};
+use crate::common::io::IO;
 
-use crate::files::Instance;
+use crate::common::base::Instance;
 use crate::common::DataError;
 use anyhow::{bail, Result};
 

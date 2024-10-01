@@ -3,7 +3,7 @@ pub mod extension;
 pub mod handshake;
 use std::{fmt::Formatter, ops::DerefMut, rc::Rc};
 
-use crate::common::{io::AReader, FIELDSTATUS};
+use crate::common::{base::Context, io::AReader, FIELDSTATUS};
 use anyhow::Result;
 use handshake::{HandshakeProtocol, HandshakeType};
 use pcap_derive::{Packet, Packet2};
@@ -12,14 +12,14 @@ use super::ProtocolData;
 use crate::{
     common::io::Reader,
     constants::{tls_content_type_mapper, tls_min_type_mapper},
-    files::{Endpoint, Frame, PacketBuilder, PacketContext, PacketOpt, Visitor, TCPPAYLOAD},
+    common::base::{Endpoint, Frame, PacketBuilder, PacketContext, PacketOpt, Visitor, TCPPAYLOAD},
 };
 
 #[derive(Default, Packet)]
 pub struct TLS {
     records: Vec<TLSRecord>,
 }
-impl crate::files::InfoPacket for TLS {
+impl crate::common::base::InfoPacket for TLS {
     fn info(&self) -> String {
         let len = self.records.len();
         if len > 0 {
@@ -223,11 +223,11 @@ fn proc(frame: &Frame, reader: &Reader, packet: &PacketContext<TLS>, p: &mut TLS
     Ok(())
 }
 impl Visitor for TLSVisitor {
-    fn visit(&self, frame: &Frame, reader: &Reader) -> Result<(ProtocolData, &'static str)> {
+    fn visit(&self, frame: &mut Frame, ctx: &mut Context, reader: &Reader) -> Result<(ProtocolData, &'static str)> {
         let packet: PacketContext<TLS> = Frame::create_packet();
         let mut p = packet.get().borrow_mut();
 
-        let _info = frame.get_tcp_info(true)?;
+        let _info = frame.get_tcp_info(true, ctx)?;
         let mut ep = _info.as_ref().borrow_mut();
         let _len = reader.left()?;
         let _reader = reader;

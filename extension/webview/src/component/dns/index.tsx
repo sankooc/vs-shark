@@ -12,11 +12,11 @@ const DNSList = (props: Proto) => {
   };
   useEffect(mountHook, []);
   const columes = [
-    { field: 'name', header: 'name' },
-    { field: '_type', header: 'type' },
-    { field: 'class', header: 'clz' },
-    { field: 'ttl', header: 'ttl' },
-    { field: 'content', header: 'address' }
+    { field: 'name', header: 'name',style: { width: '50%' }  },
+    { field: '_type', header: 'type'},
+    { field: 'class', header: 'clz'},
+    { field: 'ttl', header: 'ttl'},
+    { field: 'content', header: 'address',style: { width: '20%' } }
   ];
   const mapper = {};
   for(const item of props.items){

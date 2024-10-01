@@ -1,11 +1,11 @@
-use pcap_derive::{Packet2, NINFO};
+use pcap_derive::{Packet2, Visitor3, NINFO};
 
 use crate::common::{Description, MacAddress, MacPacket, PtypePacket, DEF_EMPTY_MAC};
-use crate::files::{PacketOpt, Visitor};
+use crate::common::base::PacketOpt;
 use crate::specs::ProtocolData;
 use crate::{
     common::io::Reader,
-    files::{Frame, PacketBuilder, PacketContext},
+    common::base::{Frame, PacketBuilder, PacketContext},
 };
 use crate::common::io::AReader;
 use anyhow::{Ok, Result};
@@ -66,11 +66,11 @@ impl PtypePacket for Ethernet {
         self.ptype
     }
 }
-
+#[derive(Visitor3)]
 pub struct EthernetVisitor;
 
-impl Visitor for EthernetVisitor {
-    fn visit(&self, _f: &Frame, reader: &Reader) -> Result<(ProtocolData, &'static str)> {
+impl EthernetVisitor {
+    pub fn visit2(&self, reader: &Reader) -> Result<(ProtocolData, &'static str)> {
         let packet = Ethernet::create(reader, None)?;
         let val: &RefCell<Ethernet> = packet.get();
         let ptype = val.borrow().ptype;

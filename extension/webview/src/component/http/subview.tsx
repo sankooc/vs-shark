@@ -50,10 +50,7 @@ const SubComponnet = (props: Props) => {
     </>)
   }
   const disabled = !selection;
-  const onSelect = (_sel) => {
-    console.log('select', _sel);
-    setSelect(_sel);
-  };
+  const onSelect = setSelect;
   const footer = <div className="card flex flex-nowrap gap-3 p-fluid">
     <div className="flex align-items-right gap-3">
       <Button disabled={disabled} onClick={() => { setVisible(true) }} label="Detail" icon="pi pi-search" size="small" />

@@ -2,12 +2,12 @@ use std::fmt::Formatter;
 use std::net::Ipv4Addr;
 
 use anyhow::{bail, Result};
-use pcap_derive::{Packet2, NINFO};
+use pcap_derive::{Packet2, Visitor3, NINFO};
 use crate::common::FIELDSTATUS;
 
 use crate::{
     common::{io::Reader, Description, IPPacket, TtypePacket},
-    files::{Frame, PacketBuilder, PacketContext, PacketOpt},
+    common::base::{Frame, PacketBuilder, PacketContext, PacketOpt},
 };
 use crate::common::io::AReader;
 
@@ -120,10 +120,11 @@ impl IPv4 {
         return self.to_string();
     }
 }
+#[derive(Visitor3)]
 pub struct IP4Visitor;
 
-impl crate::files::Visitor for IP4Visitor {
-    fn visit(&self, _: &Frame, reader: &Reader) -> Result<(ProtocolData, &'static str)> {
+impl IP4Visitor {
+    fn visit2(&self, reader: &Reader) -> Result<(ProtocolData, &'static str)> {
         let packet = IPv4::create(reader, None)?;
         let p = packet.get();
         let ipproto = p.borrow().t_protocol;

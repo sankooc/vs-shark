@@ -7,6 +7,7 @@ use std::fmt;
 use std::rc::Rc;
 pub mod concept;
 pub mod io;
+pub mod base;
 
 pub type Ref2<T> = Rc<RefCell<T>>;
 pub type MultiBlock<T> = Vec<Ref2<T>>;
@@ -16,8 +17,6 @@ pub enum DataError {
     UnsupportFileType,
     #[error("bit error")]
     BitSize,
-    // #[error("unknown data store error")]
-    // Unknown,
 }
 
 pub trait PortPacket {

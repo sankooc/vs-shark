@@ -1,12 +1,12 @@
 use std::{fmt::Formatter, net::Ipv4Addr};
 
 use anyhow::Result;
-use pcap_derive::Packet;
+use pcap_derive::{Packet, Visitor3};
 
 use crate::{
     common::{io::AReader, MacAddress, Ref2, FIELDSTATUS},
     constants::{arp_hardware_type_mapper, dhcp_option_type_mapper, dhcp_type_mapper},
-    files::{Frame, PacketBuilder, PacketContext},
+    common::base::{Frame, PacketBuilder, PacketContext},
 };
 use crate::common::io::Reader;
 
@@ -35,7 +35,7 @@ impl std::fmt::Display for DHCP {
         fmt.write_fmt(format_args!("Dynamic Host Configuration Protocol ({})", self._type()))
     }
 }
-impl crate::files::InfoPacket for DHCP {
+impl crate::common::base::InfoPacket for DHCP {
     fn info(&self) -> String {
         format!("{} - Transaction ID {:#010x}", self._type(), self.transaction_id)
     }
@@ -93,11 +93,11 @@ impl std::fmt::Display for DHCPOption {
         fmt.write_fmt(format_args!("OPTION ({}) {}", code, self._type()))
     }
 }
-
+#[derive(Visitor3)]
 pub struct DHCPVisitor;
 
-impl crate::files::Visitor for DHCPVisitor {
-    fn visit(&self, _: &Frame, reader: &Reader) -> Result<(ProtocolData, &'static str)> {
+impl DHCPVisitor {
+    fn visit2(&self, reader: &Reader) -> Result<(ProtocolData, &'static str)> {
         let packet: PacketContext<DHCP> = Frame::create_packet();
         let mut p = packet.get().borrow_mut();
         p.op = packet.build_lazy(reader, Reader::_read8, DHCP::op)?;

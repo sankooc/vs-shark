@@ -1,13 +1,13 @@
 use std::fmt::Formatter;
 
-use pcap_derive::Packet;
+use pcap_derive::{Packet, Visitor3};
 
 use crate::{
     common::{
         io::{AReader, Reader},
         FIELDSTATUS,
     },
-    files::{Frame, PacketBuilder, PacketContext},
+    common::base::{Frame, PacketBuilder, PacketContext},
 };
 use anyhow::Result;
 
@@ -55,7 +55,7 @@ impl HTTP {
         
     }
 }
-impl crate::files::InfoPacket for HTTP {
+impl crate::common::base::InfoPacket for HTTP {
     fn info(&self) -> String {
         self.head.clone()
     }
@@ -69,6 +69,7 @@ impl std::fmt::Display for HTTP {
         fmt.write_str("Hypertext Transfer Protocol")
     }
 }
+#[derive(Visitor3)]
 pub struct HTTPVisitor;
 
 impl HTTPVisitor {
@@ -112,8 +113,8 @@ fn pick_value(head: &str, key: &str) -> Option<String> {
     }
     rs
 }
-impl crate::files::Visitor for HTTPVisitor {
-    fn visit(&self, _: &Frame, reader: &Reader) -> Result<(ProtocolData, &'static str)> {
+impl HTTPVisitor {
+    fn visit2(&self, reader: &Reader) -> Result<(ProtocolData, &'static str)> {
         let packet: PacketContext<HTTP> = Frame::create_packet();
         let mut p = packet.get().borrow_mut();
         let v = packet.build_format(reader, Reader::_read_enter, "{}")?;

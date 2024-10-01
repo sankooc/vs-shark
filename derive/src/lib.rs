@@ -86,7 +86,7 @@ pub fn packet3_macro_derive(input: TokenStream) -> TokenStream {
 fn impl_ninfo_macro(ast: &syn::DeriveInput) -> TokenStream {
     let name = &ast.ident;
     let gen = quote! {
-        impl crate::files::InfoPacket for #name {
+        impl crate::common::base::InfoPacket for #name {
             fn info(&self) -> String {
                 self.to_string()
             }
@@ -132,6 +132,37 @@ pub fn packet4_macro_derive(input: TokenStream) -> TokenStream {
             fn _create(reader: &Reader, packet: &PacketContext<Self>, p: &mut std::cell::RefMut<Self>, _len: Option<PacketOpt>) -> Result<()> {
                 p._decode(packet, reader,_len.unwrap())?;
                 Ok(())
+            }
+        }
+    };
+    gen.into()
+}
+
+
+
+
+#[proc_macro_derive(Visitor2)]
+pub fn visitor2_macro_derive(input: TokenStream) -> TokenStream {
+    let ast:syn::DeriveInput = syn::parse(input).unwrap();
+    let name = &ast.ident;
+    let gen = quote! {
+        impl crate::common::base::Visitor for #name {
+            fn visit(&self, frame: &mut Frame, _: &mut Context, reader: &Reader) -> Result<(ProtocolData, &'static str)> {
+                self.visit2(frame, reader)
+            }
+        }
+    };
+    gen.into()
+}
+
+#[proc_macro_derive(Visitor3)]
+pub fn visitor3_macro_derive(input: TokenStream) -> TokenStream {
+    let ast:syn::DeriveInput = syn::parse(input).unwrap();
+    let name = &ast.ident;
+    let gen = quote! {
+        impl crate::common::base::Visitor for #name {
+            fn visit(&self, _: &mut Frame, _: &mut crate::common::base::Context, reader: &Reader) -> Result<(ProtocolData, &'static str)> {
+                self.visit2(reader)
             }
         }
     };

@@ -7,9 +7,8 @@ use anyhow::Result;
 use pcap_derive::Packet;
 
 use crate::{
-    common::{io::{AReader, Reader}, Description, MultiBlock, PortPacket, Ref2, FIELDSTATUS},
+    common::{base::{Context, Frame, PacketBuilder, PacketContext, TCPDetail, TCPInfo, TCPPAYLOAD}, io::{AReader, Reader}, Description, MultiBlock, PortPacket, Ref2, FIELDSTATUS},
     constants::tcp_option_kind_mapper,
-    files::{Frame, PacketBuilder, PacketContext, TCPDetail, TCPInfo, TCPPAYLOAD},
 };
 
 use super::ProtocolData;
@@ -163,7 +162,7 @@ impl PortPacket for TCP {
         self.target_port
     }
 }
-impl crate::files::InfoPacket for TCP {
+impl crate::common::base::InfoPacket for TCP {
     fn info(&self) -> String {
         let mut info = format!("{} → {} {} Seq={} Ack={} Win={} Len={}", self.source_port, self.target_port, self.state.to_string(), self.sequence, self.acknowledge, self.window, self.payload_len);
         match &self.info {
@@ -306,8 +305,8 @@ impl TCPVisitor {
     }
 }
 
-impl crate::files::Visitor for TCPVisitor {
-    fn visit(&self, frame: &Frame, reader: &Reader) -> Result<(ProtocolData, &'static str)> {
+impl crate::common::base::Visitor for TCPVisitor {
+    fn visit(&self, frame: &mut Frame, ctx: &mut Context, reader: &Reader) -> Result<(ProtocolData, &'static str)> {
         let ip_packet = frame.get_ip();
         let unwap = ip_packet.deref().borrow();
         let total = unwap.payload_len();
@@ -338,12 +337,12 @@ impl crate::files::Visitor for TCPVisitor {
         }
         frame.add_tcp(packet._clone_obj());
         let _data = reader._slice(left_size as usize);
-        let info = frame.update_tcp(p.deref(), _data);
+        let info = frame.update_tcp(p.deref(), _data, ctx);
         match &info.detail {
             TCPDetail::NONE => {
                 p.info = Some(info);
                 drop(p);
-                handle(frame, reader, packet)
+                handle(frame, ctx, reader, packet)
             }
             _ => {
                 p.info = Some(info);
@@ -354,12 +353,12 @@ impl crate::files::Visitor for TCPVisitor {
     }
 }
 
-fn handle(frame: &Frame, reader: &Reader, packet: PacketContext<TCP>) -> Result<(ProtocolData, &'static str)> {
+fn handle(frame: &mut Frame, ctx: &mut Context, reader: &Reader, packet: PacketContext<TCP>) -> Result<(ProtocolData, &'static str)> {
     let _len = reader.left()?;
     if _len < 1 {
         return Ok((ProtocolData::TCP(packet), "none"));
     }
-    let _info = frame.get_tcp_info(true)?;
+    let _info = frame.get_tcp_info(true,ctx)?;
     let ep = _info.as_ref().borrow_mut();
     match &ep._seg_type {
         TCPPAYLOAD::TLS => {

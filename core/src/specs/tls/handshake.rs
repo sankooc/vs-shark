@@ -10,7 +10,7 @@ use crate::common::Ref2;
 use crate::{
     common::io::Reader,
     constants::{tls_cipher_suites_mapper, tls_extension_mapper, tls_hs_message_type_mapper, tls_min_type_mapper},
-    files::{Frame, PacketBuilder, PacketContext, PacketOpt},
+    common::base::{Frame, PacketBuilder, PacketContext, PacketOpt},
 };
 
 use super::ber::SEQUENCE;

@@ -1,9 +1,9 @@
 use std::fmt::Formatter;
 
-use pcap_derive::Packet2;
+use pcap_derive::{Packet2, Visitor3};
 
 use crate::{
-    common::{io::{AReader, Reader}, FIELDSTATUS}, files::{Frame, PacketBuilder, PacketContext, PacketOpt}
+    common::{io::{AReader, Reader}, FIELDSTATUS}, common::base::{Frame, PacketBuilder, PacketContext, PacketOpt}
 };
 use anyhow::Result;
 
@@ -15,7 +15,7 @@ use super::ProtocolData;
 pub struct SSDP {
     header: Vec<String>,
 }
-impl crate::files::InfoPacket for SSDP {
+impl crate::common::base::InfoPacket for SSDP {
     fn info(&self) -> String {
         self.to_string()
     }
@@ -48,6 +48,7 @@ impl SSDP {
         Ok(())
     }
 }
+#[derive(Visitor3)]
 pub struct SSDPVisitor;
 
 impl SSDPVisitor {
@@ -65,8 +66,8 @@ impl SSDPVisitor {
     }
 }
 
-impl crate::files::Visitor for SSDPVisitor {
-    fn visit(&self, _: &Frame, reader: &Reader) -> Result<(ProtocolData, &'static str)> {
+impl SSDPVisitor {
+    fn visit2(&self, reader: &Reader) -> Result<(ProtocolData, &'static str)> {
         let packet = SSDP::create(reader, None)?;
         Ok((super::ProtocolData::SSDP(packet), "none"))
     }

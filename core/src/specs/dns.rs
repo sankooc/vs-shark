@@ -3,6 +3,7 @@ use std::net::Ipv4Addr;
 use std::net::Ipv6Addr;
 //https://www.rfc-editor.org/rfc/rfc1035
 use anyhow::Result;
+use pcap_derive::Visitor3;
 use pcap_derive::{Packet, Packet2, NINFO};
 
 use crate::common::io::Reader;
@@ -11,7 +12,7 @@ use crate::common::MultiBlock;
 use crate::common::Ref2;
 use crate::common::FIELDSTATUS;
 use crate::constants::{dns_class_mapper, dns_type_mapper};
-use crate::files::{DomainService, Frame, PacketBuilder, PacketContext, PacketOpt, Visitor};
+use crate::common::base::{DomainService, Frame, PacketBuilder, PacketContext, PacketOpt};
 
 use super::ProtocolData;
 
@@ -268,6 +269,7 @@ impl DomainService for RecordResource {
     }
 }
 
+#[derive(Visitor3)]
 pub struct DNSVisitor;
 
 impl DNSVisitor {
@@ -323,15 +325,16 @@ impl DNSVisitor {
     }
 }
 
-impl Visitor for DNSVisitor {
-    fn visit(&self, _: &Frame, reader: &Reader) -> Result<(ProtocolData, &'static str)> {
+impl DNSVisitor {
+    fn visit2(&self, reader: &Reader) -> Result<(ProtocolData, &'static str)> {
         let packet = DNS::create(reader, None)?;
         Ok((ProtocolData::DNS(packet), "none"))
     }
 }
+#[derive(Visitor3)]
 pub struct MDNSVisitor;
-impl Visitor for MDNSVisitor {
-    fn visit(&self, _: &Frame, reader: &Reader) -> Result<(ProtocolData, &'static str)> {
+impl MDNSVisitor {
+    fn visit2(&self, reader: &Reader) -> Result<(ProtocolData, &'static str)> {
         let packet = DNS::create(reader, None)?;
         Ok((ProtocolData::DNS(packet), "none"))
     }

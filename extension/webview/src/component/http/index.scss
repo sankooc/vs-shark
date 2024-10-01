@@ -70,6 +70,9 @@
     }
 }
 .http-content{
-    word-break: break-all;
-    overflow: hidden;
+    word-break: break-all;    
+    max-height: 100px;
+    overflow-y: auto;
+    overflow-x: hidden;
+
 }

@@ -8,7 +8,6 @@ class Props {
 }
 function Http(props: Props) {
     const statistic = props.data;
-    console.log(statistic);
     return (<Card className="http-statistic-card">
         <Card>
             <TypePie items={statistic.http_method} title="HTTP Method Usage" tooltip="http method" />

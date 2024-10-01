@@ -1,8 +1,7 @@
+use crate::common::base::Instance;
 use crate::common::FileType;
 use crate::common::io::{AReader, SliceReader};
 use anyhow::Result;
-
-use super::Instance;
 
 fn parse_head(data: &[u8]) -> Result<String> {
     let reader = SliceReader::new(data);
@@ -17,7 +16,7 @@ fn parse_interface(data: &[u8]) -> Result<u16> {
     reader.read16(false)
 }
 
-fn parse_enhance(ctx: &Instance, data: &[u8]) -> Result<()>{
+fn parse_enhance(instance: &mut Instance, data: &[u8]) -> Result<()>{
     let reader = SliceReader::new(data);
     let _interface_id = reader.read32(false);
     let mut ts = reader.read32(false)? as u64;
@@ -25,20 +24,20 @@ fn parse_enhance(ctx: &Instance, data: &[u8]) -> Result<()>{
     let captured = reader.read32(false)?;
     let origin = reader.read32(false)?;
     ts = (ts << 32) + low_ts;
-    ctx.update_ts(ts);
+    instance.update_ts(ts);
     let raw = reader.slice(captured as usize);
     let _mod = origin % 4;
     if _mod > 0 {
         reader._move((4 - _mod) as usize);
     }
     let _ = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-        ctx.create(raw.to_vec(), ts, captured, origin);
+        instance.create(raw.to_vec(), ts, captured, origin);
     }));
     // ctx.create(raw.to_vec(), ts, captured, origin);
     Ok(())
 }
 pub fn parse(data: &[u8]) -> Result<Instance> {
-    let ctx = Instance::new(FileType::PCAPNG);
+    let mut instance = Instance::new(FileType::PCAPNG);
     let reader = SliceReader::new(data);
 
     loop {
@@ -46,20 +45,20 @@ pub fn parse(data: &[u8]) -> Result<Instance> {
         let len = reader.read32(false)?;
         let raw = reader.slice((len - 12) as usize);
         let _len = reader.read32(false)?;
-        let context = ctx.context();
+        let ctx = &mut instance.ctx;
         if len == _len {
             match block_type.as_str() {
                 "0x0a0d0d0a" => {
-                    let mut info = context.info.borrow_mut();
+                    let info = &mut ctx.info;
                     info.version = parse_head(&raw)?;
                 }
                 "0x00000001" => {
-                    let mut info = context.info.borrow_mut();
+                    let info = &mut ctx.info;
                     let ltype = parse_interface(&raw)?;
                     info.link_type = ltype as u32;
                 }
                 "0x00000006" => {
-                    parse_enhance(&ctx, &raw)?;
+                    parse_enhance(&mut instance, &raw)?;
                 }
                 _ => (),
             }
@@ -70,5 +69,5 @@ pub fn parse(data: &[u8]) -> Result<Instance> {
             break;
         }
     }
-    Ok(ctx)
+    Ok(instance)
 }

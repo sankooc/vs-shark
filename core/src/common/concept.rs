@@ -1,4 +1,4 @@
-use std::{cell::RefCell, collections::{HashMap, HashSet}};
+use std::collections::{HashMap, HashSet};
 
 use serde::Serialize;
 
@@ -9,6 +9,14 @@ use super::Ref2;
 pub struct HttpMessage {
   
 }
+#[derive(Default)]
+pub struct TCPConnectInfo{
+    pub count: u16,
+    pub throughput: u32,
+    pub retransmission: u16,
+    pub invalid: u16
+}
+
 
 #[derive(Default)]
 pub struct HttpRequestBuilder {
@@ -80,24 +88,26 @@ pub struct Case {
 
 #[derive(Default)]
 pub struct CaseGroup {
-  _map: RefCell<HashMap<String, usize>>
+  // _map: RefCell<HashMap<String, usize>>
+  _map: HashMap<String, usize>
 }
 impl CaseGroup {
   pub fn new() -> Self{
-    Self{_map: RefCell::new(HashMap::new())}
+    Self{_map: HashMap::new()}
   }
-  pub fn inc(&self, name: &str) {
-    let bind = self._map.borrow();
-    let val = *(bind.get(name.into()).unwrap_or(&0));
-    drop(bind);
-    let mut bind2 = self._map.borrow_mut();
-    bind2.insert(name.into(), val + 1);
-    drop(bind2);
+  pub fn get_map(&self)-> &HashMap<String, usize>{
+    &self._map
+  }
+  pub fn inc(&mut self, name: &str) {
+    let val = self.get(name);
+    self._map.insert(name.into(), val + 1);
+  }
+  pub fn get(&self, name: &str) -> usize{
+    *(self._map.get(name.into()).unwrap_or(&0))
   }
   pub fn to_list(&self) -> Vec<Case> {
-    let bind = self._map.borrow();
     let mut list = Vec::new();
-    for (k, v) in bind.iter() {
+    for (k, v) in self._map.iter() {
       list.push(Case{name: k.into(), value: *v})
     }
     list

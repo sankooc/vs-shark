@@ -29,7 +29,6 @@ const DTable = (props: Props) => {
   const onSelectionChange = (e: DataTableSelectionSingleChangeEvent<any[]>) => {
     const { index } = e.value;
     
-    console.log('select_2', e);
     if(index !== undefined) {
       setSelect(index);
       if(props.onSelect) {

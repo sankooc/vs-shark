@@ -1,11 +1,11 @@
 use std::{fmt::Formatter, net::Ipv6Addr};
 
 use anyhow::Result;
-use pcap_derive::{Packet2, NINFO};
+use pcap_derive::{Packet2, Visitor3, NINFO};
 
 use crate::{
     common::{io::{AReader, Reader}, Description, IPPacket, TtypePacket},
-    files::{Frame, PacketBuilder, PacketContext, PacketOpt},
+    common::base::{Frame, PacketBuilder, PacketContext, PacketOpt},
 };
 use crate::common::FIELDSTATUS;
 
@@ -80,10 +80,11 @@ impl std::fmt::Display for IPv6 {
         Ok(())
     }
 }
+#[derive(Visitor3)]
 pub struct IP6Visitor;
 
-impl crate::files::Visitor for IP6Visitor {
-    fn visit(&self, _: &Frame, reader: &Reader) -> Result<(ProtocolData, &'static str)> {
+impl IP6Visitor {
+    fn visit2(&self, reader: &Reader) -> Result<(ProtocolData, &'static str)> {
         let packet: PacketContext<IPv6> = IPv6::create(reader, None)?;
         let p = packet.get();
         let ipproto = p.borrow().t_protocol;

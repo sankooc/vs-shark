@@ -2,7 +2,7 @@ use std::fmt::Display;
 use anyhow::Result;
 
 use pcap_derive::Packet2;
-use crate::files::{Frame, PacketBuilder, PacketContext, PacketOpt};
+use crate::common::base::{Frame, PacketBuilder, PacketContext, PacketOpt};
 use crate::common::io::Reader;
 use crate::common::io::AReader;
 
