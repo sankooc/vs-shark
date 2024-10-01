@@ -1,6 +1,6 @@
 use crate::{
     common::{
-        concept::{CaseGroup, HttpRequestBuilder, LineData, Lines, PCAPInfo, Statistic, TCPConnectInfo, TCPWrap},
+        concept::{HttpRequestBuilder, LineData, Lines, PCAPInfo, Statistic, TCPConnectInfo},
         io::AReader,
         IPPacket, MultiBlock, PortPacket, Ref2, FIELDSTATUS,
     },
@@ -17,19 +17,14 @@ use chrono::{DateTime, Utc};
 use enum_dispatch::enum_dispatch;
 use log::error;
 use std::{
-    borrow::Borrow,
-    cell::{ Ref, RefCell},
-    collections::{HashMap, HashSet},
-    fmt::Display,
-    ops::{Deref, Range},
-    rc::Rc,
-    time::{Duration, UNIX_EPOCH},
+    borrow::Borrow, cell::{Ref, RefCell}, collections::{HashMap, HashSet}, fmt::Display, net::{Ipv4Addr, Ipv6Addr}, ops::{Deref, Range}, rc::Rc, time::{Duration, UNIX_EPOCH}
 };
 
 use anyhow::{bail, Result};
 // pub mod pcapng;
 use crate::common::io::Reader;
 use crate::common::{FileInfo, FileType};
+
 
 #[derive(Default, Clone)]
 pub struct Field {
@@ -388,7 +383,7 @@ pub struct Endpoint {
     _checksum: u16,
     mss: u16,
     //
-    info: TCPConnectInfo,
+    pub info: TCPConnectInfo,
 
     //
     _request: Option<HttpRequestBuilder>,
@@ -402,6 +397,9 @@ impl Endpoint {
     fn new(host: String, port: u16) -> Self {
         Self { host, port, ..Default::default() }
     }
+    // fn wrap(&self) -> EndpointWrap {
+        
+    // }
 
     // fn add_or_update_http(&mut self, http: Ref2<HTTP>) -> Option<HttpRequestBuilder>{
     //     let reff = http.deref().borrow();
@@ -429,7 +427,7 @@ impl Endpoint {
             }
         }
     }
-    pub fn add_segment(&mut self, frame: &Frame, _type: TCPPAYLOAD, data: &[u8]) {
+    pub fn add_segment(&mut self, index: u32, _type: TCPPAYLOAD, data: &[u8]) {
         let range = self._seg_len..(self._seg_len + data.len());
         self._seg_len += data.len();
         self._seg_type = _type;
@@ -441,7 +439,7 @@ impl Endpoint {
                 self._seg = Some(data.to_vec());
             }
         }
-        let segment = Segment { index: frame.summary.index, range };
+        let segment = Segment { index, range };
         match &mut self._segments {
             Some(seg) => seg.push(segment),
             None => {
@@ -462,9 +460,10 @@ impl Endpoint {
         let sequence = tcp.sequence;
         let info = &mut self.info;
         info.count = info.count + 1;
-        info.throughput = info.throughput + 1;
+        info.throughput += tcp.payload_len as u32;
 
         if self._checksum == tcp.crc {
+            info.retransmission += 1;
             self.clear_segment();
             return TCPDetail::RETRANSMISSION;
         }
@@ -494,6 +493,7 @@ impl Endpoint {
             self.seq = sequence;
             self.next = sequence + tcp.payload_len as u32;
             self._checksum = tcp.crc;
+            info.invalid += 1;
             self.clear_segment();
             return TCPDetail::NOPREVCAPTURE;
         } else if sequence == self.next {
@@ -513,6 +513,7 @@ impl Endpoint {
                 self._checksum = tcp.crc;
                 return TCPDetail::KEEPALIVE;
             }
+            info.invalid += 1;
             self.clear_segment();
             return TCPDetail::DUMP;
         }
@@ -537,10 +538,8 @@ impl Endpoint {
     }
 }
 pub struct TCPConnection {
-    // pub count: Cell<u16>,
-    // pub throughput: Cell<u32>,
-    pub ep1: Ref2<Endpoint>,
-    pub ep2: Ref2<Endpoint>,
+    pub ep1: Endpoint,
+    pub ep2: Endpoint,
 }
 
 pub struct TCPInfo {
@@ -550,8 +549,8 @@ pub struct TCPInfo {
     pub next: u32,
 }
 impl TCPConnection {
-    fn create_ep(src: String, port: u16) -> Ref2<Endpoint> {
-        Rc::new(RefCell::new(Endpoint::new(src, port)))
+    fn create_ep(src: String, port: u16) -> Endpoint {
+        Endpoint::new(src, port)
     }
     fn new(ip: &dyn IPPacket, packet: &TCP, arch: bool) -> Self {
         let src = ip.source_ip_address();
@@ -575,63 +574,56 @@ impl TCPConnection {
             ep1: ep2,
         }
     }
-    fn get_endpoint(&self, arch: bool) -> Ref2<Endpoint> {
+    pub fn get_endpoint(&mut self, arch: bool) -> &mut Endpoint {
         match arch {
-            true => self.ep1.clone(),
-            false => self.ep2.clone(),
+            true => &mut self.ep1,
+            false => &mut self.ep2,
         }
     }
-    fn update(&self, arch: bool, tcp: &TCP, frame: &Frame, data: &[u8]) -> TCPInfo {
+    fn update(&mut self, arch: bool, tcp: &TCP, frame: &Frame, data: &[u8]) -> TCPInfo {
         let (main, rev) = match arch {
-            true => (self.ep1.clone(), self.ep2.clone()),
-            false => (self.ep2.clone(), self.ep1.clone()),
+            true => (&mut self.ep1, &mut self.ep2),
+            false => (&mut self.ep2, &mut self.ep1),
         };
         // let _count = self.count.get();
         // self.count.set(_count + 1);
-        let mut _main = main.as_ref().borrow_mut();
-        let detail = _main.update(tcp, frame, data);
-        let _seq = _main._seq;
-        let next = _main.next;
-        drop(_main);
-        let mut _rev = rev.as_ref().borrow_mut();
-        _rev.confirm(tcp);
-        let _ack = _rev._ack;
-        drop(_rev);
+        // let mut _main = main.as_ref().borrow_mut();
+        let detail = main.update(tcp, frame, data);
+        let _seq = main._seq;
+        let next = main.next;
+
+        // let mut _rev = rev.as_ref().borrow_mut();
+        rev.confirm(tcp);
+        let _ack = rev._ack;
+        // drop(_rev);
         // let _size = self.throughput.get();
         // self.throughput.set(_size + tcp.payload_len as u32);
         TCPInfo { next, _ack, _seq, detail }
     }
-    pub fn create_wrap(&self, mapper: &HashMap<String,String>, compare: &HashMap<String, usize>) -> TCPWrap {
-        let mut rs = TCPWrap{..Default::default()};
-        let emp = String::from("");
-        let _ep1 = self.ep1.as_ref().borrow();
-        let _ep2 = self.ep2.as_ref().borrow();
-        let h_1 = *compare.get(&_ep1.host).unwrap_or(&0);
-        let h_2 = *compare.get(&_ep2.host).unwrap_or(&0);
-        let s: &Endpoint;
-        let t: &Endpoint;
+    pub fn sort(&self, compare: &HashMap<String, usize>) -> (&Endpoint, &Endpoint){
+        let h_1 = *compare.get(&self.ep1.host).unwrap_or(&0);
+        let h_2 = *compare.get(&self.ep2.host).unwrap_or(&0);
         if h_1 < h_2 {
-         s = _ep1.deref();
-         t = _ep2.deref();
-        } else {
-            t = _ep1.deref();
-            s = _ep2.deref();
+            return (&self.ep1, &self.ep2);
         }
-
-        {
-            rs.source_ip = s.host.clone();
-            rs.source_port = s.port;
-            rs.source_host = mapper.get(&s.host).unwrap_or(&emp).clone();
-        }
-        {
-            rs.target_ip = t.host.clone();
-            rs.target_port = t.port;
-            rs.target_host = mapper.get(&t.host).unwrap_or(&emp).clone();
-        }
-        // rs.count = self.count.get();
-        // rs.throughput = self.throughput.get();
-        rs
+        return (&self.ep2, &self.ep1);
     }
+    // pub fn create_wrap(&self, mapper: &HashMap<String, String>, compare: &HashMap<String, usize>) -> (&Endpoint, &Endpoint) {
+        // let mut rs = TCPWrap { ..Default::default() };
+        // let emp = String::from("");
+        // self.sort(compare)
+        // {
+        //     rs.source_ip = s.host.clone();
+        //     rs.source_port = s.port;
+        //     rs.source_host = mapper.get(&s.host).unwrap_or(&emp).clone();
+        // }
+        // {
+        //     rs.target_ip = t.host.clone();
+        //     rs.target_port = t.port;
+        //     rs.target_host = mapper.get(&t.host).unwrap_or(&emp).clone();
+        // }
+        // rs
+    // }
 }
 
 pub trait PacketBuilder {
@@ -712,7 +704,7 @@ impl Frame {
         let _tcp = tcp.deref().borrow();
         (_tcp.source_port, _tcp.target_port)
     }
-    
+
     pub fn update_host(&mut self, src: &str, dst: &str) {
         let s = &mut self.summary;
         s.source = src.into();
@@ -723,7 +715,7 @@ impl Frame {
         self.update_host(&_ip.source_ip_address(), &_ip.target_ip_address());
 
         // performance issue todo
-        let ip_map = &mut ctx.ip_map;
+        let ip_map = &mut ctx.statistic.ip;
         ip_map.inc(_ip.source_ip_address().as_str());
         ip_map.inc(_ip.target_ip_address().as_str());
 
@@ -749,7 +741,7 @@ impl Frame {
         }
         drop(val);
     }
-    pub fn update_tcp(&self, packet: &TCP, data: &[u8],ctx: &mut Context) -> TCPInfo {
+    pub fn update_tcp(&self, packet: &TCP, data: &[u8], ctx: &mut Context) -> TCPInfo {
         let ippacket = self.get_ip();
         let refer = ippacket.deref().borrow();
         ctx.update_tcp(self, refer.deref(), packet, data)
@@ -792,33 +784,84 @@ impl Frame {
             fields: RefCell::new(Vec::new()),
         }
     }
-    pub fn get_tcp_info(&mut self, flag:bool, ctx: &mut Context) -> Result<Ref2<Endpoint>> {
-        let sum = &mut self.summary;
+    pub fn get_tcp_map_key(&self) -> (String, bool) {
+        let sum = &self.summary;
         let _ip = sum.ip.clone().expect("no_ip_layer");
         let _tcp = sum.tcp.clone().expect("no_tcp_layer");
         let refer = _ip.deref().borrow();
         let tcp_refer = _tcp.deref().borrow();
-
-        ctx.get_tcp(refer.deref(), tcp_refer.deref(), flag)
+        Context::tcp_key(refer.deref(), tcp_refer.deref())
     }
+    // pub fn get_tcp_info(&mut self, flag:bool, ctx: &mut Context) -> &mut Endpoint {
+    //     let sum = &mut self.summary;
+    //     let _ip = sum.ip.clone().expect("no_ip_layer");
+    //     let _tcp = sum.tcp.clone().expect("no_tcp_layer");
+    //     let refer = _ip.deref().borrow();
+    //     let tcp_refer = _tcp.deref().borrow();
+    //     ctx.get_tcp(refer.deref(), tcp_refer.deref(), flag)
+    // }
     fn _create_http_request(&self) -> HttpRequestBuilder {
-        let (source,dest) = self.get_ip_address();
+        let (source, dest) = self.get_ip_address();
         let (srp, dsp) = self.get_port();
         HttpRequestBuilder::new(source, dest, srp, dsp)
+    }
+    fn ipv4_sta(_ip: &Option<Ipv4Addr>, ctx: &mut Context) {
+        let _map = &mut ctx.statistic.ip_type;
+        match _ip {
+            Some(ip) => {
+                if ip.is_private() {
+                    _map.inc("private");
+                } else if ip.is_documentation() {
+                    _map.inc("documentation");
+                } else if ip.is_link_local() {
+                    _map.inc("link_local");
+                } else if ip.is_loopback() {
+                    _map.inc("loopback");
+                } else if ip.is_multicast() {
+                    _map.inc("multicast");
+                } else {
+                    _map.inc("public");
+                }
+            }
+            _ => {}
+        }
+    }
+    fn ipv6_sta(_ip: &Option<Ipv6Addr>, ctx: &mut Context) {
+        let _map = &mut ctx.statistic.ip_type;
+        match _ip {
+            Some(ip) => {
+                if ip.is_loopback() {
+                    _map.inc("loopback");
+                } else if ip.is_multicast() {
+                    _map.inc("multicast");
+                } else {
+                    _map.inc("public");
+                }
+            }
+            _ => {}
+        }
     }
     pub fn add_element(&mut self, ctx: &mut Context, ele: ProtocolData) {
         let mref = &mut self.summary;
         mref.protocol = format!("{}", ele);
-        
+
         match &ele {
             ProtocolData::IPV4(packet) => {
-                self.update_ip(ctx,packet._clone_obj());
+                self.update_ip(ctx, packet._clone_obj());
+                let ip = packet.get().borrow();
+                Frame::ipv4_sta(&ip.source_ip, ctx);
+                Frame::ipv4_sta(&ip.target_ip, ctx);
+                drop(ip);
             }
             ProtocolData::IPV6(packet) => {
-                self.update_ip(ctx,packet._clone_obj());
+                self.update_ip(ctx, packet._clone_obj());
+                let ip = packet.get().borrow();
+                Frame::ipv6_sta(&ip.source_ip, ctx);
+                Frame::ipv6_sta(&ip.target_ip, ctx);
+                drop(ip);
             }
             ProtocolData::ARP(packet) => {
-                self.update_ip(ctx,packet._clone_obj());
+                self.update_ip(ctx, packet._clone_obj());
             }
             ProtocolData::HTTP(packet) => {
                 let http = packet._clone_obj();
@@ -826,19 +869,30 @@ impl Frame {
                 let __type = _http._type();
                 match __type {
                     HttpType::REQUEST(request) => {
-                        let ep = self.get_tcp_info(true, ctx).unwrap();
-                        let mut _ep = ep.deref().borrow_mut();
+                        // let ep = self.get_tcp_info(true, ctx);
+                        let (key, arch) = self.get_tcp_map_key();
+                        let _map = &mut ctx.conversation_map;
+                        let mut conn = _map.get(&key).unwrap().borrow_mut();
+                        let ep = conn.get_endpoint(arch);
+                        // end todo
                         let mut rq = self._create_http_request();
                         rq.set_request(http.clone(), request, self.ts);
-                        _ep._request = Some(rq);
+                        ep._request = Some(rq);
                     }
                     HttpType::RESPONSE(response) => {
-                        let ep = self.get_tcp_info(false, ctx).unwrap();
-                        let mut _ep = ep.deref().borrow_mut();
-                        let request = _ep._request.take();
+                        // let ep = self.get_tcp_info(false, ctx);
+                        
+                        let (key, arch) = self.get_tcp_map_key();
+                        let _map = &mut ctx.conversation_map;
+                        let mut conn = _map.get(&key).unwrap().borrow_mut();
+                        let ep = conn.get_endpoint(!arch);
+                        // end todo
+                        let request = ep._request.take();
+                        drop(conn);
+
                         match request {
                             Some(mut req) => {
-                                req.set_response(http.clone(),response, self.ts);
+                                req.set_response(http.clone(), response, self.ts);
                                 ctx.add_http(req);
                             }
                             _ => {}
@@ -865,11 +919,12 @@ pub struct Context {
     pub count: u32,
     pub info: FileInfo,
     pub dns: Vec<Ref2<RecordResource>>,
-    conversation_map: HashMap<String, TCPConnection>,
+    pub conversation_map: HashMap<String, RefCell<TCPConnection>>,
     http_list: Vec<HttpRequestBuilder>,
-    statistic: Statistic,
+    pub statistic: Statistic,
     pub dns_map: HashMap<String, String>,
-    pub ip_map: CaseGroup,
+    // pub ip_map: CaseGroup,
+    // pub ip_type_map: CaseGroup,
 }
 
 impl Context {
@@ -924,7 +979,7 @@ impl Context {
     pub fn get_dns_count(&self) -> usize {
         self.dns.len()
     }
-    pub fn conversations(&self) -> &HashMap<String, TCPConnection> {
+    pub fn conversations(&self) -> &HashMap<String, RefCell<TCPConnection>> {
         &self.conversation_map
     }
     pub fn tcp_key(ip: &dyn IPPacket, packet: &TCP) -> (String, bool) {
@@ -944,24 +999,23 @@ impl Context {
             Some(conn) => conn,
             None => {
                 let con = TCPConnection::new(ip, packet, arch);
-                _map.insert(key.clone(), con);
+                _map.insert(key.clone(), RefCell::new(con));
                 _map.get(&key).unwrap()
             }
         };
-        conn.update(arch, packet, frame, data)
+        let mut reff = conn.borrow_mut();
+        reff.update(arch, packet, frame, data)
     }
-    fn get_tcp(&mut self, ip: &dyn IPPacket, packet: &TCP, flag: bool) -> Result<Ref2<Endpoint>> {
-        let (key, arch) = Context::tcp_key(ip, packet);
-        let _map = &mut self.conversation_map;
-        let conn = _map.get(&key).expect("no_tcp_connection");
-        let ep;
-        if flag {
-            ep = conn.get_endpoint(arch);
-        } else {
-            ep = conn.get_endpoint(!arch);
-        }
-        Ok(ep)
-    }
+    // fn get_tcp(&mut self, ip: &dyn IPPacket, packet: &TCP, flag: bool) -> Option<&Endpoint> {
+    //     let (key, arch) = Context::tcp_key(ip, packet);
+    //     let _map = &mut self.conversation_map;
+    //     let conn = _map.get(&key)?.borrow_mut();
+    //     if flag {
+    //         return Some(conn.get_endpoint(arch));
+    //     } else {
+    //        return Some(conn.get_endpoint(!arch));
+    //     }
+    // }
 }
 pub struct Instance {
     pub ctx: Context,
@@ -977,7 +1031,6 @@ impl Instance {
             conversation_map: HashMap::new(),
             statistic: Statistic::new(),
             dns_map: HashMap::new(),
-            ip_map: CaseGroup::new(),
         };
         Instance { ctx, frames: Vec::new() }
     }
@@ -1055,13 +1108,13 @@ impl Instance {
         let ctx = self.context();
         let info = &ctx.info;
         let duration = info.end_time - info.start_time;
-        let start =  info.start_time;
+        let start = info.start_time;
 
         let zone = (duration / 25) + 1;
         let mut cur: u64 = list.first().unwrap().ts;
         let mut next = cur + zone;
         let mut t_list = Vec::new();
-        let mut protos:HashMap<String, u32> = HashMap::new();
+        let mut protos: HashMap<String, u32> = HashMap::new();
         let mut y = HashSet::new();
         let mut x = Vec::new();
         // let mut counter:usize = 1;
@@ -1099,24 +1152,24 @@ impl Instance {
     }
 }
 
-fn _insert_map(protos: &mut HashMap<String, u32>, protocol: String, mount: u32){
+fn _insert_map(protos: &mut HashMap<String, u32>, protocol: String, mount: u32) {
     let _mount = *protos.get(protocol.as_str()).unwrap_or(&0);
     protos.insert(protocol, _mount + mount);
 }
 fn ts_to_str(ts: u64) -> String {
     if ts < 10000 {
-        return format!("{} micSec", ts)
+        return format!("{} micSec", ts);
     }
     if ts < 1000000 {
-        return format!("{}.{} MS", ts/1000, ts%1000)
+        return format!("{}.{} MS", ts / 1000, ts % 1000);
     }
-    let _sec = ts/1000000;
+    let _sec = ts / 1000000;
     if _sec < 1000 {
-        return format!("{}.{} Sec", _sec, (ts/ 1000)%1000)
+        return format!("{}.{} Sec", _sec, (ts / 1000) % 1000);
     }
     let _min = _sec / 60;
     if _min < 1000 {
-        return format!("{}.{} Min", _min, _sec%60);
+        return format!("{}.{} Min", _min, _sec % 60);
     }
-    format!("{}.{} H", _min/60, _min%60)
+    format!("{}.{} H", _min / 60, _min % 60)
 }

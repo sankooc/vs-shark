@@ -7,7 +7,11 @@ use anyhow::Result;
 use pcap_derive::Packet;
 
 use crate::{
-    common::{base::{Context, Frame, PacketBuilder, PacketContext, TCPDetail, TCPInfo, TCPPAYLOAD}, io::{AReader, Reader}, Description, MultiBlock, PortPacket, Ref2, FIELDSTATUS},
+    common::{
+        base::{Context, Frame, PacketBuilder, PacketContext, TCPDetail, TCPInfo, TCPPAYLOAD},
+        io::{AReader, Reader},
+        Description, MultiBlock, PortPacket, Ref2, FIELDSTATUS,
+    },
     constants::tcp_option_kind_mapper,
 };
 
@@ -179,18 +183,17 @@ impl crate::common::base::InfoPacket for TCP {
 
     fn status(&self) -> FIELDSTATUS {
         if self.state._match(RESET) {
-            return FIELDSTATUS::ERROR
+            return FIELDSTATUS::ERROR;
         }
         match &self.info {
             Some(_info) => match &_info.detail {
                 TCPDetail::DUMP => FIELDSTATUS::WARN,
                 TCPDetail::NOPREVCAPTURE => FIELDSTATUS::WARN,
                 TCPDetail::RETRANSMISSION => FIELDSTATUS::WARN,
-                _ => FIELDSTATUS::INFO
+                _ => FIELDSTATUS::INFO,
             },
-            None => FIELDSTATUS::INFO
+            None => FIELDSTATUS::INFO,
         }
-        
     }
 }
 impl TCP {
@@ -358,15 +361,17 @@ fn handle(frame: &mut Frame, ctx: &mut Context, reader: &Reader, packet: PacketC
     if _len < 1 {
         return Ok((ProtocolData::TCP(packet), "none"));
     }
-    let _info = frame.get_tcp_info(true,ctx)?;
-    let ep = _info.as_ref().borrow_mut();
+    // let ep = frame.get_tcp_info(true,ctx);
+    let (key, arch) = frame.get_tcp_map_key();
+    let _map = &mut ctx.conversation_map;
+    let mut conn = _map.get(&key).unwrap().borrow_mut();
+    let ep = conn.get_endpoint(arch);
+    // end
     match &ep._seg_type {
         TCPPAYLOAD::TLS => {
-            drop(ep);
             return Ok((ProtocolData::TCP(packet), "tls"));
         }
         TCPPAYLOAD::NONE => {
-            drop(ep);
             let (is_tls, _) = super::tls::TLS::check(reader)?;
             if is_tls {
                 return Ok((ProtocolData::TCP(packet), "tls"));

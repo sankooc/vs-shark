@@ -16,6 +16,8 @@ import HttpComponnet from './http';
 // import overview_json from '../mock/overview2.json';
 // import meta_json from '../mock/meta.json';
 // import http_json from '../mock/stat.json';
+// import mock_ip from '../mock/ip.json';
+// import mock_iptype from '../mock/iptype.json';
 // import _dnsRecords from '../mock/dns.json';
 
 
@@ -52,7 +54,6 @@ const Main = () => {
           break;
         }
         case '_http': {
-          console.log('---')
           setHttps(body);
           break;
         }

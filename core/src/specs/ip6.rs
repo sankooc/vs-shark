@@ -22,8 +22,8 @@ pub fn excute(ipprototype: u8) -> &'static str {
 
 #[derive(Default, Packet2, NINFO)]
 pub struct IPv6 {
-    source_ip: Option<Ipv6Addr>,
-    target_ip: Option<Ipv6Addr>,
+    pub source_ip: Option<Ipv6Addr>,
+    pub target_ip: Option<Ipv6Addr>,
     total_len: u16,
     hop_limit: u8,
     t_protocol: u8,

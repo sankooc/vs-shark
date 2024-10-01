@@ -14,7 +14,7 @@ pub struct TCPConnectInfo{
     pub count: u16,
     pub throughput: u32,
     pub retransmission: u16,
-    pub invalid: u16
+    pub invalid: u16,
 }
 
 
@@ -57,6 +57,8 @@ pub struct StatisticV {
   http_method: Vec<Case>,
   http_status: Vec<Case>,
   http_type: Vec<Case>,
+  ip:Vec<Case>,
+  ip_type: Vec<Case>,
 }
 
 #[derive(Default)]
@@ -64,6 +66,8 @@ pub struct Statistic {
   pub http_method: CaseGroup,
   pub http_status: CaseGroup,
   pub http_type: CaseGroup,
+  pub ip: CaseGroup,
+  pub ip_type: CaseGroup,
 }
 
 impl Statistic {
@@ -75,6 +79,8 @@ impl Statistic {
       http_method: self.http_method.to_list(),
       http_status: self.http_status.to_list(),
       http_type: self.http_type.to_list(),
+      ip: self.ip.to_list(),
+      ip_type: self.ip_type.to_list(),
     };
     serde_json::to_string(&enti).unwrap()
   }
@@ -174,6 +180,14 @@ pub struct TCPWrap{
   pub throughput: u32,
 }
 
+#[derive(Default)]
+pub struct EndpointWrap{
+  pub ip: String,
+  pub port: u16,
+  pub host: String,
+  pub count: u16,
+  pub throughput: u32,
+}
 
 #[allow(dead_code)]
 pub struct IPINFO {

@@ -1,11 +1,10 @@
-use core::common::concept::TCPWrap;
 use std::borrow::Borrow;
 use std::cell::{Ref, RefCell};
 use std::cmp;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 use core::common::FIELDSTATUS;
-use core::common::base::{DomainService, Element, Frame, Instance};
+use core::common::base::{DomainService, Element, Endpoint, Frame, Instance};
 use core::entry::*;
 use js_sys::Uint8Array;
 use wasm_bindgen::prelude::*;
@@ -181,9 +180,48 @@ impl FrameInfo {
     }
 }
 
+#[derive(Clone)]
+#[wasm_bindgen]
+pub struct WEndpoint {
+    ip: String,
+    pub port: u16,
+    host: String,
+    pub count: u16,
+    pub throughput: u32,
+    pub retransmission: u16,
+    pub invalid: u16,
+}
+
+impl WEndpoint {
+    fn new(ep: &Endpoint, mapper: &HashMap<String, String>) -> Self {
+        let host = mapper.get(&ep.host).unwrap_or(&String::from("")).clone();
+        let info = &ep.info;
+        Self{ ip: ep.host.clone(), port: ep.port, host, count: info.count, throughput: info.throughput, retransmission: info.retransmission, invalid: info.invalid }
+    }
+}
+
+#[wasm_bindgen]
+impl WEndpoint {
+    #[wasm_bindgen(getter)]
+    pub fn ip(&self) -> String {
+        self.ip.clone()
+    }
+    #[wasm_bindgen(getter)]
+    pub fn host(&self) -> String {
+        self.host.clone()
+    }
+}
 #[wasm_bindgen]
 pub struct TCPConversation{
-    _tcp: TCPWrap,
+    source: WEndpoint,
+    target: WEndpoint,
+}
+impl TCPConversation {
+    fn new(s: &Endpoint, t: &Endpoint, mapper: &HashMap<String, String>) -> Self {
+        let source = WEndpoint::new(s, mapper);
+        let target = WEndpoint::new(t, mapper);
+        Self{source, target}
+    }
 }
 #[wasm_bindgen]
 pub struct FrameResult {
@@ -208,36 +246,12 @@ impl FrameResult {
 #[wasm_bindgen]
 impl TCPConversation {
     #[wasm_bindgen(getter)]
-    pub fn source_ip(&self) -> String {
-        self._tcp.source_ip.clone()
+    pub fn source(&self) -> WEndpoint {
+        self.source.clone()
     }
     #[wasm_bindgen(getter)]
-    pub fn source_host(&self) -> String {
-        self._tcp.source_host.clone()
-    }
-    #[wasm_bindgen(getter)]
-    pub fn source_port(&self) -> u16 {
-        self._tcp.source_port
-    }
-    #[wasm_bindgen(getter)]
-    pub fn target_ip(&self) -> String {
-        self._tcp.target_ip.clone()
-    }
-    #[wasm_bindgen(getter)]
-    pub fn target_host(&self) -> String {
-        self._tcp.target_host.clone()
-    }
-    #[wasm_bindgen(getter)]
-    pub fn target_port(&self) -> u16 {
-        self._tcp.target_port
-    }
-    #[wasm_bindgen(getter)]
-    pub fn count(&self) -> u16 {
-        self._tcp.count
-    }
-    #[wasm_bindgen(getter)]
-    pub fn throughput(&self) -> u32 {
-        self._tcp.throughput
+    pub fn target(&self) -> WEndpoint {
+        self.target.clone()
     }
 }
 
@@ -415,8 +429,11 @@ impl WContext {
         let cons = ct.conversations();
         let mut rs = Vec::new();
         for con in cons.values().into_iter() {
-            let wrap = con.create_wrap(mapper, ct.ip_map.get_map());
-            rs.push(TCPConversation{_tcp: wrap});
+            let reff = con.borrow();
+            let (source, target) = reff.sort(ct.statistic.ip.get_map());
+            let tcp = TCPConversation::new(source, target, mapper);
+            rs.push(tcp);
+            drop(reff);
         }
         rs
     }

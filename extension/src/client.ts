@@ -2,66 +2,6 @@ import { load, WContext, FrameInfo, Field } from 'rshark';
 import { pick } from 'lodash';
 import { ComLog, ComMessage, IContextInfo, OverviewSource, IOverviewData, IFrameInfo, Pagination, IResult, IConversation, IDNSRecord, CField, HexV, IHttp } from './common';
 
-
-const convert = (frames: FrameInfo[]): any => {
-  const scale = 24;
-  const start = frames[0].time;
-  const end = frames[frames.length - 1].time;
-  const duration = end - start;
-  const per = Math.floor(duration / scale);
-  const result: Statc[] = [];
-  let cur = start;
-  let limit = cur + per;
-  let rs = Statc.create(start, per);
-  const ps = new Set<string>();
-  const getArray = (num: number): Statc => {
-    if (num < limit) {
-      return rs;
-    }
-    result.push(rs);
-    rs = Statc.create(limit, per);
-    limit = limit + per;
-    return getArray(num);
-  }
-  let _total = 0;
-  for (const item of frames) {
-    const origin = item.len;
-    _total += item.len;
-    const it = getArray(item.time);
-    it.size += origin;
-    it.count += 1;
-    const pname = item.protocol?.toLowerCase() || '';
-    it.addLable(pname, item);
-    ps.add(pname);
-  }
-
-  const categories = ['total'];
-  const map: any = {
-    total: []
-  };
-  ps.forEach((c) => {
-    categories.push(c);
-    map[c] = [];
-  });
-  const labels = [];
-  const countlist = [];
-  for (const rs of result) {
-    const { size, count, stc, start } = rs;
-    labels.push(start);
-    countlist.push(count);
-    map.total.push(size)
-    ps.forEach((c) => {
-      map[c].push(stc.get(c) || 0);
-    });
-  }
-  const overview = new OverviewSource();
-  overview.legends = categories;
-  overview.labels = labels;
-  overview.counts = countlist;
-  overview.valMap = map;
-  return overview;
-}
-
 export class Statc {
   size: number = 0;
   count: number = 0;
@@ -143,8 +83,7 @@ export abstract class PCAPClient {
   _overview(): void {
     if (this.ready && this.ctx) {
       this.emitMessage(new ComMessage('_frame_statistic', JSON.parse(this.ctx.statistic_frames())));
-      const _http = JSON.parse(this.ctx.statistic());
-      this.emitMessage(new ComMessage('_http_statistic', _http));
+      this.emitMessage(new ComMessage('_http_statistic', JSON.parse(this.ctx.statistic())));
     }
   }
   getHex(index: number, key: string): Field {
@@ -188,7 +127,16 @@ export abstract class PCAPClient {
     }
   }
   getConversations(): IConversation[] {
-    return this.ctx.get_conversations().map(f => pick(f, 'source_ip', 'source_host','source_port', 'target_ip', 'target_host','target_port', 'count', 'throughput'));
+    const _data = this.ctx.get_conversations();
+    return _data.map((f) => {
+      const source = f.source;
+      const target = f.target;
+      return {
+        source: pick(source, 'ip', 'port', 'host', 'count', 'throughput', 'retransmission', 'invalid'),
+        target: pick(target, 'ip', 'port', 'host', 'count', 'throughput', 'retransmission', 'invalid'),
+      }
+    })
+    // return _data.map(f => pick(f, 'source_ip', 'source_host','source_port', 'target_ip', 'target_host','target_port', 'count', 'throughput'));
   }
   _conversation(): void {
     if (this.ready && this.ctx) {

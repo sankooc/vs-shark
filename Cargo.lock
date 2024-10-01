@@ -295,6 +295,8 @@ dependencies = [
  "env_logger",
  "js-sys",
  "log",
+ "serde",
+ "serde_json",
  "wasm-bindgen",
  "wasm-bindgen-test",
 ]

@@ -1,4 +1,4 @@
-import init, { load, WContext, FrameInfo, Field } from 'rshark';
+import { load, WContext, FrameInfo, Field } from 'rshark';
 import { pick } from 'lodash';
 import { ComLog, ComMessage, IContextInfo, OverviewSource, IOverviewData, IFrameInfo, Pagination, IResult, IConversation, IDNSRecord, CField, HexV, IHttp } from './common';
 
@@ -102,7 +102,6 @@ class FieldImlp implements CField {
 //   const children = f.children;
 // }
 export abstract class PCAPClient {
-  public static readonly STATUS = init();
   level: string = 'trace';
   ready: boolean = false;
   data!: Uint8Array;
@@ -188,7 +187,16 @@ export abstract class PCAPClient {
     }
   }
   getConversations(): IConversation[] {
-    return this.ctx.get_conversations().map(f => pick(f, 'source_ip', 'source_host','source_port', 'target_ip', 'target_host','target_port', 'count', 'throughput'));
+    const _data = this.ctx.get_conversations();
+    return _data.map((f) => {
+      const source = f.source;
+      const target = f.target;
+      return {
+        source: pick(source, 'ip', 'port', 'host', 'count', 'throughput', 'retransmission', 'invalid'),
+        target: pick(target, 'ip', 'port', 'host', 'count', 'throughput', 'retransmission', 'invalid'),
+      }
+    })
+    // return _data.map(f => pick(f, 'source_ip', 'source_host','source_port', 'target_ip', 'target_host','target_port', 'count', 'throughput'));
   }
   _conversation(): void {
     if (this.ready && this.ctx) {

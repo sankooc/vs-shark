@@ -13,3 +13,9 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
   * add tls->handshake->cetificate parse
   * add ssdp 
   * fix hex view
+
+- 0.3.5
+  * new overview tab
+  * new dns tab
+  * new http tab
+  * new tcp tab

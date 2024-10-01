@@ -62,6 +62,8 @@ export interface IStatistic {
     http_method: ICase[];
     http_status: ICase[];
     http_type: ICase[];
+    ip: ICase[];
+    ip_type: ICase[];
 }
 export interface IContextInfo {
     file_type: string;
@@ -119,15 +121,27 @@ export interface IResult {
     size: number;
 }
 
-export interface IConversation {
-    source_ip: string,
-    source_port: number,
-    source_host: string,
-    target_ip: string,
-    target_port: number,
-    target_host: string,
+export interface IEndpoint {
+    ip: string,
+    port: number,
+    host: string,
     count: number,
     throughput: number,
+    retransmission: number,
+    invalid: number,
+}
+
+export interface IConversation {
+    source: IEndpoint,
+    target: IEndpoint,
+    // source_ip: string,
+    // source_port: number,
+    // source_host: string,
+    // target_ip: string,
+    // target_port: number,
+    // target_host: string,
+    // count: number,
+    // throughput: number,
 }
 
 export interface IDNSRecord {

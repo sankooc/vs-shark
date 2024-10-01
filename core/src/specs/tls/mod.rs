@@ -212,7 +212,7 @@ fn proc(frame: &Frame, reader: &Reader, packet: &PacketContext<TLS>, p: &mut TLS
                 p.records.push(record);
             } else {
                 let left_data = reader.slice(left_size);
-                ep.add_segment(frame, TCPPAYLOAD::TLS, left_data);
+                ep.add_segment(frame.summary.index, TCPPAYLOAD::TLS, left_data);
                 break;
             }
         } else {
@@ -225,10 +225,15 @@ fn proc(frame: &Frame, reader: &Reader, packet: &PacketContext<TLS>, p: &mut TLS
 impl Visitor for TLSVisitor {
     fn visit(&self, frame: &mut Frame, ctx: &mut Context, reader: &Reader) -> Result<(ProtocolData, &'static str)> {
         let packet: PacketContext<TLS> = Frame::create_packet();
+        let index = frame.summary.index;
         let mut p = packet.get().borrow_mut();
 
-        let _info = frame.get_tcp_info(true, ctx)?;
-        let mut ep = _info.as_ref().borrow_mut();
+        // let mut ep = frame.get_tcp_info(true, ctx);
+        let (key, arch) = frame.get_tcp_map_key();
+        let _map = &mut ctx.conversation_map;
+        let mut conn = _map.get(&key).unwrap().borrow_mut();
+        let mut ep = conn.get_endpoint(arch);
+        // end
         let _len = reader.left()?;
         let _reader = reader;
         match ep._seg_type {
@@ -238,7 +243,7 @@ impl Visitor for TLSVisitor {
                 let (_, len) = TLS::_check(&head[0..5])?;
                 let data = reader.slice(_len);
                 if len + 5 > seg_length + _len {
-                    ep.add_segment(frame, TCPPAYLOAD::TLS, data);
+                    ep.add_segment(index, TCPPAYLOAD::TLS, data);
                     let content = format!("TLS Segments {} bytes", _len);
                     packet._build(reader, reader.cursor(), _len, content);
                 } else {
@@ -254,7 +259,7 @@ impl Visitor for TLSVisitor {
             }
         }
         let _len = p.records.len();
-        drop(ep);
+        
         drop(p);
         Ok((ProtocolData::TLS(packet), "none"))
     }

@@ -40,7 +40,9 @@
 		]
 	},
 	"scripts": {
-		"build": "cd webview && npm run css && npm run build",
+		"cp1": "cp webview/src/common.ts src/common.ts",
+		"cp2": "cp webview/src/client.ts src/client.ts",
+		"build": "npm run cp1 && npm run cp2 && cd webview && npm run css && npm run build",
 		"vscode:prepublish": "pnpm run package",
 		"compile": "webpack && cp node_modules/rshark/nshark* dist/",
 		"watch": "webpack --watch",
