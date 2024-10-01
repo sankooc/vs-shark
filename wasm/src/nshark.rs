@@ -2,12 +2,11 @@ use core::common::concept::TCPWrap;
 use std::borrow::Borrow;
 use std::cell::{Ref, RefCell};
 use std::cmp;
-use std::ops::Deref;
 use std::collections::HashSet;
 
 use core::common::FIELDSTATUS;
-use core::files::{DomainService, Element, Frame, Instance};
-use core::{entry::*, files};
+use core::common::base::{DomainService, Element, Frame, Instance};
+use core::entry::*;
 use js_sys::Uint8Array;
 use wasm_bindgen::prelude::*;
 
@@ -24,14 +23,14 @@ pub struct Field {
     pub start: usize,
     pub size: usize,
     summary: String,
-    children: RefCell<Vec<files::Field>>,
+    children: RefCell<Vec<core::common::base::Field>>,
     data: Uint8Array,
     // children: Vec<Field>,
 }
 impl Field {
-    pub fn convert(embed: &files::Field) -> Self {
+    pub fn convert(embed: &core::common::base::Field) -> Self {
         let (start, size);
-        files::Field { start, size, .. } = *embed;
+        core::common::base::Field { start, size, .. } = *embed;
         let summary = embed.summary.clone();
         let a: &[u8] = embed.borrow().data.as_ref();
         let data: Uint8Array = a.into();
@@ -262,12 +261,9 @@ impl WContext {
     }
     #[wasm_bindgen]
     pub fn info(&self) -> String {
-        self.ctx.info().to_json()
+        self.ctx.pcap_info().to_json()
     }
     
-    // pub fn get_info(&mut self) -> WFileInfo {
-    //     WFileInfo::new(self.ctx.get_info())
-    // }
     #[wasm_bindgen]
     pub fn get_frame_count(&self) -> usize {
         self.ctx.get_frames().len()
@@ -292,7 +288,7 @@ impl WContext {
         item.protocol = sum.protocol.clone();
         item.info = frame.info();
         item.status = "info".into();
-        match frame.eles.borrow().last() {
+        match frame.eles.last() {
             Some(ele) => {
                 item.status = _convert(ele.status()).into();
             },
@@ -330,7 +326,7 @@ impl WContext {
             return FrameResult::new(start, 0, Vec::new());
         }
         let end = cmp::min(start + size, total);
-        let _data: &[Frame] = &_fs.deref()[start..end];
+        let _data: &[Frame] = &_fs[start..end];
         for frame in _data.iter() {
             let item = WContext::_frame(frame, start_ts);
             items.push(item);
@@ -419,7 +415,7 @@ impl WContext {
         let cons = ct.conversations();
         let mut rs = Vec::new();
         for con in cons.values().into_iter() {
-            let wrap = con.create_wrap(mapper.deref());
+            let wrap = con.create_wrap(mapper, ct.ip_map.get_map());
             rs.push(TCPConversation{_tcp: wrap});
         }
         rs
