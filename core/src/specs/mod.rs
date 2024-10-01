@@ -1,5 +1,5 @@
 use crate::{
-    common::io::Reader, files::{Element, Field, Frame, PacketContext, Visitor}
+    common::io::Reader, common::base::{Context, Element, Field, Frame, PacketContext, Visitor}
 };
 
 pub mod arp;
@@ -121,11 +121,11 @@ pub fn _parse(proto: &'static str) -> anyhow::Result<&dyn Visitor>{
     Ok(rs)
 }
 
-pub fn parse(frame: &Frame, reader: &Reader, proto: &'static str) -> anyhow::Result<Option<(ProtocolData, &'static str)>> {
+pub fn parse(frame: &mut Frame, ctx: &mut Context, reader: &Reader, proto: &'static str) -> anyhow::Result<Option<(ProtocolData, &'static str)>> {
     let v = _parse(proto);
     match v {
         Ok(visitor) => {
-            visitor.visit(frame, reader).map(|op| Some(op))
+            visitor.visit(frame, ctx, reader).map(|op| Some(op))
         },
         Err(_) => {
             Ok(None)

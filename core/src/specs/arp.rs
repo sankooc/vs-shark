@@ -1,12 +1,12 @@
 use std::fmt::Formatter;
 
 use anyhow::Result;
-use pcap_derive::Packet2;
-
+use pcap_derive::{Packet2, Visitor3};
+use std::net::Ipv4Addr;
 use crate::{
-    common::{IPPacket, IPv4Address, MacAddress, FIELDSTATUS},
+    common::{IPPacket, MacAddress, FIELDSTATUS},
     constants::{arp_hardware_type_mapper, arp_oper_type_mapper, etype_mapper},
-    files::{Frame, PacketBuilder, PacketContext, PacketOpt},
+    common::base::{ Frame, PacketBuilder, PacketContext, PacketOpt},
 };
 use crate::common::io::Reader;
 use super::ProtocolData;
@@ -19,9 +19,9 @@ pub struct ARP {
     protocol_size: u8,
     operation: u16,
     sender_mac: Option<MacAddress>,
-    sender_ip: Option<IPv4Address>,
+    sender_ip: Option<Ipv4Addr>,
     target_mac: Option<MacAddress>,
-    target_ip: Option<IPv4Address>,
+    target_ip: Option<Ipv4Addr>,
 }
 
 impl IPPacket for ARP {
@@ -41,7 +41,7 @@ impl std::fmt::Display for ARP {
         fmt.write_fmt(format_args!("Address Resolution Protocol ({})", self._operation_type()))
     }
 }
-impl crate::files::InfoPacket for ARP {
+impl crate::common::base::InfoPacket for ARP {
     fn info(&self) -> String {
         if self.operation == 1 {
             if self.source_ip_address() == self.target_ip_address() {
@@ -88,10 +88,12 @@ impl ARP {
         Ok(())
     }
 }
+
+#[derive(Visitor3)]
 pub struct ARPVisitor;
 
-impl crate::files::Visitor for ARPVisitor {
-    fn visit(&self, _: &Frame, reader: &Reader) -> Result<(ProtocolData, &'static str)> {
+impl ARPVisitor {
+    pub fn visit2(&self, reader: &Reader) -> Result<(ProtocolData, &'static str)> {
         let packet = ARP::create(reader, None)?;
         Ok((ProtocolData::ARP(packet), "none"))
     }

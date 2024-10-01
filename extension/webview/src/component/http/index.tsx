@@ -1,61 +1,106 @@
-import React, { useEffect } from "react";
-import { Card } from 'primereact/card';
-import { Panel } from 'primereact/panel';
-import TypePie from './type';
+import React, { useEffect, useState } from "react";
 import "./index.css";
-import { ComMessage, IHttp, IHttpEnity, IStatistic } from "../../common";
+import { ComMessage, IHttp, IHttpEnity } from "../../common";
 import { emitMessage } from "../../connect";
+import Mult from '../input/select';
+import { filter } from 'lodash';
+import SubComponnet from './subview';
 
 class Proto {
   items: IHttp[];
-  statistic: IStatistic;
 }
-const createMessage = (msg: IHttpEnity) => {
-  return (<>
-  <div className="code-block">
-      <code className="code-line">
-        {msg.head}
-      </code>
-    </div>
-    <br />
-    <div className="code-block">
-      {msg.header.map((l, inx) => (<code className="code-line" key={"line" + inx}>{l}</code>))}
-    </div>
-  </>)
+const toSim = (entity: IHttpEnity) => {
+  return `${entity.host}:${entity.port}`;
 }
-const createPanel = (item: IHttp, index: number) => {
-  const { req, res, method, status } = item;
-  const header = `${req.host}:${req.port} -> ${res.host}:${res.port} [${method}]`;
-  return (<Panel className={`http-panel http-status-${status} http-method-${method}`} header={header} collapsed={index !== 0} toggleable key={"http-panel" + index}>
-    {createMessage(req)}
-    <br />
-    <br />
-    {createMessage(res)}
-  </Panel>)
-}
+const __method = (item: IHttp): string => item.method;
+const __status = (item: IHttp): string => item.status;
+const __source = (item: IHttp): string => toSim(item.req);
+const __dest = (item: IHttp): string => toSim(item.res);
 
+const createFilter = (filter: string[], f_getter: (item: IHttp) => string): (item: IHttp) => boolean => {
+  if (filter.length === 0) {
+    return (_: IHttp) => true;
+  }
+  let ff = new Set(filter);
+  return (item: IHttp) => ff.has(f_getter(item));
+};
 const HttpComponnet = (props: Proto) => {
   const mountHook = () => {
     emitMessage(new ComMessage('http', null));
   };
   useEffect(mountHook, []);
-  const statistic = props.statistic;
-  statistic.http_type.forEach((cs) => {
-    cs.name = cs.name.replace(/application./, '');
+  props.items.forEach((item, index) => {
+    item.index = index + 1;
   })
+  const [f_methods, setMethods] = useState<any[]>([]);
+  const [f_status, setStatus] = useState<any[]>([]);
+  const [f_source, setSource] = useState<any[]>([]);
+  const [f_dest, setDest] = useState<any[]>([]);
+  const [opts, setOpts] = useState([[], [], [], []]);
+  useEffect(() => {
+    const _methods = new Set<string>();
+    const _status = new Set<string>();
+    const _source = new Set<string>();
+    const _dest = new Set<string>();
+    props.items.forEach((item: IHttp, index: number) => {
+      _methods.add(__method(item));
+      _status.add(__status(item));
+      _source.add(__source(item));
+      _dest.add(__dest(item));
+    });
+    const methods = Array.from(_methods);
+    const statuses = Array.from(_status);
+    const sources = Array.from(_source);
+    const dests = Array.from(_dest);
+    setOpts([methods, statuses, sources, dests]);
+  }, [props.items.length]);
+  
+  const columes = [
+    { field: 'req', body: (data) => <span>{__source(data)}</span>, header: 'source' },
+    { field: 'res', body: (data) => <span>{__dest(data)}</span>, header: 'dest' },
+    { field: 'method', header: 'method' },
+    { field: 'status', header: 'status' },
+    { field: 'ttr', header: 'ttr(micro sec)', sortable: true },
+    { field: 'req.head', header: 'path',style: { width: '40vw' } },
+  ];
+
+  const fetchItems = (): any[] => {
+    let filters = [
+      createFilter(f_methods, __method),
+      createFilter(f_status, __status),
+      createFilter(f_source, __source),
+      createFilter(f_dest, __dest),
+    ];
+    return filter(props.items, (item: IHttp) => {
+      return filters.reduce<boolean>((prev: boolean, cur: (item: IHttp) => boolean) => (prev && cur(item)), true);
+    });
+  }
+
+  const items = fetchItems();
+
+  const result = {
+    items,
+    page: 1,
+    size: items.length,
+    total: items.length
+  };
+  const header = <div className="card flex flex-nowrap gap-3 p-fluid">
+    <Mult label="Method: " _options={opts[0]} select={setMethods} ></Mult>
+    <Mult label="Status: " _options={opts[1]} select={setStatus} ></Mult>
+    <Mult label="From: " _options={opts[2]} select={setSource} ></Mult>
+    <Mult label="To:" _options={opts[3]} select={setDest} ></Mult>
+  </div>;
+  const _props = {
+    header,
+    scrollHeight: 90,
+    cols: columes,
+    getStyle: (item) => {
+      return `status-${item.status}`
+    },
+    result
+  };
   return (<div className="flex flex-column h-full w-full" id="http-page">
-    <Card className="http-statistic-card">
-      <Card>
-        <TypePie items={statistic.http_method} title="HTTP Method Usage" tooltip="http method" />
-      </Card>
-      <Card>
-        <TypePie items={statistic.http_status} title="Web Traffic Response Code Analysis" tooltip="status code" />
-      </Card>
-      <Card>
-        <TypePie items={statistic.http_type} title="Content-Type Distribution" tooltip="resp type" />
-      </Card>
-    </Card>
-    {props.items.map(createPanel)}
+    <SubComponnet {..._props}/>
   </div>
   );
 };

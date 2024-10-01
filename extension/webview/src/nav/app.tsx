@@ -2,6 +2,7 @@ import React, { MutableRefObject, useRef, useState } from 'react';
 import { Menubar } from 'primereact/menubar';
 import { ComLog, ComMessage } from '../common';
 import { PCAPClient } from '../client';
+import init from 'rshark';
 
 class Client extends PCAPClient {
     constructor(private ref: MutableRefObject<any>){
@@ -16,7 +17,7 @@ class Client extends PCAPClient {
 
 }
 
-
+init();
 export default function CommandDemo() {
     const inputRef = useRef(null);
     const iframeRef = useRef(null);

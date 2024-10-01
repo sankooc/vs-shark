@@ -2,7 +2,7 @@ import React, { ReactElement, useEffect, useState } from "react";
 import { MenuItem } from 'primereact/menuitem';
 import { Badge } from 'primereact/badge';
 import { Menu } from 'primereact/menu';
-import { ComMessage, IContextInfo, IConversation, IDNSRecord, IHttp } from '../common';
+import { ComMessage, IContextInfo, IConversation, IDNSRecord, IHttp, ILines, IStatistic } from '../common';
 import Loading from './loading';
 import ErrPage from './error';
 import { onMessage, log, emitMessage } from '../connect';
@@ -13,6 +13,13 @@ import TCPList from './tcp';
 import DNSList from './dns';
 import HttpComponnet from './http';
 
+// import overview_json from '../mock/overview2.json';
+// import meta_json from '../mock/meta.json';
+// import http_json from '../mock/stat.json';
+// import mock_ip from '../mock/ip.json';
+// import mock_iptype from '../mock/iptype.json';
+// import _dnsRecords from '../mock/dns.json';
+
 
 const itemRenderer = (item, options) => {
   return <a className="flex align-items-center px-3 py-2 cursor-pointer" onClick={options.onClick}>
@@ -22,11 +29,18 @@ const itemRenderer = (item, options) => {
   </a>
 };
 
+// framedata: ILines;
+// metadata: IContextInfo;
+// httpdata: IStatistic;
+const eventMapper = {};
+
 let _start = 0;
 const Main = () => {
   const [select, setSelect] = useState('overview');
   const [status, setStatus] = useState<number>(0);
   const [meta, setMeta] = useState<IContextInfo>(null);
+  const [framedata, setFramedata] = useState<ILines>(null);
+  const [httpdata, setHttpdata] = useState<IStatistic>(null);
   const [dnsRecords, setDnsRecords] = useState<IDNSRecord[]>([]);
   const [conversations, setConversations] = useState<IConversation[]>([]);
   const [https, setHttps] = useState<IHttp[]>([]);
@@ -55,6 +69,14 @@ const Main = () => {
           setConversations(body);
           break;
         }
+        case '_frame_statistic': {
+          setFramedata(body)
+          break;
+        }
+        case '_http_statistic': {
+          setHttpdata(body)
+          break;
+        }
       }
     });
     _start = Date.now();
@@ -72,10 +94,10 @@ const Main = () => {
       });
     };
     addPanel('overview', 'Overview', '', 'pi pi-chart-bar');
-    if (meta.frame) addPanel('frame', 'Frame', meta.frame + '', 'pi pi-list');
-    if (meta.conversation) addPanel('tcp', 'TCP', meta.conversation + '', 'pi pi-server');
-    if (meta.dns) addPanel('dns', 'DNS', meta.dns + '', 'pi pi-address-book');
-    if (meta.http) addPanel('http', 'Http', meta.http + '', 'pi pi-sort-alt');
+    if (meta.frame_count) addPanel('frame', 'Frame', meta.frame_count + '', 'pi pi-list');
+    if (meta.tcp_count) addPanel('tcp', 'TCP', meta.tcp_count + '', 'pi pi-server');
+    if (meta.dns_count) addPanel('dns', 'DNS', meta.dns_count + '', 'pi pi-address-book');
+    if (meta.http_count) addPanel('http', 'Http', meta.http_count + '', 'pi pi-sort-alt');
     return mitems;
   };
   const buildPage = (): ReactElement => {
@@ -87,12 +109,14 @@ const Main = () => {
       case 'dns':
         return <DNSList items={dnsRecords}/>
       case 'http':
-        return <HttpComponnet items={https} statistic={meta.statistic} />
+        return <HttpComponnet items={https} />
     }
-    return <Overview/>;
+    return <Overview framedata={framedata} metadata={meta} httpdata={httpdata} />;
   };
   if (status == 0) {
-    return <Loading />
+    return <Loading/>
+    // return <DNSList items={_dnsRecords}/>
+    // return <Overview framedata={overview_json} metadata={meta_json} httpdata={http_json.statistic} />
   }
   if (status == 2) {
     return <ErrPage />

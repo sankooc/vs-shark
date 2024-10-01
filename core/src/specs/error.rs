@@ -4,7 +4,7 @@ use anyhow::Result;
 use pcap_derive::Packet;
 
 use crate::{
-    common::{io::Reader, FIELDSTATUS}, files::{Frame, PacketBuilder, PacketContext}
+    common::{io::Reader, FIELDSTATUS}, common::base::{Frame, PacketBuilder, PacketContext}
 };
 use crate::common::io::AReader;
 
@@ -20,7 +20,7 @@ impl std::fmt::Display for Error {
         _fmt.write_fmt(format_args!("Parse failed [{}]", self.proto))
     }
 }
-impl crate::files::InfoPacket for Error {
+impl crate::common::base::InfoPacket for Error {
     fn info(&self) -> String {
         self.to_string()
     }

@@ -1,11 +1,11 @@
 use std::fmt::Formatter;
 
 use anyhow::Result;
-use pcap_derive::{Packet, Packet2, NINFO};
+use pcap_derive::{Packet, Packet2, Visitor3, NINFO};
 use crate::common::FIELDSTATUS;
 
 use crate::{
-    common::io::Reader, constants::icmpv6_type_mapper, files::{Frame, PacketBuilder, PacketContext, PacketOpt}
+    common::io::Reader, constants::icmpv6_type_mapper, common::base::{Frame, PacketBuilder, PacketContext, PacketOpt}
 };
 use crate::common::io::AReader;
 
@@ -95,10 +95,11 @@ impl ICMP {
         format!("Type: {} ({})", self.code, self._type())
     }
 }
+#[derive(Visitor3)]
 pub struct ICMPVisitor;
 
-impl crate::files::Visitor for ICMPVisitor {
-    fn visit(&self, _: &Frame, reader: &Reader) -> Result<(ProtocolData, &'static str)> {
+impl ICMPVisitor {
+    fn visit2(&self, reader: &Reader) -> Result<(ProtocolData, &'static str)> {
         let packet = ICMP::create(reader, None)?;
         Ok((super::ProtocolData::ICMP(packet), "none"))
     }
@@ -126,11 +127,11 @@ impl ICMP6 {
         format!("Checksum: {:#06x}", self.checksum)
     }
 }
-
+#[derive(Visitor3)]
 pub struct ICMPv6Visitor;
 
-impl crate::files::Visitor for ICMPv6Visitor {
-    fn visit(&self, _: &Frame, reader: &Reader) -> Result<(ProtocolData, &'static str)> {
+impl ICMPv6Visitor {
+    fn visit2(&self, reader: &Reader) -> Result<(ProtocolData, &'static str)> {
         let packet: PacketContext<ICMP6> = Frame::create_packet();
         let mut p = packet.get().borrow_mut();
         p._type = packet.build_lazy(reader, Reader::_read8, ICMP6::type_desc)?;

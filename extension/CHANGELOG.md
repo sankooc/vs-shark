@@ -9,6 +9,13 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - Initial release
 
 - 0.3.4
+  * add http tab
   * add tls->handshake->cetificate parse
   * add ssdp 
   * fix hex view
+
+- 0.3.5
+  * new overview tab
+  * new dns tab
+  * new http tab
+  * new tcp tab

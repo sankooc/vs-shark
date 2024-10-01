@@ -36,6 +36,10 @@ pure pcap/pcapng analyzer
 
 <img src="https://raw.githubusercontent.com/sankooc/vs-shark/master/assets/conv.png" style="text-align:center, width: 80%"/>
 
+* http
+
+<img src="https://raw.githubusercontent.com/sankooc/vs-shark/master/assets/http.png" style="text-align:center, width: 80%"/>
+
 * dns
 
 <img src="https://raw.githubusercontent.com/sankooc/vs-shark/master/assets/dns.png" style="text-align:center, width: 80%"/>

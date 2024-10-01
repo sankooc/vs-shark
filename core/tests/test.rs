@@ -2,7 +2,7 @@
 mod unit {
     use log::info;
 
-    use core::{common::{io::Reader, FileType}, files::{Field, Frame, Instance, PacketContext, Visitor}, specs::{self, ProtocolData}};
+    use core::{common::io::Reader, common::base::{Field, PacketContext}, specs::{self, ProtocolData}};
     use std::{fs, rc::Rc, str::from_utf8};
     fn build_reader(name: &str) -> Vec<u8> {
       let fname = format!("./tests/bin/{}.in", name);
@@ -32,16 +32,16 @@ mod unit {
       }
     }
 
-    fn mock_frame() -> Frame {
-      let instance = Instance::new(FileType::PCAPNG);
-      Frame::new(instance.context(), Vec::new(), 12, 10000, 10000, 1, 1)
-    }
+    // fn mock_frame() -> Frame {
+    //   // let instance = Instance::new(FileType::PCAPNG);
+    //   Frame::new(Vec::new(), 12, 10000, 10000, 1, 1)
+    // }
     #[test]
     fn test_ethernet() {
-      let frame = mock_frame();
+      // let frame = mock_frame();
       let data: Vec<u8> = build_reader("ethernet");
       let reader = Reader::new_raw(Rc::new(data));
-      let (prop, next) = specs::ethernet::ii::EthernetVisitor.visit(&frame, &reader).unwrap();
+      let (prop, next) = specs::ethernet::ii::EthernetVisitor.visit2( &reader).unwrap();
        
       assert_eq!(next, "ipv4");
       match &prop {

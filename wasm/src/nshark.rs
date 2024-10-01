@@ -1,12 +1,11 @@
 use std::borrow::Borrow;
 use std::cell::{Ref, RefCell};
 use std::cmp;
-use std::ops::Deref;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
-use core::common::{FileInfo, FIELDSTATUS};
-use core::files::{DomainService, Element, Frame, Instance};
-use core::{entry::*, files};
+use core::common::FIELDSTATUS;
+use core::common::base::{DomainService, Element, Endpoint, Frame, Instance};
+use core::entry::*;
 use js_sys::Uint8Array;
 use wasm_bindgen::prelude::*;
 
@@ -23,14 +22,14 @@ pub struct Field {
     pub start: usize,
     pub size: usize,
     summary: String,
-    children: RefCell<Vec<files::Field>>,
+    children: RefCell<Vec<core::common::base::Field>>,
     data: Uint8Array,
     // children: Vec<Field>,
 }
 impl Field {
-    pub fn convert(embed: &files::Field) -> Self {
+    pub fn convert(embed: &core::common::base::Field) -> Self {
         let (start, size);
-        files::Field { start, size, .. } = *embed;
+        core::common::base::Field { start, size, .. } = *embed;
         let summary = embed.summary.clone();
         let a: &[u8] = embed.borrow().data.as_ref();
         let data: Uint8Array = a.into();
@@ -133,14 +132,14 @@ impl WFileInfo {
     }
 }
 impl WFileInfo {
-    fn new(info: FileInfo) -> WFileInfo {
-        WFileInfo {
-            link_type: info.link_type,
-            file_type: format!("{:?}", info.file_type),
-            start_time: info.start_time,
-            version: info.version.clone(),
-        }
-    }
+    // fn new(info: FileInfo) -> WFileInfo {
+    //     WFileInfo {
+    //         link_type: info.link_type,
+    //         file_type: format!("{:?}", info.file_type),
+    //         start_time: info.start_time,
+    //         version: info.version.clone(),
+    //     }
+    // }
 }
 #[wasm_bindgen]
 #[derive(Default,Clone)]
@@ -181,12 +180,48 @@ impl FrameInfo {
     }
 }
 
+#[derive(Clone)]
+#[wasm_bindgen]
+pub struct WEndpoint {
+    ip: String,
+    pub port: u16,
+    host: String,
+    pub count: u16,
+    pub throughput: u32,
+    pub retransmission: u16,
+    pub invalid: u16,
+}
+
+impl WEndpoint {
+    fn new(ep: &Endpoint, mapper: &HashMap<String, String>) -> Self {
+        let host = mapper.get(&ep.host).unwrap_or(&String::from("")).clone();
+        let info = &ep.info;
+        Self{ ip: ep.host.clone(), port: ep.port, host, count: info.count, throughput: info.throughput, retransmission: info.retransmission, invalid: info.invalid }
+    }
+}
+
+#[wasm_bindgen]
+impl WEndpoint {
+    #[wasm_bindgen(getter)]
+    pub fn ip(&self) -> String {
+        self.ip.clone()
+    }
+    #[wasm_bindgen(getter)]
+    pub fn host(&self) -> String {
+        self.host.clone()
+    }
+}
 #[wasm_bindgen]
 pub struct TCPConversation{
-    source: String,
-    dest: String,
-    count: u16,
-    throughput: u32,
+    source: WEndpoint,
+    target: WEndpoint,
+}
+impl TCPConversation {
+    fn new(s: &Endpoint, t: &Endpoint, mapper: &HashMap<String, String>) -> Self {
+        let source = WEndpoint::new(s, mapper);
+        let target = WEndpoint::new(t, mapper);
+        Self{source, target}
+    }
 }
 #[wasm_bindgen]
 pub struct FrameResult {
@@ -211,20 +246,12 @@ impl FrameResult {
 #[wasm_bindgen]
 impl TCPConversation {
     #[wasm_bindgen(getter)]
-    pub fn source(&self) -> String {
+    pub fn source(&self) -> WEndpoint {
         self.source.clone()
     }
     #[wasm_bindgen(getter)]
-    pub fn dest(&self) -> String {
-        self.dest.clone()
-    }
-    #[wasm_bindgen(getter)]
-    pub fn count(&self) -> u16 {
-        self.count
-    }
-    #[wasm_bindgen(getter)]
-    pub fn throughput(&self) -> u32 {
-        self.throughput
+    pub fn target(&self) -> WEndpoint {
+        self.target.clone()
     }
 }
 
@@ -247,9 +274,10 @@ impl WContext {
         }
     }
     #[wasm_bindgen]
-    pub fn get_info(&mut self) -> WFileInfo {
-        WFileInfo::new(self.ctx.get_info())
+    pub fn info(&self) -> String {
+        self.ctx.pcap_info().to_json()
     }
+    
     #[wasm_bindgen]
     pub fn get_frame_count(&self) -> usize {
         self.ctx.get_frames().len()
@@ -274,7 +302,7 @@ impl WContext {
         item.protocol = sum.protocol.clone();
         item.info = frame.info();
         item.status = "info".into();
-        match frame.eles.borrow().last() {
+        match frame.eles.last() {
             Some(ele) => {
                 item.status = _convert(ele.status()).into();
             },
@@ -287,7 +315,8 @@ impl WContext {
     
     #[wasm_bindgen]
     pub fn select_frames(&mut self, start: usize, size: usize, criteria: Vec<String>) -> FrameResult {
-        let start_ts = self.get_info().start_time;
+        let info = self.ctx.context().get_info();
+        let start_ts = info.start_time;
         let _fs = self.ctx.get_frames();
         let mut total = 0;
         let mut items = Vec::new();
@@ -311,7 +340,7 @@ impl WContext {
             return FrameResult::new(start, 0, Vec::new());
         }
         let end = cmp::min(start + size, total);
-        let _data: &[Frame] = &_fs.deref()[start..end];
+        let _data: &[Frame] = &_fs[start..end];
         for frame in _data.iter() {
             let item = WContext::_frame(frame, start_ts);
             items.push(item);
@@ -357,7 +386,8 @@ impl WContext {
 
     #[wasm_bindgen]
     pub fn get_frames(&mut self) -> Vec<FrameInfo> {
-        let start_ts = self.get_info().start_time;
+        let info = self.ctx.context().get_info();
+        let start_ts = info.start_time;
         let mut rs = Vec::new();
         for frame in self.ctx.get_frames().iter() {
             let item = WContext::_frame(frame, start_ts);
@@ -376,7 +406,7 @@ impl WContext {
     #[wasm_bindgen]
     pub fn get_dns_record(&self) -> Vec<DNSRecord> {
         let mut rs = Vec::new();
-        for d in self.ctx.context().dns.borrow().iter() {
+        for d in self.ctx.context().dns.iter() {
             let aa = d.as_ref().borrow();
             rs.push(DNSRecord::create(aa));
         }
@@ -395,14 +425,15 @@ impl WContext {
     #[wasm_bindgen]
     pub fn get_conversations(&self) -> Vec<TCPConversation>{
         let ct = self.ctx.context();
+        let mapper = ct.dns_map.borrow();
         let cons = ct.conversations();
         let mut rs = Vec::new();
         for con in cons.values().into_iter() {
-            let source = con.ep1.as_ref().borrow().stringfy();
-            let dest = con.ep2.as_ref().borrow().stringfy();
-            let count:u16 = con.count.get();
-            let throughput = con.throughput.get();
-            rs.push(TCPConversation{source, dest, count, throughput})
+            let reff = con.borrow();
+            let (source, target) = reff.sort(ct.statistic.ip.get_map());
+            let tcp = TCPConversation::new(source, target, mapper);
+            rs.push(tcp);
+            drop(reff);
         }
         rs
     }
@@ -411,6 +442,15 @@ impl WContext {
         let ctx = self.ctx.context();
         let stat = ctx.get_statistc();
         stat.to_json()
+    }
+    #[wasm_bindgen]
+    pub fn statistic_frames(&self) -> String {
+        match self.ctx.statistic_frames() {
+            Ok(_data) => {
+                _data.to_json()
+            }
+            _ => String::from("{}"),
+        }
     }
 }
 

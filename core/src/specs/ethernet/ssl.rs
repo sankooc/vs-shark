@@ -1,12 +1,12 @@
-use pcap_derive::{Packet2, NINFO};
+use pcap_derive::{Packet2, Visitor3, NINFO};
 
 use crate::common::{MacAddress, DEF_EMPTY_MAC};
 use crate::constants::{etype_mapper, link_type_mapper, ssl_type_mapper};
-use crate::files::{PacketOpt, Visitor};
+use crate::common::base::PacketOpt;
 use crate::specs::ProtocolData;
 use crate::{
     common::io::Reader,
-    files::{Frame, PacketBuilder, PacketContext},
+    common::base::{Frame, PacketBuilder, PacketContext},
 };
 use crate::common::io::AReader;
 use std::fmt::Display;
@@ -62,9 +62,10 @@ impl SSL {
     }
 }
 
+#[derive(Visitor3)]
 pub struct SSLVisitor;
-impl Visitor for SSLVisitor {
-    fn visit(&self, _f: &Frame, reader: &Reader) -> Result<(ProtocolData, &'static str)>{
+impl SSLVisitor {
+    fn visit2(&self, reader: &Reader) -> Result<(ProtocolData, &'static str)>{
         let packet = SSL::create(reader, None)?;
         let p = packet.get();
         let ptype = p.borrow().ptype;

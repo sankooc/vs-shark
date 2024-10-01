@@ -1,12 +1,12 @@
-use pcap_derive::{Packet2, NINFO};
+use pcap_derive::{Packet2, Visitor3, NINFO};
 
 use crate::common::MacAddress;
 use crate::constants::etype_mapper;
-use crate::files::{PacketOpt, Visitor};
+use crate::common::base::PacketOpt;
 use crate::specs::ProtocolData;
 use crate::{
     common::io::Reader,
-    files::{Frame, PacketBuilder, PacketContext},
+    common::base::{Frame, PacketBuilder, PacketContext},
 };
 use crate::common::io::AReader;
 use anyhow::{Ok, Result};
@@ -78,10 +78,10 @@ impl Display for IEE80211 {
         f.write_str("IEEE 802.11")
     }
 }
-
+#[derive(Visitor3)]
 pub struct IEE80211Visitor;
-impl Visitor for IEE80211Visitor {
-    fn visit(&self, _f: &Frame, reader: &Reader) -> Result<(ProtocolData, &'static str)>{
+impl IEE80211Visitor {
+    fn visit2(&self, reader: &Reader) -> Result<(ProtocolData, &'static str)>{
         let packet = IEE80211::create(reader, None)?;
         let p = packet.get();
         let ptype = p.borrow().ptype;

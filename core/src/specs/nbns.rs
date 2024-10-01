@@ -5,12 +5,12 @@ use std::fmt::{Display, Formatter};
 
 use crate::common::FIELDSTATUS;
 use anyhow::Result;
-use pcap_derive::{Packet2, NINFO};
+use pcap_derive::{Packet2, Visitor3, NINFO};
 
 use crate::{
     common::{io::Reader, MultiBlock},
     constants::{dns_class_mapper, nbns_type_mapper},
-    files::{Frame, PacketBuilder, PacketContext, PacketOpt},
+    common::base::{Frame, PacketBuilder, PacketContext, PacketOpt},
 };
 
 use super::ProtocolData;
@@ -96,10 +96,11 @@ impl Questions {
         Ok(())
     }
 }
+#[derive(Visitor3)]
 pub struct NBNSVisitor;
 
-impl crate::files::Visitor for NBNSVisitor {
-    fn visit(&self, _: &Frame, reader: &Reader) -> Result<(ProtocolData, &'static str)> {
+impl NBNSVisitor {
+    fn visit2(&self, reader: &Reader) -> Result<(ProtocolData, &'static str)> {
         let packet = NBNS::create(reader, None)?;
         Ok((ProtocolData::NBNS(packet), "none"))
     }

@@ -1,10 +1,10 @@
 use std::fmt::Formatter;
 
 use anyhow::Result;
-use pcap_derive::Packet;
+use pcap_derive::{Packet, Visitor3};
 
 use crate::{
-    common::{io::Reader, FIELDSTATUS}, constants::igmp_type_mapper, files::{Frame, PacketBuilder, PacketContext}
+    common::{io::Reader, FIELDSTATUS}, constants::igmp_type_mapper, common::base::{Frame, PacketBuilder, PacketContext}
 };
 
 use super::ProtocolData;
@@ -21,7 +21,7 @@ impl std::fmt::Display for IGMP {
         _fmt.write_str("Internet Group Management Protocol")
     }
 }
-impl crate::files::InfoPacket for IGMP {
+impl crate::common::base::InfoPacket for IGMP {
     fn info(&self) -> String {
         self._type()
     }
@@ -35,10 +35,11 @@ impl IGMP {
         format!("Type: {} ({})", igmp_type_mapper(self._type), self._type)
     }
 }
+#[derive(Visitor3)]
 pub struct IGMPVisitor;
 
-impl crate::files::Visitor for IGMPVisitor {
-    fn visit(&self, _: &Frame, reader: &Reader) -> Result<(ProtocolData, &'static str)> {
+impl IGMPVisitor {
+    fn visit2(&self, reader: &Reader) -> Result<(ProtocolData, &'static str)> {
         let packet: PacketContext<IGMP> = Frame::create_packet();
         let mut p = packet.get().borrow_mut();
         p._type = packet.build_lazy(reader, Reader::_read8, IGMP::_type)?;

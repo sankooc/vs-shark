@@ -1,12 +1,13 @@
 use core::{
     common::{
-        concept::{Case, HttpRequest, Statistic},
+        concept::{Case, HttpRequestBuilder, Statistic},
         Ref2,
     },
     specs::http::HTTP,
 };
 use std::cell::Ref;
 
+use js_sys::Uint8Array;
 // use js_sys::Uint8Array;
 use wasm_bindgen::prelude::*;
 
@@ -14,6 +15,7 @@ use wasm_bindgen::prelude::*;
 pub struct HttpConversation {
     method: Option<String>,
     status: Option<String>,
+    pub ttr: u64,
     req: HttpEntity,
     res: HttpEntity,
 }
@@ -49,12 +51,17 @@ impl HttpEntity {
     }
 }
 impl HttpConversation {
-    pub fn new(http: &HttpRequest) -> Self {
+    pub fn new(http: &HttpRequestBuilder) -> Self {
         let req = HttpEntity::new(http.source.clone(), http.srp, http.request.clone().unwrap());
         let res = HttpEntity::new(http.dest.clone(), http.dsp, http.response.clone().unwrap());
+        let mut ttr = 0;
+        if http.end > http.start {
+            ttr = http.end - http.start; 
+        }
         Self {
             req,
             res,
+            ttr,
             method: http.method.clone(),
             status: http.status.clone(),
         }
@@ -66,7 +73,6 @@ impl HttpEntity {
     pub fn host(&self) -> String {
         self.host.clone()
     }
-
     #[wasm_bindgen(getter)]
     pub fn head(&self) -> String {
         self.http.as_ref().borrow().head()
@@ -74,6 +80,20 @@ impl HttpEntity {
     #[wasm_bindgen(getter)]
     pub fn header(&self) -> Vec<String> {
         self.http.as_ref().borrow().header()
+    }
+    #[wasm_bindgen(getter)]
+    pub fn content_len(&self) -> usize {
+        let _http = self.http.as_ref().borrow();
+        _http.len
+    }
+    #[wasm_bindgen(getter)]
+    pub fn content(&self) -> Uint8Array {
+        let _http = self.http.as_ref().borrow();
+        // if _http.len > 0 {
+            
+        // }
+        let data:&[u8] = &_http.content;
+        return data.into()
     }
 }
 #[wasm_bindgen]

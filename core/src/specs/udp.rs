@@ -1,11 +1,11 @@
 use std::fmt::Display;
 
 use anyhow::Result;
-use pcap_derive::{Packet2, NINFO};
+use pcap_derive::{Packet2, Visitor3, NINFO};
 
 use crate::common::io::{AReader, Reader};
 use crate::common::{Description, PlayloadPacket, PortPacket};
-use crate::files::{Frame, PacketContext, PacketOpt, Visitor, PacketBuilder};
+use crate::common::base::{Frame, PacketContext, PacketOpt, PacketBuilder};
 use super::ProtocolData;
 
 use crate::common::FIELDSTATUS;
@@ -76,10 +76,11 @@ impl Display for UDP {
         Ok(())
     }
 }
+#[derive(Visitor3)]
 pub struct UDPVisitor;
 
-impl Visitor for UDPVisitor {
-    fn visit(&self, _: &Frame, reader: &Reader) -> Result<(ProtocolData, &'static str)> {
+impl UDPVisitor {
+    fn visit2(&self, reader: &Reader) -> Result<(ProtocolData, &'static str)> {
         let packet: PacketContext<UDP> = Frame::create_packet();
         let mut p = packet.get().borrow_mut();
         let source = packet.build_lazy(reader, Reader::_read16_be, Description::source_port)?;

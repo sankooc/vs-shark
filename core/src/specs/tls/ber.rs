@@ -1,7 +1,7 @@
 use std::{ops::Range, str::from_utf8};
 
 use crate::{
-    common::io::{AReader, Reader}, constants::oid_map_mapper, files::PacketContext
+    common::io::{AReader, Reader}, constants::oid_map_mapper, common::base::PacketContext
 };
 use anyhow::{bail, Result};
 

@@ -7,6 +7,7 @@ use std::fmt;
 use std::rc::Rc;
 pub mod concept;
 pub mod io;
+pub mod base;
 
 pub type Ref2<T> = Rc<RefCell<T>>;
 pub type MultiBlock<T> = Vec<Ref2<T>>;
@@ -16,8 +17,6 @@ pub enum DataError {
     UnsupportFileType,
     #[error("bit error")]
     BitSize,
-    // #[error("unknown data store error")]
-    // Unknown,
 }
 
 pub trait PortPacket {
@@ -90,6 +89,7 @@ pub struct FileInfo {
     pub link_type: u32,
     pub file_type: FileType,
     pub start_time: u64,
+    pub end_time: u64,
     pub version: String,
 }
 
@@ -114,42 +114,40 @@ pub const DEF_EMPTY_MAC: MacAddress = MacAddress { data: [0; 6] };
 
 #[derive(Debug)]
 pub struct IPv4Address {
-    _ins: Ipv4Addr,
+    pub _ins: Ipv4Addr,
 }
 
 impl IPv4Address {
-    pub fn new(data: [u8; 4]) -> Self {
-        let _ins = Ipv4Addr::new(data[0], data[1], data[2], data[3]);
-        Self{_ins}
+    pub fn new(data: [u8; 4]) -> Ipv4Addr {
+        Ipv4Addr::new(data[0], data[1], data[2], data[3])
     }
 }
-impl fmt::Display for IPv4Address {
-    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
-        fmt.write_str(&self._ins.to_string())
-    }
-}
+// impl fmt::Display for IPv4Address {
+//     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+//         fmt.write_str(&self._ins.to_string())
+//     }
+// }
 
 pub struct IPv6Address {
-    _ins: Ipv6Addr
+    pub _ins: Ipv6Addr
 }
 
 impl IPv6Address {
-    fn new(data: [u8; 16]) -> Self {
+    fn new(data: [u8; 16]) -> Ipv6Addr {
         let mut args:[u16; 8] = [0; 8];
         for inx in 0..8 {
             let _inx = (inx * 2) as usize;
             args[inx] = ((data[_inx] as u16) * 0x0100) + (data[_inx + 1] as u16);
         }
-        let _ins = Ipv6Addr::new(args[0], args[1],args[2],args[3],args[4],args[5],args[6],args[7]);
-        Self{ _ins }
+        Ipv6Addr::new(args[0], args[1],args[2],args[3],args[4],args[5],args[6],args[7])
     }
 }
-impl std::fmt::Display for IPv6Address {
-    fn fmt(&self, fmt: &mut std::fmt::Formatter) -> std::fmt::Result {
-        fmt.write_str(&self._ins.to_string())?;
-        Ok(())
-    }
-}
+// impl std::fmt::Display for IPv6Address {
+//     fn fmt(&self, fmt: &mut std::fmt::Formatter) -> std::fmt::Result {
+//         fmt.write_str(&self._ins.to_string())?;
+//         Ok(())
+//     }
+// }
 
 #[derive(Default, Debug, Copy, Clone)]
 pub enum FileType {
