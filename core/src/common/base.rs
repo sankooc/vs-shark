@@ -864,8 +864,8 @@ impl Frame {
 pub struct Context {
     pub count: u32,
     pub info: FileInfo,
-    pub dns: RefCell<Vec<Ref2<RecordResource>>>,
-    conversation_map: RefCell<HashMap<String, TCPConnection>>,
+    pub dns: Vec<Ref2<RecordResource>>,
+    conversation_map: HashMap<String, TCPConnection>,
     http_list: Vec<HttpRequestBuilder>,
     statistic: Statistic,
     pub dns_map: HashMap<String, String>,
@@ -916,17 +916,16 @@ impl Context {
             _ => {}
         }
         drop(_rr);
-        self.dns.borrow_mut().push(rr);
+        self.dns.push(rr);
     }
     pub fn get_info(&self) -> FileInfo {
-        self.info.borrow().clone()
+        self.info.clone()
     }
     pub fn get_dns_count(&self) -> usize {
-        self.dns.borrow().len()
+        self.dns.len()
     }
-    pub fn conversations(&self) -> Ref<HashMap<String, TCPConnection>> {
-        let rs = self.conversation_map.borrow();
-        rs
+    pub fn conversations(&self) -> &HashMap<String, TCPConnection> {
+        &self.conversation_map
     }
     pub fn tcp_key(ip: &dyn IPPacket, packet: &TCP) -> (String, bool) {
         let source = format!("{}:{}", ip.source_ip_address(), packet.source_port());
@@ -937,9 +936,9 @@ impl Context {
         }
         (format!("{}-{}", target, source), arch)
     }
-    fn update_tcp(&self, frame: &Frame, ip: &dyn IPPacket, packet: &TCP, data: &[u8]) -> TCPInfo {
+    fn update_tcp(&mut self, frame: &Frame, ip: &dyn IPPacket, packet: &TCP, data: &[u8]) -> TCPInfo {
         let (key, arch) = Context::tcp_key(ip, packet);
-        let mut _map = self.conversation_map.borrow_mut();
+        let _map = &mut self.conversation_map;
         let v = _map.get(&key);
         let conn = match v {
             Some(conn) => conn,
@@ -951,9 +950,9 @@ impl Context {
         };
         conn.update(arch, packet, frame, data)
     }
-    fn get_tcp(&self, ip: &dyn IPPacket, packet: &TCP, flag: bool) -> Result<Ref2<Endpoint>> {
+    fn get_tcp(&mut self, ip: &dyn IPPacket, packet: &TCP, flag: bool) -> Result<Ref2<Endpoint>> {
         let (key, arch) = Context::tcp_key(ip, packet);
-        let mut _map = self.conversation_map.borrow_mut();
+        let _map = &mut self.conversation_map;
         let conn = _map.get(&key).expect("no_tcp_connection");
         let ep;
         if flag {
@@ -961,7 +960,6 @@ impl Context {
         } else {
             ep = conn.get_endpoint(!arch);
         }
-        drop(_map);
         Ok(ep)
     }
 }
@@ -973,10 +971,10 @@ impl Instance {
     pub fn new(ftype: FileType) -> Instance {
         let ctx = Context {
             count: 1,
-            dns: RefCell::new(Vec::new()),
+            dns: Vec::new(),
             info: FileInfo { file_type: ftype, ..Default::default() },
             http_list: Vec::new(),
-            conversation_map: RefCell::new(HashMap::new()),
+            conversation_map: HashMap::new(),
             statistic: Statistic::new(),
             dns_map: HashMap::new(),
             ip_map: CaseGroup::new(),

@@ -392,7 +392,7 @@ impl WContext {
     #[wasm_bindgen]
     pub fn get_dns_record(&self) -> Vec<DNSRecord> {
         let mut rs = Vec::new();
-        for d in self.ctx.context().dns.borrow().iter() {
+        for d in self.ctx.context().dns.iter() {
             let aa = d.as_ref().borrow();
             rs.push(DNSRecord::create(aa));
         }
