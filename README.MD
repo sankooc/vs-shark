@@ -56,10 +56,10 @@ pure pcap/pcapng analyzer
 
 ### Features
 
+#### Demo
 
-#### ip packet overview
+<img src="https://i.ibb.co/x6NNTBp/cap2.gif" width="80%"/>
 
-<img src="assets/overview.png" width="80%"/>
 
 #### ip packet list
 
