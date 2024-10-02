@@ -14,6 +14,9 @@ dependencies:
   echarts-for-react:
     specifier: ^3.0.2
     version: 3.0.2(echarts@5.5.1)(react@18.3.1)
+  fflate:
+    specifier: ^0.8.2
+    version: 0.8.2
   lodash:
     specifier: ^4.17.21
     version: 4.17.21
@@ -1826,6 +1829,10 @@ packages:
     dependencies:
       websocket-driver: 0.7.4
     dev: true
+
+  /fflate@0.8.2:
+    resolution: {integrity: sha512-cPJU47OaAoCbg0pBvzsgpTPhmhqI5eJjh/JIu8tPj5q+T7iLvW/JAYUqmE7KOB4R1ZyEhzBaIQpQpardBF5z8A==}
+    dev: false
 
   /file-loader@6.2.0(webpack@5.92.1):
     resolution: {integrity: sha512-qo3glqyTa61Ytg4u73GultjHGjdRyig3tG6lPtyX/jOEJvHif9uB0/OCI2Kif6ctF3caQTW2G5gym21oAsI4pw==}

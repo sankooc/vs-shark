@@ -14,16 +14,20 @@ const BarChart = (props: Proto) => {
             left: 'center',
             top: 'bottom',
         },
-        grid: {
-            padding: '20px',
-            // top: '70',
-            left: '3%',
-            right: '3%',
-            bottom: '12%',
-            // borderColor: fore,
-            containLabel: true
+
+        tooltip: {
+            trigger: 'axis',
+            axisPointer: {
+                type: 'cross',
+                label: {
+                    backgroundColor: '#6a7985'
+                }
+            }
         },
+        stack: 'chart',
+        showBackground: true,
         xAxis: {
+            boundaryGap: false,
             type: 'category',
             data: x
         },

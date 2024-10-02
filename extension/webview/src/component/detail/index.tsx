@@ -14,6 +14,8 @@ function HexView(props: { data?: HexV }) {
       hasSelected = true;
       select = data.slice(start, start + size);
     }
+  } else {
+    return <div style={{padding: '10px'}}> No Data </div>
   }
   return <TabView className="w-full detail-tab" style={{padding: 0}}>
     <TabPanel header="Frame" style={{padding: 0}}>

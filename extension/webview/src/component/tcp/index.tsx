@@ -20,7 +20,7 @@ const inv = (ep: IEndpoint) => {
   if (ep.count === 0) {
     return '100%';
   }
-  return (100 * (ep.count - ep.invalid) / ep.count).toFixed(2) + '%'
+  return (100 * (ep.count - ep.invalid - ep.retransmission) / ep.count).toFixed(2) + '%'
 }
 const TCPList = (props: Proto) => {
   const mountHook = () => {

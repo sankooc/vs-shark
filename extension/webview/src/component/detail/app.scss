@@ -45,6 +45,7 @@
     white-space: break-spaces;
     word-break: break-all;
     background-color: gray;
+    flex-grow: 1;
 }
 #detail>.text .asc {
     font-family: $base-family;

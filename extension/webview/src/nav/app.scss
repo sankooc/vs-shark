@@ -8,7 +8,15 @@
         width: 150px;
     }
 }
-
+.p-menubar{
+    a {
+        padding: 12px 10px !important;
+    }
+}
+.footbar {
+    height: 20px;
+    background-color: #3C3D37;
+}
 
 html, body, #app {
     height: 100%;

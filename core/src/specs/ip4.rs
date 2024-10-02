@@ -56,7 +56,8 @@ impl IPv4 {
         let flag = reader.read16(false)?;
         let ttl = packet.build_lazy(reader, Reader::_read8, |val| format!("Time To Live: {}", val.ttl))?;
         let ipproto = packet.build_lazy(reader, Reader::_read8, Description::t_protocol)?;
-        let crc: u16 = reader.read16(false)?;
+        // let crc: u16 = reader.read16(false)?;
+        let crc = packet.build_format(reader, Reader::_read16_be, "Header Checksum: {}")?;
         let source = packet.build_lazy(reader, Reader::_read_ipv4, Description::source_ip).ok();
         let target = packet.build_lazy(reader, Reader::_read_ipv4, Description::target_ip).ok();
         p.total_len = total_len;
