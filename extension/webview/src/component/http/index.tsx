@@ -92,7 +92,6 @@ const HttpComponnet = (props: Proto) => {
   </div>;
   const _props = {
     header,
-    scrollHeight: 90,
     cols: columes,
     getStyle: (item) => {
       return `status-${item.status}`

@@ -47,12 +47,9 @@ const DTable = (props: Props) => {
   const hasPaging = total > size;
   let tableHeight = `${scrollHeight}vh`;
   let inSight = `calc(${scrollHeight}vh - 1px)`;
-  const space = 40;
-  const hasFootbar = hasPaging || !!props.filter;
-  if(hasFootbar){
-    tableHeight = `calc(${scrollHeight}vh - ${space}px)`
-    inSight = `calc(${scrollHeight}vh - ${space + 1}px)`;
-  }
+  const space = 55;
+  tableHeight = `calc(${scrollHeight}vh - ${space}px)`
+  // inSight = `calc(${scrollHeight}vh - ${space + 1}px)`;
   // const onPageChange = (event) => {
   //   if(props.request) {
   //     setLoading(true);
@@ -78,17 +75,17 @@ const DTable = (props: Props) => {
 
   const tableProps = {
     loading,
-    style: {height: inSight, overflow: "auto"},
+    style: {height: inSight},
     value: items,
     showHeaders: true,
     rowClassName,
     virtualScrollerOptions: { itemSize: 20 },
-    scrollHeight: inSight,
+    scrollHeight: tableHeight,
     onSelectionChange,
     showGridlines: true,
     scrollable: true,
     // size: 'small',
-    className: 'pcap-table flex-grow-1 w-full',
+    className: 'pcap-table w-full',
   };
   return (<>
     <DataTable {...tableProps}

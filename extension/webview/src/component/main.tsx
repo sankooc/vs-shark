@@ -19,6 +19,7 @@ import HttpComponnet from './http';
 // import mock_ip from '../mock/ip.json';
 // import mock_iptype from '../mock/iptype.json';
 // import _dnsRecords from '../mock/dns.json';
+// import _httpRecords from '../mock/http.json';
 
 
 const itemRenderer = (item, options) => {
@@ -115,6 +116,7 @@ const Main = () => {
   };
   if (status == 0) {
     return <Loading/>
+    // return <HttpComponnet items={_httpRecords.items} />
     // return <DNSList items={_dnsRecords}/>
     // return <Overview framedata={overview_json} metadata={meta_json} httpdata={http_json.statistic} />
   }
