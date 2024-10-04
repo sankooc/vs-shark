@@ -69,15 +69,15 @@ export class Statc {
   end!: number;
   stc: Map<string, number> = new Map();
   public addLable(label: string, packet: FrameInfo): void {
-      const count = this.stc.get(label) || 0;
-      const size = packet.len || 0;
-      this.stc.set(label, count + size);
+    const count = this.stc.get(label) || 0;
+    const size = packet.len || 0;
+    this.stc.set(label, count + size);
   }
   public static create(ts: number, per: number) {
-      const item = new Statc();
-      item.start = ts;
-      item.end = ts + per;
-      return item;
+    const item = new Statc();
+    item.start = ts;
+    item.end = ts + per;
+    return item;
   }
 }
 class FieldImlp implements CField {
@@ -106,6 +106,7 @@ export abstract class PCAPClient {
   ready: boolean = false;
   data!: Uint8Array;
   ctx!: WContext;
+  _cache: any = {};
   initData(data: Uint8Array) {
     this.data = data;
   }
@@ -122,26 +123,30 @@ export abstract class PCAPClient {
       try {
         this.ctx = load(this.data as Uint8Array);
         this._info();
-      }catch(e){
+      } catch (e) {
         this.emitMessage(new ComMessage('_error', "failed to open file"));
       }
     }
   }
   getInfo(): IContextInfo {
-    const rs = JSON.parse(this.ctx.info());
-    return rs;
-    // const statistic = this.ctx.statistic();
-    // return { frame, conversation, dns, http, statistic:JSON.parse(statistic) }
+    if (!this._cache.info) {
+      this._cache.info = JSON.parse(this.ctx.info());
+    }
+    return this._cache.info;
   }
   _protocols(): void {
     if (this.ready && this.ctx) {
-      const data = this.ctx.get_aval_protocals();
-      const options = (data || []).map(f => ({name:f, code: f}));
+      if (!this._cache.protocols) {
+        const data = this.ctx.get_aval_protocals();
+        this._cache.protocols = (data || []).map(f => ({ name: f, code: f }));
+      }
+      const options = this._cache.protocols
       this.emitMessage(new ComMessage('_protocols', options));
     }
   }
   _overview(): void {
     if (this.ready && this.ctx) {
+
       this.emitMessage(new ComMessage('_frame_statistic', JSON.parse(this.ctx.statistic_frames())));
       this.emitMessage(new ComMessage('_http_statistic', JSON.parse(this.ctx.statistic())));
     }
@@ -158,7 +163,6 @@ export abstract class PCAPClient {
       if (!val) {
         return null;
       }
-      // val = val.[inx[i]];
     }
     return val;
   }
@@ -196,12 +200,13 @@ export abstract class PCAPClient {
         target: pick(target, 'ip', 'port', 'host', 'count', 'throughput', 'retransmission', 'invalid'),
       }
     })
-    // return _data.map(f => pick(f, 'source_ip', 'source_host','source_port', 'target_ip', 'target_host','target_port', 'count', 'throughput'));
   }
   _conversation(): void {
     if (this.ready && this.ctx) {
-      const data = this.getConversations()
-      this.emitMessage(new ComMessage('_conversation', data));
+      if (!this._cache.conversation) {
+        this._cache.conversation = this.getConversations()
+      }
+      this.emitMessage(new ComMessage('_conversation', this._cache.conversation));
     }
   }
   getDNS(): IDNSRecord[] {
@@ -209,8 +214,11 @@ export abstract class PCAPClient {
   }
   _dns(): void {
     if (this.ready && this.ctx) {
-      const data = this.getDNS().map(f => pick(f, 'name', '_type', 'content', 'class', 'ttl'));
-      this.emitMessage(new ComMessage('_dns', data));
+      if (!this._cache.dns) {
+        const items = this.getDNS().map(f => pick(f, 'name', '_type', 'content', 'class', 'ttl'));
+        this._cache.dns = items
+      }
+      this.emitMessage(new ComMessage('_dns', this._cache.dns));
     }
   }
   getFields(index: number): CField[] {
@@ -219,7 +227,7 @@ export abstract class PCAPClient {
   _fields(index: number): void {
     this.emitMessage(new ComMessage('_fields', this.getFields(index)));
   }
-  http(): IHttp [] {
+  http(): IHttp[] {
     const rs = this.ctx.select_http(0, 1000, []).map(f => {
       const _rs = pick(f, 'req', 'res', 'status', 'method');
       return {
@@ -234,7 +242,10 @@ export abstract class PCAPClient {
     return rs;
   }
   _http(): void {
-    this.emitMessage(new ComMessage('_http', this.http()));
+    if (!this._cache.http) {
+      this._cache.http = this.http();
+    }
+    this.emitMessage(new ComMessage('_http', this._cache.http));
   }
   handle(msg: ComMessage<any>) {
     if (!msg) return;

@@ -19,9 +19,15 @@ const DNSList = (props: Proto) => {
     { field: 'content', header: 'address',style: { width: '20%' } }
   ];
   const mapper = {};
+  const mapper2 = {};
   for(const item of props.items){
-    const { name, _type } = item;
+    const { name, _type, content } = item;
     const key = `${name}-${_type}`;
+    const key2 = `${name}-${_type}-${content}`;
+    if (mapper2[key2]) {
+      continue;
+    }
+    mapper2[key2] = 1;
     mapper[key] = mapper[key] || [];
     mapper[key].push(item);
   }
