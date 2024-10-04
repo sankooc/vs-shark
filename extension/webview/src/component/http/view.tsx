@@ -59,7 +59,7 @@ const Content = (props: Proto) => {
   const convertArray = (data: Uint8Array) => {
     const len = data.length;
     const more = len > maxByte;
-    const _data = data.slice(Math.min(maxByte, len));
+    const _data = data.slice(0, Math.min(maxByte, len));
     new Promise(r => {
       const reader = new FileReader()
       reader.onload = () => r(reader.result)

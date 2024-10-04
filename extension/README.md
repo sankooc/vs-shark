@@ -24,6 +24,12 @@ pure pcap/pcapng analyzer
 ### features
 
 
+#### Demo
+
+<img src="https://i.ibb.co/x6NNTBp/cap2.gif" width="80%"/>
+
+
+
 * traffic overview
 
 <img src="https://raw.githubusercontent.com/sankooc/vs-shark/master/assets/overview.png" style="text-align:center, width: 80%"/>
