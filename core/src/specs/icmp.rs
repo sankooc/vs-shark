@@ -16,6 +16,19 @@ pub struct ICMP {
     _type: u8,
     code: u8,
     checksum: u16,
+    header: ICMPHeader,
+}
+
+#[derive(Default)]
+pub enum ICMPHeader {
+    #[default]
+    UNKOWN,
+    ECHO(Echo)
+}
+pub struct Echo {
+    pub identifier: u16,
+    pub sequence: u16,
+
 }
 
 impl std::fmt::Display for ICMP {
@@ -29,6 +42,14 @@ impl ICMP {
         p.code = packet.build_format(reader, Reader::_read8, "Code {}")?;
         p.checksum = reader.read16(false)?;
         packet._build(reader, reader.cursor() - 2, 2, format!("Checksum: {:#06x}", p.checksum));
+        match p._type {
+            0x00 | 0x08 => {
+                let identifier =  packet.build_format(reader, Reader::_read16_be, "Identifier: {}")?;
+                let sequence =  packet.build_format(reader, Reader::_read16_be, "Sequence Number: {}")?;
+                p.header = ICMPHeader::ECHO(Echo{identifier, sequence});
+            },
+            _ => {}
+        }
         Ok(())
     }
     fn _type(&self) -> String {
@@ -100,6 +121,7 @@ pub struct ICMPVisitor;
 
 impl ICMPVisitor {
     fn visit2(&self, reader: &Reader) -> Result<(ProtocolData, &'static str)> {
+        //https://book.huihoo.com/iptables-tutorial/x1078.htm
         let packet = ICMP::create(reader, None)?;
         Ok((super::ProtocolData::ICMP(packet), "none"))
     }
