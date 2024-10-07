@@ -203,9 +203,18 @@ fn proc(frame: &Frame, reader: &Reader, packet: &PacketContext<TLS>, p: &mut TLS
             if left_size >= _len + 5 {
                 let item = packet.build_packet(reader, TLSRecord::create, None, None)?;
                 let record = item.take();
+                
                 match &record.message {
                     TLSRecorMessage::HANDSHAKE(hs) => {
-                        ep.handshake.push(hs.clone());
+                        for _hs in hs.as_ref().items.iter() {
+                            match &_hs.msg {
+                                HandshakeType::Certificate(_) |  HandshakeType::ClientHello(_) | HandshakeType::ServerHello(_) => {
+                                    ep.handshake.push(_hs.msg.clone());
+                                }
+                                _ => {}
+                            }
+                        }
+                        // ep.handshake.push(hs.clone());
                     },
                     _ => {}
                 };

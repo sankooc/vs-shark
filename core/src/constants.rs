@@ -742,7 +742,7 @@ lazy_static! {
 		m.insert(20, "ChangeCipherSpec");
 		m.insert(21, "Alert");
 		m.insert(22, "Handshake");
-		m.insert(23, "Application");
+		m.insert(23, "Application Data");
 		m.insert(24, "Heartbeat");
 		m
 	};

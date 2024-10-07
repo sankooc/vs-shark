@@ -1,6 +1,6 @@
 use core::{
     common::{
-        concept::{Case, HttpRequestBuilder, Statistic},
+        concept::{Case, HttpRequestBuilder, Statistic, TLSHS},
         Ref2,
     },
     specs::http::HTTP,
@@ -146,5 +146,55 @@ impl WStatistic {
         let http_status = stat.http_status.to_list().iter().map(|f| WCase::new(f)).collect::<Vec<_>>();
         let http_type = stat.http_type.to_list().iter().map(|f| WCase::new(f)).collect::<Vec<_>>();
         Self { http_method, http_status, http_type }
+    }
+}
+
+#[wasm_bindgen]
+pub struct  WTLSHS {
+    _ins: TLSHS
+}
+#[wasm_bindgen]
+impl WTLSHS {
+    #[wasm_bindgen(getter)]
+    pub fn source(&self) -> String {
+        self._ins.source.clone()
+    }
+    #[wasm_bindgen(getter)]
+    pub fn target(&self) -> String {
+        self._ins.target.clone()
+    }
+    #[wasm_bindgen(getter)]
+    pub fn server_name(&self) -> Vec<String> {
+        self._ins.server_name.clone()
+    }
+    #[wasm_bindgen(getter)]
+    pub fn used_cipher(&self) -> String {
+        self._ins.used_cipher.clone()
+    }
+    #[wasm_bindgen(getter)]
+    pub fn used_version(&self) -> String {
+        self._ins.used_version.clone()
+    }
+    #[wasm_bindgen(getter)]
+    pub fn used_negotiation(&self) -> Vec<String> {
+        self._ins.used_negotiation.clone()
+    }
+    #[wasm_bindgen(getter)]
+    pub fn support_cipher(&self) -> Vec<String> {
+        self._ins.support_cipher.clone()
+    }
+    #[wasm_bindgen(getter)]
+    pub fn support_version(&self) -> Vec<String> {
+        self._ins.support_version.clone()
+    }
+    #[wasm_bindgen(getter)]
+    pub fn support_negotiation(&self) -> Vec<String> {
+        self._ins.support_negotiation.clone()
+    }
+}
+
+impl WTLSHS {
+    pub fn new(_ins: TLSHS) -> Self {
+        Self{_ins: _ins.clone()}
     }
 }

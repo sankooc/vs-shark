@@ -1,15 +1,15 @@
 use std::borrow::Borrow;
 use std::cell::{Ref, RefCell};
 use std::cmp;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 
 use core::common::FIELDSTATUS;
-use core::common::base::{DomainService, Element, Endpoint, Frame, Instance};
+use core::common::base::{Context, DomainService, Element, Endpoint, Frame, Instance};
 use core::entry::*;
 use js_sys::Uint8Array;
 use wasm_bindgen::prelude::*;
 
-use crate::entity::HttpConversation;
+use crate::entity::{HttpConversation, WTLSHS};
 
 #[wasm_bindgen]
 pub struct WContext {
@@ -193,10 +193,10 @@ pub struct WEndpoint {
 }
 
 impl WEndpoint {
-    fn new(ep: &Endpoint, mapper: &HashMap<String, String>) -> Self {
-        let host = mapper.get(&ep.host).unwrap_or(&String::from("")).clone();
+    fn new(ep: &Endpoint, ctx: &Context) -> Self {
+        let (ip, port, host) = ctx._to_hostnames(ep);
         let info = &ep.info;
-        Self{ ip: ep.host.clone(), port: ep.port, host, count: info.count, throughput: info.throughput, retransmission: info.retransmission, invalid: info.invalid }
+        Self{ ip, port, host, count: info.count, throughput: info.throughput, retransmission: info.retransmission, invalid: info.invalid }
     }
 }
 
@@ -217,9 +217,9 @@ pub struct TCPConversation{
     target: WEndpoint,
 }
 impl TCPConversation {
-    fn new(s: &Endpoint, t: &Endpoint, mapper: &HashMap<String, String>) -> Self {
-        let source = WEndpoint::new(s, mapper);
-        let target = WEndpoint::new(t, mapper);
+    fn new(s: &Endpoint, t: &Endpoint, ctx: &Context) -> Self {
+        let source = WEndpoint::new(s, ctx);
+        let target = WEndpoint::new(t, ctx);
         Self{source, target}
     }
 }
@@ -425,13 +425,12 @@ impl WContext {
     #[wasm_bindgen]
     pub fn get_conversations(&self) -> Vec<TCPConversation>{
         let ct = self.ctx.context();
-        let mapper = ct.dns_map.borrow();
         let cons = ct.conversations();
         let mut rs = Vec::new();
         for con in cons.values().into_iter() {
             let reff = con.borrow();
             let (source, target) = reff.sort(ct.statistic.ip.get_map());
-            let tcp = TCPConversation::new(source, target, mapper);
+            let tcp = TCPConversation::new(source, target, ct);
             rs.push(tcp);
             drop(reff);
         }
@@ -451,6 +450,9 @@ impl WContext {
             }
             _ => String::from("{}"),
         }
+    }
+    pub fn select_tls_connections(&self) -> Vec<WTLSHS> {
+        self.ctx.context().tls_connection_info().iter().map(|f| WTLSHS::new(f.to_owned())).collect::<_>()
     }
 }
 

@@ -19,3 +19,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
   * new dns tab
   * new http tab
   * new tcp tab
+
+- 0.3.5
+  * fix http body bug
+  * add tls tab

@@ -91,25 +91,15 @@ impl HTTPVisitor {
 fn pick_value(head: &str, key: &str) -> Option<String> {
     let mut aa = head.split(":");
     let mut rs = None;
-    match aa.next() {
-        Some(_head) => {
-            if _head.to_lowercase() == key {
-                let val = aa.next();
-                match val {
-                    Some(v) => {
-                        let mut vs = v.split(";");
-                        match vs.next() {
-                            Some(value) => {
-                                rs = Some(value.trim().into());
-                            }
-                            _ => {}
-                        }
-                    }
-                    _ => {}
+    if let Some(_head) = aa.next() {
+        if _head.to_lowercase() == key {
+            if let Some(v) = aa.next() {
+                let mut vs = v.split(";");
+                if let Some(value) = vs.next() {
+                    rs = Some(value.trim().into());
                 }
             }
         }
-        _ => {}
     }
     rs
 }
@@ -148,11 +138,8 @@ impl HTTPVisitor {
                 break;
             }
             let header = packet.build_format(reader, Reader::_read_enter, "{}")?;
-            match pick_value(&header, "content-type") {
-                Some(tp) => {
-                    p.content_type = Some(tp);
-                }
-                _ => {}
+            if let Some(tp) = pick_value(&header, "content-type") {
+                p.content_type = Some(tp);
             }
             p.header.push(header);
         }
