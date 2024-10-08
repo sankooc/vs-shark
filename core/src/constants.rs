@@ -742,7 +742,7 @@ lazy_static! {
 		m.insert(20, "ChangeCipherSpec");
 		m.insert(21, "Alert");
 		m.insert(22, "Handshake");
-		m.insert(23, "Application Data");
+		m.insert(23, "Application");
 		m.insert(24, "Heartbeat");
 		m
 	};
@@ -2243,7 +2243,7 @@ pub fn tls_hs_message_type_mapper(code:u8) -> String {
     (*tls_hs_message_type_map.get(&code).unwrap_or(&"unknown")).into()
   }
 pub fn tls_cipher_suites_mapper(code:u16) -> String {
-    (*tls_cipher_suites_map.get(&code).unwrap_or(&"unknown")).into()
+    (*tls_cipher_suites_map.get(&code).unwrap_or(&"Reserved (GREASE)")).into()
   }
 pub fn tls_extension_mapper(code:u16) -> String {
     (*tls_extension_map.get(&code).unwrap_or(&"unknown")).into()
@@ -2251,6 +2251,6 @@ pub fn tls_extension_mapper(code:u16) -> String {
 pub fn nbns_type_mapper(code:u16) -> String {
     (*nbns_type_map.get(&code).unwrap_or(&"unknown")).into()
   }
-pub fn oid_map_mapper(code:&'static str) -> &'static str {
+pub fn oid_map_mapper(code:&'static str) -> String {
     (*oid_map_map.get(&code).unwrap_or(&"unknown")).into()
   }

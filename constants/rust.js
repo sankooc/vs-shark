@@ -20,9 +20,10 @@ ${wk}\r\n\t\tm
 \t};\r\n`;
 };
 
-const buildMapper = (name, typed) => {
+const buildMapper = (name, typed, _def) => {
+  const def = _def || "unknown";
   return `pub fn ${name}_mapper(code:${typed}) -> String {
-    (*${name}_map.get(&code).unwrap_or(&"unknown")).into()
+    (*${name}_map.get(&code).unwrap_or(&"${def}")).into()
   }`;
 }
 
@@ -43,7 +44,7 @@ const items = [
   ['tls_content_type', TLS_CONTENT_TYPE_MAP, k => parseInt(k, 10), 'u8'],
   ['tls_min_type', TLS_MIN_VERSION_MAP, k => parseInt(k, 10), 'u8'],
   ['tls_hs_message_type', TLS_HS_MESSAGE_TYPE, k => parseInt(k, 10), 'u8'],
-  ['tls_cipher_suites', TLS_CIPHER_SUITES_MAP, k => parseInt(k, 16), 'u16'],
+  ['tls_cipher_suites', TLS_CIPHER_SUITES_MAP, k => parseInt(k, 16), 'u16', 'Reserved (GREASE)'],
   ['tls_extension', TLS_EXTENSION_MAP, k => parseInt(k, 10), 'u16'],
   ['nbns_type', NBNS_TYPE_MAP, k => parseInt(k, 10), 'u16'],
   ['oid_map', oid_map, k => `"${k}"`, "&'static str"],
@@ -53,7 +54,7 @@ const conts = items.map((item) => buildConstants(item[0]+'_map', item[1], item[2
 
 let _content = str + "lazy_static! {\r\n" + conts.join('')+ "}";
 
-_content += (items.map((item) => buildMapper(item[0], item[3])).join('\r\n'))
+_content += (items.map((item) => buildMapper(item[0], item[3], item[4])).join('\r\n'))
 
 fs.writeFileSync('../core/src/constants.rs', _content);
 
