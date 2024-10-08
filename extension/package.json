@@ -2,7 +2,7 @@
 	"name": "pcapviewer",
 	"displayName": "pcapviewer",
 	"description": "pcap/pcapng file analyzer",
-	"version": "0.3.4",
+	"version": "0.3.6",
 	"publisher": "sankooc",
 	"repository": {
 		"type": "git",

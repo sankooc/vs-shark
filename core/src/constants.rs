@@ -2201,6 +2201,25 @@ lazy_static! {
 		m.insert(2, "ansiX962_compressed_char2");
 		m
 	};
+	pub static ref hash_algorithm_map: HashMap<u8, &'static str> = {
+		let mut m = HashMap::new();
+		m.insert(0, "None");
+		m.insert(1, "MD5");
+		m.insert(2, "SHA1");
+		m.insert(3, "SHA224");
+		m.insert(4, "SHA256");
+		m.insert(5, "SHA384");
+		m.insert(6, "SHA512");
+		m
+	};
+	pub static ref signature_algorithm_map: HashMap<u8, &'static str> = {
+		let mut m = HashMap::new();
+		m.insert(0, "Anonymous");
+		m.insert(1, "RSA");
+		m.insert(2, "DSA");
+		m.insert(3, "ECDSA");
+		m
+	};
 }pub fn link_type_mapper(code:u16) -> String {
     (*link_type_map.get(&code).unwrap_or(&"unknown")).into()
   }
@@ -2263,4 +2282,10 @@ pub fn oid_map_mapper(code:&'static str) -> String {
   }
 pub fn ec_points_type_mapper(code:u8) -> String {
     (*ec_points_type_map.get(&code).unwrap_or(&"NULL")).into()
+  }
+pub fn hash_algorithm_mapper(code:u8) -> String {
+    (*hash_algorithm_map.get(&code).unwrap_or(&"none")).into()
+  }
+pub fn signature_algorithm_mapper(code:u8) -> String {
+    (*signature_algorithm_map.get(&code).unwrap_or(&"none")).into()
   }

@@ -1322,7 +1322,23 @@ export const NBNS_TYPE_MAP = {
 }
 
 export const EC_POINTS_MAP = {
-     0: "uncompressed" ,
-     1: "ansiX962_compressed_prime",
-     2: "ansiX962_compressed_char2",
+    0: "uncompressed",
+    1: "ansiX962_compressed_prime",
+    2: "ansiX962_compressed_char2",
+}
+export const TLS_signature_algorithm = {
+    0: "Anonymous",
+    1: "RSA",
+    2: "DSA",
+    3: "ECDSA",
+}
+
+export const TLS_hash_algorithm = {
+    0: "None",
+    1: "MD5",
+    2: "SHA1",
+    3: "SHA224",
+    4: "SHA256",
+    5: "SHA384",
+    6: "SHA512",
 }

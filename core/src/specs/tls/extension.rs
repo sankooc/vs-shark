@@ -127,3 +127,8 @@ impl Version {
         Ok(())
     }
 }
+
+// pub struct SignatureAlgorithms {
+//     hash: u8,
+//     algirithm: u8,
+// }

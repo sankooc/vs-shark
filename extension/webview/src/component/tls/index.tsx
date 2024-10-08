@@ -40,7 +40,7 @@ const TLSComponent = (props: Props) => {
   };
   useEffect(mountHook, []);
   const arr_to_string = (arr: string[]): string => {
-    if (!arr) {
+    if (!arr || !arr.length) {
       return '';
     }
     if (arr.length === 1) {
@@ -84,7 +84,7 @@ const TLSComponent = (props: Props) => {
     result
   };
   const onSelect = () => { };
-  const scrollHeight = 100;
+  const scrollHeight = 99;
   return (<>
     <DTable {..._props} className="tls-page flex-grow-1" onSelect={onSelect} scrollHeight={scrollHeight}></DTable>
   </>
