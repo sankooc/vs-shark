@@ -1153,6 +1153,11 @@ impl Instance {
         }
         let ctx = self.context();
         let info = &ctx.info;
+        // println!("{:#x}", info.end_time);
+        // println!("{:#x}", info.start_time);
+        if info.start_time > info.end_time {
+            bail!("time error");
+        }
         let duration = info.end_time - info.start_time;
         let start = info.start_time;
 

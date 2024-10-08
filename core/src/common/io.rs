@@ -277,7 +277,12 @@ pub trait AReader:Clone {
         self._move(len);
         IO::read32(data, endian)
     }
-
+    fn read64(&self, endian: bool) -> Result<u64> {
+        let len = 8;
+        let data: &[u8] = self._slice(len);
+        self._move(len);
+        IO::_read64(data, endian)
+    }
     fn read_mac(&self) -> Result<MacAddress> {
         let len = 6;
         if self.left()? < len {
