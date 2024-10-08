@@ -272,7 +272,7 @@ impl WContext {
             Ok(_data) => {
                 _data.to_json()
             }
-            _ => String::from("{}"),
+            _ => String::from("{\"x\":[], \"y\": [], \"data\": []}"),
         }
     }
     #[wasm_bindgen]

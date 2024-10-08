@@ -20,6 +20,6 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
   * new http tab
   * new tcp tab
 
-- 0.3.5
+- 0.3.6
   * fix http body bug
   * add tls tab

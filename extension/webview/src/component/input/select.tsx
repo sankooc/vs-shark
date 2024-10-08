@@ -4,7 +4,7 @@ import { MultiSelect } from 'primereact/multiselect';
 
 class Proto {
   label: string;
-  placeholder?: string
+  placeholder?: string;
   _options: string[];
   select?: (event: string[]) => void;
 }
@@ -20,7 +20,7 @@ const Mult = (props: Proto) => {
       const _filter = e.value.map(f => f.code);
       props.select(_filter);
     },
-    ...props,
+    label: props.label,
     options,
     value,
   };

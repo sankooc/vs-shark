@@ -2,6 +2,66 @@ import { load, WContext, FrameInfo, Field } from 'rshark';
 import { pick } from 'lodash';
 import { ComLog, ComMessage, IContextInfo, OverviewSource, IOverviewData, IFrameInfo, Pagination, IResult, IConversation, IDNSRecord, CField, HexV, IHttp } from './common';
 
+
+const convert = (frames: FrameInfo[]): any => {
+  const scale = 24;
+  const start = frames[0].time;
+  const end = frames[frames.length - 1].time;
+  const duration = end - start;
+  const per = Math.floor(duration / scale);
+  const result: Statc[] = [];
+  let cur = start;
+  let limit = cur + per;
+  let rs = Statc.create(start, per);
+  const ps = new Set<string>();
+  const getArray = (num: number): Statc => {
+    if (num < limit) {
+      return rs;
+    }
+    result.push(rs);
+    rs = Statc.create(limit, per);
+    limit = limit + per;
+    return getArray(num);
+  }
+  let _total = 0;
+  for (const item of frames) {
+    const origin = item.len;
+    _total += item.len;
+    const it = getArray(item.time);
+    it.size += origin;
+    it.count += 1;
+    const pname = item.protocol?.toLowerCase() || '';
+    it.addLable(pname, item);
+    ps.add(pname);
+  }
+
+  const categories = ['total'];
+  const map: any = {
+    total: []
+  };
+  ps.forEach((c) => {
+    categories.push(c);
+    map[c] = [];
+  });
+  const labels = [];
+  const countlist = [];
+  for (const rs of result) {
+    const { size, count, stc, start } = rs;
+    labels.push(start);
+    countlist.push(count);
+    map.total.push(size)
+    ps.forEach((c) => {
+      map[c].push(stc.get(c) || 0);
+    });
+  }
+  const overview = new OverviewSource();
+  overview.legends = categories;
+  overview.labels = labels;
+  overview.counts = countlist;
+  overview.valMap = map;
+  return overview;
+}
+
 export class Statc {
   size: number = 0;
   count: number = 0;
@@ -9,15 +69,15 @@ export class Statc {
   end!: number;
   stc: Map<string, number> = new Map();
   public addLable(label: string, packet: FrameInfo): void {
-      const count = this.stc.get(label) || 0;
-      const size = packet.len || 0;
-      this.stc.set(label, count + size);
+    const count = this.stc.get(label) || 0;
+    const size = packet.len || 0;
+    this.stc.set(label, count + size);
   }
   public static create(ts: number, per: number) {
-      const item = new Statc();
-      item.start = ts;
-      item.end = ts + per;
-      return item;
+    const item = new Statc();
+    item.start = ts;
+    item.end = ts + per;
+    return item;
   }
 }
 class FieldImlp implements CField {
@@ -46,6 +106,7 @@ export abstract class PCAPClient {
   ready: boolean = false;
   data!: Uint8Array;
   ctx!: WContext;
+  _cache: any = {};
   initData(data: Uint8Array) {
     this.data = data;
   }
@@ -62,21 +123,24 @@ export abstract class PCAPClient {
       try {
         this.ctx = load(this.data as Uint8Array);
         this._info();
-      }catch(e){
+      } catch (e) {
         this.emitMessage(new ComMessage('_error', "failed to open file"));
       }
     }
   }
   getInfo(): IContextInfo {
-    const rs = JSON.parse(this.ctx.info());
-    return rs;
-    // const statistic = this.ctx.statistic();
-    // return { frame, conversation, dns, http, statistic:JSON.parse(statistic) }
+    if (!this._cache.info) {
+      this._cache.info = JSON.parse(this.ctx.info());
+    }
+    return this._cache.info;
   }
   _protocols(): void {
     if (this.ready && this.ctx) {
-      const data = this.ctx.get_aval_protocals();
-      const options = (data || []).map(f => ({name:f, code: f}));
+      if (!this._cache.protocols) {
+        const data = this.ctx.get_aval_protocals();
+        this._cache.protocols = (data || []).map(f => ({ name: f, code: f }));
+      }
+      const options = this._cache.protocols
       this.emitMessage(new ComMessage('_protocols', options));
     }
   }
@@ -98,7 +162,6 @@ export abstract class PCAPClient {
       if (!val) {
         return null;
       }
-      // val = val.[inx[i]];
     }
     return val;
   }
@@ -113,7 +176,7 @@ export abstract class PCAPClient {
   getFrames(pag: Pagination): IResult {
     const { page, size } = pag;
     const start = (page - 1) * size;
-    const rs = this.ctx.select_frames(start, size, pag.filter || []);
+    const rs = this.ctx.select_frame_items(start, size, pag.filter || []);
     const data = rs.items().map((f, inx) => {
       const emb = pick(f, 'index', 'time', 'status', 'len', 'info', 'irtt', 'protocol', 'dest', 'source');
       return emb;
@@ -127,7 +190,7 @@ export abstract class PCAPClient {
     }
   }
   getConversations(): IConversation[] {
-    const _data = this.ctx.get_conversations();
+    const _data = this.ctx.select_conversation_items();
     return _data.map((f) => {
       const source = f.source;
       const target = f.target;
@@ -136,21 +199,25 @@ export abstract class PCAPClient {
         target: pick(target, 'ip', 'port', 'host', 'count', 'throughput', 'retransmission', 'invalid'),
       }
     })
-    // return _data.map(f => pick(f, 'source_ip', 'source_host','source_port', 'target_ip', 'target_host','target_port', 'count', 'throughput'));
   }
   _conversation(): void {
     if (this.ready && this.ctx) {
-      const data = this.getConversations()
-      this.emitMessage(new ComMessage('_conversation', data));
+      if (!this._cache.conversation) {
+        this._cache.conversation = this.getConversations()
+      }
+      this.emitMessage(new ComMessage('_conversation', this._cache.conversation));
     }
   }
   getDNS(): IDNSRecord[] {
-    return this.ctx.get_dns_record();
+    return this.ctx.select_dns_items();
   }
   _dns(): void {
     if (this.ready && this.ctx) {
-      const data = this.getDNS().map(f => pick(f, 'name', '_type', 'content', 'class', 'ttl'));
-      this.emitMessage(new ComMessage('_dns', data));
+      if (!this._cache.dns) {
+        const items = this.getDNS().map(f => pick(f, 'name', '_type', 'content', 'class', 'ttl'));
+        this._cache.dns = items
+      }
+      this.emitMessage(new ComMessage('_dns', this._cache.dns));
     }
   }
   getFields(index: number): CField[] {
@@ -159,8 +226,8 @@ export abstract class PCAPClient {
   _fields(index: number): void {
     this.emitMessage(new ComMessage('_fields', this.getFields(index)));
   }
-  http(): IHttp [] {
-    const rs = this.ctx.select_http(0, 1000, []).map(f => {
+  http(): IHttp[] {
+    const rs = this.ctx.select_http_items(0, 1000, []).map(f => {
       const _rs = pick(f, 'req', 'res', 'status', 'method');
       return {
         status: _rs.status,
@@ -174,7 +241,19 @@ export abstract class PCAPClient {
     return rs;
   }
   _http(): void {
-    this.emitMessage(new ComMessage('_http', this.http()));
+    if (!this._cache.http) {
+      this._cache.http = this.http();
+    }
+    this.emitMessage(new ComMessage('_http', this._cache.http));
+  }
+  _tls(): void {
+    if (this.ready && this.ctx) {
+      if (!this._cache.tls) {
+        const tlses = this.ctx.select_tls_items();
+        this._cache.tls = tlses.map(f => pick(f, 'source', 'target', 'server_name', 'support_version', 'support_cipher', 'support_negotiation', 'used_version', 'used_cipher', 'used_negotiation'));
+      }
+      this.emitMessage(new ComMessage('_tls', this._cache.tls));
+    }
   }
   handle(msg: ComMessage<any>) {
     if (!msg) return;
@@ -216,6 +295,9 @@ export abstract class PCAPClient {
           break;
         case 'http':
           this._http();
+          break;
+        case 'tls':
+          this._tls();
           break;
         case 'hex':
           this._hex(body.index, body.key);
