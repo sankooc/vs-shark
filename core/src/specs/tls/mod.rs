@@ -3,7 +3,7 @@ pub mod extension;
 pub mod handshake;
 use std::{fmt::Formatter, ops::DerefMut, rc::Rc};
 
-use crate::common::{base::Context, io::AReader, FIELDSTATUS};
+use crate::common::{base::Context, io::AReader, Ref2, FIELDSTATUS};
 use anyhow::Result;
 use handshake::{HandshakeProtocol, HandshakeType};
 use pcap_derive::{Packet, Packet2};
@@ -91,7 +91,7 @@ impl TLSRecord {
             }
             22 => {
                 let pk = packet.build_packet(reader, TLSHandshake::create, Some(finish), None)?;
-                p.message = TLSRecorMessage::HANDSHAKE(Rc::new(pk.take()));
+                p.message = TLSRecorMessage::HANDSHAKE(pk.clone());
             }
             23 => {
                 p.message = TLSRecorMessage::APPLICAION;
@@ -138,7 +138,7 @@ impl TLS {
 
 #[derive(Default, Packet2)]
 pub struct TLSHandshake {
-    items: Vec<HandshakeProtocol>,
+    items: Vec<Ref2<HandshakeProtocol>>,
 }
 impl TLSHandshake {
     fn _create(reader: &Reader, packet: &PacketContext<Self>, p: &mut std::cell::RefMut<Self>, opt: Option<PacketOpt>) -> Result<()> {
@@ -160,7 +160,7 @@ impl TLSHandshake {
                         }
                         _ => {
                             drop(reff);
-                            p.items.push(item.take());
+                            p.items.push(item.clone());
                         }
                     }
                 }
@@ -173,7 +173,7 @@ impl TLSHandshake {
 impl std::fmt::Display for TLSHandshake {
     fn fmt(&self, fmt: &mut Formatter) -> std::fmt::Result {
         match self.items.first() {
-            Some(_head) => fmt.write_fmt(format_args!("Handshake Protocol: {}", _head.to_string())),
+            Some(_head) => fmt.write_fmt(format_args!("Handshake Protocol: {}", _head.as_ref().borrow().to_string())),
             None => fmt.write_str("Handshake Protocol"),
         }
     }
@@ -184,7 +184,7 @@ pub enum TLSRecorMessage {
     UNKNOWN,
     CHANGECIPHERSPEC,
     ALERT,
-    HANDSHAKE(Rc<TLSHandshake>),
+    HANDSHAKE(Ref2<TLSHandshake>),
     APPLICAION,
     HEARTBEAT,
 }
@@ -206,15 +206,15 @@ fn proc(frame: &Frame, reader: &Reader, packet: &PacketContext<TLS>, p: &mut TLS
                 
                 match &record.message {
                     TLSRecorMessage::HANDSHAKE(hs) => {
-                        for _hs in hs.as_ref().items.iter() {
-                            match &_hs.msg {
+                        for _hs in hs.as_ref().borrow().items.iter() {
+                            let _msg = &_hs.as_ref().borrow().msg;
+                            match _msg {
                                 HandshakeType::Certificate(_) |  HandshakeType::ClientHello(_) | HandshakeType::ServerHello(_) => {
-                                    ep.handshake.push(_hs.msg.clone());
+                                    ep.handshake.push(_msg.clone());
                                 }
                                 _ => {}
                             }
                         }
-                        // ep.handshake.push(hs.clone());
                     },
                     _ => {}
                 };

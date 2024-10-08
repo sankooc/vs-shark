@@ -690,7 +690,7 @@ pub enum HandshakeType {
     ServerHello(Rc<HandshakeServerHello>),
     NewSessionTicket,
     EncryptedExtensions,
-    Certificate(Rc<HandshakeCertificate>),
+    Certificate(Ref2<HandshakeCertificate>),
     ServerKeyExchange,
     CertificateRequest,
     ServerHelloDone,
@@ -757,7 +757,7 @@ impl HandshakeProtocol {
                 }
                 11 => {
                     let pk = packet.build_packet(reader, HandshakeCertificate::create, Some(_finish), None)?;
-                    p.msg = HandshakeType::Certificate(Rc::new(pk.take()));
+                    p.msg = HandshakeType::Certificate(pk.clone());
                 }
                 _ => {}
             }
