@@ -17,14 +17,14 @@ use crate::{
 
 #[derive(Default, Packet)]
 pub struct TLS {
-    records: Vec<TLSRecord>,
+    records: Vec<Ref2<TLSRecord>>,
 }
 impl crate::common::base::InfoPacket for TLS {
     fn info(&self) -> String {
         let len = self.records.len();
         if len > 0 {
             let one = self.records.get(0).unwrap();
-            one._type()
+            one.borrow()._type()
         } else {
             String::from("TLS segment")
         }
@@ -202,9 +202,9 @@ fn proc(frame: &Frame, reader: &Reader, packet: &PacketContext<TLS>, p: &mut TLS
         if is_tls {
             if left_size >= _len + 5 {
                 let item = packet.build_packet(reader, TLSRecord::create, None, None)?;
-                let record = item.take();
+                let record = item.clone();
                 
-                match &record.message {
+                match &record.borrow().message {
                     TLSRecorMessage::HANDSHAKE(hs) => {
                         for _hs in hs.as_ref().borrow().items.iter() {
                             let _msg = &_hs.as_ref().borrow().msg;
