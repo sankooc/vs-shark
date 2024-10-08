@@ -157,6 +157,7 @@ pub struct PCAPInfo{
   pub http_count: usize,
   pub dns_count: usize,
   pub tcp_count: usize,
+  pub tls_count: usize,
 }
 
 impl PCAPInfo {

@@ -76,7 +76,6 @@ const Content = (props: Proto) => {
 
 
   convertArray(content);
-  // console.log(enco);
   let complete = parseInt(size) == content.length;
   // console.log(parseInt(size), content.length, complete);
   if(!txt){

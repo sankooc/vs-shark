@@ -73,6 +73,7 @@ export interface IContextInfo {
     http_count: number;
     dns_count: number;
     tcp_count: number;
+    tls_count: number;
     // frame: number,
     // conversation: number,
     // dns: number,
@@ -172,4 +173,18 @@ export interface IHttp {
     ttr: number,
     req: IHttpEnity,
     res: IHttpEnity,
+}
+
+export interface ITLS {
+    index?: number,
+    source: string,
+    target: string,
+    server_name: string[],
+    support_version: string[],
+    support_cipher: string[],
+    support_negotiation: string[],
+    used_version: string,
+    used_cipher: string,
+    used_negotiation: string[],
+    status?: string,
 }

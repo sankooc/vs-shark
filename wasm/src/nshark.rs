@@ -451,8 +451,13 @@ impl WContext {
             _ => String::from("{}"),
         }
     }
+    #[wasm_bindgen]
     pub fn select_tls_connections(&self) -> Vec<WTLSHS> {
         self.ctx.context().tls_connection_info().iter().map(|f| WTLSHS::new(f.to_owned())).collect::<_>()
+    }
+    #[wasm_bindgen]
+    pub fn select_tls_count(&self) -> usize {
+        self.ctx.context().tls_connection_info().len()
     }
 }
 

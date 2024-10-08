@@ -1143,6 +1143,7 @@ impl Instance {
         _info.dns_count = ctx.get_dns_count();
         _info.tcp_count = ctx.conversations().len();
         _info.http_count = ctx.get_http().len();
+        _info.tls_count = ctx.tls_connection_info().len();
         _info
     }
     pub fn statistic_frames(&self) -> Result<Lines> {
