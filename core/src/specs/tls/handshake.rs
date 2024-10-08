@@ -2,6 +2,7 @@ use std::fmt::Formatter;
 use std::rc::Rc;
 
 use crate::common::io::AReader;
+use crate::constants::ec_points_type_mapper;
 use anyhow::{bail, Result};
 use pcap_derive::Packet2;
 use pcap_derive::BerPacket;
@@ -127,7 +128,14 @@ impl Extenstion {
                     let ext = packet.build_packet(reader, super::extension::Version::create, Some(p.len as usize), None)?;
                     let reff = ext.take();
                     p.info = Some(ExtensionType::Version(reff.versions));
-
+                }
+                0x000b => {
+                    let elen = packet.build_format(reader, Reader::read8, "EC point formats Length: {}")?;
+                    if elen == 1 {
+                        let format = reader.read8()?;
+                        let _content = format!("EC point format: {} ({})",ec_points_type_mapper(format), format);
+                        packet.build_backward(reader, 1, _content);
+                    }
                 }
                 _ => {}
             }

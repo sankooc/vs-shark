@@ -2194,6 +2194,13 @@ lazy_static! {
 		m.insert("1.2.840.10003.5.10", "MARC21");
 		m
 	};
+	pub static ref ec_points_type_map: HashMap<u8, &'static str> = {
+		let mut m = HashMap::new();
+		m.insert(0, "uncompressed");
+		m.insert(1, "ansiX962_compressed_prime");
+		m.insert(2, "ansiX962_compressed_char2");
+		m
+	};
 }pub fn link_type_mapper(code:u16) -> String {
     (*link_type_map.get(&code).unwrap_or(&"unknown")).into()
   }
@@ -2253,4 +2260,7 @@ pub fn nbns_type_mapper(code:u16) -> String {
   }
 pub fn oid_map_mapper(code:&'static str) -> String {
     (*oid_map_map.get(&code).unwrap_or(&"unknown")).into()
+  }
+pub fn ec_points_type_mapper(code:u8) -> String {
+    (*ec_points_type_map.get(&code).unwrap_or(&"NULL")).into()
   }
