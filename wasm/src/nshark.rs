@@ -1,146 +1,37 @@
 use std::borrow::Borrow;
-use std::cell::{Ref, RefCell};
 use std::cmp;
 use std::collections::HashSet;
 
 use core::common::FIELDSTATUS;
-use core::common::base::{Context, DomainService, Element, Endpoint, Frame, Instance};
+use core::common::base::{ Element, Frame, Instance};
 use core::entry::*;
 use js_sys::Uint8Array;
 use wasm_bindgen::prelude::*;
 
-use crate::entity::{HttpConversation, WTLSHS};
+use crate::entity::{DNSRecord, Field, HttpConversation, TCPConversation, WTLSHS};
+
+
 
 #[wasm_bindgen]
-pub struct WContext {
-    ctx: Box<Instance>,
-}
-
-#[derive(Default, Clone)]
-#[wasm_bindgen]
-pub struct Field {
+pub struct FrameResult {
     pub start: usize,
-    pub size: usize,
-    summary: String,
-    children: RefCell<Vec<core::common::base::Field>>,
-    data: Uint8Array,
-    // children: Vec<Field>,
-}
-impl Field {
-    pub fn convert(embed: &core::common::base::Field) -> Self {
-        let (start, size);
-        core::common::base::Field { start, size, .. } = *embed;
-        let summary = embed.summary.clone();
-        let a: &[u8] = embed.borrow().data.as_ref();
-        let data: Uint8Array = a.into();
-        let children = embed.children.clone();
-        Field {
-            start,
-            size,
-            summary,
-            data,
-            children,
-        }
-    }
+    pub total: usize,
+    items: Vec<FrameInfo>,
 }
 #[wasm_bindgen]
-impl Field {
-    #[wasm_bindgen(getter)]
-    pub fn summary(&self) -> String {
-        self.summary.clone()
-    }
-    #[wasm_bindgen(getter)]
-    pub fn children(&self) -> Vec<Field> {
-        let mut children = Vec::new();
-        for c in self.children.borrow().iter() {
-            children.push(Field::convert(c));
-        }
-        children
-    }
-    #[wasm_bindgen(getter)]
-    pub fn data(&self) -> Uint8Array {
-        self.data.clone()
+impl FrameResult {
+    #[wasm_bindgen]
+    pub fn items(&self) -> Vec<FrameInfo> {
+        self.items.clone()
     }
 }
 
-#[wasm_bindgen]
-pub struct DNSRecord {
-    name: String,
-    _type: String,
-    proto: String,
-    class: String,
-    content: String,
-    pub ttl: u32,
-}
-
-impl DNSRecord {
-    pub fn create(data: Ref<impl DomainService>) -> DNSRecord {
-        DNSRecord {
-            name: data.name(),
-            _type: data._type(),
-            proto: data.proto(),
-            class: data.class(),
-            content: data.content(),
-            ttl: data.ttl(),
-        }
+impl FrameResult {
+    pub fn new( start:usize, total: usize,items: Vec<FrameInfo>) -> Self {
+        Self{start, total, items}
     }
 }
 
-#[wasm_bindgen]
-impl DNSRecord {
-    #[wasm_bindgen(getter)]
-    pub fn name(&self) -> String {
-        self.name.clone()
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn _type(&self) -> String {
-        self._type.clone()
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn proto(&self) -> String {
-        self.proto.clone()
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn content(&self) -> String {
-        self.content.clone()
-    }
-    #[wasm_bindgen(getter)]
-    pub fn class(&self) -> String {
-        self.class.clone()
-    }
-}
-
-#[wasm_bindgen]
-pub struct WFileInfo {
-    pub link_type: u32,
-    file_type: String,
-    pub start_time: u64,
-    version: String,
-}
-#[wasm_bindgen]
-impl WFileInfo {
-    #[wasm_bindgen(getter)]
-    pub fn version(&self) -> String {
-        self.version.clone()
-    }
-    #[wasm_bindgen(getter)]
-    pub fn file_type(&self) -> String {
-        self.file_type.clone()
-    }
-}
-impl WFileInfo {
-    // fn new(info: FileInfo) -> WFileInfo {
-    //     WFileInfo {
-    //         link_type: info.link_type,
-    //         file_type: format!("{:?}", info.file_type),
-    //         start_time: info.start_time,
-    //         version: info.version.clone(),
-    //     }
-    // }
-}
 #[wasm_bindgen]
 #[derive(Default,Clone)]
 pub struct FrameInfo {
@@ -180,80 +71,13 @@ impl FrameInfo {
     }
 }
 
-#[derive(Clone)]
-#[wasm_bindgen]
-pub struct WEndpoint {
-    ip: String,
-    pub port: u16,
-    host: String,
-    pub count: u16,
-    pub throughput: u32,
-    pub retransmission: u16,
-    pub invalid: u16,
-}
 
-impl WEndpoint {
-    fn new(ep: &Endpoint, ctx: &Context) -> Self {
-        let (ip, port, host) = ctx._to_hostnames(ep);
-        let info = &ep.info;
-        Self{ ip, port, host, count: info.count, throughput: info.throughput, retransmission: info.retransmission, invalid: info.invalid }
-    }
-}
 
 #[wasm_bindgen]
-impl WEndpoint {
-    #[wasm_bindgen(getter)]
-    pub fn ip(&self) -> String {
-        self.ip.clone()
-    }
-    #[wasm_bindgen(getter)]
-    pub fn host(&self) -> String {
-        self.host.clone()
-    }
-}
-#[wasm_bindgen]
-pub struct TCPConversation{
-    source: WEndpoint,
-    target: WEndpoint,
-}
-impl TCPConversation {
-    fn new(s: &Endpoint, t: &Endpoint, ctx: &Context) -> Self {
-        let source = WEndpoint::new(s, ctx);
-        let target = WEndpoint::new(t, ctx);
-        Self{source, target}
-    }
-}
-#[wasm_bindgen]
-pub struct FrameResult {
-    pub start: usize,
-    pub total: usize,
-    items: Vec<FrameInfo>,
-}
-#[wasm_bindgen]
-impl FrameResult {
-    #[wasm_bindgen]
-    pub fn items(&self) -> Vec<FrameInfo> {
-        self.items.clone()
-    }
+pub struct WContext {
+    ctx: Box<Instance>,
 }
 
-impl FrameResult {
-    fn new( start:usize, total: usize,items: Vec<FrameInfo>) -> Self {
-        Self{start, total, items}
-    }
-}
-
-#[wasm_bindgen]
-impl TCPConversation {
-    #[wasm_bindgen(getter)]
-    pub fn source(&self) -> WEndpoint {
-        self.source.clone()
-    }
-    #[wasm_bindgen(getter)]
-    pub fn target(&self) -> WEndpoint {
-        self.target.clone()
-    }
-}
 
 fn _convert(f_status: FIELDSTATUS) -> &'static str {
     match f_status {
@@ -314,7 +138,7 @@ impl WContext {
 
     
     #[wasm_bindgen]
-    pub fn select_frames(&mut self, start: usize, size: usize, criteria: Vec<String>) -> FrameResult {
+    pub fn select_frame_items(&mut self, start: usize, size: usize, criteria: Vec<String>) -> FrameResult {
         let info = self.ctx.context().get_info();
         let start_ts = info.start_time;
         let _fs = self.ctx.get_frames();
@@ -355,7 +179,7 @@ impl WContext {
         list.len()
     }
     #[wasm_bindgen]
-    pub fn select_http(&self, start: usize, size: usize,_criteria: Vec<String>) -> Vec<HttpConversation>{
+    pub fn select_http_items(&self, start: usize, size: usize,_criteria: Vec<String>) -> Vec<HttpConversation>{
         let ctx = self.ctx.context();
         let len =  ctx.get_http().len();
         if start >= len {
@@ -404,7 +228,7 @@ impl WContext {
 
     
     #[wasm_bindgen]
-    pub fn get_dns_record(&self) -> Vec<DNSRecord> {
+    pub fn select_dns_items(&self) -> Vec<DNSRecord> {
         let mut rs = Vec::new();
         for d in self.ctx.context().dns.iter() {
             let aa = d.as_ref().borrow();
@@ -413,17 +237,17 @@ impl WContext {
         rs
     }
     #[wasm_bindgen]
-    pub fn get_dns_count(&self) -> usize {
+    pub fn select_dns_count(&self) -> usize {
         self.ctx.context().get_dns_count()
     }
     #[wasm_bindgen]
-    pub fn get_conversations_count(&self) -> usize{
+    pub fn select_conversation_count(&self) -> usize{
         let ct = self.ctx.context();
         let cons = ct.conversations();
         cons.len()
     }
     #[wasm_bindgen]
-    pub fn get_conversations(&self) -> Vec<TCPConversation>{
+    pub fn select_conversation_items(&self) -> Vec<TCPConversation>{
         let ct = self.ctx.context();
         let cons = ct.conversations();
         let mut rs = Vec::new();
@@ -452,7 +276,7 @@ impl WContext {
         }
     }
     #[wasm_bindgen]
-    pub fn select_tls_connections(&self) -> Vec<WTLSHS> {
+    pub fn select_tls_items(&self) -> Vec<WTLSHS> {
         self.ctx.context().tls_connection_info().iter().map(|f| WTLSHS::new(f.to_owned())).collect::<_>()
     }
     #[wasm_bindgen]

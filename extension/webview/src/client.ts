@@ -176,7 +176,7 @@ export abstract class PCAPClient {
   getFrames(pag: Pagination): IResult {
     const { page, size } = pag;
     const start = (page - 1) * size;
-    const rs = this.ctx.select_frames(start, size, pag.filter || []);
+    const rs = this.ctx.select_frame_items(start, size, pag.filter || []);
     const data = rs.items().map((f, inx) => {
       const emb = pick(f, 'index', 'time', 'status', 'len', 'info', 'irtt', 'protocol', 'dest', 'source');
       return emb;
@@ -190,7 +190,7 @@ export abstract class PCAPClient {
     }
   }
   getConversations(): IConversation[] {
-    const _data = this.ctx.get_conversations();
+    const _data = this.ctx.select_conversation_items();
     return _data.map((f) => {
       const source = f.source;
       const target = f.target;
@@ -209,7 +209,7 @@ export abstract class PCAPClient {
     }
   }
   getDNS(): IDNSRecord[] {
-    return this.ctx.get_dns_record();
+    return this.ctx.select_dns_items();
   }
   _dns(): void {
     if (this.ready && this.ctx) {
@@ -227,7 +227,7 @@ export abstract class PCAPClient {
     this.emitMessage(new ComMessage('_fields', this.getFields(index)));
   }
   http(): IHttp[] {
-    const rs = this.ctx.select_http(0, 1000, []).map(f => {
+    const rs = this.ctx.select_http_items(0, 1000, []).map(f => {
       const _rs = pick(f, 'req', 'res', 'status', 'method');
       return {
         status: _rs.status,
@@ -249,7 +249,7 @@ export abstract class PCAPClient {
   _tls(): void {
     if (this.ready && this.ctx) {
       if (!this._cache.tls) {
-        const tlses = this.ctx.select_tls_connections();
+        const tlses = this.ctx.select_tls_items();
         this._cache.tls = tlses.map(f => pick(f, 'source', 'target', 'server_name', 'support_version', 'support_cipher', 'support_negotiation', 'used_version', 'used_cipher', 'used_negotiation'));
       }
       this.emitMessage(new ComMessage('_tls', this._cache.tls));
