@@ -2,7 +2,7 @@ import React, { ReactElement, useEffect, useState } from "react";
 import { MenuItem } from 'primereact/menuitem';
 import { Badge } from 'primereact/badge';
 import { Menu } from 'primereact/menu';
-import { ComMessage, IContextInfo, IConversation, IDNSRecord, IHttp, ILines, IStatistic } from '../common';
+import { ComMessage, IContextInfo, IConversation, IDNSRecord, IHttp, ILines, IStatistic, ITLS } from '../common';
 import Loading from './loading';
 import ErrPage from './error';
 import { onMessage, log, emitMessage } from '../connect';
@@ -12,6 +12,7 @@ import FrameList from './frames';
 import TCPList from './tcp';
 import DNSList from './dns';
 import HttpComponnet from './http';
+import TLSComponent from './tls';
 
 // import overview_json from '../mock/overview2.json';
 // import meta_json from '../mock/meta.json';
@@ -20,6 +21,7 @@ import HttpComponnet from './http';
 // import mock_iptype from '../mock/iptype.json';
 // import _dnsRecords from '../mock/dns.json';
 // import _httpRecords from '../mock/http.json';
+// import _tlsRecords from '../mock/tls.json';
 
 
 const itemRenderer = (item, options) => {
@@ -45,6 +47,7 @@ const Main = () => {
   const [dnsRecords, setDnsRecords] = useState<IDNSRecord[]>([]);
   const [conversations, setConversations] = useState<IConversation[]>([]);
   const [https, setHttps] = useState<IHttp[]>([]);
+  const [tlsRecords, setTlsRecords] = useState<ITLS[]>([]);
   useEffect(() => {
     onMessage('message', (e: any) => {
       const { type, body, requestId } = e.data;
@@ -66,6 +69,10 @@ const Main = () => {
           setDnsRecords(body);
           break;
         }
+        case '_tls': {
+          setTlsRecords(body);
+          break;
+        }
         case '_conversation': {
           setConversations(body);
           break;
@@ -84,7 +91,6 @@ const Main = () => {
     emitMessage(new ComMessage('ready', 'demo'));
   }, []);
   
-
   const convert = (): MenuItem[] => {
     const mitems: MenuItem[] = [];
     const addPanel = (id: string, label: string, extra: string, icon: string = ''): void => {
@@ -99,6 +105,7 @@ const Main = () => {
     if (meta.tcp_count) addPanel('tcp', 'TCP', meta.tcp_count + '', 'pi pi-server');
     if (meta.dns_count) addPanel('dns', 'DNS', meta.dns_count + '', 'pi pi-address-book');
     if (meta.http_count) addPanel('http', 'Http', meta.http_count + '', 'pi pi-sort-alt');
+    if (meta.tls_count) addPanel('tls', 'TLS', meta.tls_count + '', 'pi pi-lock');
     return mitems;
   };
   const buildPage = (): ReactElement => {
@@ -111,11 +118,14 @@ const Main = () => {
         return <DNSList items={dnsRecords}/>
       case 'http':
         return <HttpComponnet items={https} />
+      case 'tls':
+        return <TLSComponent items={tlsRecords}/>
     }
     return <Overview framedata={framedata} metadata={meta} httpdata={httpdata} />;
   };
   if (status == 0) {
     return <Loading/>
+    // return <TLSComponent items={tlsRecords}/>
     // return <HttpComponnet items={_httpRecords.items} />
     // return <DNSList items={_dnsRecords}/>
     // return <Overview framedata={overview_json} metadata={meta_json} httpdata={http_json.statistic} />

@@ -6,7 +6,7 @@ class Proto {
   label: string;
   placeholder?: string
   _options: string[];
-  select?(event: string[]): void;
+  select?: (event: string[]) => void;
 }
 const Mult = (props: Proto) => {
   const [value, setValue] = useState<string[]>([]);

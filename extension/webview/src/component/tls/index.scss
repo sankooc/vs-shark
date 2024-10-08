@@ -1,0 +1,17 @@
+@import '../../common';
+
+.tls-page {
+
+    tr {
+        &.status-warn {
+            background-color: $t-errdata !important;
+            color: $t-errdata-font !important;
+        }
+
+        &.status-normal {
+            background-color: $t-common !important;
+            color: $t-common-font !important;
+        }
+    }
+
+}

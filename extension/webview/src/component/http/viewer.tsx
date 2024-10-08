@@ -7,7 +7,6 @@ class Proto {
     item: IHttp
 }
 const Viewer = (props: Proto) => {
-    console.log(props.item);
     const [store, setStore] = useState<any>({ items: [], key: '', data: null });
     const [message, setMessage] = useState<IHttpEnity>(null);
     const convert = (item: IHttp): TreeNode[] => {

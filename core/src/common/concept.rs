@@ -157,6 +157,7 @@ pub struct PCAPInfo{
   pub http_count: usize,
   pub dns_count: usize,
   pub tcp_count: usize,
+  pub tls_count: usize,
 }
 
 impl PCAPInfo {
@@ -196,4 +197,20 @@ pub struct IPINFO {
   broadcast: usize,
   multicast: usize,
   unicast: usize,
+}
+
+
+
+
+#[derive(Default,Clone)]
+pub struct TLSHS {
+  pub source: String,
+  pub target: String,
+  pub server_name: Vec<String>, 
+  pub support_version: Vec<String>,
+  pub support_cipher: Vec<String>,
+  pub support_negotiation: Vec<String>,
+  pub used_version: String,
+  pub used_cipher: String,
+  pub used_negotiation: Vec<String>,
 }

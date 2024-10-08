@@ -1320,3 +1320,9 @@ export const NBNS_TYPE_MAP = {
     32: 'NB',
     33: 'NBSTAT',
 }
+
+export const EC_POINTS_MAP = {
+     0: "uncompressed" ,
+     1: "ansiX962_compressed_prime",
+     2: "ansiX962_compressed_char2",
+}

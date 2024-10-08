@@ -1,5 +1,5 @@
 import { linktypeMap, DHCP_OPTION_TYPE_MAP, IGMP_TYPE_MAP, DHCP_TYPE_MAP, SLL_TYPE, ipProtocolMap, etypeMap, DNS_CLASS_MAP, ARP_HARDWARE_TYPE_MAP, TCP_OPTION_KIND_MAP, ARP_OPER_TYPE_MAP, ICMPV6_TYPE_MAP } from  './cons.js';
-import { TLS_CONTENT_TYPE_MAP,TLS_MIN_VERSION_MAP,TLS_HS_MESSAGE_TYPE,TLS_CIPHER_SUITES_MAP,TLS_EXTENSION_MAP, NBNS_TYPE_MAP } from  './cons.js';
+import { EC_POINTS_MAP, TLS_CONTENT_TYPE_MAP,TLS_MIN_VERSION_MAP,TLS_HS_MESSAGE_TYPE,TLS_CIPHER_SUITES_MAP,TLS_EXTENSION_MAP, NBNS_TYPE_MAP } from  './cons.js';
 import fs from 'node:fs';
 
 import { rebuild } from './wireshark.js';
@@ -20,9 +20,10 @@ ${wk}\r\n\t\tm
 \t};\r\n`;
 };
 
-const buildMapper = (name, typed) => {
+const buildMapper = (name, typed, _def) => {
+  const def = _def || "unknown";
   return `pub fn ${name}_mapper(code:${typed}) -> String {
-    (*${name}_map.get(&code).unwrap_or(&"unknown")).into()
+    (*${name}_map.get(&code).unwrap_or(&"${def}")).into()
   }`;
 }
 
@@ -43,17 +44,18 @@ const items = [
   ['tls_content_type', TLS_CONTENT_TYPE_MAP, k => parseInt(k, 10), 'u8'],
   ['tls_min_type', TLS_MIN_VERSION_MAP, k => parseInt(k, 10), 'u8'],
   ['tls_hs_message_type', TLS_HS_MESSAGE_TYPE, k => parseInt(k, 10), 'u8'],
-  ['tls_cipher_suites', TLS_CIPHER_SUITES_MAP, k => parseInt(k, 16), 'u16'],
+  ['tls_cipher_suites', TLS_CIPHER_SUITES_MAP, k => parseInt(k, 16), 'u16', 'Reserved (GREASE)'],
   ['tls_extension', TLS_EXTENSION_MAP, k => parseInt(k, 10), 'u16'],
   ['nbns_type', NBNS_TYPE_MAP, k => parseInt(k, 10), 'u16'],
   ['oid_map', oid_map, k => `"${k}"`, "&'static str"],
+  ['ec_points_type', EC_POINTS_MAP, k => parseInt(k, 10), 'u8', 'NULL'],
 ];
 //DHCP_OPTION_TYPE
 const conts = items.map((item) => buildConstants(item[0]+'_map', item[1], item[2], item[3]));
 
 let _content = str + "lazy_static! {\r\n" + conts.join('')+ "}";
 
-_content += (items.map((item) => buildMapper(item[0], item[3])).join('\r\n'))
+_content += (items.map((item) => buildMapper(item[0], item[3], item[4])).join('\r\n'))
 
 fs.writeFileSync('../core/src/constants.rs', _content);
 

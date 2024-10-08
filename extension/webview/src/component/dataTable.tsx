@@ -36,11 +36,6 @@ const DTable = (props: Props) => {
       }
     }
   }
-  // const onMultiSelectChange = (e) => {
-  //   // console.log(e);
-  //   // const values = (e.value || []).map(inx => inx.index);
-  //   setSelects(e.value);
-  // }
   const scrollHeight = props.scrollHeight || 99;
   const result = props.result || { total: 0, size : 0, items: [], page: 1};
   const { total, size, items, page } = result;
@@ -87,6 +82,9 @@ const DTable = (props: Props) => {
     // size: 'small',
     className: 'pcap-table w-full',
   };
+  if (props.className) {
+    tableProps.className = props.className;
+  }
   return (<>
     <DataTable {...tableProps}
       size="small"

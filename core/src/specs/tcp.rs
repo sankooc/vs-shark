@@ -169,14 +169,13 @@ impl PortPacket for TCP {
 impl crate::common::base::InfoPacket for TCP {
     fn info(&self) -> String {
         let mut info = format!("{} → {} {} Seq={} Ack={} Win={} Len={}", self.source_port, self.target_port, self.state.to_string(), self.sequence, self.acknowledge, self.window, self.payload_len);
-        match &self.info {
-            Some(_info) => match _info.detail {
+        if let Some(_info) = &self.info {
+            match _info.detail {
                 TCPDetail::KEEPALIVE => info = format!("[{}] {}", "Keeplive", info),
                 TCPDetail::NOPREVCAPTURE => info = format!("[{}] {}", "no_previous_segment", info),
                 TCPDetail::RETRANSMISSION => info = format!("[{}] {}", "retransmission", info),
                 _ => {}
-            },
-            _ => {}
+            }
         }
         info
     }

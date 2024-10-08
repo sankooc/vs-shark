@@ -2,6 +2,7 @@ use std::fmt::Formatter;
 use std::rc::Rc;
 
 use crate::common::io::AReader;
+use crate::constants::ec_points_type_mapper;
 use anyhow::{bail, Result};
 use pcap_derive::Packet2;
 use pcap_derive::BerPacket;
@@ -15,6 +16,7 @@ use crate::{
 
 use super::ber::SEQUENCE;
 use super::ber::TLVOBJ;
+use super::extension::ExtensionType;
 
 #[derive(Default, Packet2)]
 struct CupherSuites {
@@ -84,7 +86,7 @@ impl ExtenstionPack {
                 break;
             }
             let item = packet.build_packet(reader, Extenstion::create, None, None)?;
-            p.items.push(item);
+            p.items.push(item.clone());
         }
         Ok(())
     }
@@ -93,6 +95,7 @@ impl ExtenstionPack {
 struct Extenstion {
     _type: u16,
     len: u16,
+    info: Option<ExtensionType>,
 }
 impl std::fmt::Display for Extenstion {
     fn fmt(&self, fmt: &mut Formatter) -> std::fmt::Result {
@@ -113,7 +116,26 @@ impl Extenstion {
             let finish = reader.cursor() + p.len as usize;
             match p._type {
                 0 => {
-                    packet.build_packet(reader, super::extension::ServerName::create, None, None)?;
+                    let ext = packet.build_packet(reader, super::extension::ServerName::create, None, None)?;
+                    let _info = ext.take();
+                    p.info = Some(ExtensionType::ServerName(_info.names));
+                }
+                0x0010 => {
+                    let ext = packet.build_packet(reader, super::extension::Negotiation::create, None, None)?;
+                    p.info = Some(ExtensionType::Negotiation(ext.take().protocols));
+                }
+                0x002b => {
+                    let ext = packet.build_packet(reader, super::extension::Version::create, Some(p.len as usize), None)?;
+                    let reff = ext.take();
+                    p.info = Some(ExtensionType::Version(reff.versions));
+                }
+                0x000b => {
+                    let elen = packet.build_format(reader, Reader::read8, "EC point formats Length: {}")?;
+                    if elen == 1 {
+                        let format = reader.read8()?;
+                        let _content = format!("EC point format: {} ({})",ec_points_type_mapper(format), format);
+                        packet.build_backward(reader, 1, _content);
+                    }
                 }
                 _ => {}
             }
@@ -486,6 +508,45 @@ pub struct HandshakeClientHello {
     extensions: Ref2<ExtenstionPack>,
 }
 impl HandshakeClientHello {
+    pub fn server_name(&self) -> Option<Vec<String>> {
+        let exps = self.extensions.as_ref().borrow();
+        for ext in exps.items.iter() {
+            if let Some(_info) = &ext.borrow().info {
+                if let ExtensionType::ServerName(v) = _info {
+                    return Some(v.clone())
+                }
+            }
+        }
+        None
+    }
+    pub fn versions(&self) -> Option<Vec<String>> {
+        let exps = self.extensions.as_ref().borrow();
+        for ext in exps.items.iter() {
+            if let Some(_info) = &ext.borrow().info {
+                if let ExtensionType::Version(v) = _info {
+                    return Some(v.clone());
+                }
+            }
+        }
+        None
+    }
+    pub fn negotiation(&self) -> Option<Vec<String>> {
+        let exps = self.extensions.as_ref().borrow();
+        for ext in exps.items.iter() {
+            if let Some(_info) = &ext.borrow().info {
+                if let ExtensionType::Negotiation(v) = _info {
+                    return Some(v.clone());
+                }
+            }
+        }
+        None
+    }
+    pub fn ciphers(&self) -> Vec<String> {
+        let reff = self.ciper_suites.as_ref().borrow();
+        let list = reff.suites.iter().map(|f|tls_cipher_suites_mapper(*f)).collect::<_>();
+        drop(reff);
+        list
+    }
     fn create(reader: &Reader, packet: &PacketContext<HandshakeProtocol>) -> Result<Self> {
         reader.read8()?;
         let min = reader.read8()?;
@@ -512,11 +573,39 @@ impl HandshakeClientHello {
 pub struct HandshakeServerHello {
     random: Vec<u8>,
     session: Vec<u8>,
-    ciper_suite: u16,
+    pub ciper_suite: u16,
     method: u8,
     extensions: Ref2<ExtenstionPack>,
 }
 impl HandshakeServerHello {
+    pub fn ciper_suite(&self)-> String {
+        tls_cipher_suites_mapper(self.ciper_suite)
+    }
+    pub fn versions(&self) -> Option<String> {
+        let exps = self.extensions.as_ref().borrow();
+        for ext in exps.items.iter() {
+            if let Some(_info) = &ext.borrow().info {
+                if let ExtensionType::Version(v) = _info {
+                    // return v.get(0).clone();
+                    if let Some(version) = v.get(0) {
+                        return Some(version.into())
+                    }
+                }
+            }
+        }
+        None
+    }
+    pub fn negotiation(&self) -> Option<Vec<String>> {
+        let exps = self.extensions.as_ref().borrow();
+        for ext in exps.items.iter() {
+            if let Some(_info) = &ext.borrow().info {
+                if let ExtensionType::Negotiation(v) = _info {
+                    return Some(v.clone());
+                }
+            }
+        }
+        None
+    }
     fn create(reader: &Reader, packet: &PacketContext<HandshakeProtocol>) -> Result<Self> {
         reader.read8()?;
         let min = reader.read8()?;
@@ -599,7 +688,7 @@ impl HandshakeCertificate {
 //     }
 // }
 
-#[derive(Default)]
+#[derive(Default,Clone)]
 pub enum HandshakeType {
     #[default]
     UNKNOWN,
@@ -609,7 +698,7 @@ pub enum HandshakeType {
     ServerHello(Rc<HandshakeServerHello>),
     NewSessionTicket,
     EncryptedExtensions,
-    Certificate(Rc<HandshakeCertificate>),
+    Certificate(Ref2<HandshakeCertificate>),
     ServerKeyExchange,
     CertificateRequest,
     ServerHelloDone,
@@ -633,7 +722,7 @@ impl HandshakeProtocol {
         tls_hs_message_type_mapper(self._type)
     }
     fn msg(&self) -> &'static str {
-        match &(self.msg) {
+        match &self.msg {
             HandshakeType::Certificate(_) => "Certificate",
             HandshakeType::ClientHello(_) => "Client Hello",
             HandshakeType::ServerHello(_) => "Server Hello",
@@ -676,7 +765,7 @@ impl HandshakeProtocol {
                 }
                 11 => {
                     let pk = packet.build_packet(reader, HandshakeCertificate::create, Some(_finish), None)?;
-                    p.msg = HandshakeType::Certificate(Rc::new(pk.take()));
+                    p.msg = HandshakeType::Certificate(pk.clone());
                 }
                 _ => {}
             }

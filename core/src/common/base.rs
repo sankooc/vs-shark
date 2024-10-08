@@ -9,7 +9,7 @@ use crate::{
         dns::{RecordResource, ResourceType, DNS},
         http::{HttpType, HTTP},
         tcp::{TCPOptionKind, ACK, TCP},
-        tls::TLSHandshake,
+        tls::handshake::{HandshakeClientHello, HandshakeServerHello, HandshakeType},
         ProtocolData,
     },
 };
@@ -24,6 +24,8 @@ use anyhow::{bail, Result};
 // pub mod pcapng;
 use crate::common::io::Reader;
 use crate::common::{FileInfo, FileType};
+
+use super::concept::TLSHS;
 
 
 #[derive(Default, Clone)]
@@ -387,7 +389,7 @@ pub struct Endpoint {
 
     //
     _request: Option<HttpRequestBuilder>,
-    pub handshake: Vec<Rc<TLSHandshake>>,
+    pub handshake: Vec<HandshakeType>,
     _seg: Option<Vec<u8>>,
     _seg_len: usize,
     _segments: Option<Vec<Segment>>,
@@ -468,19 +470,13 @@ impl Endpoint {
             return TCPDetail::RETRANSMISSION;
         }
 
-        match tcp.options.borrow() {
-            Some(opt) => {
-                let _ref = opt.as_ref().borrow();
-                for _opt in _ref.iter() {
-                    match _opt.as_ref().borrow().data {
-                        TCPOptionKind::MSS(mss) => {
-                            self.mss = mss;
-                        }
-                        _ => {}
-                    }
+        if let Some(opt) = tcp.options.borrow() {
+            let _ref = opt.as_ref().borrow();
+            for _opt in _ref.iter() {
+                if let TCPOptionKind::MSS(mss) = _opt.as_ref().borrow().data {
+                    self.mss = mss;
                 }
             }
-            _ => {}
         }
         if self.seq == 0 {
             self._seq = sequence;
@@ -730,13 +726,10 @@ impl Frame {
     fn add_dns(&self, packet: Ref2<DNS>, ctx: &mut Context) {
         let val = packet.as_ref().borrow();
         if val.answer_rr > 0 {
-            match &val.answers_ref {
-                Some(ans) => {
-                    for cel in ans.as_ref().borrow().iter() {
-                        ctx.add_dns_record(cel.clone());
-                    }
+            if let Some(ans) = &val.answers_ref {
+                for cel in ans.as_ref().borrow().iter() {
+                    ctx.add_dns_record(cel.clone());
                 }
-                _ => {}
             }
         }
         drop(val);
@@ -807,38 +800,32 @@ impl Frame {
     }
     fn ipv4_sta(_ip: &Option<Ipv4Addr>, ctx: &mut Context) {
         let _map = &mut ctx.statistic.ip_type;
-        match _ip {
-            Some(ip) => {
-                if ip.is_private() {
-                    _map.inc("private");
-                } else if ip.is_documentation() {
-                    _map.inc("documentation");
-                } else if ip.is_link_local() {
-                    _map.inc("link_local");
-                } else if ip.is_loopback() {
-                    _map.inc("loopback");
-                } else if ip.is_multicast() {
-                    _map.inc("multicast");
-                } else {
-                    _map.inc("public");
-                }
+        if let Some(ip) = _ip {
+            if ip.is_private() {
+                _map.inc("private");
+            } else if ip.is_documentation() {
+                _map.inc("documentation");
+            } else if ip.is_link_local() {
+                _map.inc("link_local");
+            } else if ip.is_loopback() {
+                _map.inc("loopback");
+            } else if ip.is_multicast() {
+                _map.inc("multicast");
+            } else {
+                _map.inc("public");
             }
-            _ => {}
         }
     }
     fn ipv6_sta(_ip: &Option<Ipv6Addr>, ctx: &mut Context) {
         let _map = &mut ctx.statistic.ip_type;
-        match _ip {
-            Some(ip) => {
-                if ip.is_loopback() {
-                    _map.inc("loopback");
-                } else if ip.is_multicast() {
-                    _map.inc("multicast");
-                } else {
-                    _map.inc("public");
-                }
+        if let Some(ip) = _ip {
+            if ip.is_loopback() {
+                _map.inc("loopback");
+            } else if ip.is_multicast() {
+                _map.inc("multicast");
+            } else {
+                _map.inc("public");
             }
-            _ => {}
         }
     }
     pub fn add_element(&mut self, ctx: &mut Context, ele: ProtocolData) {
@@ -890,12 +877,9 @@ impl Frame {
                         let request = ep._request.take();
                         drop(conn);
 
-                        match request {
-                            Some(mut req) => {
-                                req.set_response(http.clone(), response, self.ts);
-                                ctx.add_http(req);
-                            }
-                            _ => {}
+                        if let Some(mut req) = request {
+                            req.set_response(http.clone(), response, self.ts);
+                            ctx.add_http(req);
                         }
                     }
                     _ => {}
@@ -903,9 +887,7 @@ impl Frame {
                 ctx.http_statistic(http.clone());
                 drop(_http);
             }
-            // ProtocolData::TCP(packet) => {
-            //     // self.add_tcp(packet._clone_obj());
-            // }
+
             ProtocolData::DNS(packet) => {
                 self.add_dns(packet._clone_obj(), ctx);
             }
@@ -946,11 +928,9 @@ impl Context {
             }
             _ => {}
         }
-        match &reff.content_type {
-            Some(ct) => {
-                ref_statis.http_type.inc(ct);
-            }
-            _ => {}
+        if let Some(ct) = &reff.content_type {
+            ref_statis.http_type.inc(ct);
+
         }
         drop(reff);
     }
@@ -1016,6 +996,71 @@ impl Context {
     //        return Some(conn.get_endpoint(!arch));
     //     }
     // }
+
+    pub fn tls_connection_info(&self) -> Vec<TLSHS>{
+        let _c_list = self.conversations();
+        let _clist = _c_list.values();
+        let mut list = Vec::new();
+        for _c in _clist.into_iter() {
+            let tcp = _c.borrow();
+            let l1 = tcp.ep1.handshake.len();
+            let l2 = tcp.ep2.handshake.len();
+            if l1 > 0 || l2 > 0 {
+                let mut rs = TLSHS{..Default::default()};
+                let mut incept = |ep1: &Endpoint, ep2: &Endpoint, hs: &HandshakeType| {
+                    match hs {
+                        HandshakeType::ClientHello(_hs) => {
+                            let _ch: &HandshakeClientHello = _hs.as_ref();
+                            rs.source = format!("{}:{}", ep1.host, ep1.port);
+                            rs.target = format!("{}:{}", ep2.host, ep2.port);
+                            if let Some(sname) = _ch.server_name() {
+                                rs.server_name = sname;
+                            }
+                            rs.support_cipher =  _ch.ciphers();
+                            if let Some(versions) = _ch.versions() {
+                                rs.support_version = versions;
+                            }
+                            if let Some(negotiation) = _ch.negotiation() {
+                                rs.support_negotiation = negotiation;
+                            }
+                        }
+                        HandshakeType::ServerHello(_hs) => {
+                            let _ch: &HandshakeServerHello = _hs.as_ref();
+                            rs.source = format!("{}:{}", ep2.host, ep2.port);
+                            rs.target = format!("{}:{}", ep1.host, ep1.port);
+                            rs.used_cipher = _ch.ciper_suite();
+                            
+                            if let Some(versions) = _ch.versions() {
+                                rs.used_version = versions.into();
+                            }
+                            if let Some(negotiation) = _ch.negotiation() {
+                                rs.used_negotiation = negotiation;
+                            }
+                        }
+                        _ => {}
+                    }
+                };
+                if l1 > 0 {
+                    for _hs in tcp.ep1.handshake.iter() {
+                        incept(&tcp.ep1, &tcp.ep2, _hs);
+                    }
+                }
+                if l2 > 0 {
+                    for _hs in tcp.ep2.handshake.iter() {
+                        incept(&tcp.ep2, &tcp.ep1, _hs);
+                    }
+                }
+                list.push(rs);
+            }
+        }
+        list
+    }
+    pub fn _to_hostnames (&self, ep: &Endpoint) -> (String, u16, String) {
+        let host = ep.host.clone();
+        let port = ep.port;
+        let hostname = self.dns_map.get(&host).unwrap_or(&String::from("")).clone();
+        (host, port, hostname)
+    }
 }
 pub struct Instance {
     pub ctx: Context,
@@ -1098,6 +1143,7 @@ impl Instance {
         _info.dns_count = ctx.get_dns_count();
         _info.tcp_count = ctx.conversations().len();
         _info.http_count = ctx.get_http().len();
+        _info.tls_count = ctx.tls_connection_info().len();
         _info
     }
     pub fn statistic_frames(&self) -> Result<Lines> {
@@ -1173,3 +1219,4 @@ fn ts_to_str(ts: u64) -> String {
     }
     format!("{}.{} H", _min / 60, _min % 60)
 }
+
