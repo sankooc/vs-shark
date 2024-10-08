@@ -66,7 +66,7 @@ impl CompressMethod {
 #[derive(Default, Packet2)]
 pub struct ExtenstionPack {
     pub size: usize,
-    items: Vec<Extenstion>,
+    items: Vec<Ref2<Extenstion>>,
 }
 impl std::fmt::Display for ExtenstionPack {
     fn fmt(&self, fmt: &mut Formatter) -> std::fmt::Result {
@@ -85,7 +85,7 @@ impl ExtenstionPack {
                 break;
             }
             let item = packet.build_packet(reader, Extenstion::create, None, None)?;
-            p.items.push(item.take());
+            p.items.push(item.clone());
         }
         Ok(())
     }
@@ -503,7 +503,7 @@ impl HandshakeClientHello {
     pub fn server_name(&self) -> Option<Vec<String>> {
         let exps = self.extensions.as_ref().borrow();
         for ext in exps.items.iter() {
-            if let Some(_info) = &ext.info {
+            if let Some(_info) = &ext.borrow().info {
                 if let ExtensionType::ServerName(v) = _info {
                     return Some(v.clone())
                 }
@@ -514,7 +514,7 @@ impl HandshakeClientHello {
     pub fn versions(&self) -> Option<Vec<String>> {
         let exps = self.extensions.as_ref().borrow();
         for ext in exps.items.iter() {
-            if let Some(_info) = &ext.info {
+            if let Some(_info) = &ext.borrow().info {
                 if let ExtensionType::Version(v) = _info {
                     return Some(v.clone());
                 }
@@ -525,7 +525,7 @@ impl HandshakeClientHello {
     pub fn negotiation(&self) -> Option<Vec<String>> {
         let exps = self.extensions.as_ref().borrow();
         for ext in exps.items.iter() {
-            if let Some(_info) = &ext.info {
+            if let Some(_info) = &ext.borrow().info {
                 if let ExtensionType::Negotiation(v) = _info {
                     return Some(v.clone());
                 }
@@ -576,7 +576,7 @@ impl HandshakeServerHello {
     pub fn versions(&self) -> Option<String> {
         let exps = self.extensions.as_ref().borrow();
         for ext in exps.items.iter() {
-            if let Some(_info) = &ext.info {
+            if let Some(_info) = &ext.borrow().info {
                 if let ExtensionType::Version(v) = _info {
                     // return v.get(0).clone();
                     if let Some(version) = v.get(0) {
@@ -590,7 +590,7 @@ impl HandshakeServerHello {
     pub fn negotiation(&self) -> Option<Vec<String>> {
         let exps = self.extensions.as_ref().borrow();
         for ext in exps.items.iter() {
-            if let Some(_info) = &ext.info {
+            if let Some(_info) = &ext.borrow().info {
                 if let ExtensionType::Negotiation(v) = _info {
                     return Some(v.clone());
                 }
