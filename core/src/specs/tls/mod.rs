@@ -241,11 +241,12 @@ impl Visitor for TLSVisitor {
         let (key, arch) = frame.get_tcp_map_key();
         let _map = &mut ctx.conversation_map;
         let mut conn = _map.get(&key).unwrap().borrow_mut();
+        let conn_type = conn.connec_type.clone();
         let mut ep = conn.get_endpoint(arch);
         // end
         let _len = reader.left()?;
         let _reader = reader;
-        match ep._seg_type {
+        match conn_type {
             TCPPAYLOAD::TLS => {
                 let head = ep.get_segment()?;
                 let seg_length = head.len();

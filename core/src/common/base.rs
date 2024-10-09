@@ -365,7 +365,7 @@ impl Display for Segment {
     }
 }
 
-#[derive(Default)]
+#[derive(Default,Clone)]
 pub enum TCPPAYLOAD {
     #[default]
     NONE,
@@ -386,14 +386,14 @@ pub struct Endpoint {
     mss: u16,
     //
     pub info: TCPConnectInfo,
-
+    //
     //
     _request: Option<HttpRequestBuilder>,
     pub handshake: Vec<HandshakeType>,
     _seg: Option<Vec<u8>>,
     _seg_len: usize,
     _segments: Option<Vec<Segment>>,
-    pub _seg_type: TCPPAYLOAD,
+    // pub _seg_type: TCPPAYLOAD,
 }
 impl Endpoint {
     fn new(host: String, port: u16) -> Self {
@@ -432,7 +432,7 @@ impl Endpoint {
     pub fn add_segment(&mut self, index: u32, _type: TCPPAYLOAD, data: &[u8]) {
         let range = self._seg_len..(self._seg_len + data.len());
         self._seg_len += data.len();
-        self._seg_type = _type;
+        // self._seg_type = _type;
         match &mut self._seg {
             Some(list) => {
                 list.extend_from_slice(data);
@@ -455,10 +455,11 @@ impl Endpoint {
         self._segments = None;
         self._seg_len = 0;
         self._seg = None;
-        self._seg_type = TCPPAYLOAD::NONE;
+        // self._seg_type = TCPPAYLOAD::NONE;
     }
 
     fn update(&mut self, tcp: &TCP, _: &Frame, _: &[u8]) -> TCPDetail {
+        //https://www.wireshark.org/docs/wsug_html_chunked/ChAdvTCPAnalysis.html
         let sequence = tcp.sequence;
         let info = &mut self.info;
         info.count = info.count + 1;
@@ -534,6 +535,7 @@ impl Endpoint {
     }
 }
 pub struct TCPConnection {
+    pub connec_type: TCPPAYLOAD,
     pub ep1: Endpoint,
     pub ep2: Endpoint,
 }
@@ -557,15 +559,13 @@ impl TCPConnection {
         let ep2 = TCPConnection::create_ep(dst, dsp);
         if arch {
             return Self {
-                // count: Cell::new(0),
-                // throughput: Cell::new(0),
+                connec_type: TCPPAYLOAD::NONE,
                 ep1,
                 ep2,
             };
         }
         Self {
-            // count: Cell::new(0),
-            // throughput: Cell::new(0),
+            connec_type: TCPPAYLOAD::NONE,
             ep2: ep1,
             ep1: ep2,
         }
@@ -648,12 +648,12 @@ pub struct Frame {
     pub origin_size: u32,
     pub summary: FrameSummary,
     data: Rc<Vec<u8>>,
-    pub eles: Vec<ProtocolData>,
+    pub eles: Ref2<Vec<ProtocolData>>,
 }
 impl Frame {
     pub fn new(data: Vec<u8>, ts: u64, capture_size: u32, origin_size: u32, index: u32, link_type: u32) -> Frame {
         let f = Frame {
-            eles: Vec::new(),
+            eles: Rc::new(RefCell::new(Vec::new())),
             summary: FrameSummary { index, link_type, ..Default::default() },
             data: Rc::new(data),
             ts,
@@ -673,7 +673,8 @@ impl Frame {
         protos.contains(&proto)
     }
     pub fn info(&self) -> String {
-        let the_last = self.eles.last();
+        let reff = self.eles.as_ref().borrow();
+        let the_last = reff.last();
         match the_last {
             Some(data) => data.info(),
             None => "N/A".into(),
@@ -749,7 +750,7 @@ impl Frame {
         lists.push(Field::new3(format!("Frame Length: {} bytes ({} bits)", self.origin_size, self.origin_size * 8)));
         lists.push(Field::new3(format!("Capture Length: {} bytes ({} bits)", self.capture_size, self.capture_size * 8)));
         rs.push(Field::new2(self.to_string(), Rc::new(Vec::new()), lists));
-        for e in self.eles.iter() {
+        for e in self.eles.as_ref().borrow().iter() {
             let vs = e.get_fields();
             rs.push(Field::new2(e.summary(), self.data.clone(), vs));
         }
@@ -828,7 +829,7 @@ impl Frame {
             }
         }
     }
-    pub fn add_element(&mut self, ctx: &mut Context, ele: ProtocolData) {
+    pub fn add_element(&mut self, ctx: &mut Context, ele: ProtocolData, _reader: &Reader) {
         let mref = &mut self.summary;
         mref.protocol = format!("{}", ele);
 
@@ -849,6 +850,9 @@ impl Frame {
             }
             ProtocolData::ARP(packet) => {
                 self.update_ip(ctx, packet._clone_obj());
+            }
+            ProtocolData::TCP(packet) => {
+
             }
             ProtocolData::HTTP(packet) => {
                 let http = packet._clone_obj();
@@ -893,7 +897,9 @@ impl Frame {
             }
             _ => {}
         }
-        self.eles.push(ele);
+        let mut reff = self.eles.as_ref().borrow_mut();
+        reff.push(ele);
+        drop(reff);
     }
 }
 
@@ -1093,7 +1099,7 @@ impl Instance {
                 Ok(rs) => match rs {
                     Ok(_rs) => match _rs {
                         Some((data, _next)) => {
-                            f.add_element(ctx, data);
+                            f.add_element(ctx, data, &reader);
                             next = _next;
                         }
                         None => break 'ins,
@@ -1102,7 +1108,7 @@ impl Instance {
                         error!("parse_frame_failed index:[{}] at {}", count, next);
                         error!("msg:[{}]", e.to_string());
                         let (ep, _) = crate::specs::error::ErrorVisitor.visit(&f, &reader, &next).unwrap();
-                        f.add_element(ctx, ep);
+                        f.add_element(ctx, ep, &reader);
                         // process::exit(0x0100);
                         break 'ins;
                     }
@@ -1110,7 +1116,7 @@ impl Instance {
                 Err(_) => {
                     error!("parse_err: index[{}] at {}", count, next);
                     let (ep, _) = crate::specs::error::ErrorVisitor.visit(&f, &reader, &next).unwrap();
-                    f.add_element(ctx, ep);
+                    f.add_element(ctx, ep, &reader);
                     // process::exit(0x0100);
                     break 'ins;
                 }

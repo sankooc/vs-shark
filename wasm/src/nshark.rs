@@ -126,7 +126,8 @@ impl WContext {
         item.protocol = sum.protocol.clone();
         item.info = frame.info();
         item.status = "info".into();
-        match frame.eles.last() {
+        let reff = frame.eles.as_ref().borrow();
+        match reff.last() {
             Some(ele) => {
                 item.status = _convert(ele.status()).into();
             },

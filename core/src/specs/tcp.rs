@@ -363,10 +363,10 @@ fn handle(frame: &mut Frame, ctx: &mut Context, reader: &Reader, packet: PacketC
     // let ep = frame.get_tcp_info(true,ctx);
     let (key, arch) = frame.get_tcp_map_key();
     let _map = &mut ctx.conversation_map;
-    let mut conn = _map.get(&key).unwrap().borrow_mut();
-    let ep = conn.get_endpoint(arch);
+    let conn = _map.get(&key).unwrap().borrow_mut();
+    let _type = &conn.connec_type;
     // end
-    match &ep._seg_type {
+    match _type {
         TCPPAYLOAD::TLS => {
             return Ok((ProtocolData::TCP(packet), "tls"));
         }
