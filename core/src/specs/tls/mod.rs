@@ -231,21 +231,46 @@ fn proc(frame: &Frame, reader: &Reader, packet: &PacketContext<TLS>, p: &mut TLS
     }
     Ok(())
 }
-impl Visitor for TLSVisitor {
-    fn visit(&self, frame: &mut Frame, ctx: &mut Context, reader: &Reader) -> Result<(ProtocolData, &'static str)> {
+impl TLSVisitor {
+    pub fn visit(&self, reader: &Reader) -> Result<(ProtocolData, &'static str)> {
         let packet: PacketContext<TLS> = Frame::create_packet();
-        let index = frame.summary.index;
-        let mut p = packet.get().borrow_mut();
+        let mut p: std::cell::RefMut<'_, TLS> = packet.get().borrow_mut();
 
-        // let mut ep = frame.get_tcp_info(true, ctx);
-        let (key, arch) = frame.get_tcp_map_key();
-        let _map = &mut ctx.conversation_map;
-        let mut conn = _map.get(&key).unwrap().borrow_mut();
-        let conn_type = conn.connec_type.clone();
-        let mut ep = conn.get_endpoint(arch);
-        // end
-        let _len = reader.left()?;
-        let _reader = reader;
+        loop {
+            let left_size = reader.left()?;
+            if left_size == 0 {
+                //TODO FLUSH SEGMENT
+                break;
+            }
+            let item = packet.build_packet(reader, TLSRecord::create, None, None)?;
+            let record = item.clone();
+            
+            // match &record.borrow().message {
+            //     TLSRecorMessage::HANDSHAKE(hs) => {
+            //         for _hs in hs.as_ref().borrow().items.iter() {
+            //             let _msg = &_hs.as_ref().borrow().msg;
+            //             match _msg {
+            //                 HandshakeType::Certificate(_) |  HandshakeType::ClientHello(_) | HandshakeType::ServerHello(_) => {
+            //                     // ep.handshake.push(_msg.clone());
+            //                 }
+            //                 _ => {}
+            //             }
+            //         }
+            //     },
+            //     _ => {}
+            // };
+            p.records.push(record);
+
+        }
+        // // let mut ep = frame.get_tcp_info(true, ctx);
+        // let (key, arch) = frame.get_tcp_map_key();
+        // let _map = &mut ctx.conversation_map;
+        // let mut conn = _map.get(&key).unwrap().borrow_mut();
+        // let conn_type = conn.connec_type.clone();
+        // let mut ep = conn.get_endpoint(arch);
+        // // end
+        // let _len = reader.left()?;
+        // let _reader = reader;
         // match conn_type {
         //     TCPPAYLOAD::TLS => {
         //         let head = ep.get_segment()?;

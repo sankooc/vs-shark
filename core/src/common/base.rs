@@ -10,8 +10,7 @@ use crate::{
         http::{HttpType, HTTP},
         tcp::{ACK, RESET, TCP},
         tls::{
-            handshake::{HandshakeClientHello, HandshakeServerHello, HandshakeType},
-            TLS,
+            handshake::{HandshakeClientHello, HandshakeServerHello, HandshakeType}, TLSVisitor, TLS
         },
         ProtocolData,
     },
@@ -23,9 +22,8 @@ use std::{
     borrow::Borrow,
     cell::{Ref, RefCell},
     collections::{HashMap, HashSet, VecDeque},
-    fmt::Display,
     net::{Ipv4Addr, Ipv6Addr},
-    ops::{Deref, DerefMut, Range},
+    ops::{Deref, DerefMut},
     rc::Rc,
     time::{Duration, UNIX_EPOCH},
 };
@@ -366,7 +364,8 @@ pub enum TCPDetail {
 
 pub struct Segment {
     pub index: u32,
-    pub data: Vec<u8>,
+    pub size: usize,
+    // pub data: Vec<u8>,
     pub list: Ref2<Vec<ProtocolData>>,
     // pub range: Range<usize>,
 }
@@ -382,7 +381,7 @@ pub struct Segment {
 pub enum TCPPAYLOAD {
     #[default]
     NONE,
-    TLS,
+    TLS(usize),
     // HTTP,
 }
 
@@ -404,18 +403,19 @@ pub struct Endpoint {
     _request: Option<HttpRequestBuilder>,
     pub handshake: Vec<HandshakeType>,
 
-    pub _segments: Option<VecDeque<Segment>>
-    // _seg: Option<Vec<u8>>,
-    // _seg_len: usize,
-    // _segments: Option<Vec<Segment>>,
-    // pub _seg_type: TCPPAYLOAD,
+    pub _segments: Option<VecDeque<Segment>>,
+    pub _cache: Vec<u8>,
+
+    pub connec_type: TCPPAYLOAD,
 }
 impl Endpoint {
     fn new(host: String, port: u16) -> Self {
         Self { host, port, ..Default::default() }
     }
     pub fn add_segment(&mut self, index: u32, data: Vec<u8>, list: Ref2<Vec<ProtocolData>>){
-        let segment = Segment{index, data, list};
+        let segment = Segment{index, size: data.len(), list};
+        let mut _data = data;
+        self._cache.append(&mut _data);
         match self._segments.as_mut() {
             Some(mut _list) => {
                 _list.push_back(segment);
@@ -427,47 +427,91 @@ impl Endpoint {
             }
         }
     }
-    // pub fn segment_count(&mut self) -> usize {
-    //     self._seg_len
-    // }
     pub fn take_segment(&mut self) -> Option<VecDeque<Segment>> {
         let rs = self._segments.take();
-        // let rs = self._seg.take().unwrap();
         self.clear_segment();
         rs
     }
-    // pub fn get_segment(&self) -> Result<&[u8]> {
-    //     match &self._seg {
-    //         Some(data) => Ok(data),
-    //         None => {
-    //             bail!("nodata")
-    //         }
-    //     }
-    // }
-    // pub fn add_segment(&mut self, index: u32, _type: TCPPAYLOAD, data: &[u8]) {
-    //     let range = self._seg_len..(self._seg_len + data.len());
-    //     self._seg_len += data.len();
-    //     // self._seg_type = _type;
-    //     match &mut self._seg {
-    //         Some(list) => {
-    //             list.extend_from_slice(data);
-    //         }
-    //         None => {
-    //             self._seg = Some(data.to_vec());
-    //         }
-    //     }
-    //     let segment = Segment { index, range };
-    //     match &mut self._segments {
-    //         Some(seg) => seg.push(segment),
-    //         None => {
-    //             let mut list = Vec::new();
-    //             list.push(segment);
-    //             self._segments = Some(list);
-    //         }
-    //     }
-    // }
-    fn clear_segment(&mut self) {
+    pub fn update_segment(&mut self) {
+        match &self.connec_type {
+            TCPPAYLOAD::TLS(next_size) => {
+                let size = *next_size;
+                let clen = self._cache.len();
+                if size > clen {
+                    // continue
+                } else if size == clen {
+                    // remove all
+                    let data = self._cache.drain(..).collect();
+                    let reader = Reader::new_raw(Rc::new(data));
+                    if let Ok(pd) = TLSVisitor.visit(&reader) {
+                        
+                    }
+
+                    if let Some(segments) = &mut self._segments {
+                        print!("comp match [{:06}] with[",size);
+                        loop {
+                            if let Some(seg) = segments.pop_front() {
+                                let Segment{list, size, index} = seg;
+                                    print!("{:05} size: {:05} , ", index, size);
+                            } else {
+                                break;
+                            }
+                        }
+                        println!("]") 
+                    }
+                    self._segments = None;
+                    self._cache = Vec::new();
+                    self.connec_type = TCPPAYLOAD::NONE;
+                } else {
+                    let mount:Vec<u8> = self._cache.drain(0..size).collect();
+                    // TODO create Reader 
+                    self.connec_type = TCPPAYLOAD::NONE;
+                    let mut _count = size;
+                    
+                    if let Some(segments) = &mut self._segments {
+                        print!("somp match [{:06}] with [", size);
+                        loop {
+                            if let Some(seg) = segments.pop_front() {
+                                let Segment{list, size, index} = seg;
+                                if size <= _count {
+                                    print!("{:05} size: {:05} , ", index, size);
+                                    _count -= size;
+                                } else {
+                                    print!("{:05} trim-size: {:05} , ", index, size);
+                                    segments.push_front(Segment{index, list, size: (size - _count)});
+                                    _count = 0;
+                                    break;
+                                }
+                            } else {
+                                break;
+                            }
+                        }
+                        println!("]") 
+                    }
+                    self.update_segment();
+                }
+            }
+            TCPPAYLOAD::NONE => {
+                let cache_len = self._cache.len();
+                if cache_len > 5 {
+                    let (is_tls, len) = TLS::_check(&self._cache).unwrap();
+                    if is_tls {
+                        self.connec_type = TCPPAYLOAD::TLS(len + 5);
+                        return self.update_segment();
+                    }
+                }
+            }
+        }
+
+    }
+    pub fn flush_segment(&mut self){
+        self.update_segment();
         self._segments = None;
+        self._cache = Vec::new();
+        self.connec_type = TCPPAYLOAD::NONE;
+    }
+    fn clear_segment(&mut self) {
+        // self._segments = None;
         // self._seg_len = 0;
         // self._seg = None;
     }
@@ -988,65 +1032,53 @@ impl Context {
             false => (&mut _conn.ep2, &mut _conn.ep1),
         };
         let detail = main.update(packet, frame);
-
+        let detail_copy = detail.clone();
         let _seq = main._seq;
         let next = main.next;
         let (ack_correct, ack_same_with_last) = rev.confirm(packet);
         let _ack = rev._ack;
         packet.info = Some(TCPInfo { next, _ack, _seq, detail });
 
-        // let aa = VecDeque::new();
-        
-        // if let TCPDetail::NONE = detail_copy {
-            let tcp_len = packet.payload_len;
-            
-            if ack_correct {
-                let index = frame.summary.index;
-                if ack_same_with_last {
-                    if tcp_len > 0 {
-                        
-                let lef = reader.slice(tcp_len as usize);
-                let data = lef.to_vec();
-                let list = frame.eles.clone();
-                        main.add_segment(index, data, list);
-                    }
-                } else {
-                    if let Some(mut segments) = main.take_segment() {
-                        if segments.len() > 0 {
-                            let mut all_data = Vec::new();
-                            let indexes = segments.iter().map(|f|f.index).collect::<Vec<u32>>();
-                            let mut _index = 0;
-                            let mut index_map = HashMap::new();
-                            loop {
-                                match segments.pop_front() {
-                                    Some(segment) => {
-                                        let Segment { index, list, mut data } = segment;
-                                        // let mut _data = data;
-                                        _index += data.len();
-                                        
-                                        all_data.append(&mut data);
-                                    }
-                                    None => { break; }
-                                }
-                            }
-                            if indexes.len() > 3 {
-                                info!("reassemble {:?}", &indexes);
-                            }
-                        }
-                    }
-                    if tcp_len > 0 {
-                        let lef = reader.slice(tcp_len as usize);
-                        let data = lef.to_vec();
-                        let list = frame.eles.clone();
-                        main.add_segment(index, data, list);
-                    }
-                    // assmeble
+        let tcp_len = packet.payload_len;
+        let index = frame.summary.index;
+        match detail_copy {
+            TCPDetail::NONE | TCPDetail::KEEPALIVE => {
+                //APPEND
+                if tcp_len > 0 {
+                    let lef = reader.slice(tcp_len as usize);
+                    let data = lef.to_vec();
+                    let list = frame.eles.clone();
+                    main.add_segment(index, data, list);
                 }
-            } else {
-                //TODO 
-                main.clear_segment();
-                // clear segment
-            }
+                main.update_segment();
+            },
+            TCPDetail::DUMP | TCPDetail::RETRANSMISSION => {
+                //SKIP
+            },
+            TCPDetail::NOPREVCAPTURE | TCPDetail::RESET => {
+                // RESET CACHE
+                main.flush_segment();
+            },
+        }
+            
+            // if ack_correct {
+            //     let index = frame.summary.index;
+            //     if ack_same_with_last {
+            //         if tcp_len > 0 {
+            //             let lef = reader.slice(tcp_len as usize);
+            //             let data = lef.to_vec();
+            //             let list = frame.eles.clone();
+            //             main.add_segment(index, data, list);
+            //         }
+            //     } else {
+                    
+                    
+            //     }
+            // } else {
+            //     //TODO 
+            //     // main.clear_segment();
+            //     // clear segment
+            // }
             // if tcp_len > 0 {
                 // match &_conn.connec_type {
                 //     TCPPAYLOAD::TLS => {}
