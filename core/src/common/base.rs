@@ -7,7 +7,7 @@ use crate::{
     constants::link_type_mapper,
     specs::{
         dns::{RecordResource, ResourceType, DNS},
-        http::{HttpType, HTTP},
+        http::{self, HTTPVisitor, HttpType, HTTP},
         tcp::{ACK, RESET, TCP},
         tls::{
             handshake::{HandshakeClientHello, HandshakeServerHello, HandshakeType},
@@ -34,7 +34,7 @@ use anyhow::{bail, Result};
 use crate::common::io::Reader;
 use crate::common::{FileInfo, FileType};
 
-use super::concept::TLSHS;
+use super::{concept::TLSHS, io::SliceReader};
 
 #[derive(Default, Clone)]
 pub struct Field {
@@ -378,12 +378,14 @@ pub struct Segment {
 //     }
 // }
 
-#[derive(Default, Clone)]
+#[derive(Default)]
 pub enum TCPPAYLOAD {
     #[default]
     NONE,
     TLS(usize),
-    HTTP,
+    HTTPLEN(Rc<crate::specs::http::HTTP>),
+    HTTPCHUNKED(Rc<crate::specs::http::HTTP>),
+    HTTPPRE,
 }
 
 #[derive(Default)]
@@ -448,8 +450,32 @@ impl Endpoint {
     }
     pub fn update_segment(&mut self) {
         match &self.connec_type {
-            TCPPAYLOAD::HTTP => {
-                
+            TCPPAYLOAD::HTTPPRE => {
+                let reader = SliceReader::new(&self._cache);
+                if let Ok(http) = http::parse(&reader) {
+                    if http.len > 0 {
+                        self.connec_type = TCPPAYLOAD::HTTPLEN(Rc::new(http));
+                        let exist = reader.left().unwrap();
+                        self._cache = reader.slice(exist).to_vec();
+                        // resize
+                        return self.update_segment();
+                    } else if http.chunked {
+                        self.connec_type = TCPPAYLOAD::HTTPCHUNKED(Rc::new(http));
+                        let exist = reader.left().unwrap();
+                        self._cache = reader.slice(exist).to_vec();
+                        // resize
+                        return self.update_segment();
+                    } else {
+                        
+                        // clearcache
+                    }
+                }
+            }
+            TCPPAYLOAD::HTTPLEN(http) => {
+
+            },
+            TCPPAYLOAD::HTTPCHUNKED(http) => {
+
             },
             TCPPAYLOAD::TLS(next_size) => {
                 let size = *next_size;
@@ -513,6 +539,11 @@ impl Endpoint {
                         self.connec_type = TCPPAYLOAD::TLS(len + 5);
                         return self.update_segment();
                     }
+                }
+                let reader = SliceReader::new(&self._cache);
+                if HTTPVisitor::check(&reader) {
+                    self.connec_type = TCPPAYLOAD::HTTPPRE;
+                    return self.update_segment();
                 }
             }
         }

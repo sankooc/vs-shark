@@ -1,6 +1,6 @@
-use std::fmt::Formatter;
+use std::{fmt::Formatter, rc::Rc};
 
-use pcap_derive::{Packet, Visitor3};
+use pcap_derive::Packet;
 
 use crate::{
     common::{
@@ -39,6 +39,7 @@ pub struct HTTP {
     pub content_type: Option<String>,
     pub content: Vec<u8>,
     pub len: usize,
+    pub chunked: bool,
 }
 impl HTTP {
     pub fn head(&self) -> String {
@@ -69,11 +70,11 @@ impl std::fmt::Display for HTTP {
         fmt.write_str("Hypertext Transfer Protocol")
     }
 }
-#[derive(Visitor3)]
+// #[derive(Visitor3)]
 pub struct HTTPVisitor;
 
 impl HTTPVisitor {
-    pub fn check(reader: &Reader) -> bool {
+    pub fn check(reader: &impl AReader) -> bool {
         let method = reader._read_space(10);
         match method {
             Some(_method) => {
@@ -103,6 +104,55 @@ fn pick_value(head: &str, key: &str) -> Option<String> {
     }
     rs
 }
+
+pub fn parse(reader: &impl AReader) -> Result<HTTP>  {
+    let mut p = HTTP{..Default::default()};
+    p.head = reader.read_enter()?;
+    let spl: Vec<_> = p.head.split(" ").collect();
+    if spl.len() > 2 {
+        let head = *spl.get(0).unwrap();
+        let head2 = *spl.get(1).unwrap();
+        let head3 = *spl.get(2).unwrap();
+        if head == "HTTP/1.1" {
+            p._type = HttpType::RESPONSE(Response {
+                version: head.into(),
+                code: head2.into(),
+                status: head3.into(),
+            });
+        } else {
+            p._type = HttpType::REQUEST(Request {
+                method: head.into(),
+                path: head2.into(),
+                version: head3.into(),
+            })
+        }
+    }
+
+    loop {
+        if reader.left()? == 0 {
+            return Ok(p);
+        }
+        if reader.enter_flag(0) {
+            reader._move(2);
+            return Ok(p);
+        }
+        let header = reader.read_enter()?;
+        if let Some(ch) = pick_value(&header, "transfer-encoding")  {
+            p.chunked = ch == "chunked";
+        }
+        if let Some(ch) = pick_value(&header, "content-length")  {
+            p.len = ch.parse::<usize>()?;
+        }
+        p.header.push(header);
+    }
+}
+
+pub fn wrap(_http: Rc<HTTP>) ->Result<ProtocolData> {
+    let packet: PacketContext<HTTP> = Frame::create_packet();
+
+    Ok(super::ProtocolData::HTTP(packet))
+}
+
 impl HTTPVisitor {
     fn visit2(&self, reader: &Reader) -> Result<(ProtocolData, &'static str)> {
         let packet: PacketContext<HTTP> = Frame::create_packet();

@@ -115,7 +115,7 @@ pub fn _parse(proto: &'static str) -> anyhow::Result<&dyn Visitor>{
         // "mdns" => &dns::MDNSVisitor,
         "dhcp" => &dhcp::DHCPVisitor,
         // "tls" => &tls::TLSVisitor,
-        "http" => &http::HTTPVisitor,
+        // "http" => &http::HTTPVisitor,
         _ => bail!("none"),
     };
     Ok(rs)
