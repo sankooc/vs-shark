@@ -10,20 +10,21 @@ use crate::{
         http::{HttpType, HTTP},
         tcp::{ACK, RESET, TCP},
         tls::{
-            handshake::{HandshakeClientHello, HandshakeServerHello, HandshakeType}, TLSVisitor, TLS
+            handshake::{HandshakeClientHello, HandshakeServerHello, HandshakeType},
+            TLSRecorMessage, TLSVisitor, TLS,
         },
         ProtocolData,
     },
 };
 use chrono::{DateTime, Utc};
 use enum_dispatch::enum_dispatch;
-use log::{error, info};
+use log::error;
 use std::{
     borrow::Borrow,
     cell::{Ref, RefCell},
     collections::{HashMap, HashSet, VecDeque},
     net::{Ipv4Addr, Ipv6Addr},
-    ops::{Deref, DerefMut},
+    ops::{Deref, DerefMut, Range},
     rc::Rc,
     time::{Duration, UNIX_EPOCH},
 };
@@ -382,7 +383,7 @@ pub enum TCPPAYLOAD {
     #[default]
     NONE,
     TLS(usize),
-    // HTTP,
+    HTTP,
 }
 
 #[derive(Default)]
@@ -408,12 +409,25 @@ pub struct Endpoint {
 
     pub connec_type: TCPPAYLOAD,
 }
+
+fn add_to(ep: &mut Endpoint, data: Rc<Vec<u8>>, list: Ref2<Vec<ProtocolData>>) {
+    let reader = Reader::new_raw(data);
+    if let Ok(rs) = TLSVisitor.visit(&reader) {
+        if let ProtocolData::TLS(pcaket) = &rs {
+            let tls = pcaket.get().borrow();
+            ep.add_tls(tls.deref());
+        }
+        let mut list_ref = list.as_ref().borrow_mut();
+        list_ref.push(rs);
+        drop(list_ref);
+    }
+}
 impl Endpoint {
     fn new(host: String, port: u16) -> Self {
         Self { host, port, ..Default::default() }
     }
-    pub fn add_segment(&mut self, index: u32, data: Vec<u8>, list: Ref2<Vec<ProtocolData>>){
-        let segment = Segment{index, size: data.len(), list};
+    pub fn add_segment(&mut self, index: u32, data: Vec<u8>, list: Ref2<Vec<ProtocolData>>) {
+        let segment = Segment { index, size: data.len(), list };
         let mut _data = data;
         self._cache.append(&mut _data);
         match self._segments.as_mut() {
@@ -434,59 +448,59 @@ impl Endpoint {
     }
     pub fn update_segment(&mut self) {
         match &self.connec_type {
+            TCPPAYLOAD::HTTP => {
+                
+            },
             TCPPAYLOAD::TLS(next_size) => {
                 let size = *next_size;
                 let clen = self._cache.len();
                 if size > clen {
-                    // continue
                 } else if size == clen {
                     // remove all
-                    let data = self._cache.drain(..).collect();
-                    let reader = Reader::new_raw(Rc::new(data));
-                    if let Ok(pd) = TLSVisitor.visit(&reader) {
-                        
-                    }
-
+                    let data: Vec<u8> = self._cache.drain(..).collect();
                     if let Some(segments) = &mut self._segments {
-                        print!("comp match [{:06}] with[",size);
+                        let mut sgs: Vec<(u32, Range<usize>)> = Vec::new();
+                        // let reff = Rc::new(RefCell::new(sgs));
                         loop {
                             if let Some(seg) = segments.pop_front() {
-                                let Segment{list, size, index} = seg;
-                                    print!("{:05} size: {:05} , ", index, size);
+                                let Segment { list, size, index } = seg;
+                                if segments.len() == 0 {
+                                    add_to(self, Rc::new(data), list);
+                                    break;
+                                } else {
+                                    sgs.push((index, 0..size));
+                                }
                             } else {
                                 break;
                             }
                         }
-                        println!("]") 
                     }
+
                     self._segments = None;
                     self._cache = Vec::new();
                     self.connec_type = TCPPAYLOAD::NONE;
                 } else {
-                    let mount:Vec<u8> = self._cache.drain(0..size).collect();
-                    // TODO create Reader 
+                    let mount: Vec<u8> = self._cache.drain(0..size).collect();
                     self.connec_type = TCPPAYLOAD::NONE;
                     let mut _count = size;
-                    
                     if let Some(segments) = &mut self._segments {
-                        print!("somp match [{:06}] with [", size);
                         loop {
                             if let Some(seg) = segments.pop_front() {
-                                let Segment{list, size, index} = seg;
+                                let Segment { list, size, index } = seg;
                                 if size <= _count {
-                                    print!("{:05} size: {:05} , ", index, size);
                                     _count -= size;
                                 } else {
-                                    print!("{:05} trim-size: {:05} , ", index, size);
-                                    segments.push_front(Segment{index, list, size: (size - _count)});
+                                    let l2 = list.clone();
+                                    segments.push_front(Segment { index, list, size: (size - _count) });
                                     _count = 0;
+                                    add_to(self, Rc::new(mount), l2);
                                     break;
                                 }
                             } else {
                                 break;
                             }
                         }
-                        println!("]") 
+                        println!("]")
                     }
                     self.update_segment();
                 }
@@ -502,18 +516,15 @@ impl Endpoint {
                 }
             }
         }
-
     }
-    pub fn flush_segment(&mut self){
+    pub fn flush_segment(&mut self) {
         self.update_segment();
         self._segments = None;
         self._cache = Vec::new();
         self.connec_type = TCPPAYLOAD::NONE;
     }
     fn clear_segment(&mut self) {
-        // self._segments = None;
-        // self._seg_len = 0;
-        // self._seg = None;
+
     }
 
     fn update(&mut self, tcp: &TCP, _: &Frame) -> TCPDetail {
@@ -572,6 +583,24 @@ impl Endpoint {
         format!("{}:{}", self.host, self.port)
     }
 
+    fn add_tls(&mut self, tls: &TLS){
+        for record in &tls.records {
+            match &record.as_ref().borrow().message {
+                TLSRecorMessage::HANDSHAKE(hs) => {
+                    for _hs in hs.as_ref().borrow().items.iter() {
+                        let _msg = &_hs.as_ref().borrow().msg;
+                        match _msg {
+                            HandshakeType::Certificate(_) | HandshakeType::ClientHello(_) | HandshakeType::ServerHello(_) => {
+                                self.handshake.push(_msg.clone());
+                            }
+                            _ => {}
+                        }
+                    }
+                }
+                _ => {}
+            };
+        }
+    }
     // (ack_correct, same_with_last_packet)
     fn confirm(&mut self, tcp: &TCP) -> (bool, bool) {
         let acknowledge = tcp.acknowledge;
@@ -588,7 +617,7 @@ impl Endpoint {
         }
         let same = acknowledge == self.ack;
         self.ack = acknowledge;
-        return (true, same)
+        return (true, same);
     }
 }
 pub struct TCPConnection {
@@ -625,18 +654,6 @@ impl TCPConnection {
             false => &mut self.ep2,
         }
     }
-    fn update(&mut self, arch: bool, tcp: &TCP, frame: &Frame) -> TCPInfo {
-        let (main, rev) = match arch {
-            true => (&mut self.ep1, &mut self.ep2),
-            false => (&mut self.ep2, &mut self.ep1),
-        };
-        let detail = main.update(tcp, frame);
-        let _seq = main._seq;
-        let next = main.next;
-        rev.confirm(tcp);
-        let _ack = rev._ack;
-        TCPInfo { next, _ack, _seq, detail }
-    }
     pub fn sort(&self, compare: &HashMap<String, usize>) -> (&Endpoint, &Endpoint) {
         let h_1 = *compare.get(&self.ep1.host).unwrap_or(&0);
         let h_2 = *compare.get(&self.ep2.host).unwrap_or(&0);
@@ -645,22 +662,6 @@ impl TCPConnection {
         }
         return (&self.ep2, &self.ep1);
     }
-    // pub fn create_wrap(&self, mapper: &HashMap<String, String>, compare: &HashMap<String, usize>) -> (&Endpoint, &Endpoint) {
-    // let mut rs = TCPWrap { ..Default::default() };
-    // let emp = String::from("");
-    // self.sort(compare)
-    // {
-    //     rs.source_ip = s.host.clone();
-    //     rs.source_port = s.port;
-    //     rs.source_host = mapper.get(&s.host).unwrap_or(&emp).clone();
-    // }
-    // {
-    //     rs.target_ip = t.host.clone();
-    //     rs.target_port = t.port;
-    //     rs.target_host = mapper.get(&t.host).unwrap_or(&emp).clone();
-    // }
-    // rs
-    // }
 }
 
 pub trait PacketBuilder {
@@ -864,9 +865,6 @@ impl Frame {
         }
     }
     pub fn add_element(&mut self, ctx: &mut Context, ele: ProtocolData, reader: &Reader) {
-        let mref = &mut self.summary;
-        mref.protocol = format!("{}", ele);
-
         match &ele {
             ProtocolData::IPV4(packet) => {
                 self.update_ip(ctx, packet._clone_obj());
@@ -933,7 +931,23 @@ impl Frame {
             _ => {}
         }
         let mut reff = self.eles.as_ref().borrow_mut();
-        reff.push(ele);
+        if let Some(_lst) = reff.last() {
+            match _lst {
+                ProtocolData::TLS(_) | ProtocolData::HTTP(_) => {
+                    let last = reff.pop().unwrap();
+                    // mref.protocol = format!("{}", last);
+                    reff.push(ele);
+                    reff.push(last);
+                }
+                _ => {
+                    reff.push(ele);
+                }
+            }
+        } else {
+            reff.push(ele);
+        }
+        let mref = &mut self.summary;
+        mref.protocol = format!("{}", reff.last().unwrap());
         drop(reff);
     }
 }
@@ -946,8 +960,6 @@ pub struct Context {
     http_list: Vec<HttpRequestBuilder>,
     pub statistic: Statistic,
     pub dns_map: HashMap<String, String>,
-    // pub ip_map: CaseGroup,
-    // pub ip_type_map: CaseGroup,
 }
 
 impl Context {
@@ -971,7 +983,6 @@ impl Context {
         }
         if let Some(ct) = &reff.content_type {
             ref_statis.http_type.inc(ct);
-
         }
         drop(reff);
     }
@@ -1035,7 +1046,7 @@ impl Context {
         let detail_copy = detail.clone();
         let _seq = main._seq;
         let next = main.next;
-        let (ack_correct, ack_same_with_last) = rev.confirm(packet);
+        rev.confirm(packet);
         let _ack = rev._ack;
         packet.info = Some(TCPInfo { next, _ack, _seq, detail });
 
@@ -1051,63 +1062,16 @@ impl Context {
                     main.add_segment(index, data, list);
                 }
                 main.update_segment();
-            },
+            }
             TCPDetail::DUMP | TCPDetail::RETRANSMISSION => {
                 //SKIP
-            },
+            }
             TCPDetail::NOPREVCAPTURE | TCPDetail::RESET => {
                 // RESET CACHE
                 main.flush_segment();
-            },
+            }
         }
-            
-            // if ack_correct {
-            //     let index = frame.summary.index;
-            //     if ack_same_with_last {
-            //         if tcp_len > 0 {
-            //             let lef = reader.slice(tcp_len as usize);
-            //             let data = lef.to_vec();
-            //             let list = frame.eles.clone();
-            //             main.add_segment(index, data, list);
-            //         }
-            //     } else {
-                    
-                    
-            //     }
-            // } else {
-            //     //TODO 
-            //     // main.clear_segment();
-            //     // clear segment
-            // }
-            // if tcp_len > 0 {
-                // match &_conn.connec_type {
-                //     TCPPAYLOAD::TLS => {}
-                //     TCPPAYLOAD::NONE => {
-                //         // append segment
-                //         if let Ok((is_tls, _)) = TLS::check(reader) {
-                //             if is_tls {
-                //                 _conn.connec_type = TCPPAYLOAD::TLS;
-                //                 // check assembly
-                //             }
-                //         }
-                //     }
-                // }
-            // }
-        // }
-
-        // reff.connec_type = TCPPAYLOAD::TLS;
-        // reff.update(arch, packet, frame)
     }
-    // fn get_tcp(&mut self, ip: &dyn IPPacket, packet: &TCP, flag: bool) -> Option<&Endpoint> {
-    //     let (key, arch) = Context::tcp_key(ip, packet);
-    //     let _map = &mut self.conversation_map;
-    //     let conn = _map.get(&key)?.borrow_mut();
-    //     if flag {
-    //         return Some(conn.get_endpoint(arch));
-    //     } else {
-    //        return Some(conn.get_endpoint(!arch));
-    //     }
-    // }
 
     pub fn tls_connection_info(&self) -> Vec<TLSHS> {
         let _c_list = self.conversations();
