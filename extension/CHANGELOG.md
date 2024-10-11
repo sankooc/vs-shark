@@ -23,3 +23,6 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - 0.3.6
   * fix http body bug
   * add tls tab
+
+- 0.3.7
+  * refactor tcp reassemble

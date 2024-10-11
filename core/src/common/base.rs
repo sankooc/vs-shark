@@ -8,16 +8,26 @@ use crate::{
     specs::{
         dns::{RecordResource, ResourceType, DNS},
         http::{HttpType, HTTP},
-        tcp::{TCPOptionKind, ACK, TCP},
-        tls::handshake::{HandshakeClientHello, HandshakeServerHello, HandshakeType},
+        tcp::{ACK, RESET, TCP},
+        tls::{
+            handshake::{HandshakeClientHello, HandshakeServerHello, HandshakeType},
+            TLS,
+        },
         ProtocolData,
     },
 };
 use chrono::{DateTime, Utc};
 use enum_dispatch::enum_dispatch;
-use log::error;
+use log::{error, info};
 use std::{
-    borrow::Borrow, cell::{Ref, RefCell}, collections::{HashMap, HashSet}, fmt::Display, net::{Ipv4Addr, Ipv6Addr}, ops::{Deref, Range}, rc::Rc, time::{Duration, UNIX_EPOCH}
+    borrow::Borrow,
+    cell::{Ref, RefCell},
+    collections::{HashMap, HashSet, VecDeque},
+    fmt::Display,
+    net::{Ipv4Addr, Ipv6Addr},
+    ops::{Deref, DerefMut, Range},
+    rc::Rc,
+    time::{Duration, UNIX_EPOCH},
 };
 
 use anyhow::{bail, Result};
@@ -26,7 +36,6 @@ use crate::common::io::Reader;
 use crate::common::{FileInfo, FileType};
 
 use super::concept::TLSHS;
-
 
 #[derive(Default, Clone)]
 pub struct Field {
@@ -343,11 +352,13 @@ pub trait DomainService {
     fn ttl(&self) -> u32;
 }
 
+#[derive(Clone)]
 pub enum TCPDetail {
     KEEPALIVE,
     NOPREVCAPTURE,
     RETRANSMISSION,
     DUMP,
+    RESET,
     // SEGMENT,
     // SEGMENTS(Vec<Segment>),
     NONE,
@@ -355,17 +366,19 @@ pub enum TCPDetail {
 
 pub struct Segment {
     pub index: u32,
-    pub range: Range<usize>,
+    pub data: Vec<u8>,
+    pub list: Ref2<Vec<ProtocolData>>,
+    // pub range: Range<usize>,
 }
-impl Display for Segment {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        // let len = self.data.len();
-        // f.write_fmt(format_args!("[Frame: {}, payload: {} bytes]", self.index, len))
-        f.write_fmt(format_args!("[Frame: {}, payload: bytes]", self.index))
-    }
-}
+// impl Display for Segment {
+//     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+//         // let len = self.data.len();
+//         // f.write_fmt(format_args!("[Frame: {}, payload: {} bytes]", self.index, len))
+//         f.write_fmt(format_args!("[Frame: {}, payload: bytes]", self.index))
+//     }
+// }
 
-#[derive(Default,Clone)]
+#[derive(Default, Clone)]
 pub enum TCPPAYLOAD {
     #[default]
     NONE,
@@ -383,82 +396,83 @@ pub struct Endpoint {
     _seq: u32,
     _ack: u32,
     _checksum: u16,
-    mss: u16,
+    // mss: u16,
     //
     pub info: TCPConnectInfo,
     //
     //
     _request: Option<HttpRequestBuilder>,
     pub handshake: Vec<HandshakeType>,
-    _seg: Option<Vec<u8>>,
-    _seg_len: usize,
-    _segments: Option<Vec<Segment>>,
+
+    pub _segments: Option<VecDeque<Segment>>
+    // _seg: Option<Vec<u8>>,
+    // _seg_len: usize,
+    // _segments: Option<Vec<Segment>>,
     // pub _seg_type: TCPPAYLOAD,
 }
 impl Endpoint {
     fn new(host: String, port: u16) -> Self {
         Self { host, port, ..Default::default() }
     }
-    // fn wrap(&self) -> EndpointWrap {
-        
-    // }
-
-    // fn add_or_update_http(&mut self, http: Ref2<HTTP>) -> Option<HttpRequestBuilder>{
-    //     let reff = http.deref().borrow();
-    //     match &reff._type() {
-    //         HttpType::REQUEST(_) => {
-    //             self._request = Some();
-    //         }
-    //         HttpType::RESPONSE(_) => {}
-    //         _ => None
-    //     }
-    // }
-    pub fn segment_count(&mut self) -> usize {
-        self._seg_len
+    pub fn add_segment(&mut self, index: u32, data: Vec<u8>, list: Ref2<Vec<ProtocolData>>){
+        let segment = Segment{index, data, list};
+        match self._segments.as_mut() {
+            Some(mut _list) => {
+                _list.push_back(segment);
+            }
+            None => {
+                let mut _l = VecDeque::new();
+                _l.push_back(segment);
+                self._segments = Some(_l);
+            }
+        }
     }
-    pub fn take_segment(&mut self) -> Vec<u8> {
-        let rs = self._seg.take().unwrap();
+    // pub fn segment_count(&mut self) -> usize {
+    //     self._seg_len
+    // }
+    pub fn take_segment(&mut self) -> Option<VecDeque<Segment>> {
+        let rs = self._segments.take();
+        // let rs = self._seg.take().unwrap();
         self.clear_segment();
         rs
     }
-    pub fn get_segment(&self) -> Result<&[u8]> {
-        match &self._seg {
-            Some(data) => Ok(data),
-            None => {
-                bail!("nodata")
-            }
-        }
-    }
-    pub fn add_segment(&mut self, index: u32, _type: TCPPAYLOAD, data: &[u8]) {
-        let range = self._seg_len..(self._seg_len + data.len());
-        self._seg_len += data.len();
-        // self._seg_type = _type;
-        match &mut self._seg {
-            Some(list) => {
-                list.extend_from_slice(data);
-            }
-            None => {
-                self._seg = Some(data.to_vec());
-            }
-        }
-        let segment = Segment { index, range };
-        match &mut self._segments {
-            Some(seg) => seg.push(segment),
-            None => {
-                let mut list = Vec::new();
-                list.push(segment);
-                self._segments = Some(list);
-            }
-        }
-    }
+    // pub fn get_segment(&self) -> Result<&[u8]> {
+    //     match &self._seg {
+    //         Some(data) => Ok(data),
+    //         None => {
+    //             bail!("nodata")
+    //         }
+    //     }
+    // }
+    // pub fn add_segment(&mut self, index: u32, _type: TCPPAYLOAD, data: &[u8]) {
+    //     let range = self._seg_len..(self._seg_len + data.len());
+    //     self._seg_len += data.len();
+    //     // self._seg_type = _type;
+    //     match &mut self._seg {
+    //         Some(list) => {
+    //             list.extend_from_slice(data);
+    //         }
+    //         None => {
+    //             self._seg = Some(data.to_vec());
+    //         }
+    //     }
+    //     let segment = Segment { index, range };
+    //     match &mut self._segments {
+    //         Some(seg) => seg.push(segment),
+    //         None => {
+    //             let mut list = Vec::new();
+    //             list.push(segment);
+    //             self._segments = Some(list);
+    //         }
+    //     }
+    // }
     fn clear_segment(&mut self) {
         self._segments = None;
-        self._seg_len = 0;
-        self._seg = None;
-        // self._seg_type = TCPPAYLOAD::NONE;
+        // self._seg_len = 0;
+        // self._seg = None;
     }
 
-    fn update(&mut self, tcp: &TCP, _: &Frame, _: &[u8]) -> TCPDetail {
+    fn update(&mut self, tcp: &TCP, _: &Frame) -> TCPDetail {
         //https://www.wireshark.org/docs/wsug_html_chunked/ChAdvTCPAnalysis.html
         let sequence = tcp.sequence;
         let info = &mut self.info;
@@ -470,25 +484,21 @@ impl Endpoint {
             self.clear_segment();
             return TCPDetail::RETRANSMISSION;
         }
-
-        if let Some(opt) = tcp.options.borrow() {
-            let _ref = opt.as_ref().borrow();
-            for _opt in _ref.iter() {
-                if let TCPOptionKind::MSS(mss) = _opt.as_ref().borrow().data {
-                    self.mss = mss;
-                }
-            }
+        if tcp.state._match(RESET) {
+            self.clear_segment();
+            return TCPDetail::RESET;
         }
+        let tcp_len = tcp.payload_len as u32;
         if self.seq == 0 {
             self._seq = sequence;
             self.seq = sequence;
-            self.next = sequence + tcp.payload_len as u32;
+            self.next = sequence + tcp_len;
             self._checksum = tcp.crc;
             return TCPDetail::NONE;
         }
         if sequence > self.next {
             self.seq = sequence;
-            self.next = sequence + tcp.payload_len as u32;
+            self.next = sequence + tcp_len;
             self._checksum = tcp.crc;
             info.invalid += 1;
             self.clear_segment();
@@ -496,17 +506,16 @@ impl Endpoint {
         } else if sequence == self.next {
             self.seq = tcp.sequence;
             self._checksum = tcp.crc;
-            let len = tcp.payload_len;
-            if len == 0 {
-                // if tcp.state.check(ACK) {
-                //     return TCPDetail::KEEPALIVE;
-                // }
+            if tcp_len == 0 {
+                if tcp.state.check(ACK) {
+                    return TCPDetail::KEEPALIVE;
+                }
                 return TCPDetail::NONE;
             }
-            self.next = tcp.sequence + len as u32;
+            self.next = tcp.sequence + tcp_len;
             return TCPDetail::NONE;
         } else {
-            if sequence == self.next - 1 && tcp.payload_len == 1 && tcp.state.check(ACK) {
+            if sequence == self.next - 1 && tcp_len == 1 && tcp.state.check(ACK) {
                 self._checksum = tcp.crc;
                 return TCPDetail::KEEPALIVE;
             }
@@ -518,20 +527,24 @@ impl Endpoint {
     pub fn stringfy(&self) -> String {
         format!("{}:{}", self.host, self.port)
     }
-    fn confirm(&mut self, tcp: &TCP) {
+
+    // (ack_correct, same_with_last_packet)
+    fn confirm(&mut self, tcp: &TCP) -> (bool, bool) {
         let acknowledge = tcp.acknowledge;
         if self._ack == 0 {
             self._ack = acknowledge;
         }
 
         if self.ack > acknowledge {
-            return;
-            // TODO
+            return (false, false);
+            // TODO false
         }
         if self.seq < acknowledge {
             // TODO
         }
+        let same = acknowledge == self.ack;
         self.ack = acknowledge;
+        return (true, same)
     }
 }
 pub struct TCPConnection {
@@ -558,17 +571,9 @@ impl TCPConnection {
         let ep1 = TCPConnection::create_ep(src, srp);
         let ep2 = TCPConnection::create_ep(dst, dsp);
         if arch {
-            return Self {
-                connec_type: TCPPAYLOAD::NONE,
-                ep1,
-                ep2,
-            };
+            return Self { connec_type: TCPPAYLOAD::NONE, ep1, ep2 };
         }
-        Self {
-            connec_type: TCPPAYLOAD::NONE,
-            ep2: ep1,
-            ep1: ep2,
-        }
+        Self { connec_type: TCPPAYLOAD::NONE, ep2: ep1, ep1: ep2 }
     }
     pub fn get_endpoint(&mut self, arch: bool) -> &mut Endpoint {
         match arch {
@@ -576,27 +581,19 @@ impl TCPConnection {
             false => &mut self.ep2,
         }
     }
-    fn update(&mut self, arch: bool, tcp: &TCP, frame: &Frame, data: &[u8]) -> TCPInfo {
+    fn update(&mut self, arch: bool, tcp: &TCP, frame: &Frame) -> TCPInfo {
         let (main, rev) = match arch {
             true => (&mut self.ep1, &mut self.ep2),
             false => (&mut self.ep2, &mut self.ep1),
         };
-        // let _count = self.count.get();
-        // self.count.set(_count + 1);
-        // let mut _main = main.as_ref().borrow_mut();
-        let detail = main.update(tcp, frame, data);
+        let detail = main.update(tcp, frame);
         let _seq = main._seq;
         let next = main.next;
-
-        // let mut _rev = rev.as_ref().borrow_mut();
         rev.confirm(tcp);
         let _ack = rev._ack;
-        // drop(_rev);
-        // let _size = self.throughput.get();
-        // self.throughput.set(_size + tcp.payload_len as u32);
         TCPInfo { next, _ack, _seq, detail }
     }
-    pub fn sort(&self, compare: &HashMap<String, usize>) -> (&Endpoint, &Endpoint){
+    pub fn sort(&self, compare: &HashMap<String, usize>) -> (&Endpoint, &Endpoint) {
         let h_1 = *compare.get(&self.ep1.host).unwrap_or(&0);
         let h_2 = *compare.get(&self.ep2.host).unwrap_or(&0);
         if h_1 < h_2 {
@@ -605,20 +602,20 @@ impl TCPConnection {
         return (&self.ep2, &self.ep1);
     }
     // pub fn create_wrap(&self, mapper: &HashMap<String, String>, compare: &HashMap<String, usize>) -> (&Endpoint, &Endpoint) {
-        // let mut rs = TCPWrap { ..Default::default() };
-        // let emp = String::from("");
-        // self.sort(compare)
-        // {
-        //     rs.source_ip = s.host.clone();
-        //     rs.source_port = s.port;
-        //     rs.source_host = mapper.get(&s.host).unwrap_or(&emp).clone();
-        // }
-        // {
-        //     rs.target_ip = t.host.clone();
-        //     rs.target_port = t.port;
-        //     rs.target_host = mapper.get(&t.host).unwrap_or(&emp).clone();
-        // }
-        // rs
+    // let mut rs = TCPWrap { ..Default::default() };
+    // let emp = String::from("");
+    // self.sort(compare)
+    // {
+    //     rs.source_ip = s.host.clone();
+    //     rs.source_port = s.port;
+    //     rs.source_host = mapper.get(&s.host).unwrap_or(&emp).clone();
+    // }
+    // {
+    //     rs.target_ip = t.host.clone();
+    //     rs.target_port = t.port;
+    //     rs.target_host = mapper.get(&t.host).unwrap_or(&emp).clone();
+    // }
+    // rs
     // }
 }
 
@@ -735,10 +732,10 @@ impl Frame {
         }
         drop(val);
     }
-    pub fn update_tcp(&self, packet: &TCP, data: &[u8], ctx: &mut Context) -> TCPInfo {
+    pub fn update_tcp(&self, packet: &mut TCP, ctx: &mut Context, reader: &Reader) {
         let ippacket = self.get_ip();
         let refer = ippacket.deref().borrow();
-        ctx.update_tcp(self, refer.deref(), packet, data)
+        ctx.update_tcp(self, refer.deref(), packet, reader)
     }
     pub fn get_fields(&self) -> Vec<Field> {
         let mut rs = Vec::new();
@@ -786,14 +783,7 @@ impl Frame {
         let tcp_refer = _tcp.deref().borrow();
         Context::tcp_key(refer.deref(), tcp_refer.deref())
     }
-    // pub fn get_tcp_info(&mut self, flag:bool, ctx: &mut Context) -> &mut Endpoint {
-    //     let sum = &mut self.summary;
-    //     let _ip = sum.ip.clone().expect("no_ip_layer");
-    //     let _tcp = sum.tcp.clone().expect("no_tcp_layer");
-    //     let refer = _ip.deref().borrow();
-    //     let tcp_refer = _tcp.deref().borrow();
-    //     ctx.get_tcp(refer.deref(), tcp_refer.deref(), flag)
-    // }
+
     fn _create_http_request(&self) -> HttpRequestBuilder {
         let (source, dest) = self.get_ip_address();
         let (srp, dsp) = self.get_port();
@@ -829,7 +819,7 @@ impl Frame {
             }
         }
     }
-    pub fn add_element(&mut self, ctx: &mut Context, ele: ProtocolData, _reader: &Reader) {
+    pub fn add_element(&mut self, ctx: &mut Context, ele: ProtocolData, reader: &Reader) {
         let mref = &mut self.summary;
         mref.protocol = format!("{}", ele);
 
@@ -852,7 +842,8 @@ impl Frame {
                 self.update_ip(ctx, packet._clone_obj());
             }
             ProtocolData::TCP(packet) => {
-
+                let tcp = packet.get();
+                self.update_tcp(tcp.borrow_mut().deref_mut(), ctx, reader);
             }
             ProtocolData::HTTP(packet) => {
                 let http = packet._clone_obj();
@@ -872,7 +863,7 @@ impl Frame {
                     }
                     HttpType::RESPONSE(response) => {
                         // let ep = self.get_tcp_info(false, ctx);
-                        
+
                         let (key, arch) = self.get_tcp_map_key();
                         let _map = &mut ctx.conversation_map;
                         let mut conn = _map.get(&key).unwrap().borrow_mut();
@@ -977,9 +968,10 @@ impl Context {
         }
         (format!("{}-{}", target, source), arch)
     }
-    fn update_tcp(&mut self, frame: &Frame, ip: &dyn IPPacket, packet: &TCP, data: &[u8]) -> TCPInfo {
+
+    fn update_tcp(&mut self, frame: &Frame, ip: &dyn IPPacket, packet: &mut TCP, reader: &Reader) {
         let (key, arch) = Context::tcp_key(ip, packet);
-        let _map = &mut self.conversation_map;
+        let mut _map = &mut self.conversation_map;
         let v = _map.get(&key);
         let conn = match v {
             Some(conn) => conn,
@@ -990,7 +982,89 @@ impl Context {
             }
         };
         let mut reff = conn.borrow_mut();
-        reff.update(arch, packet, frame, data)
+        let _conn = reff.deref_mut();
+        let (main, rev) = match arch {
+            true => (&mut _conn.ep1, &mut _conn.ep2),
+            false => (&mut _conn.ep2, &mut _conn.ep1),
+        };
+        let detail = main.update(packet, frame);
+
+        let _seq = main._seq;
+        let next = main.next;
+        let (ack_correct, ack_same_with_last) = rev.confirm(packet);
+        let _ack = rev._ack;
+        packet.info = Some(TCPInfo { next, _ack, _seq, detail });
+
+        // let aa = VecDeque::new();
+        
+        // if let TCPDetail::NONE = detail_copy {
+            let tcp_len = packet.payload_len;
+            
+            if ack_correct {
+                let index = frame.summary.index;
+                if ack_same_with_last {
+                    if tcp_len > 0 {
+                        
+                let lef = reader.slice(tcp_len as usize);
+                let data = lef.to_vec();
+                let list = frame.eles.clone();
+                        main.add_segment(index, data, list);
+                    }
+                } else {
+                    if let Some(mut segments) = main.take_segment() {
+                        if segments.len() > 0 {
+                            let mut all_data = Vec::new();
+                            let indexes = segments.iter().map(|f|f.index).collect::<Vec<u32>>();
+                            let mut _index = 0;
+                            let mut index_map = HashMap::new();
+                            loop {
+                                match segments.pop_front() {
+                                    Some(segment) => {
+                                        let Segment { index, list, mut data } = segment;
+                                        // let mut _data = data;
+                                        _index += data.len();
+                                        
+                                        all_data.append(&mut data);
+                                    }
+                                    None => { break; }
+                                }
+                            }
+                            if indexes.len() > 3 {
+                                info!("reassemble {:?}", &indexes);
+                            }
+                        }
+                    }
+                    if tcp_len > 0 {
+                        let lef = reader.slice(tcp_len as usize);
+                        let data = lef.to_vec();
+                        let list = frame.eles.clone();
+                        main.add_segment(index, data, list);
+                    }
+                    // assmeble
+                }
+            } else {
+                //TODO 
+                main.clear_segment();
+                // clear segment
+            }
+            // if tcp_len > 0 {
+                // match &_conn.connec_type {
+                //     TCPPAYLOAD::TLS => {}
+                //     TCPPAYLOAD::NONE => {
+                //         // append segment
+                //         if let Ok((is_tls, _)) = TLS::check(reader) {
+                //             if is_tls {
+                //                 _conn.connec_type = TCPPAYLOAD::TLS;
+                //                 // check assembly
+                //             }
+                //         }
+                //     }
+                // }
+            // }
+        // }
+
+        // reff.connec_type = TCPPAYLOAD::TLS;
+        // reff.update(arch, packet, frame)
     }
     // fn get_tcp(&mut self, ip: &dyn IPPacket, packet: &TCP, flag: bool) -> Option<&Endpoint> {
     //     let (key, arch) = Context::tcp_key(ip, packet);
@@ -1003,7 +1077,7 @@ impl Context {
     //     }
     // }
 
-    pub fn tls_connection_info(&self) -> Vec<TLSHS>{
+    pub fn tls_connection_info(&self) -> Vec<TLSHS> {
         let _c_list = self.conversations();
         let _clist = _c_list.values();
         let mut list = Vec::new();
@@ -1012,39 +1086,37 @@ impl Context {
             let l1 = tcp.ep1.handshake.len();
             let l2 = tcp.ep2.handshake.len();
             if l1 > 0 || l2 > 0 {
-                let mut rs = TLSHS{..Default::default()};
-                let mut incept = |ep1: &Endpoint, ep2: &Endpoint, hs: &HandshakeType| {
-                    match hs {
-                        HandshakeType::ClientHello(_hs) => {
-                            let _ch: &HandshakeClientHello = _hs.as_ref();
-                            rs.source = format!("{}:{}", ep1.host, ep1.port);
-                            rs.target = format!("{}:{}", ep2.host, ep2.port);
-                            if let Some(sname) = _ch.server_name() {
-                                rs.server_name = sname;
-                            }
-                            rs.support_cipher =  _ch.ciphers();
-                            if let Some(versions) = _ch.versions() {
-                                rs.support_version = versions;
-                            }
-                            if let Some(negotiation) = _ch.negotiation() {
-                                rs.support_negotiation = negotiation;
-                            }
+                let mut rs = TLSHS { ..Default::default() };
+                let mut incept = |ep1: &Endpoint, ep2: &Endpoint, hs: &HandshakeType| match hs {
+                    HandshakeType::ClientHello(_hs) => {
+                        let _ch: &HandshakeClientHello = _hs.as_ref();
+                        rs.source = format!("{}:{}", ep1.host, ep1.port);
+                        rs.target = format!("{}:{}", ep2.host, ep2.port);
+                        if let Some(sname) = _ch.server_name() {
+                            rs.server_name = sname;
                         }
-                        HandshakeType::ServerHello(_hs) => {
-                            let _ch: &HandshakeServerHello = _hs.as_ref();
-                            rs.source = format!("{}:{}", ep2.host, ep2.port);
-                            rs.target = format!("{}:{}", ep1.host, ep1.port);
-                            rs.used_cipher = _ch.ciper_suite();
-                            
-                            if let Some(versions) = _ch.versions() {
-                                rs.used_version = versions.into();
-                            }
-                            if let Some(negotiation) = _ch.negotiation() {
-                                rs.used_negotiation = negotiation;
-                            }
+                        rs.support_cipher = _ch.ciphers();
+                        if let Some(versions) = _ch.versions() {
+                            rs.support_version = versions;
                         }
-                        _ => {}
+                        if let Some(negotiation) = _ch.negotiation() {
+                            rs.support_negotiation = negotiation;
+                        }
                     }
+                    HandshakeType::ServerHello(_hs) => {
+                        let _ch: &HandshakeServerHello = _hs.as_ref();
+                        rs.source = format!("{}:{}", ep2.host, ep2.port);
+                        rs.target = format!("{}:{}", ep1.host, ep1.port);
+                        rs.used_cipher = _ch.ciper_suite();
+
+                        if let Some(versions) = _ch.versions() {
+                            rs.used_version = versions.into();
+                        }
+                        if let Some(negotiation) = _ch.negotiation() {
+                            rs.used_negotiation = negotiation;
+                        }
+                    }
+                    _ => {}
                 };
                 if l1 > 0 {
                     for _hs in tcp.ep1.handshake.iter() {
@@ -1061,7 +1133,7 @@ impl Context {
         }
         list
     }
-    pub fn _to_hostnames (&self, ep: &Endpoint) -> (String, u16, String) {
+    pub fn _to_hostnames(&self, ep: &Endpoint) -> (String, u16, String) {
         let host = ep.host.clone();
         let port = ep.port;
         let hostname = self.dns_map.get(&host).unwrap_or(&String::from("")).clone();
@@ -1230,4 +1302,3 @@ fn ts_to_str(ts: u64) -> String {
     }
     format!("{}.{} H", _min / 60, _min % 60)
 }
-

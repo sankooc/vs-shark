@@ -5,6 +5,7 @@ use std::collections::HashSet;
 use core::common::FIELDSTATUS;
 use core::common::base::{ Element, Frame, Instance};
 use core::entry::*;
+use std::ops::Deref;
 use js_sys::Uint8Array;
 use wasm_bindgen::prelude::*;
 
@@ -153,7 +154,7 @@ impl WContext {
                     total += 1;
                     if total > start && left > 0 {
                         left -= 1;
-                        let item = WContext::_frame(frame, start_ts);
+                        let item = WContext::_frame(frame.deref(), start_ts);
                         items.push(item);
                     }
                 }
@@ -165,7 +166,7 @@ impl WContext {
             return FrameResult::new(start, 0, Vec::new());
         }
         let end = cmp::min(start + size, total);
-        let _data: &[Frame] = &_fs[start..end];
+        let _data = &_fs[start..end];
         for frame in _data.iter() {
             let item = WContext::_frame(frame, start_ts);
             items.push(item);

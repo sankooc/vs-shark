@@ -149,7 +149,7 @@ pub struct TCP {
     urgent: u16,
     pub options: Option<TCPOptions>,
     pub state: TCPState,
-    info: Option<TCPInfo>,
+    pub info: Option<TCPInfo>,
 }
 
 impl std::fmt::Display for TCP {
@@ -338,46 +338,49 @@ impl crate::common::base::Visitor for TCPVisitor {
             packet._build(reader, reader.cursor(), p.payload_len.into(), format!("TCP payload ({} bytes)", left_size));
         }
         frame.add_tcp(packet._clone_obj());
-        let _data = reader._slice(left_size as usize);
-        let info = frame.update_tcp(p.deref(), _data, ctx);
-        match &info.detail {
-            TCPDetail::NONE => {
-                p.info = Some(info);
-                drop(p);
-                handle(frame, ctx, reader, packet)
-            }
-            _ => {
-                p.info = Some(info);
-                drop(p);
-                Ok((ProtocolData::TCP(packet), "none"))
-            }
-        }
+        // let _data = reader._slice(left_size as usize);
+        // let info = frame.update_tcp(p.deref(), _data, ctx);
+        
+        drop(p);
+        Ok((ProtocolData::TCP(packet), "none"))
+        // match &info.detail {
+        //     TCPDetail::NONE => {
+        //         p.info = Some(info);
+        //         drop(p);
+        //         handle(frame, ctx, reader, packet)
+        //     }
+        //     _ => {
+        //         p.info = Some(info);
+        //         drop(p);
+        //         Ok((ProtocolData::TCP(packet), "none"))
+        //     }
+        // }
     }
 }
 
-fn handle(frame: &mut Frame, ctx: &mut Context, reader: &Reader, packet: PacketContext<TCP>) -> Result<(ProtocolData, &'static str)> {
-    let _len = reader.left()?;
-    if _len < 1 {
-        return Ok((ProtocolData::TCP(packet), "none"));
-    }
-    // let ep = frame.get_tcp_info(true,ctx);
-    let (key, arch) = frame.get_tcp_map_key();
-    let _map = &mut ctx.conversation_map;
-    let conn = _map.get(&key).unwrap().borrow_mut();
-    let _type = &conn.connec_type;
-    // end
-    match _type {
-        TCPPAYLOAD::TLS => {
-            return Ok((ProtocolData::TCP(packet), "tls"));
-        }
-        TCPPAYLOAD::NONE => {
-            let (is_tls, _) = super::tls::TLS::check(reader)?;
-            if is_tls {
-                return Ok((ProtocolData::TCP(packet), "tls"));
-            } else if super::http::HTTPVisitor::check(reader) {
-                return Ok((ProtocolData::TCP(packet), "http"));
-            }
-            Ok((ProtocolData::TCP(packet), "none"))
-        }
-    }
-}
+// fn handle(frame: &mut Frame, ctx: &mut Context, reader: &Reader, packet: PacketContext<TCP>) -> Result<(ProtocolData, &'static str)> {
+//     let _len = reader.left()?;
+//     if _len < 1 {
+//         return Ok((ProtocolData::TCP(packet), "none"));
+//     }
+//     // let ep = frame.get_tcp_info(true,ctx);
+//     let (key, arch) = frame.get_tcp_map_key();
+//     let _map = &mut ctx.conversation_map;
+//     let conn = _map.get(&key).unwrap().borrow_mut();
+//     let _type = &conn.connec_type;
+//     // end
+//     match _type {
+//         TCPPAYLOAD::TLS => {
+//             return Ok((ProtocolData::TCP(packet), "tls"));
+//         }
+//         TCPPAYLOAD::NONE => {
+//             let (is_tls, _) = super::tls::TLS::check(reader)?;
+//             if is_tls {
+//                 return Ok((ProtocolData::TCP(packet), "tls"));
+//             } else if super::http::HTTPVisitor::check(reader) {
+//                 return Ok((ProtocolData::TCP(packet), "http"));
+//             }
+//             Ok((ProtocolData::TCP(packet), "none"))
+//         }
+//     }
+// }

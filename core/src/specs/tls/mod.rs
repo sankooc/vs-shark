@@ -221,7 +221,7 @@ fn proc(frame: &Frame, reader: &Reader, packet: &PacketContext<TLS>, p: &mut TLS
                 p.records.push(record);
             } else {
                 let left_data = reader.slice(left_size);
-                ep.add_segment(frame.summary.index, TCPPAYLOAD::TLS, left_data);
+                // ep.add_segment(frame.summary.index, TCPPAYLOAD::TLS, left_data);
                 break;
             }
         } else {
@@ -246,29 +246,29 @@ impl Visitor for TLSVisitor {
         // end
         let _len = reader.left()?;
         let _reader = reader;
-        match conn_type {
-            TCPPAYLOAD::TLS => {
-                let head = ep.get_segment()?;
-                let seg_length = head.len();
-                let (_, len) = TLS::_check(&head[0..5])?;
-                let data = reader.slice(_len);
-                if len + 5 > seg_length + _len {
-                    ep.add_segment(index, TCPPAYLOAD::TLS, data);
-                    let content = format!("TLS Segments {} bytes", _len);
-                    packet._build(reader, reader.cursor(), _len, content);
-                } else {
-                    let mut _data = ep.take_segment();
-                    _data.extend_from_slice(data);
-                    let _reader = Reader::new_raw(Rc::new(_data));
-                    proc(frame, &_reader, &packet, p.deref_mut(), ep.deref_mut())?;
-                }
-                // return None;
-            }
-            TCPPAYLOAD::NONE => {
-                proc(frame, reader, &packet, p.deref_mut(), ep.deref_mut())?;
-            }
-        }
-        let _len = p.records.len();
+        // match conn_type {
+        //     TCPPAYLOAD::TLS => {
+        //         let head = ep.get_segment()?;
+        //         let seg_length = head.len();
+        //         let (_, len) = TLS::_check(&head[0..5])?;
+        //         let data = reader.slice(_len);
+        //         if len + 5 > seg_length + _len {
+        //             // ep.add_segment(index, TCPPAYLOAD::TLS, data);
+        //             let content = format!("TLS Segments {} bytes", _len);
+        //             packet._build(reader, reader.cursor(), _len, content);
+        //         } else {
+        //             let mut _data = ep.take_segment();
+        //             _data.extend_from_slice(data);
+        //             let _reader = Reader::new_raw(Rc::new(_data));
+        //             proc(frame, &_reader, &packet, p.deref_mut(), ep.deref_mut())?;
+        //         }
+        //         // return None;
+        //     }
+        //     TCPPAYLOAD::NONE => {
+        //         proc(frame, reader, &packet, p.deref_mut(), ep.deref_mut())?;
+        //     }
+        // }
+        // let _len = p.records.len();
         
         drop(p);
         Ok((ProtocolData::TLS(packet), "none"))
