@@ -45,7 +45,7 @@ pure pcap/pcapng analyzer
 > TCP / UDP
 
 #### Application
-> TLS / HTTP / SSDP / DNS / DHCP
+> TLS / HTTP1.1 / SSDP / DNS / DHCP
 
 ---
 ### Online

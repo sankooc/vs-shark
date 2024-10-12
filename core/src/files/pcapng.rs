@@ -73,5 +73,6 @@ pub fn parse(data: &[u8]) -> Result<Instance> {
             break;
         }
     }
+    instance.flush();
     Ok(instance)
 }

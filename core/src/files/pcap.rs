@@ -32,5 +32,6 @@ pub fn parse(data: &[u8]) -> Result<Instance> {
             instance.create(raw.to_vec(), ts, captured, origin)
         }));
     }
+    instance.flush();
     Ok(instance)
 }

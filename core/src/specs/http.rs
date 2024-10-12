@@ -2,16 +2,20 @@ use std::{fmt::Formatter, rc::Rc};
 
 use pcap_derive::Packet;
 
-use crate::{
-    common::{
-        io::{AReader, Reader},
-        FIELDSTATUS,
-    },
-    common::base::{Frame, PacketBuilder, PacketContext},
-};
+use crate::common::{
+        base::{Frame, PacketBuilder, PacketContext}, io::{AReader, Reader}, Ref2, FIELDSTATUS
+    };
 use anyhow::Result;
 
 use super::ProtocolData;
+
+
+pub enum  TransferEncoding {
+    CHUNKED,
+    COMPRESS,
+    DEFLATE,
+    GZIP,
+}
 
 pub struct Request {
     pub method: String,
@@ -23,6 +27,8 @@ pub struct Response {
     pub code: String,
     pub status: String,
 }
+
+
 #[derive(Default)]
 pub enum HttpType {
     #[default]
@@ -37,7 +43,7 @@ pub struct HTTP {
     head: String,
     _type: HttpType,
     pub content_type: Option<String>,
-    pub content: Vec<u8>,
+    pub content: Option<Rc<Vec<u8>>>,
     pub len: usize,
     pub chunked: bool,
 }
@@ -147,57 +153,27 @@ pub fn parse(reader: &impl AReader) -> Result<HTTP>  {
     }
 }
 
-pub fn wrap(_http: Rc<HTTP>) ->Result<ProtocolData> {
-    let packet: PacketContext<HTTP> = Frame::create_packet();
-
+pub fn no_content(_http: Ref2<HTTP>) ->Result<ProtocolData> {
+    let packet: PacketContext<HTTP> = Frame::_create_packet(_http.clone());
+    let p = packet.get().borrow();
+    packet.build_txt(p.head.clone());
+    for head in &p.header {
+        packet.build_txt(head.clone());
+    }
+    drop(p);
     Ok(super::ProtocolData::HTTP(packet))
 }
 
-impl HTTPVisitor {
-    fn visit2(&self, reader: &Reader) -> Result<(ProtocolData, &'static str)> {
-        let packet: PacketContext<HTTP> = Frame::create_packet();
-        let mut p = packet.get().borrow_mut();
-        let v = packet.build_format(reader, Reader::_read_enter, "{}")?;
-        p.head = v.clone();
-        let spl: Vec<_> = v.split(" ").collect();
-        if spl.len() > 2 {
-            let head = *spl.get(0).unwrap();
-            let head2 = *spl.get(1).unwrap();
-            let head3 = *spl.get(2).unwrap();
-            if head == "HTTP/1.1" {
-                p._type = HttpType::RESPONSE(Response {
-                    version: head.into(),
-                    code: head2.into(),
-                    status: head3.into(),
-                });
-            } else {
-                p._type = HttpType::REQUEST(Request {
-                    method: head.into(),
-                    path: head2.into(),
-                    version: head3.into(),
-                })
-            }
-        }
-
-        loop {
-            if reader.left()? == 0 {
-                break;
-            }
-            if reader.enter_flag(0) {
-                reader._move(2);
-                break;
-            }
-            let header = packet.build_format(reader, Reader::_read_enter, "{}")?;
-            if let Some(tp) = pick_value(&header, "content-type") {
-                p.content_type = Some(tp);
-            }
-            p.header.push(header);
-        }
-        let dlen = reader.left()?;
-        p.len =dlen;
-        packet._build(reader, reader.cursor(), dlen, format!("File Data: {} bytes", dlen));
-        p.content = reader.slice(dlen).to_vec();
-        drop(p);
-        Ok((super::ProtocolData::HTTP(packet), "none"))
+pub fn content_len(_http: Ref2<HTTP>, body: Vec<u8>) ->Result<ProtocolData> {
+    let rs = no_content(_http.clone())?;
+    if let ProtocolData::HTTP(packet) = &rs {
+        let len = body.len();
+        let content = Rc::new(body);
+        let reader = Reader::new_raw(content.clone());
+        packet._build(&reader, 0, len, format!("File Data: {} bytes", len));
+        let mut reff = _http.as_ref().borrow_mut();
+        reff.content = Some(content);
+        drop(reff);
     }
+    Ok(rs)
 }

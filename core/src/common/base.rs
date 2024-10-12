@@ -21,7 +21,7 @@ use enum_dispatch::enum_dispatch;
 use log::error;
 use std::{
     borrow::Borrow,
-    cell::{Ref, RefCell},
+    cell::{Cell, Ref, RefCell},
     collections::{HashMap, HashSet, VecDeque},
     net::{Ipv4Addr, Ipv6Addr},
     ops::{Deref, DerefMut, Range},
@@ -178,6 +178,9 @@ where
 {
     pub fn _build(&self, reader: &Reader, start: usize, size: usize, content: String) {
         self.fields.borrow_mut().push(Box::new(TXTPosition { start, size, data: reader.get_raw(), content }));
+    }
+    pub fn build_txt(&self, content: String) {
+        self.fields.borrow_mut().push(Box::new(TXTPosition { start: 0, size: 0, data: Rc::new(Vec::new()), content }));
     }
 
     pub fn _build_lazy(&self, reader: &Reader, start: usize, size: usize, render: fn(&T) -> String) {
@@ -383,8 +386,8 @@ pub enum TCPPAYLOAD {
     #[default]
     NONE,
     TLS(usize),
-    HTTPLEN(Rc<crate::specs::http::HTTP>),
-    HTTPCHUNKED(Rc<crate::specs::http::HTTP>),
+    HTTPLEN(Ref2<crate::specs::http::HTTP>),
+    HTTPCHUNKED(Ref2<crate::specs::http::HTTP>),
     HTTPPRE,
 }
 
@@ -405,6 +408,7 @@ pub struct Endpoint {
     //
     _request: Option<HttpRequestBuilder>,
     pub handshake: Vec<HandshakeType>,
+    pub http_messages: Vec<Ref2<crate::specs::http::HTTP>>,
 
     pub _segments: Option<VecDeque<Segment>>,
     pub _cache: Vec<u8>,
@@ -415,9 +419,11 @@ pub struct Endpoint {
 fn add_to(ep: &mut Endpoint, data: Rc<Vec<u8>>, list: Ref2<Vec<ProtocolData>>) {
     let reader = Reader::new_raw(data);
     if let Ok(rs) = TLSVisitor.visit(&reader) {
-        if let ProtocolData::TLS(pcaket) = &rs {
-            let tls = pcaket.get().borrow();
+        if let ProtocolData::TLS(packet) = &rs {
+            let tls = packet.get().borrow();
             ep.add_tls(tls.deref());
+        } else if let ProtocolData::HTTP(packet) = &rs {
+            ep.add_http(packet._clone_obj());
         }
         let mut list_ref = list.as_ref().borrow_mut();
         list_ref.push(rs);
@@ -427,6 +433,66 @@ fn add_to(ep: &mut Endpoint, data: Rc<Vec<u8>>, list: Ref2<Vec<ProtocolData>>) {
 impl Endpoint {
     fn new(host: String, port: u16) -> Self {
         Self { host, port, ..Default::default() }
+    }
+    fn add_packet(&mut self, rs: Result<ProtocolData>, list: Option<Ref2<Vec<ProtocolData>>>) {
+        if let Ok(result) = rs {
+            if let ProtocolData::TLS(pcaket) = &result {
+                let tls = pcaket.get().borrow();
+                self.add_tls(tls.deref());
+            }
+            if let Some(_list) = list {
+                let mut list_ref = _list.as_ref().borrow_mut();
+                list_ref.push(result);
+                drop(list_ref);
+            }
+        }
+    }
+    fn shift_cache(&mut self, _size: Option<usize>, rs: Result<ProtocolData>) {
+        let mut _index = _size.unwrap_or(usize::max_value());
+        let mut last_one = None;
+        let mut list_to_list = Vec::new();
+        let mut index_list = Vec::new();
+        if let Some(segments) = &mut self._segments {
+            loop {
+                if let Some(seg) = segments.pop_front() {
+                    let Segment { list, size, index } = seg;
+                    if size <= _index {
+                        _index -= size;
+                        list_to_list.push(list.clone());
+                        index_list.push((index, size));
+                        if segments.len() == 0 {
+                            last_one = Some(list.clone());
+                            break;
+                        }
+                    } else {
+                        last_one = Some(list.clone());
+                        index_list.push((index, _index));
+                        segments.push_front(Segment { index, list, size: (size - _index) });
+                        _index = 0;
+                        // add_to(self, Rc::new(mount), l2);
+                        break;
+                    }
+                } else {
+                    break;
+                }
+            }
+        }
+        self.add_packet(rs, last_one);
+    }
+    pub fn clear(&mut self) {
+        self._segments = Some(VecDeque::new());
+        self._cache = Vec::new();
+    }
+    fn shift(&mut self, size: usize) -> Vec<u8> {
+        let mut _cache = Vec::new();
+        _cache.append(&mut self._cache);
+        if size < self._cache.len() {
+            self._cache = _cache[size..].to_vec();
+            _cache[..size].to_vec()
+        } else {
+            self._cache = Vec::new();
+            _cache
+        }
     }
     pub fn add_segment(&mut self, index: u32, data: Vec<u8>, list: Ref2<Vec<ProtocolData>>) {
         let segment = Segment { index, size: data.len(), list };
@@ -452,31 +518,60 @@ impl Endpoint {
         match &self.connec_type {
             TCPPAYLOAD::HTTPPRE => {
                 let reader = SliceReader::new(&self._cache);
+                if !HTTPVisitor::check(&reader) {
+                    drop(reader);
+                    self.clear();
+                    return;
+                }
                 if let Ok(http) = http::parse(&reader) {
-                    if http.len > 0 {
-                        self.connec_type = TCPPAYLOAD::HTTPLEN(Rc::new(http));
-                        let exist = reader.left().unwrap();
+                    let len = http.len;
+                    let is_chunked = http.chunked;
+                    let exist = reader.left().unwrap();
+                    let reff = Rc::new(RefCell::new(http));
+                    if len > 0 {
+                        self.connec_type = TCPPAYLOAD::HTTPLEN(reff);
                         self._cache = reader.slice(exist).to_vec();
-                        // resize
                         return self.update_segment();
-                    } else if http.chunked {
-                        self.connec_type = TCPPAYLOAD::HTTPCHUNKED(Rc::new(http));
-                        let exist = reader.left().unwrap();
+                    } else if is_chunked {
+                        self.connec_type = TCPPAYLOAD::HTTPCHUNKED(reff);
                         self._cache = reader.slice(exist).to_vec();
-                        // resize
                         return self.update_segment();
                     } else {
-                        
+                        let size = reader.cursor();
+
+                        let rs = http::no_content(reff.clone());
+
+                        self._cache = reader.slice(exist).to_vec();
+                        self.shift_cache(Some(size), rs);
+                        self.clear();
+                        // parse
                         // clearcache
                     }
                 }
             }
             TCPPAYLOAD::HTTPLEN(http) => {
-
-            },
-            TCPPAYLOAD::HTTPCHUNKED(http) => {
-
-            },
+                let len = http.as_ref().borrow().len;
+                let clen = self._cache.len();
+                if clen > len {
+                    let cloned = http.clone();
+                    let body = self.shift(len);
+                    let rs = http::content_len(cloned, body);
+                    self.shift_cache(Some(len), rs);
+                } else if clen < len {
+                    //pass
+                } else {
+                    let cloned = http.clone();
+                    let body = self.shift(len);
+                    let rs = http::content_len(cloned, body);
+                    self.shift_cache(None, rs);
+                    self.clear();
+                    self.connec_type = TCPPAYLOAD::HTTPPRE;
+                }
+            }
+            TCPPAYLOAD::HTTPCHUNKED(_http) => {
+                //https://stackoverflow.com/questions/16460012/how-to-get-the-size-of-chunk-in-http-response-using-java-if-transfer-encoding-is
+                let _reader = SliceReader::new(&self._cache);
+            }
             TCPPAYLOAD::TLS(next_size) => {
                 let size = *next_size;
                 let clen = self._cache.len();
@@ -526,7 +621,7 @@ impl Endpoint {
                                 break;
                             }
                         }
-                        println!("]")
+                        // println!("]")
                     }
                     self.update_segment();
                 }
@@ -554,9 +649,7 @@ impl Endpoint {
         self._cache = Vec::new();
         self.connec_type = TCPPAYLOAD::NONE;
     }
-    fn clear_segment(&mut self) {
-
-    }
+    fn clear_segment(&mut self) {}
 
     fn update(&mut self, tcp: &TCP, _: &Frame) -> TCPDetail {
         //https://www.wireshark.org/docs/wsug_html_chunked/ChAdvTCPAnalysis.html
@@ -614,7 +707,7 @@ impl Endpoint {
         format!("{}:{}", self.host, self.port)
     }
 
-    fn add_tls(&mut self, tls: &TLS){
+    fn add_tls(&mut self, tls: &TLS) {
         for record in &tls.records {
             match &record.as_ref().borrow().message {
                 TLSRecorMessage::HANDSHAKE(hs) => {
@@ -631,6 +724,9 @@ impl Endpoint {
                 _ => {}
             };
         }
+    }
+    fn add_http(&mut self, http: Ref2<crate::specs::http::HTTP>) {
+        self.http_messages.push(http);
     }
     // (ack_correct, same_with_last_packet)
     fn confirm(&mut self, tcp: &TCP) -> (bool, bool) {
@@ -835,15 +931,18 @@ impl Frame {
     pub fn get_reader(&self) -> Reader {
         return Reader::new_raw(self.data());
     }
+    pub fn _create_packet<K>(val: Ref2<K>) -> PacketContext<K>
+    where
+        K: PacketBuilder,
+    {
+        PacketContext { val, fields: RefCell::new(Vec::new()) }
+    }
     pub fn create_packet<K>() -> PacketContext<K>
     where
         K: PacketBuilder,
     {
         let val = K::new();
-        PacketContext {
-            val: Rc::new(RefCell::new(val)),
-            fields: RefCell::new(Vec::new()),
-        }
+        Frame::_create_packet(Rc::new(RefCell::new(val)))
     }
     pub fn _create<K>(val: K) -> PacketContext<K> {
         PacketContext {
@@ -918,43 +1017,43 @@ impl Frame {
                 let tcp = packet.get();
                 self.update_tcp(tcp.borrow_mut().deref_mut(), ctx, reader);
             }
-            ProtocolData::HTTP(packet) => {
-                let http = packet._clone_obj();
-                let _http = http.deref().borrow();
-                let __type = _http._type();
-                match __type {
-                    HttpType::REQUEST(request) => {
-                        // let ep = self.get_tcp_info(true, ctx);
-                        let (key, arch) = self.get_tcp_map_key();
-                        let _map = &mut ctx.conversation_map;
-                        let mut conn = _map.get(&key).unwrap().borrow_mut();
-                        let ep = conn.get_endpoint(arch);
-                        // end todo
-                        let mut rq = self._create_http_request();
-                        rq.set_request(http.clone(), request, self.ts);
-                        ep._request = Some(rq);
-                    }
-                    HttpType::RESPONSE(response) => {
-                        // let ep = self.get_tcp_info(false, ctx);
+            // ProtocolData::HTTP(packet) => {
+            //     let http = packet._clone_obj();
+            //     let _http = http.deref().borrow();
+            //     let __type = _http._type();
+            //     match __type {
+            //         HttpType::REQUEST(request) => {
+            //             // let ep = self.get_tcp_info(true, ctx);
+            //             let (key, arch) = self.get_tcp_map_key();
+            //             let _map = &mut ctx.conversation_map;
+            //             let mut conn = _map.get(&key).unwrap().borrow_mut();
+            //             let ep = conn.get_endpoint(arch);
+            //             // end todo
+            //             let mut rq = self._create_http_request();
+            //             rq.set_request(http.clone(), request, self.ts);
+            //             ep._request = Some(rq);
+            //         }
+            //         HttpType::RESPONSE(response) => {
+            //             // let ep = self.get_tcp_info(false, ctx);
 
-                        let (key, arch) = self.get_tcp_map_key();
-                        let _map = &mut ctx.conversation_map;
-                        let mut conn = _map.get(&key).unwrap().borrow_mut();
-                        let ep = conn.get_endpoint(!arch);
-                        // end todo
-                        let request = ep._request.take();
-                        drop(conn);
+            //             let (key, arch) = self.get_tcp_map_key();
+            //             let _map = &mut ctx.conversation_map;
+            //             let mut conn = _map.get(&key).unwrap().borrow_mut();
+            //             let ep = conn.get_endpoint(!arch);
+            //             // end todo
+            //             let request = ep._request.take();
+            //             drop(conn);
 
-                        if let Some(mut req) = request {
-                            req.set_response(http.clone(), response, self.ts);
-                            ctx.add_http(req);
-                        }
-                    }
-                    _ => {}
-                }
-                ctx.http_statistic(http.clone());
-                drop(_http);
-            }
+            //             if let Some(mut req) = request {
+            //                 req.set_response(http.clone(), response, self.ts);
+            //                 ctx.add_http(req);
+            //             }
+            //         }
+            //         _ => {}
+            //     }
+            //     ctx.http_statistic(http.clone());
+            //     drop(_http);
+            // }
 
             ProtocolData::DNS(packet) => {
                 self.add_dns(packet._clone_obj(), ctx);
@@ -991,11 +1090,32 @@ pub struct Context {
     http_list: Vec<HttpRequestBuilder>,
     pub statistic: Statistic,
     pub dns_map: HashMap<String, String>,
+    // pub flush: Cell<bool>,
 }
 
 impl Context {
     pub fn get_statistc(&self) -> &Statistic {
         &self.statistic
+    }
+    fn resove_http(&mut self){
+        for con in self.conversations().values().into_iter() {
+            let mut reff = con.borrow_mut();
+            let s = reff.ep1.stringfy();
+            let t = reff.ep2.stringfy();
+            let mut messages = Vec::new();
+            messages.append(&mut reff.ep1.http_messages);
+            loop {
+                if let Some(msg) = messages.pop() {
+                    
+                } else {
+                    break;
+                }
+            }
+            // let (source, target) = reff.sort(ct.statistic.ip.get_map());
+            // let tcp = TCPConversation::new(source, target, ct);
+            // rs.push(tcp);
+            drop(reff);
+        }
     }
     pub fn get_http(&self) -> &[HttpRequestBuilder] {
         &self.http_list
@@ -1017,10 +1137,10 @@ impl Context {
         }
         drop(reff);
     }
-    pub fn add_http(&mut self, req: HttpRequestBuilder) {
-        let list = &mut self.http_list;
-        list.push(req);
-    }
+    // pub fn add_http(&mut self, req: HttpRequestBuilder) {
+    //     let list = &mut self.http_list;
+    //     list.push(req);
+    // }
     pub fn add_dns_record(&mut self, rr: Ref2<RecordResource>) {
         let _rr = rr.as_ref().borrow();
         let mut _map = &mut self.dns_map;
@@ -1222,6 +1342,10 @@ impl Instance {
             }
         }
         self.frames.push(f);
+    }
+    pub fn flush(&mut self){
+        let ctx = &mut self.ctx;
+        ctx.resove_http();
     }
     pub fn context(&self) -> &Context {
         &self.ctx

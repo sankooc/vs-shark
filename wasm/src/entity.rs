@@ -265,20 +265,20 @@ impl HttpEntity {
     pub fn header(&self) -> Vec<String> {
         self.http.as_ref().borrow().header()
     }
-    #[wasm_bindgen(getter)]
-    pub fn content_len(&self) -> usize {
-        let _http = self.http.as_ref().borrow();
-        _http.len
-    }
-    #[wasm_bindgen(getter)]
-    pub fn content(&self) -> Uint8Array {
-        let _http = self.http.as_ref().borrow();
-        // if _http.len > 0 {
+    // #[wasm_bindgen(getter)]
+    // pub fn content_len(&self) -> usize {
+    //     let _http = self.http.as_ref().borrow();
+    //     _http.len
+    // }
+    // #[wasm_bindgen(getter)]
+    // pub fn content(&self) -> Uint8Array {
+    //     let _http = self.http.as_ref().borrow();
+    //     // if _http.len > 0 {
             
-        // }
-        let data:&[u8] = &_http.content;
-        return data.into()
-    }
+    //     // }
+    //     let data:&[u8] = &_http.content;
+    //     return data.into()
+    // }
 }
 #[wasm_bindgen]
 #[derive(Clone)]

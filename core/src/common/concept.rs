@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use std::{collections::{HashMap, HashSet}, rc::Rc};
 
 use serde::Serialize;
 
@@ -6,9 +6,6 @@ use crate::specs::http::{Request, Response, HTTP};
 
 use super::Ref2;
 
-pub struct HttpMessage {
-  
-}
 #[derive(Default)]
 pub struct TCPConnectInfo{
     pub count: u16,
@@ -52,6 +49,16 @@ impl HttpRequestBuilder {
   }
   
 }
+#[derive(Default, Serialize)]
+pub struct HttpMessage {
+  source: String,
+  target: String,
+  head: String,
+  headers: Vec<String>,
+  #[serde(skip_serializing)]
+  pub body: Rc<Vec<u8>>,
+}
+
 #[derive(Serialize)]
 pub struct StatisticV {
   http_method: Vec<Case>,
