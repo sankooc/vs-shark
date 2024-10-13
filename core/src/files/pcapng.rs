@@ -21,13 +21,9 @@ fn parse_enhance(instance: &mut Instance, data: &[u8]) -> Result<()>{
     let _interface_id = reader.read32(false);
     let mut ts = reader.read32(false)? as u64;
     let low_ts = reader.read32(false)? as u64;
-    // let ts = reader.read64(true)?;
     let captured = reader.read32(false)?;
     let origin = reader.read32(false)?;
     ts = (ts << 32) + low_ts;
-    // if ts > 2543232676408612 {
-        // println!("-{}-", ts);
-    // }
     instance.update_ts(ts);
     let raw = reader.slice(captured as usize);
     let _mod = origin % 4;

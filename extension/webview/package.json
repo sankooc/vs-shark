@@ -6,6 +6,7 @@
     "reset": "pnpm install",
     "watch": "npx webpack -c webpack.dev.config.js",
     "serve": "npx webpack serve -c webpack.dev.config.js",
+    "gen": "npx rs2ts -i ../../core/src/common/concept.rs  -o src/gen.ts",
     "css": "npx sass src --no-source-map",
     "css-watch": "npx sass src --no-source-map --watch",
     "build": "npx webpack ",
@@ -43,6 +44,7 @@
     "url-loader": "^4.1.1",
     "webpack": "^5.92.1",
     "webpack-cli": "^5.1.4",
+    "rs2ts": "^0.0.3",
     "webpack-dev-server": "^5.0.4"
   }
 }

@@ -5,10 +5,11 @@ use std::collections::HashSet;
 use core::common::FIELDSTATUS;
 use core::common::base::{ Element, Frame, Instance};
 use core::entry::*;
+use std::ops::Deref;
 use js_sys::Uint8Array;
 use wasm_bindgen::prelude::*;
 
-use crate::entity::{DNSRecord, Field, HttpConversation, TCPConversation, WTLSHS};
+use crate::entity::{DNSRecord, Field, TCPConversation, WTLSHS};
 
 
 
@@ -180,25 +181,17 @@ impl WContext {
         list.len()
     }
     #[wasm_bindgen]
-    pub fn select_http_items(&self, start: usize, size: usize,_criteria: Vec<String>) -> Vec<HttpConversation>{
+    pub fn select_http_items(&self, _start: usize, _size: usize,_criteria: Vec<String>) -> String {
         let ctx = self.ctx.context();
-        let len =  ctx.get_http().len();
-        if start >= len {
-
+        ctx.http_list_json()
+    }
+    pub fn select_http_content(&self, index: usize, ts: u64) -> Uint8Array {
+        let ctx = self.ctx.context();
+        if let Some(rc) = ctx.http_content(index, ts) {
+            let ra: &[u8] =  rc.deref();
+            return ra.into();
         }
-        let f = cmp::min(len, start + size);
-        let mut list = Vec::new();
-        let mut index: usize = start;
-        let _list = ctx.get_http();
-        loop {
-            if index >= f {
-                break;
-            }
-            let _http = _list.get(index).unwrap();
-            list.push(HttpConversation::new(_http));
-            index += 1;
-        }
-        list
+        Uint8Array::new(&JsValue::undefined())
     }
     #[wasm_bindgen]
     pub fn get_aval_protocals(&self) -> Vec<String> {

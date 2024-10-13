@@ -70,6 +70,9 @@ devDependencies:
   node-sass:
     specifier: ^9.0.0
     version: 9.0.0
+  rs2ts:
+    specifier: ^0.0.3
+    version: 0.0.3
   sass:
     specifier: ^1.77.6
     version: 1.77.6
@@ -1199,6 +1202,11 @@ packages:
   /commander@10.0.1:
     resolution: {integrity: sha512-y4Mg2tXshplEbSGzx7amzPwKKOCGuoSRP/CjEdwwk0FOGlUbq6lKuoyDZTNZkmxHdJtp54hdfY/JUrdL7Xfdug==}
     engines: {node: '>=14'}
+    dev: true
+
+  /commander@12.1.0:
+    resolution: {integrity: sha512-Vw8qHK3bZM9y/P10u3Vib8o/DdkvA2OtPtZvD871QKjy74Wj1WSKFILMPRPSdUSx5RFK1arlJzEtA4PkFgnbuA==}
+    engines: {node: '>=18'}
     dev: true
 
   /commander@2.20.3:
@@ -2586,6 +2594,10 @@ packages:
       supports-color: 8.1.1
     dev: true
 
+  /jinx-rust@0.1.6:
+    resolution: {integrity: sha512-qP+wtQL1PrDDFwtPKhNGtjWOmijCrKdfUHWTV2G/ikxfjrh+cjdvkQTmny9RAsVF0jiui9m+F0INWu4cuRcZeQ==}
+    dev: true
+
   /js-base64@2.6.4:
     resolution: {integrity: sha512-pZe//GGmwJndub7ZghVHz7vjb2LgC1m8B07Au3eYqeqv9emhESByMXxaEgkUkEqJe87oBbSniGYoQNIBklc7IQ==}
     dev: true
@@ -3853,6 +3865,15 @@ packages:
       glob: 10.4.3
     dev: true
 
+  /rs2ts@0.0.3:
+    resolution: {integrity: sha512-96/wZVN6ICtwuEJ1LU9HDd7cLRtG1pzlv82nNtJZhM3ZhC1liucdamDau0oYTeoeqQGLtIVa0E9IhK+38smUlw==}
+    hasBin: true
+    dependencies:
+      commander: 12.1.0
+      jinx-rust: 0.1.6
+      typescript: 5.6.3
+    dev: true
+
   /run-applescript@7.0.0:
     resolution: {integrity: sha512-9by4Ij99JUr/MCFBUkDKLWK3G9HVXmabKz9U5MlIAIuvuzkiOicRYs8XJLxX+xahD+mLiiCYDqF9dKAgtzKP1A==}
     engines: {node: '>=18'}
@@ -4612,6 +4633,12 @@ packages:
     hasBin: true
     dev: true
 
+  /typescript@5.6.3:
+    resolution: {integrity: sha512-hjcS1mhfuyi4WW8IWtjP7brDrG2cuDZukyrYrSauoXGNgx0S7zceP07adYkJycEr56BOUTNPzbInooiN3fn1qw==}
+    engines: {node: '>=14.17'}
+    hasBin: true
+    dev: true
+
   /undici-types@5.26.5:
     resolution: {integrity: sha512-JlCMO+ehdEIKqlFxk6IfVoAUVmgz7cU7zD/h9XZ0qzeosSHmUJVOzSQvvYSYWXkFXC+IfLKSIffhv0sVZup6pA==}
     dev: true
@@ -5045,5 +5072,5 @@ packages:
 
   file:../../wasm/pkg:
     resolution: {directory: ../../wasm/pkg, type: directory}
-    name: pkg
+    name: nshark
     dev: false

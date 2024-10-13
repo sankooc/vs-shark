@@ -149,6 +149,7 @@ pub fn parse(reader: &impl AReader) -> Result<HTTP>  {
         if let Some(ch) = pick_value(&header, "content-length")  {
             p.len = ch.parse::<usize>()?;
         }
+        p.content_type = pick_value(&header, "content-type");
         p.header.push(header);
     }
 }
@@ -172,6 +173,7 @@ pub fn content_len(_http: Ref2<HTTP>, body: Vec<u8>) ->Result<ProtocolData> {
         let reader = Reader::new_raw(content.clone());
         packet._build(&reader, 0, len, format!("File Data: {} bytes", len));
         let mut reff = _http.as_ref().borrow_mut();
+        reff.len = len;
         reff.content = Some(content);
         drop(reff);
     }

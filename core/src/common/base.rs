@@ -8,7 +8,7 @@ use crate::{
     specs::{
         dns::{RecordResource, ResourceType, DNS},
         http::{self, HTTPVisitor, HttpType, HTTP},
-        tcp::{ACK, RESET, TCP},
+        tcp::{ACK, FIN, RESET, SYNC, TCP},
         tls::{
             handshake::{HandshakeClientHello, HandshakeServerHello, HandshakeType},
             TLSRecorMessage, TLSVisitor, TLS,
@@ -21,10 +21,10 @@ use enum_dispatch::enum_dispatch;
 use log::error;
 use std::{
     borrow::Borrow,
-    cell::{Cell, Ref, RefCell},
+    cell::{ Ref, RefCell},
     collections::{HashMap, HashSet, VecDeque},
     net::{Ipv4Addr, Ipv6Addr},
-    ops::{Deref, DerefMut, Range},
+    ops::{Deref, DerefMut},
     rc::Rc,
     time::{Duration, UNIX_EPOCH},
 };
@@ -34,7 +34,7 @@ use anyhow::{bail, Result};
 use crate::common::io::Reader;
 use crate::common::{FileInfo, FileType};
 
-use super::{concept::TLSHS, io::SliceReader};
+use super::{concept::{Connect, HttpMessage, TLSHS}, io::SliceReader};
 
 #[derive(Default, Clone)]
 pub struct Field {
@@ -371,6 +371,7 @@ pub struct Segment {
     pub size: usize,
     // pub data: Vec<u8>,
     pub list: Ref2<Vec<ProtocolData>>,
+    pub ts: u64,
     // pub range: Range<usize>,
 }
 // impl Display for Segment {
@@ -408,7 +409,7 @@ pub struct Endpoint {
     //
     _request: Option<HttpRequestBuilder>,
     pub handshake: Vec<HandshakeType>,
-    pub http_messages: Vec<Ref2<crate::specs::http::HTTP>>,
+    pub http_messages: Vec<(u64, Ref2<crate::specs::http::HTTP>)>,
 
     pub _segments: Option<VecDeque<Segment>>,
     pub _cache: Vec<u8>,
@@ -416,29 +417,29 @@ pub struct Endpoint {
     pub connec_type: TCPPAYLOAD,
 }
 
-fn add_to(ep: &mut Endpoint, data: Rc<Vec<u8>>, list: Ref2<Vec<ProtocolData>>) {
-    let reader = Reader::new_raw(data);
-    if let Ok(rs) = TLSVisitor.visit(&reader) {
-        if let ProtocolData::TLS(packet) = &rs {
-            let tls = packet.get().borrow();
-            ep.add_tls(tls.deref());
-        } else if let ProtocolData::HTTP(packet) = &rs {
-            ep.add_http(packet._clone_obj());
-        }
-        let mut list_ref = list.as_ref().borrow_mut();
-        list_ref.push(rs);
-        drop(list_ref);
-    }
-}
+// fn add_to(ep: &mut Endpoint, data: Rc<Vec<u8>>, list: Ref2<Vec<ProtocolData>>) {
+//     let reader = Reader::new_raw(data);
+//     if let Ok(rs) = TLSVisitor.visit(&reader) {
+//         if let ProtocolData::TLS(packet) = &rs {
+//             let tls = packet.get().borrow();
+//             ep.add_tls(tls.deref());
+//         }
+//         let mut list_ref = list.as_ref().borrow_mut();
+//         list_ref.push(rs);
+//         drop(list_ref);
+//     }
+// }
 impl Endpoint {
     fn new(host: String, port: u16) -> Self {
         Self { host, port, ..Default::default() }
     }
-    fn add_packet(&mut self, rs: Result<ProtocolData>, list: Option<Ref2<Vec<ProtocolData>>>) {
+    fn add_packet(&mut self, rs: Result<ProtocolData>, list: Option<Ref2<Vec<ProtocolData>>>, ts: u64) {
         if let Ok(result) = rs {
             if let ProtocolData::TLS(pcaket) = &result {
                 let tls = pcaket.get().borrow();
                 self.add_tls(tls.deref());
+            } else if let ProtocolData::HTTP(packet) = &result {
+                self.add_http(packet._clone_obj(), ts);
             }
             if let Some(_list) = list {
                 let mut list_ref = _list.as_ref().borrow_mut();
@@ -450,12 +451,14 @@ impl Endpoint {
     fn shift_cache(&mut self, _size: Option<usize>, rs: Result<ProtocolData>) {
         let mut _index = _size.unwrap_or(usize::max_value());
         let mut last_one = None;
+        let mut _ts = 0;
         let mut list_to_list = Vec::new();
         let mut index_list = Vec::new();
         if let Some(segments) = &mut self._segments {
             loop {
                 if let Some(seg) = segments.pop_front() {
-                    let Segment { list, size, index } = seg;
+                    let Segment { list, size, index , ts} = seg;
+                    _ts = ts;
                     if size <= _index {
                         _index -= size;
                         list_to_list.push(list.clone());
@@ -467,9 +470,8 @@ impl Endpoint {
                     } else {
                         last_one = Some(list.clone());
                         index_list.push((index, _index));
-                        segments.push_front(Segment { index, list, size: (size - _index) });
+                        segments.push_front(Segment { index, list, size: (size - _index), ts});
                         _index = 0;
-                        // add_to(self, Rc::new(mount), l2);
                         break;
                     }
                 } else {
@@ -477,7 +479,7 @@ impl Endpoint {
                 }
             }
         }
-        self.add_packet(rs, last_one);
+        self.add_packet(rs, last_one, _ts);
     }
     pub fn clear(&mut self) {
         self._segments = Some(VecDeque::new());
@@ -494,8 +496,8 @@ impl Endpoint {
             _cache
         }
     }
-    pub fn add_segment(&mut self, index: u32, data: Vec<u8>, list: Ref2<Vec<ProtocolData>>) {
-        let segment = Segment { index, size: data.len(), list };
+    pub fn add_segment(&mut self, index: u32, data: Vec<u8>, list: Ref2<Vec<ProtocolData>>, ts: u64) {
+        let segment = Segment { index, size: data.len(), list, ts };
         let mut _data = data;
         self._cache.append(&mut _data);
         match self._segments.as_mut() {
@@ -571,6 +573,55 @@ impl Endpoint {
             TCPPAYLOAD::HTTPCHUNKED(_http) => {
                 //https://stackoverflow.com/questions/16460012/how-to-get-the-size-of-chunk-in-http-response-using-java-if-transfer-encoding-is
                 let _reader = SliceReader::new(&self._cache);
+                // let mut data = Vec::new();
+                let mut complete = false;
+                loop {
+                    if let Ok(line) = _reader.try_read_enter(30) {
+                        if let Ok(size) = usize::from_str_radix(&line, 16) {
+                            if size == 0 {
+                                complete = true;
+                                break;
+                            }
+                            if !_reader._move(size + 2) {
+                                break;
+                            }
+                        } else {
+                            // TODO CLEAR
+                            break;
+                        }
+                    } else {
+                        break;
+                    }
+                };
+                drop(_reader);
+                if complete {
+                    let reader2 = SliceReader::new(&self._cache);
+                    let mut data = Vec::new();
+                    loop {
+                        if let Ok(line) = reader2.try_read_enter(30) {
+                            if let Ok(size) = usize::from_str_radix(&line, 16) {
+                                if size == 0 {
+                                    reader2._move(2);
+                                    reader2._move(2);
+                                    let _size = reader2.cursor();
+                                    self._cache.drain(0.._size);
+                                    let rs = http::content_len(_http.clone(), data);
+                                    self.shift_cache(None, rs);
+                                    self.clear();
+                                    self.connec_type = TCPPAYLOAD::HTTPPRE;
+                                    break;
+                                }
+                                data.append(&mut reader2.slice(size).to_vec());
+                                reader2._move(2);
+                            } else {
+                                // TODO CLEAR
+                                break;
+                            }
+                        } else {
+                            break;
+                        }
+                    };
+                }
             }
             TCPPAYLOAD::TLS(next_size) => {
                 let size = *next_size;
@@ -579,50 +630,18 @@ impl Endpoint {
                 } else if size == clen {
                     // remove all
                     let data: Vec<u8> = self._cache.drain(..).collect();
-                    if let Some(segments) = &mut self._segments {
-                        let mut sgs: Vec<(u32, Range<usize>)> = Vec::new();
-                        // let reff = Rc::new(RefCell::new(sgs));
-                        loop {
-                            if let Some(seg) = segments.pop_front() {
-                                let Segment { list, size, index } = seg;
-                                if segments.len() == 0 {
-                                    add_to(self, Rc::new(data), list);
-                                    break;
-                                } else {
-                                    sgs.push((index, 0..size));
-                                }
-                            } else {
-                                break;
-                            }
-                        }
-                    }
-
+                    let reader = Reader::new_raw(Rc::new(data));
+                    let rs = TLSVisitor.visit(&reader);
+                    self.shift_cache(None, rs);
                     self._segments = None;
                     self._cache = Vec::new();
                     self.connec_type = TCPPAYLOAD::NONE;
                 } else {
                     let mount: Vec<u8> = self._cache.drain(0..size).collect();
+                    let reader = Reader::new_raw(Rc::new(mount));
+                    let rs = TLSVisitor.visit(&reader);
                     self.connec_type = TCPPAYLOAD::NONE;
-                    let mut _count = size;
-                    if let Some(segments) = &mut self._segments {
-                        loop {
-                            if let Some(seg) = segments.pop_front() {
-                                let Segment { list, size, index } = seg;
-                                if size <= _count {
-                                    _count -= size;
-                                } else {
-                                    let l2 = list.clone();
-                                    segments.push_front(Segment { index, list, size: (size - _count) });
-                                    _count = 0;
-                                    add_to(self, Rc::new(mount), l2);
-                                    break;
-                                }
-                            } else {
-                                break;
-                            }
-                        }
-                        // println!("]")
-                    }
+                    self.shift_cache(Some(size), rs);
                     self.update_segment();
                 }
             }
@@ -658,7 +677,7 @@ impl Endpoint {
         info.count = info.count + 1;
         info.throughput += tcp.payload_len as u32;
 
-        if self._checksum == tcp.crc {
+        if self.seq == sequence && self._checksum == tcp.crc {
             info.retransmission += 1;
             self.clear_segment();
             return TCPDetail::RETRANSMISSION;
@@ -667,17 +686,24 @@ impl Endpoint {
             self.clear_segment();
             return TCPDetail::RESET;
         }
-        let tcp_len = tcp.payload_len as u32;
+        let mut _tcp_len = 0;
+        if tcp.state._match(SYNC) {
+            _tcp_len = 1;
+        } else if tcp.state._match(FIN) {
+            _tcp_len = 1;
+        } else {
+            _tcp_len = tcp.payload_len as u32;
+        }
         if self.seq == 0 {
             self._seq = sequence;
             self.seq = sequence;
-            self.next = sequence + tcp_len;
+            self.next = sequence + _tcp_len;
             self._checksum = tcp.crc;
             return TCPDetail::NONE;
         }
         if sequence > self.next {
             self.seq = sequence;
-            self.next = sequence + tcp_len;
+            self.next = sequence + _tcp_len;
             self._checksum = tcp.crc;
             info.invalid += 1;
             self.clear_segment();
@@ -685,16 +711,16 @@ impl Endpoint {
         } else if sequence == self.next {
             self.seq = tcp.sequence;
             self._checksum = tcp.crc;
-            if tcp_len == 0 {
+            if _tcp_len == 0 {
                 if tcp.state.check(ACK) {
                     return TCPDetail::KEEPALIVE;
                 }
                 return TCPDetail::NONE;
             }
-            self.next = tcp.sequence + tcp_len;
+            self.next = tcp.sequence + _tcp_len;
             return TCPDetail::NONE;
         } else {
-            if sequence == self.next - 1 && tcp_len == 1 && tcp.state.check(ACK) {
+            if sequence == self.next - 1 && _tcp_len == 1 && tcp.state.check(ACK) {
                 self._checksum = tcp.crc;
                 return TCPDetail::KEEPALIVE;
             }
@@ -725,8 +751,8 @@ impl Endpoint {
             };
         }
     }
-    fn add_http(&mut self, http: Ref2<crate::specs::http::HTTP>) {
-        self.http_messages.push(http);
+    fn add_http(&mut self, http: Ref2<crate::specs::http::HTTP>,ts: u64) {
+        self.http_messages.push((ts, http));
     }
     // (ack_correct, same_with_last_packet)
     fn confirm(&mut self, tcp: &TCP) -> (bool, bool) {
@@ -1084,40 +1110,88 @@ impl Frame {
 
 pub struct Context {
     pub count: u32,
+    pub cost: usize,
     pub info: FileInfo,
     pub dns: Vec<Ref2<RecordResource>>,
     pub conversation_map: HashMap<String, RefCell<TCPConnection>>,
-    http_list: Vec<HttpRequestBuilder>,
+    http_list: Vec<Connect<HttpMessage>>,
     pub statistic: Statistic,
     pub dns_map: HashMap<String, String>,
     // pub flush: Cell<bool>,
 }
 
+
+fn _append_http_to (list: &mut Vec<HttpMessage>, mut messages: Vec<(u64, Rc<RefCell<HTTP>>)>, ref_statis: &mut Statistic){
+    loop {
+        if let Some((ts, msg)) = messages.pop() {
+            let _msg = msg.as_ref().borrow();
+            match _msg._type() {
+                HttpType::REQUEST(req) => {
+                    ref_statis.http_method.inc(&req.method.clone());
+                }
+                HttpType::RESPONSE(res) => {
+                    ref_statis.http_status.inc(&res.code);
+                }
+                _ => {}
+            }
+            if let Some(ct) = &_msg.content_type {
+                ref_statis.http_type.inc(ct);
+            }
+            let msg = HttpMessage::new(ts/1000, _msg.deref());
+            list.push(msg);
+            drop(_msg);
+        } else {
+            break;
+        }
+    }
+
+}
 impl Context {
+    pub fn cost(&self) -> usize {
+        self.cost
+    }
     pub fn get_statistc(&self) -> &Statistic {
         &self.statistic
     }
-    fn resove_http(&mut self){
-        for con in self.conversations().values().into_iter() {
-            let mut reff = con.borrow_mut();
-            let s = reff.ep1.stringfy();
-            let t = reff.ep2.stringfy();
-            let mut messages = Vec::new();
-            messages.append(&mut reff.ep1.http_messages);
-            loop {
-                if let Some(msg) = messages.pop() {
-                    
-                } else {
-                    break;
+    pub fn http_list_json(&self) -> String {
+        serde_json::to_string(&self.http_list).unwrap()
+    }
+    pub fn http_content(&self, index: usize, ts: u64) -> Option<Rc<Vec<u8>>>{
+        if let Some(conn) = self.http_list.get(index) {
+            for msg in conn.list.iter() {
+                if msg.ts == ts {
+                    return msg.body.clone();
                 }
             }
-            // let (source, target) = reff.sort(ct.statistic.ip.get_map());
-            // let tcp = TCPConversation::new(source, target, ct);
-            // rs.push(tcp);
+        }
+        None
+    }
+    fn resolve_http(&mut self){
+        let list = &mut(self.http_list);
+        let ref_statis: &mut Statistic = &mut self.statistic;
+        list.clear();
+        for con in (&mut self.conversation_map).values().into_iter() {
+            let mut reff = con.borrow_mut();
+            let (_s, _t) = reff.sort(ref_statis.ip.get_map());
+            let source = _s.stringfy();
+            let target = _t.stringfy();
+            let index = list.len();
+            let mut msg_: Connect<HttpMessage> = Connect{source, target, index, list: Vec::new()};
+            let mut messages = Vec::new();
+            messages.append(&mut reff.ep1.http_messages);
+            _append_http_to(&mut msg_.list, messages, ref_statis);
+            //
+            messages = Vec::new();
+            messages.append(&mut reff.ep2.http_messages);
+            _append_http_to(&mut msg_.list, messages, ref_statis);
+
+            if msg_.list.len() > 0 {
+                list.push(msg_);
+            }
             drop(reff);
         }
     }
-    pub fn get_http(&self) -> &[HttpRequestBuilder] {
+    pub fn get_http(&self) -> &[Connect<HttpMessage>] {
         &self.http_list
     }
     pub fn http_statistic(&mut self, t: Ref2<HTTP>) {
@@ -1137,10 +1211,7 @@ impl Context {
         }
         drop(reff);
     }
-    // pub fn add_http(&mut self, req: HttpRequestBuilder) {
-    //     let list = &mut self.http_list;
-    //     list.push(req);
-    // }
+   
     pub fn add_dns_record(&mut self, rr: Ref2<RecordResource>) {
         let _rr = rr.as_ref().borrow();
         let mut _map = &mut self.dns_map;
@@ -1193,6 +1264,10 @@ impl Context {
             true => (&mut _conn.ep1, &mut _conn.ep2),
             false => (&mut _conn.ep2, &mut _conn.ep1),
         };
+        
+        let tcp_len = packet.payload_len;
+        let index = frame.summary.index;
+        let ts = frame.ts;
         let detail = main.update(packet, frame);
         let detail_copy = detail.clone();
         let _seq = main._seq;
@@ -1200,9 +1275,7 @@ impl Context {
         rev.confirm(packet);
         let _ack = rev._ack;
         packet.info = Some(TCPInfo { next, _ack, _seq, detail });
-
-        let tcp_len = packet.payload_len;
-        let index = frame.summary.index;
+        // let _de = format!("{}", detail_copy);
         match detail_copy {
             TCPDetail::NONE | TCPDetail::KEEPALIVE => {
                 //APPEND
@@ -1210,7 +1283,7 @@ impl Context {
                     let lef = reader.slice(tcp_len as usize);
                     let data = lef.to_vec();
                     let list = frame.eles.clone();
-                    main.add_segment(index, data, list);
+                    main.add_segment(index, data, list, ts);
                 }
                 main.update_segment();
             }
@@ -1294,6 +1367,7 @@ pub struct Instance {
 impl Instance {
     pub fn new(ftype: FileType) -> Instance {
         let ctx = Context {
+            cost: 0,
             count: 1,
             dns: Vec::new(),
             info: FileInfo { file_type: ftype, ..Default::default() },
@@ -1345,7 +1419,7 @@ impl Instance {
     }
     pub fn flush(&mut self){
         let ctx = &mut self.ctx;
-        ctx.resove_http();
+        ctx.resolve_http();
     }
     pub fn context(&self) -> &Context {
         &self.ctx
@@ -1373,17 +1447,16 @@ impl Instance {
         _info.tcp_count = ctx.conversations().len();
         _info.http_count = ctx.get_http().len();
         _info.tls_count = ctx.tls_connection_info().len();
+        _info.cost = ctx.cost();
         _info
     }
     pub fn statistic_frames(&self) -> Result<Lines> {
         let list = self.get_frames();
-        if list.len() < 30 {
+        if list.len() < 10 {
             bail!("no no no ");
         }
         let ctx = self.context();
         let info = &ctx.info;
-        // println!("{:#x}", info.end_time);
-        // println!("{:#x}", info.start_time);
         if info.start_time > info.end_time {
             bail!("time error");
         }

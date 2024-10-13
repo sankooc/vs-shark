@@ -2,7 +2,7 @@ import React, { ReactElement, useEffect, useState } from "react";
 import { MenuItem } from 'primereact/menuitem';
 import { Badge } from 'primereact/badge';
 import { Menu } from 'primereact/menu';
-import { ComMessage, IContextInfo, IConversation, IDNSRecord, IHttp, ILines, IStatistic, ITLS } from '../common';
+import { ComMessage, IContextInfo, IConversation, IDNSRecord, ILines, IStatistic, ITLS } from '../common';
 import Loading from './loading';
 import ErrPage from './error';
 import { onMessage, log, emitMessage } from '../connect';
@@ -20,7 +20,8 @@ import TLSComponent from './tls';
 // import mock_ip from '../mock/ip.json';
 // import mock_iptype from '../mock/iptype.json';
 // import _dnsRecords from '../mock/dns.json';
-// import _httpRecords from '../mock/http.json';
+import _httpRecords from '../mock/http.json';
+import { IConnect, IHttpMessage } from "../gen";
 // import _tlsRecords from '../mock/tls.json';
 
 
@@ -46,8 +47,11 @@ const Main = () => {
   const [httpdata, setHttpdata] = useState<IStatistic>(null);
   const [dnsRecords, setDnsRecords] = useState<IDNSRecord[]>([]);
   const [conversations, setConversations] = useState<IConversation[]>([]);
-  const [https, setHttps] = useState<IHttp[]>([]);
+  const [https, setHttps] = useState<IConnect<IHttpMessage>[]>([]);
   const [tlsRecords, setTlsRecords] = useState<ITLS[]>([]);
+  const deserialize = (str) => {
+    return JSON.parse(str)
+  }
   useEffect(() => {
     onMessage('message', (e: any) => {
       const { type, body, requestId } = e.data;
@@ -58,7 +62,7 @@ const Main = () => {
           break;
         }
         case '_http': {
-          setHttps(body);
+          setHttps(deserialize(body));
           break;
         }
         case '_error': {
@@ -126,7 +130,7 @@ const Main = () => {
   if (status == 0) {
     return <Loading/>
     // return <TLSComponent items={tlsRecords}/>
-    // return <HttpComponnet items={_httpRecords.items} />
+    // return <HttpComponnet items={_httpRecords} />
     // return <DNSList items={_dnsRecords}/>
     // return <Overview framedata={overview_json} metadata={meta_json} httpdata={http_json.statistic} />
   }

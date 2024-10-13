@@ -2,8 +2,10 @@ import React, { useState } from "react";
 import { IHttpEnity } from "../../common";
 import { TabView, TabPanel } from 'primereact/tabview';
 import fflate from 'fflate';
+import { IHttpMessage } from "../../gen";
 class Proto {
-  message: IHttpEnity
+  message: IHttpMessage
+  content?: Uint8Array
 }
 enum ContentType {
   Raw,
@@ -27,23 +29,35 @@ const getHeaderValue = (header, key): string => {
   return '';
 };
 
+
+const image_mime = [
+  'image/apng',
+'image/avif',
+'image/gif',
+'image/jpeg',
+'image/png',
+'image/svg+xml',
+'image/webp',
+];
+
 const maxByte = 500;
 const Content = (props: Proto) => {
-  const {message} = props;
+  const {message, content} = props;
   if(!message){
     return <div>No Selected Message </div>
   }
-  if(!message.content || !message.content.length){
+  if(!content || !content.length){
     return <div> &lt;Empty&gt; </div>
   }
   let type = ContentType.Raw;
   const [txt, setTxt] = useState<string>('');
 
-  const { content, header, content_len } = props.message;
-  const _type = getHeaderValue(header, 'content-type');
-  const enco = getHeaderValue(header, 'content-encoding');
-  const size = getHeaderValue(header, 'content-length');
+  const { headers, len } = message;
+  const _type = getHeaderValue(headers, 'content-type');
+  const enco = getHeaderValue(headers, 'content-encoding');
+  const size = getHeaderValue(headers, 'content-length');
   let plantext = false;
+  let image = false;
   if(_type.startsWith('text/')) {
     type = ContentType.TXT;
     plantext = true;
@@ -55,6 +69,13 @@ const Content = (props: Proto) => {
         plantext = true;
         break;
     }
+  }
+  let image_url;
+  if(image_mime.indexOf(_type) >= 0) {
+    image = true;
+    image_url = URL.createObjectURL(
+      new Blob([content.buffer], { type: _type })
+    );
   }
   const convertArray = (data: Uint8Array) => {
     const len = data.length;
@@ -90,12 +111,15 @@ const Content = (props: Proto) => {
     }catch(e){}
     return new TextDecoder().decode(content);
   }
-  return <TabView className="w-full detail-tab" style={{padding: 0}}>
+  return <TabView className="w-full h-full flex flex-column" style={{padding: 0}}>
   <TabPanel header="Raw Base64" style={{padding: 0}}>
       <div className="http-content"><span className="base64-content">{txt}</span></div>
   </TabPanel>
   {plantext &&<TabPanel header="text" style={{padding: 0}}>
     <div className="http-content"><span className="content">{get_to_text()}</span></div>
+  </TabPanel>}
+  {image &&<TabPanel header="image" style={{padding: 0}}>
+    <div className="http-content"><img src={image_url}/></div>
   </TabPanel>}
 </TabView>;
 };

@@ -74,7 +74,7 @@ export interface IContextInfo {
     dns_count: number;
     tcp_count: number;
     tls_count: number;
-    // frame: number,
+    cost: number,
     // conversation: number,
     // dns: number,
     // http: number,
