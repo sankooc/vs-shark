@@ -237,10 +237,7 @@ export abstract class PCAPClient {
     this.emitMessage(new ComMessage('_http', this._cache.http));
   }
   http_content(body) {
-    console.log('read-');
-    console.log(body);
     const content = this.ctx.select_http_content(body[0], BigInt(body[1]));
-    console.log(content);
     this.emitMessage(new ComMessage('_http-content', content));
   }
   _tls(): void {

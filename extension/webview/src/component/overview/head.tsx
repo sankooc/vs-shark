@@ -30,7 +30,6 @@ export default function Head(props: Props) {
     );
 
     const meta = props.data;
-    console.log(meta);
     const values = [
         { label: 'FileType', value: meta.file_type, icon: 'pi pi-inbox'},
         { label: 'Time', value: new String(meta.end_time - meta.start_time).replace(/(\d)(?=(\d\d\d)+(?!\d))/g, "$1,") + " micro", icon: 'pi pi-inbox'},
