@@ -19,8 +19,7 @@
 
 #### Demo
 
-<img src="https://i.ibb.co/x6NNTBp/cap2.gif" width="80%"/>
-
+<img src="https://i.ibb.co/x6NNTBp/cap2.gif" style="text-align:center, width: 80%"/>
 
 
 * traffic overview
