@@ -44,7 +44,7 @@ function FrameList() {
   useEffect(mountHook, []);
   const columes = [
     { field: 'index', header: 'index', style: { width: '4%' } },
-    { field: 'time', header: 'time(micro sec)', style: { width: '8%' } },
+    { field: 'time', header: 'micro sec', style: { width: '8%' } },
     { field: 'source', header: 'source', style: { width: '15%' }},
     { field: 'dest', header: 'dest', style: { width: '15%' }},
     { field: 'protocol', header: 'protocol', style: { width: '5%' } },

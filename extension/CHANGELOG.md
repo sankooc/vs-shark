@@ -26,6 +26,8 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 - 0.3.7
   * refactor tcp reassemble
+  * new http tab
+  * fix http 1.0
 
 - 0.3.8
   * optimize communication between workbench to viewer
