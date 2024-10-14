@@ -42,6 +42,7 @@ pub struct HTTP {
     header: Vec<String>,
     head: String,
     _type: HttpType,
+    pub version: String,
     pub content_type: Option<String>,
     pub content: Option<Rc<Vec<u8>>>,
     pub len: usize,
@@ -86,7 +87,7 @@ impl HTTPVisitor {
             Some(_method) => {
                 return match _method.as_str() {
                     "GET" | "POST" | "PUT" | "DELETE" | "HEAD" | "CONNECT" | "OPTIONS" | "NOTIFY" | "TRACE" | "PATCH" => true,
-                    "HTTP/1.1" => true,
+                    "HTTP/1.1" | "HTTP/1.0" => true,
                     _ => false,
                 }
             }
@@ -119,19 +120,24 @@ pub fn parse(reader: &impl AReader) -> Result<HTTP>  {
         let head = *spl.get(0).unwrap();
         let head2 = *spl.get(1).unwrap();
         let head3 = *spl.get(2).unwrap();
-        if head == "HTTP/1.1" {
-            p._type = HttpType::RESPONSE(Response {
-                version: head.into(),
-                code: head2.into(),
-                status: head3.into(),
-            });
-        } else {
-            p._type = HttpType::REQUEST(Request {
-                method: head.into(),
-                path: head2.into(),
-                version: head3.into(),
-            })
-        }
+        match head {
+            "HTTP/1.1" | "HTTP/1.0" => {
+                p.version = head.into();
+                p._type = HttpType::RESPONSE(Response {
+                    version: head.into(),
+                    code: head2.into(),
+                    status: head3.into(),
+                });
+            },
+            _ => {
+                p.version = head3.into();
+                p._type = HttpType::REQUEST(Request {
+                    method: head.into(),
+                    path: head2.into(),
+                    version: head3.into(),
+                })
+            }
+        };
     }
 
     loop {
