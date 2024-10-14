@@ -18,18 +18,10 @@ const HttpComponnet = (props: Proto) => {
 
   
   const columes = [
-    { 
-    //   body: (item) => { 
-    //   console.log(item);
-    //   if(!!item.children) {
-    //     return item.key + 1
-    //   }
-    //   if(item.data.source == 'request') return <i className="pi pi-cloud-upload">32132</i>;
-    //   return <i className="pi pi-cloud-download"></i>;
-    // },
+    {
     field: 'index',
     bodyClassName: 'tree-head',
-    header: 'no', style: { width: '5vw' }, expander: true},
+    header: 'no', style: { width: '7vw' }, expander: true},
     { 
       body: (item) => { 
       if(!!item.children) {
@@ -38,8 +30,8 @@ const HttpComponnet = (props: Proto) => {
       if(item.data.mes == 'request') return <i className="pi pi-cloud-upload"> Request</i>;
       return <i className="pi pi-cloud-download"> Response</i>;
     },
-      header: 'source', style: { width: '9vw' }},
-    { field: 'target', header: 'target', style: { width: '9vw' }},
+      header: 'source', style: { width: '15rem' }},
+    { field: 'target', header: 'target', style: { width: '15rem' }},
     { field: 'path', header: 'path/status', style: { width: '30vw' }},
     // { field: 'method', header: 'method/code' },
     // { field: 'path', header: 'path/status'},

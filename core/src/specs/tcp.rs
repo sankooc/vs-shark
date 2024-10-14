@@ -309,9 +309,6 @@ impl TCPVisitor {
 
 impl crate::common::base::Visitor for TCPVisitor {
     fn visit(&self, frame: &mut Frame, _ctx: &mut Context, reader: &Reader) -> Result<(ProtocolData, &'static str)> {
-        let ip_packet = frame.get_ip();
-        let unwap = ip_packet.deref().borrow();
-        let total = unwap.payload_len();
         let _start = reader.left()? as u16;
         let packet: PacketContext<TCP> = Frame::create_packet();
         let mut p = packet.get().borrow_mut();
@@ -331,8 +328,13 @@ impl crate::common::base::Visitor for TCPVisitor {
         }
         let left_size = reader.left().unwrap_or(0) as u16;
         p.payload_len = left_size;
-        if _start > total {
-            p.payload_len = total + left_size - _start;
+        let ip_packet = frame.get_ip();
+        let unwap = ip_packet.deref().borrow();
+        let _total = unwap.payload_len();
+        if let Some(total) = _total {
+            if _start > total {
+                p.payload_len = total + left_size - _start;
+            }
         }
         if left_size > 0 {
             packet._build(reader, reader.cursor(), p.payload_len.into(), format!("TCP payload ({} bytes)", left_size));

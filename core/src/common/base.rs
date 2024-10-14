@@ -677,10 +677,8 @@ impl Endpoint {
         info.count = info.count + 1;
         info.throughput += tcp.payload_len as u32;
 
-        if self.seq == sequence && self._checksum == tcp.crc {
-            info.retransmission += 1;
-            self.clear_segment();
-            return TCPDetail::RETRANSMISSION;
+        if self.seq == sequence && tcp.payload_len == 0 {
+            return TCPDetail::NONE;
         }
         if tcp.state._match(RESET) {
             self.clear_segment();
@@ -720,12 +718,15 @@ impl Endpoint {
             self.next = tcp.sequence + _tcp_len;
             return TCPDetail::NONE;
         } else {
-            if sequence == self.next - 1 && _tcp_len == 1 && tcp.state.check(ACK) {
+            if sequence == self.next - 1 && (_tcp_len == 1 || _tcp_len == 0) && tcp.state.check(ACK) {
                 self._checksum = tcp.crc;
                 return TCPDetail::KEEPALIVE;
             }
+            if self.seq == sequence + _tcp_len {
+                info.retransmission += 1;
+                return TCPDetail::RETRANSMISSION;
+            }
             info.invalid += 1;
-            self.clear_segment();
             return TCPDetail::DUMP;
         }
     }
@@ -1277,7 +1278,10 @@ impl Context {
         packet.info = Some(TCPInfo { next, _ack, _seq, detail });
         // let _de = format!("{}", detail_copy);
         match detail_copy {
-            TCPDetail::NONE | TCPDetail::KEEPALIVE => {
+            TCPDetail::KEEPALIVE => {
+                main.update_segment();
+            }
+            TCPDetail::NONE => {
                 //APPEND
                 if tcp_len > 0 {
                     let lef = reader.slice(tcp_len as usize);

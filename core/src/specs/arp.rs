@@ -31,8 +31,8 @@ impl IPPacket for ARP {
     fn target_ip_address(&self) -> String {
         self.target_ip.as_ref().unwrap().to_string()
     }
-    fn payload_len(&self) -> u16 {
-        0
+    fn payload_len(&self) -> Option<u16> {
+        Some(0)
     }
 }
 
