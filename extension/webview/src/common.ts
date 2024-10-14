@@ -1,3 +1,7 @@
+export function deserialize<T>(content: string): T {
+    return JSON.parse(content)
+}
+
 export class ComMessage<T> {
     type: string;
     body: T;

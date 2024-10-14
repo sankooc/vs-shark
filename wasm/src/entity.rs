@@ -4,7 +4,7 @@ use core::{
     },
     specs::http::HTTP,
 };
-use std::cell::{Ref, RefCell};
+use std::cell::Ref;
 
 use js_sys::Uint8Array;
 // use js_sys::Uint8Array;
@@ -18,7 +18,7 @@ pub struct Field {
     pub start: usize,
     pub size: usize,
     summary: String,
-    children: RefCell<Vec<core::common::base::Field>>,
+    children: Vec<core::common::base::Field>,
     data: Uint8Array,
 }
 impl Field {
@@ -47,7 +47,7 @@ impl Field {
     #[wasm_bindgen(getter)]
     pub fn children(&self) -> Vec<Field> {
         let mut children = Vec::new();
-        for c in self.children.borrow().iter() {
+        for c in self.children.iter() {
             children.push(Field::convert(c));
         }
         children

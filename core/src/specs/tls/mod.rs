@@ -191,51 +191,10 @@ pub enum TLSRecorMessage {
 
 pub struct TLSVisitor;
 
-// fn proc(frame: &Frame, reader: &Reader, packet: &PacketContext<TLS>, p: &mut TLS, ep: &mut Endpoint) -> Result<()> {
-//     loop {
-//         let left_size = reader.left()?;
-//         if left_size == 0 {
-//             //TODO FLUSH SEGMENT
-//             break;
-//         }
-//         let (is_tls, _len) = TLS::check(reader)?;
-//         if is_tls {
-//             if left_size >= _len + 5 {
-//                 let item = packet.build_packet(reader, TLSRecord::create, None, None)?;
-//                 let record = item.clone();
-                
-//                 match &record.borrow().message {
-//                     TLSRecorMessage::HANDSHAKE(hs) => {
-//                         for _hs in hs.as_ref().borrow().items.iter() {
-//                             let _msg = &_hs.as_ref().borrow().msg;
-//                             match _msg {
-//                                 HandshakeType::Certificate(_) |  HandshakeType::ClientHello(_) | HandshakeType::ServerHello(_) => {
-//                                     ep.handshake.push(_msg.clone());
-//                                 }
-//                                 _ => {}
-//                             }
-//                         }
-//                     },
-//                     _ => {}
-//                 };
-//                 p.records.push(record);
-//             } else {
-//                 let left_data = reader.slice(left_size);
-//                 // ep.add_segment(frame.summary.index, TCPPAYLOAD::TLS, left_data);
-//                 break;
-//             }
-//         } else {
-//             // info!("frame: {} left {}", frame.summary.borrow().index, reader.left()?);
-//             break;
-//         }
-//     }
-//     Ok(())
-// }
 impl TLSVisitor {
     pub fn visit(&self, reader: &Reader) -> Result<ProtocolData> {
         let packet: PacketContext<TLS> = Frame::create_packet();
         let mut p: std::cell::RefMut<'_, TLS> = packet.get().borrow_mut();
-
         loop {
             let left_size = reader.left()?;
             if left_size == 0 {
@@ -244,57 +203,8 @@ impl TLSVisitor {
             }
             let item = packet.build_packet(reader, TLSRecord::create, None, None)?;
             let record = item.clone();
-            
-            // match &record.borrow().message {
-            //     TLSRecorMessage::HANDSHAKE(hs) => {
-            //         for _hs in hs.as_ref().borrow().items.iter() {
-            //             let _msg = &_hs.as_ref().borrow().msg;
-            //             match _msg {
-            //                 HandshakeType::Certificate(_) |  HandshakeType::ClientHello(_) | HandshakeType::ServerHello(_) => {
-            //                     // ep.handshake.push(_msg.clone());
-            //                 }
-            //                 _ => {}
-            //             }
-            //         }
-            //     },
-            //     _ => {}
-            // };
             p.records.push(record);
-
         }
-        // // let mut ep = frame.get_tcp_info(true, ctx);
-        // let (key, arch) = frame.get_tcp_map_key();
-        // let _map = &mut ctx.conversation_map;
-        // let mut conn = _map.get(&key).unwrap().borrow_mut();
-        // let conn_type = conn.connec_type.clone();
-        // let mut ep = conn.get_endpoint(arch);
-        // // end
-        // let _len = reader.left()?;
-        // let _reader = reader;
-        // match conn_type {
-        //     TCPPAYLOAD::TLS => {
-        //         let head = ep.get_segment()?;
-        //         let seg_length = head.len();
-        //         let (_, len) = TLS::_check(&head[0..5])?;
-        //         let data = reader.slice(_len);
-        //         if len + 5 > seg_length + _len {
-        //             // ep.add_segment(index, TCPPAYLOAD::TLS, data);
-        //             let content = format!("TLS Segments {} bytes", _len);
-        //             packet._build(reader, reader.cursor(), _len, content);
-        //         } else {
-        //             let mut _data = ep.take_segment();
-        //             _data.extend_from_slice(data);
-        //             let _reader = Reader::new_raw(Rc::new(_data));
-        //             proc(frame, &_reader, &packet, p.deref_mut(), ep.deref_mut())?;
-        //         }
-        //         // return None;
-        //     }
-        //     TCPPAYLOAD::NONE => {
-        //         proc(frame, reader, &packet, p.deref_mut(), ep.deref_mut())?;
-        //     }
-        // }
-        // let _len = p.records.len();
-        
         drop(p);
         Ok(ProtocolData::TLS(packet))
     }

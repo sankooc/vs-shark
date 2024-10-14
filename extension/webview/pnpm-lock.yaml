@@ -71,8 +71,8 @@ devDependencies:
     specifier: ^9.0.0
     version: 9.0.0
   rs2ts:
-    specifier: ^0.0.3
-    version: 0.0.3
+    specifier: ^0.0.4
+    version: 0.0.4
   sass:
     specifier: ^1.77.6
     version: 1.77.6
@@ -3865,8 +3865,8 @@ packages:
       glob: 10.4.3
     dev: true
 
-  /rs2ts@0.0.3:
-    resolution: {integrity: sha512-96/wZVN6ICtwuEJ1LU9HDd7cLRtG1pzlv82nNtJZhM3ZhC1liucdamDau0oYTeoeqQGLtIVa0E9IhK+38smUlw==}
+  /rs2ts@0.0.4:
+    resolution: {integrity: sha512-1QjnPUAvElajzRNUJWT/YgC3JNYnxKb3J2+nh2mwNE9v83xiKFCVW4uID7zD5uzDRADhjMuHBdloEamMJduhvA==}
     hasBin: true
     dependencies:
       commander: 12.1.0

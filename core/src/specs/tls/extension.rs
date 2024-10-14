@@ -35,8 +35,6 @@ impl ServerName {
             }
             packet.build_format(reader, Reader::_read8, "Server Name Type: host_name ({})")?;
             let len = packet.build_format(reader, Reader::_read16_be, "Server Name Length: {}")?;
-            // if len + 3 != p.list_len{
-            // }
             let read_str = |reader: &Reader| reader.read_string(len as usize);
             let hostname = packet.build_format(reader, read_str, "Server Name: {}")?;
             // info!("host: {}", hostname);

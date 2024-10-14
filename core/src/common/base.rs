@@ -21,7 +21,7 @@ use enum_dispatch::enum_dispatch;
 use log::error;
 use std::{
     borrow::Borrow,
-    cell::{ Ref, RefCell},
+    cell::RefCell,
     collections::{HashMap, HashSet, VecDeque},
     net::{Ipv4Addr, Ipv6Addr},
     ops::{Deref, DerefMut},
@@ -42,7 +42,7 @@ pub struct Field {
     pub size: usize,
     pub summary: String,
     pub data: Rc<Vec<u8>>,
-    pub children: RefCell<Vec<Field>>,
+    pub children: Vec<Field>,
 }
 impl Field {
     pub fn new(start: usize, size: usize, data: Rc<Vec<u8>>, summary: String) -> Field {
@@ -51,7 +51,7 @@ impl Field {
             size,
             data,
             summary,
-            children: RefCell::new(Vec::new()),
+            children: Vec::new(),
         }
     }
     pub fn new2(summary: String, data: Rc<Vec<u8>>, vs: Vec<Field>) -> Field {
@@ -60,7 +60,7 @@ impl Field {
             size: 0,
             data,
             summary,
-            children: RefCell::new(vs),
+            children: vs,
         }
     }
     pub fn new3(summary: String) -> Field {
@@ -69,7 +69,7 @@ impl Field {
             size: 0,
             data: Rc::new(Vec::new()),
             summary,
-            children: RefCell::new(Vec::new()),
+            children: Vec::new(),
         }
     }
 }
@@ -79,19 +79,12 @@ impl Field {
         self.summary.clone()
     }
 
-    pub fn children(&self) -> Ref<Vec<Field>> {
-        let ch: Ref<Vec<Field>> = self.children.borrow();
-        ch
-        // let mut children = Vec::new();
-        // for c in ch.iter() {
-        //     children.push(c.clone());
-        // }
-        // children
+    pub fn children(&self) -> &[Field] {
+        &self.children
     }
 }
 pub fn date_str(ts: u64) -> String {
     let d = UNIX_EPOCH + Duration::from_micros(ts);
-    // let dt: DateTime<Utc> = d.clone().into();
     let datetime = DateTime::<Utc>::from(d);
     datetime.format("%Y-%m-%d %H:%M:%S").to_string()
 }
@@ -106,11 +99,10 @@ pub trait Element {
 
 pub trait Visitor {
     fn visit(&self, frame: &mut Frame, ctx: &mut Context, reader: &Reader) -> Result<(ProtocolData, &'static str)>;
-    // fn visit(&self, frame: &Frame, reader: &Reader) -> Result<(ProtocolData, &'static str)>;
 }
 
 pub trait FieldBuilder<T> {
-    fn build(&self, t: &T) -> Field;
+    fn build(&self, t: &T) -> Option<Field>;
     fn data(&self) -> Rc<Vec<u8>>;
 }
 
@@ -142,7 +134,9 @@ impl<T> PacketContext<T> {
         let t: &T = &self.get().borrow();
         let mut rs: Vec<Field> = Vec::new();
         for pos in self.fields.borrow().iter() {
-            rs.push(pos.build(t));
+            if let Some(_t) = pos.build(t) {
+                rs.push(_t);
+            }
         }
         rs
     }
@@ -185,6 +179,9 @@ where
 
     pub fn _build_lazy(&self, reader: &Reader, start: usize, size: usize, render: fn(&T) -> String) {
         self.fields.borrow_mut().push(Box::new(StringPosition { start, size, data: reader.get_raw(), render }));
+    }
+    pub fn _build_intern_lazy(&self, render: fn(&T) -> Option<Field>) {
+        self.fields.borrow_mut().push(Box::new(PhantomBuilder { render }));
     }
 
     pub fn build_skip(&self, reader: &Reader, size: usize) {
@@ -267,6 +264,19 @@ where
     }
 }
 
+pub struct PhantomBuilder<T> {
+    pub render: fn(&T) -> Option<Field>,
+
+}
+impl<T> FieldBuilder<T> for PhantomBuilder<T> {
+    fn build(&self, t: &T) -> Option<Field> {
+        (self.render)(t)
+    }
+
+    fn data(&self) -> Rc<Vec<u8>> {
+        Rc::new(Vec::new())
+    }
+}
 pub struct Position<T> {
     pub start: usize,
     pub size: usize,
@@ -274,8 +284,8 @@ pub struct Position<T> {
     pub render: fn(usize, usize, &T) -> Field,
 }
 impl<T> FieldBuilder<T> for Position<T> {
-    fn build(&self, t: &T) -> Field {
-        (self.render)(self.start, self.size, t)
+    fn build(&self, t: &T) -> Option<Field> {
+        Some((self.render)(self.start, self.size, t))
     }
 
     fn data(&self) -> Rc<Vec<u8>> {
@@ -297,15 +307,15 @@ impl<T, K> FieldBuilder<T> for FieldPosition<K>
 where
     K: PacketBuilder,
 {
-    fn build(&self, _: &T) -> Field {
+    fn build(&self, _: &T) -> Option<Field> {
         let summary = match self.head.clone() {
             Some(t) => t,
             _ => self.packet.get().borrow().summary(),
         };
         let mut field = Field::new(self.start, self.size, self.data.clone(), summary);
         let fields = self.packet.get_fields();
-        field.children = RefCell::new(fields);
-        field
+        field.children = fields;
+        Some(field)
     }
 
     fn data(&self) -> Rc<Vec<u8>> {
@@ -320,9 +330,9 @@ pub struct StringPosition<T> {
     pub render: fn(&T) -> String,
 }
 impl<T> FieldBuilder<T> for StringPosition<T> {
-    fn build(&self, t: &T) -> Field {
+    fn build(&self, t: &T) -> Option<Field> {
         let summary = (self.render)(t);
-        Field::new(self.start, self.size, self.data.clone(), summary)
+        Some(Field::new(self.start, self.size, self.data.clone(), summary))
     }
 
     fn data(&self) -> Rc<Vec<u8>> {
@@ -337,8 +347,8 @@ pub struct TXTPosition {
     content: String,
 }
 impl<T> FieldBuilder<T> for TXTPosition {
-    fn build(&self, _: &T) -> Field {
-        Field::new(self.start, self.size, self.data.clone(), self.content.clone())
+    fn build(&self, _: &T) -> Option<Field> {
+        Some(Field::new(self.start, self.size, self.data.clone(), self.content.clone()))
     }
     fn data(&self) -> Rc<Vec<u8>> {
         self.data.clone()
@@ -361,8 +371,6 @@ pub enum TCPDetail {
     RETRANSMISSION,
     DUMP,
     RESET,
-    // SEGMENT,
-    // SEGMENTS(Vec<Segment>),
     NONE,
 }
 
@@ -374,13 +382,6 @@ pub struct Segment {
     pub ts: u64,
     // pub range: Range<usize>,
 }
-// impl Display for Segment {
-//     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-//         // let len = self.data.len();
-//         // f.write_fmt(format_args!("[Frame: {}, payload: {} bytes]", self.index, len))
-//         f.write_fmt(format_args!("[Frame: {}, payload: bytes]", self.index))
-//     }
-// }
 
 #[derive(Default)]
 pub enum TCPPAYLOAD {
