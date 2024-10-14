@@ -1,7 +1,6 @@
 import React, { MutableRefObject, useRef, useState } from 'react';
 import { Menubar } from 'primereact/menubar';
 import { Avatar } from 'primereact/avatar';
-import { InputText } from 'primereact/inputtext';
 import { ComLog, ComMessage } from '../common';
 import { PCAPClient } from '../client';
 import init from 'rshark';

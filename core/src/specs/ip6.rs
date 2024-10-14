@@ -54,8 +54,8 @@ impl IPPacket for IPv6 {
     fn target_ip_address(&self) -> String {
         self.target_ip.as_ref().unwrap().to_string()
     }
-    fn payload_len(&self) -> u16 {
-        self.total_len
+    fn payload_len(&self) -> Option<u16> {
+        Some(self.total_len)
     }
 }
 

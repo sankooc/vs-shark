@@ -3,7 +3,6 @@ use crate::common::FileType;
 use crate::common::io::{AReader, SliceReader};
 use anyhow::Result;
 
-
 pub fn parse(data: &[u8]) -> Result<Instance> {
     let mut instance = Instance::new(FileType::PCAP);
     let reader = SliceReader::new(data);
@@ -32,5 +31,6 @@ pub fn parse(data: &[u8]) -> Result<Instance> {
             instance.create(raw.to_vec(), ts, captured, origin)
         }));
     }
+    instance.flush();
     Ok(instance)
 }

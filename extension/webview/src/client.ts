@@ -106,6 +106,7 @@ export abstract class PCAPClient {
   ready: boolean = false;
   data!: Uint8Array;
   ctx!: WContext;
+  cost: number;
   _cache: any = {};
   initData(data: Uint8Array) {
     this.data = data;
@@ -121,7 +122,9 @@ export abstract class PCAPClient {
   init(): void {
     if (!this.ctx && this.data) {
       try {
+        const _start = Date.now();
         this.ctx = load(this.data as Uint8Array);
+        this.cost = Date.now() - _start;
         this._info();
       } catch (e) {
         this.emitMessage(new ComMessage('_error', "failed to open file"));
@@ -131,6 +134,7 @@ export abstract class PCAPClient {
   getInfo(): IContextInfo {
     if (!this._cache.info) {
       this._cache.info = JSON.parse(this.ctx.info());
+      this._cache.info.cost = this.cost;
     }
     return this._cache.info;
   }
@@ -226,25 +230,15 @@ export abstract class PCAPClient {
   _fields(index: number): void {
     this.emitMessage(new ComMessage('_fields', this.getFields(index)));
   }
-  http(): IHttp[] {
-    const rs = this.ctx.select_http_items(0, 1000, []).map(f => {
-      const _rs = pick(f, 'req', 'res', 'status', 'method');
-      return {
-        status: _rs.status,
-        method: _rs.method,
-        ttr: Number(f.ttr),
-        req: pick(_rs.req, 'host', 'port', 'head', 'header', 'content_len', 'content'),
-        res: pick(_rs.res, 'host', 'port', 'head', 'header', 'content_len', 'content'),
-      }
-    });
-
-    return rs;
-  }
   _http(): void {
     if (!this._cache.http) {
-      this._cache.http = this.http();
+      this._cache.http = this.ctx.select_http_items(0, 1000, []);
     }
     this.emitMessage(new ComMessage('_http', this._cache.http));
+  }
+  http_content(body) {
+    const content = this.ctx.select_http_content(body[0], BigInt(body[1]));
+    this.emitMessage(new ComMessage('_http-content', content));
   }
   _tls(): void {
     if (this.ready && this.ctx) {
@@ -304,6 +298,9 @@ export abstract class PCAPClient {
           break;
         case 'conversation':
           this._conversation();
+          break;
+        case 'http-content':
+          this.http_content(body);
           break;
         default:
           console.log('unknown type', msg.type);

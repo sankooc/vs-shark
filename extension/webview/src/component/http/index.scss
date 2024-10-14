@@ -54,7 +54,40 @@
 
 
 #http-page {
+    td {
+        padding: 0 5px;
+        border-right: 1px solid $c-fg-0;
+        // &.tree-head{
+        //     display: flex;
+        //     align-items: center;
+        //     i {
+        //         font-size: 1.2rem;
+        //         color: $c-fg-0;
+        //     }
+        // }
+        // text-align: center;
+    }
     tr {
+        
+        &[aria-level="2"] {
+            button{
+                padding: 0;
+                width: 0 !important;
+                margin: 0 !important;
+            } 
+        }
+        color: $c-fg-0;
+        background-color: $c-aqua;
+        &.type-request{
+            color: $c-fg-0;
+            background-color: $c-blue;
+            cursor: pointer;
+        }
+        &.type-response{
+            color: $c-fg-0;
+            background-color: $c-green;
+            cursor: pointer;
+        }
         &.status-401, &.status-400 {
             background-color: $t-errdata !important;
             color: $t-errdata-font !important;
@@ -70,6 +103,7 @@
     }
     .http-viewer{
         border-top: 1px solid rgba(255, 255, 255, 0.12);
+        height: 30vh;
         .http-header-view{
             width: 44vw;
             height: 100%;
@@ -80,6 +114,10 @@
             .p-tree .p-tree-container .p-treenode .p-treenode-content .p-tree-toggler{
                 height: 1.2rem;
             }
+            .p-tree .p-tree-container .p-treenode{
+                border-left: 1px solid rgba(255, 255, 255, 0.12);
+            //     border-bottom: 1px solid $c-fg-0;
+            }
             div.http-msg-head{
                 &.active {
                     border: 1px solid;
@@ -87,12 +125,15 @@
                 cursor: pointer;
             }
         }
-        .http-body-view{
+        .http-body-view {
             border-left: 1px solid rgba(255, 255, 255, 0.12);
             padding: 10px;
             width: 44vw;
             height: 100%;
         }
+    }
+    .p-tabview-panels{
+        overflow: auto;
     }
 }
 .http-content{
@@ -100,5 +141,7 @@
     max-height: 100%;
     overflow-y: auto;
     overflow-x: hidden;
-
+    img {
+        width: 100%;
+    }
 }

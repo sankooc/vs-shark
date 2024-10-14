@@ -7,6 +7,23 @@ $table-bk: #212529;
 $background: #1d2021;
 $foreground: #ebdbb2;
 
+$c-fg-0: #fbf1c7;
+
+$c-blue: #458588;
+$c-green: #98971a;
+$c-red: #cc241d;
+$c-aqua: #689d6a;
+$c-purple: #b16286;
+$c-yellow: #d79921;
+
+$w-blue: #83a598;
+$w-green: #b8bb26;
+$w-red: #fb4934;
+$w-aqua: #8ec07c;
+$w-purple: #d3869b;
+$w-yellow: #fabd2f;
+
+
 $t-select :#94d2bd;
 $t-select-font: #001219;
 
@@ -14,29 +31,29 @@ $t-def: var(--vscode-editor-background);
 $t-def-font: var(--vscode-editor-foreground);
 
 
-$t-tcp: #005f73;
-$t-tcp-font: #edf2f4;
+$t-tcp: $c-blue;
+$t-tcp-font: $c-fg-0;
 
 
 $t-errdata: #C96868;
 $t-errdata-font: #F5F5F5;
 
 
-$t-arp: #84a98c;
-$t-arp-font: #001219;
+$t-arp: $w-green;
+$t-arp-font: $c-fg-0;
 
 
-$t-http: #557C56;
-$t-http-font: #edf2f4;
+$t-http: $c-green;
+$t-http-font: $c-fg-0;
 
 $t-deactive: #8d99ae;
 $t-deactive-font: #001219;
 
-$t-tls: #cc6600;
-$t-tls-font: #001219;
+$t-tls: $c-aqua;
+$t-tls-font: $c-fg-0;
 
-$t-udp: #A0937D;
-$t-udp-font: #001219;
+$t-udp: $c-yellow;
+$t-udp-font: $c-fg-0;
 
 
 $t-dns: #C0D6E8;

@@ -36,7 +36,8 @@ export default function Head(props: Props) {
         { label: 'Frames', value: meta.frame_count, icon: 'pi pi-inbox'},
         { label: 'TCP', value: meta.tcp_count, icon: 'pi pi-inbox'},
         { label: 'DNS Record', value: meta.dns_count, icon: 'pi pi-inbox'},
-        { label: 'HTTP Conn', value: meta.http_count, icon: 'pi pi-inbox'}
+        { label: 'HTTP Conn', value: meta.http_count, icon: 'pi pi-inbox'},
+        { label: 'Cost', value: `${meta.cost}Ms`, icon: 'pi pi-inbox'}
     ];
 
     return (

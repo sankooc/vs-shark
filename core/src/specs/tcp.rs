@@ -8,7 +8,7 @@ use pcap_derive::Packet;
 
 use crate::{
     common::{
-        base::{Context, Frame, PacketBuilder, PacketContext, TCPDetail, TCPInfo, TCPPAYLOAD},
+        base::{Context, Frame, PacketBuilder, PacketContext, TCPDetail, TCPInfo},
         io::{AReader, Reader},
         Description, MultiBlock, PortPacket, Ref2, FIELDSTATUS,
     },
@@ -91,15 +91,6 @@ pub struct TCPOption {
     len: u8,
     pub data: TCPOptionKind,
 }
-
-// pub struct TCPOptionKindBlock {
-//     data: Vec<u8>,
-// }
-//
-// pub struct TCPTIMESTAMP {
-//     sender: u32,
-//     reply: u32,
-// }
 pub struct TCPUserTimeout;
 impl TCPUserTimeout {
     fn desc(data: u16) -> String {
@@ -133,6 +124,11 @@ impl TCPOption {
         format!("Kind: {} ({})", tcp_option_kind_mapper(self.kind as u16), self.kind)
     }
 }
+pub struct TCPSegment {
+    pub index: u32,
+    pub size: usize,
+}
+
 
 type TCPOptions = Ref2<MultiBlock<TCPOption>>;
 #[derive(Default, Packet)]
@@ -149,8 +145,10 @@ pub struct TCP {
     urgent: u16,
     pub options: Option<TCPOptions>,
     pub state: TCPState,
-    info: Option<TCPInfo>,
+    pub info: Option<TCPInfo>,
+    pub segment: Option<Ref2<Vec<TCPSegment>>>,
 }
+
 
 impl std::fmt::Display for TCP {
     fn fmt(&self, fmt: &mut Formatter) -> std::fmt::Result {
@@ -232,6 +230,15 @@ impl TCP {
     fn len_desc(&self) -> String {
         format!("{:04b} .... = Header Length: 32 bytes ({})", self.len, self.len)
     }
+    fn segments(&self) -> Option<PacketContext<Vec<TCPSegment>>>{
+        if let Some(refs) = &self.segment {
+            let packet = Frame::_create(refs.clone());
+            let p = packet.get().borrow();
+            drop(p);
+            return Some(packet);
+        }
+        None
+    }
 }
 pub struct TCPVisitor;
 
@@ -308,10 +315,7 @@ impl TCPVisitor {
 }
 
 impl crate::common::base::Visitor for TCPVisitor {
-    fn visit(&self, frame: &mut Frame, ctx: &mut Context, reader: &Reader) -> Result<(ProtocolData, &'static str)> {
-        let ip_packet = frame.get_ip();
-        let unwap = ip_packet.deref().borrow();
-        let total = unwap.payload_len();
+    fn visit(&self, frame: &mut Frame, _ctx: &mut Context, reader: &Reader) -> Result<(ProtocolData, &'static str)> {
         let _start = reader.left()? as u16;
         let packet: PacketContext<TCP> = Frame::create_packet();
         let mut p = packet.get().borrow_mut();
@@ -331,53 +335,20 @@ impl crate::common::base::Visitor for TCPVisitor {
         }
         let left_size = reader.left().unwrap_or(0) as u16;
         p.payload_len = left_size;
-        if _start > total {
-            p.payload_len = total + left_size - _start;
+        let ip_packet = frame.get_ip();
+        let unwap = ip_packet.deref().borrow();
+        let _total = unwap.payload_len();
+        if let Some(total) = _total {
+            if _start > total {
+                p.payload_len = total + left_size - _start;
+            }
         }
         if left_size > 0 {
             packet._build(reader, reader.cursor(), p.payload_len.into(), format!("TCP payload ({} bytes)", left_size));
         }
+        // packet.build_packet_lazy(format!(""), TCP::segments);
         frame.add_tcp(packet._clone_obj());
-        let _data = reader._slice(left_size as usize);
-        let info = frame.update_tcp(p.deref(), _data, ctx);
-        match &info.detail {
-            TCPDetail::NONE => {
-                p.info = Some(info);
-                drop(p);
-                handle(frame, ctx, reader, packet)
-            }
-            _ => {
-                p.info = Some(info);
-                drop(p);
-                Ok((ProtocolData::TCP(packet), "none"))
-            }
-        }
-    }
-}
-
-fn handle(frame: &mut Frame, ctx: &mut Context, reader: &Reader, packet: PacketContext<TCP>) -> Result<(ProtocolData, &'static str)> {
-    let _len = reader.left()?;
-    if _len < 1 {
-        return Ok((ProtocolData::TCP(packet), "none"));
-    }
-    // let ep = frame.get_tcp_info(true,ctx);
-    let (key, arch) = frame.get_tcp_map_key();
-    let _map = &mut ctx.conversation_map;
-    let mut conn = _map.get(&key).unwrap().borrow_mut();
-    let ep = conn.get_endpoint(arch);
-    // end
-    match &ep._seg_type {
-        TCPPAYLOAD::TLS => {
-            return Ok((ProtocolData::TCP(packet), "tls"));
-        }
-        TCPPAYLOAD::NONE => {
-            let (is_tls, _) = super::tls::TLS::check(reader)?;
-            if is_tls {
-                return Ok((ProtocolData::TCP(packet), "tls"));
-            } else if super::http::HTTPVisitor::check(reader) {
-                return Ok((ProtocolData::TCP(packet), "http"));
-            }
-            Ok((ProtocolData::TCP(packet), "none"))
-        }
+        drop(p);
+        Ok((ProtocolData::TCP(packet), "none"))
     }
 }

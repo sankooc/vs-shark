@@ -1,15 +1,15 @@
 use std::fmt::Formatter;
 use std::net::Ipv4Addr;
 
+use crate::common::FIELDSTATUS;
 use anyhow::{bail, Result};
 use pcap_derive::{Packet2, Visitor3, NINFO};
-use crate::common::FIELDSTATUS;
 
-use crate::{
-    common::{io::Reader, Description, IPPacket, TtypePacket},
-    common::base::{Frame, PacketBuilder, PacketContext, PacketOpt},
-};
 use crate::common::io::AReader;
+use crate::{
+    common::base::{Frame, PacketBuilder, PacketContext, PacketOpt},
+    common::{io::Reader, Description, IPPacket, TtypePacket},
+};
 
 use super::ProtocolData;
 
@@ -37,7 +37,7 @@ pub struct IPv4 {
     pub source_ip: Option<Ipv4Addr>,
     pub target_ip: Option<Ipv4Addr>,
     total_len: u16,
-    payload_len: u16,
+    payload_len: Option<u16>,
     identification: u16,
     flag: u16,
     ttl: u8,
@@ -73,10 +73,14 @@ impl IPv4 {
             reader.slice((ext * 4) as usize);
         }
         let _stop = reader.left()?;
-        if total_len < (_start - _stop) as u16 {
-            bail!("error_len");
+        if total_len == 0 {
+            p.payload_len = None;
+        } else {
+            if total_len < (_start - _stop) as u16 {
+                bail!("error_len");
+            }
+            p.payload_len = Some(total_len - (_start - _stop) as u16);
         }
-        p.payload_len = total_len - (_start - _stop) as u16;
         Ok(())
     }
 }
@@ -88,7 +92,7 @@ impl IPPacket for IPv4 {
     fn target_ip_address(&self) -> String {
         self.target_ip.as_ref().unwrap().to_string()
     }
-    fn payload_len(&self) -> u16 {
+    fn payload_len(&self) -> Option<u16> {
         self.payload_len
     }
 }

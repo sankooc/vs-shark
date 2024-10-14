@@ -19,7 +19,7 @@ function Overview(props: Props) {
   return (<div className="w-full overview">
     {props.metadata && <Head data={props.metadata}/>}
     {props.framedata && <Frame data={props.framedata}/>}
-    {props.httpdata && <Http data={props.httpdata}/>}
+    {props.httpdata  && <Http data={props.httpdata} meta={props.metadata}/>}
   </div>);
 }
 

@@ -1,14 +1,11 @@
-use std::collections::{HashMap, HashSet};
+use std::{collections::{HashMap, HashSet}, rc::Rc};
 
 use serde::Serialize;
 
-use crate::specs::http::{Request, Response, HTTP};
+use crate::specs::http::{HttpType, Request, Response, HTTP};
 
 use super::Ref2;
 
-pub struct HttpMessage {
-  
-}
 #[derive(Default)]
 pub struct TCPConnectInfo{
     pub count: u16,
@@ -52,6 +49,52 @@ impl HttpRequestBuilder {
   }
   
 }
+
+
+#[derive(Serialize)]
+pub struct Connect<T> {
+  pub index: usize,
+  pub source: String,
+  pub target: String,
+  pub list: Vec<T>,
+}
+#[derive(Default, Serialize)]
+pub struct HttpMessage {
+  pub ts: u64,
+  head: String,
+  headers: Vec<String>,
+  method: String,
+  _type: Option<String>,
+  path: String,
+  len: usize,
+  #[serde(skip_serializing)]
+  pub body: Option<Rc<Vec<u8>>>,
+}
+
+impl HttpMessage {
+  pub fn new (ts: u64, _msg:&HTTP) -> Self {
+    let head = _msg.head();
+    let headers = _msg.header();
+    let body = _msg.content.clone();
+    let _type = _msg.content_type.clone();
+    let len = _msg.len;
+    let (method, path) = match _msg._type() {
+      HttpType::REQUEST(req) => {
+        (req.method.clone(), req.path.clone())
+      },
+      HttpType::RESPONSE(res) => {
+        (res.code.clone(), res.status.clone())
+      },
+      HttpType::NONE => ("".into(), "".into())
+    };
+
+    Self{ ts, head, headers, body, _type, method, path, len}
+  }
+  // pub fn new (index: u32, source: String, target: String, head:String, headers: Vec<String>, body: Option<Rc<Vec<u8>>>) -> Self {
+  //   Self{index, source, target, head, headers, body}
+  // }
+}
+
 #[derive(Serialize)]
 pub struct StatisticV {
   http_method: Vec<Case>,
@@ -158,6 +201,7 @@ pub struct PCAPInfo{
   pub dns_count: usize,
   pub tcp_count: usize,
   pub tls_count: usize,
+  pub cost: usize,
 }
 
 impl PCAPInfo {

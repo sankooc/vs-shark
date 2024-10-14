@@ -1,9 +1,9 @@
 pub mod ber;
 pub mod extension;
 pub mod handshake;
-use std::{fmt::Formatter, ops::DerefMut, rc::Rc};
+use std::fmt::Formatter;
 
-use crate::common::{base::Context, io::AReader, Ref2, FIELDSTATUS};
+use crate::common::{ io::AReader, Ref2, FIELDSTATUS};
 use anyhow::Result;
 use handshake::{HandshakeProtocol, HandshakeType};
 use pcap_derive::{Packet, Packet2};
@@ -12,12 +12,12 @@ use super::ProtocolData;
 use crate::{
     common::io::Reader,
     constants::{tls_content_type_mapper, tls_min_type_mapper},
-    common::base::{Endpoint, Frame, PacketBuilder, PacketContext, PacketOpt, Visitor, TCPPAYLOAD},
+    common::base::{ Frame, PacketBuilder, PacketContext, PacketOpt},
 };
 
 #[derive(Default, Packet)]
 pub struct TLS {
-    records: Vec<Ref2<TLSRecord>>,
+    pub records: Vec<Ref2<TLSRecord>>,
 }
 impl crate::common::base::InfoPacket for TLS {
     fn info(&self) -> String {
@@ -39,7 +39,7 @@ pub struct TLSRecord {
     _type: u8,
     min: u8,
     len: u16,
-    message: TLSRecorMessage,
+    pub message: TLSRecorMessage,
 }
 
 const TLS_CCS_DESC: &str = "Change Cipher Spec Message";
@@ -138,7 +138,7 @@ impl TLS {
 
 #[derive(Default, Packet2)]
 pub struct TLSHandshake {
-    items: Vec<Ref2<HandshakeProtocol>>,
+    pub items: Vec<Ref2<HandshakeProtocol>>,
 }
 impl TLSHandshake {
     fn _create(reader: &Reader, packet: &PacketContext<Self>, p: &mut std::cell::RefMut<Self>, opt: Option<PacketOpt>) -> Result<()> {
@@ -191,85 +191,21 @@ pub enum TLSRecorMessage {
 
 pub struct TLSVisitor;
 
-fn proc(frame: &Frame, reader: &Reader, packet: &PacketContext<TLS>, p: &mut TLS, ep: &mut Endpoint) -> Result<()> {
-    loop {
-        let left_size = reader.left()?;
-        if left_size == 0 {
-            //TODO FLUSH SEGMENT
-            break;
-        }
-        let (is_tls, _len) = TLS::check(reader)?;
-        if is_tls {
-            if left_size >= _len + 5 {
-                let item = packet.build_packet(reader, TLSRecord::create, None, None)?;
-                let record = item.clone();
-                
-                match &record.borrow().message {
-                    TLSRecorMessage::HANDSHAKE(hs) => {
-                        for _hs in hs.as_ref().borrow().items.iter() {
-                            let _msg = &_hs.as_ref().borrow().msg;
-                            match _msg {
-                                HandshakeType::Certificate(_) |  HandshakeType::ClientHello(_) | HandshakeType::ServerHello(_) => {
-                                    ep.handshake.push(_msg.clone());
-                                }
-                                _ => {}
-                            }
-                        }
-                    },
-                    _ => {}
-                };
-                p.records.push(record);
-            } else {
-                let left_data = reader.slice(left_size);
-                ep.add_segment(frame.summary.index, TCPPAYLOAD::TLS, left_data);
+impl TLSVisitor {
+    pub fn visit(&self, reader: &Reader) -> Result<ProtocolData> {
+        let packet: PacketContext<TLS> = Frame::create_packet();
+        let mut p: std::cell::RefMut<'_, TLS> = packet.get().borrow_mut();
+        loop {
+            let left_size = reader.left()?;
+            if left_size == 0 {
+                //TODO FLUSH SEGMENT
                 break;
             }
-        } else {
-            // info!("frame: {} left {}", frame.summary.borrow().index, reader.left()?);
-            break;
+            let item = packet.build_packet(reader, TLSRecord::create, None, None)?;
+            let record = item.clone();
+            p.records.push(record);
         }
-    }
-    Ok(())
-}
-impl Visitor for TLSVisitor {
-    fn visit(&self, frame: &mut Frame, ctx: &mut Context, reader: &Reader) -> Result<(ProtocolData, &'static str)> {
-        let packet: PacketContext<TLS> = Frame::create_packet();
-        let index = frame.summary.index;
-        let mut p = packet.get().borrow_mut();
-
-        // let mut ep = frame.get_tcp_info(true, ctx);
-        let (key, arch) = frame.get_tcp_map_key();
-        let _map = &mut ctx.conversation_map;
-        let mut conn = _map.get(&key).unwrap().borrow_mut();
-        let mut ep = conn.get_endpoint(arch);
-        // end
-        let _len = reader.left()?;
-        let _reader = reader;
-        match ep._seg_type {
-            TCPPAYLOAD::TLS => {
-                let head = ep.get_segment()?;
-                let seg_length = head.len();
-                let (_, len) = TLS::_check(&head[0..5])?;
-                let data = reader.slice(_len);
-                if len + 5 > seg_length + _len {
-                    ep.add_segment(index, TCPPAYLOAD::TLS, data);
-                    let content = format!("TLS Segments {} bytes", _len);
-                    packet._build(reader, reader.cursor(), _len, content);
-                } else {
-                    let mut _data = ep.take_segment();
-                    _data.extend_from_slice(data);
-                    let _reader = Reader::new_raw(Rc::new(_data));
-                    proc(frame, &_reader, &packet, p.deref_mut(), ep.deref_mut())?;
-                }
-                // return None;
-            }
-            TCPPAYLOAD::NONE => {
-                proc(frame, reader, &packet, p.deref_mut(), ep.deref_mut())?;
-            }
-        }
-        let _len = p.records.len();
-        
         drop(p);
-        Ok((ProtocolData::TLS(packet), "none"))
+        Ok(ProtocolData::TLS(packet))
     }
 }

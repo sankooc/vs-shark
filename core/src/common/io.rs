@@ -1,4 +1,4 @@
-use std::{cell::Cell, rc::Rc, str::from_utf8};
+use std::{cell::Cell, cmp, rc::Rc, str::from_utf8};
 
 use anyhow::{bail, Result};
 
@@ -127,8 +127,14 @@ pub trait AReader:Clone {
     fn _get_data(&self) -> &[u8];
     fn cursor(&self) -> usize;
     fn _set(&self, cursor: usize);
-    fn _move(&self, len: usize) {
+    fn _move(&self, len: usize) -> bool {
+        let t = self._get_data().len();
+        let c = self.cursor();
+        if c + len > t {
+            return false;
+        }
         self._set(self.cursor() + len);
+        true
     }
     fn _back(&self, len: usize) {
         self._set(self.cursor() - len);
@@ -315,7 +321,8 @@ pub trait AReader:Clone {
     }
     fn left(&self) -> Result<usize> {
         if self._get_data().len() < self.cursor() {
-            bail!("outbound")
+            // bail!("outbound")
+            return Ok(0);
         }
         Ok(self._get_data().len() - self.cursor())
     }
@@ -370,6 +377,21 @@ pub trait AReader:Clone {
             return true;
         }
         false
+    }
+    fn try_read_enter(&self, limit: usize) -> Result<String> {
+        let end = self.left().unwrap();
+        if end <= 2 {
+            bail!("end of stream");
+        }
+        let _end = cmp::min(limit, end - 2);
+        for inx in 0.._end {
+            if self.enter_flag(inx) {
+                let rs = from_utf8(self.slice(inx))?;
+                self._move(2);
+                return Ok(rs.into());
+            }
+        }
+        bail!("cannot find cf")
     }
     fn read_enter(&self) -> Result<String> {
         let end = self.left().unwrap() - 2;
