@@ -91,15 +91,6 @@ pub struct TCPOption {
     len: u8,
     pub data: TCPOptionKind,
 }
-
-// pub struct TCPOptionKindBlock {
-//     data: Vec<u8>,
-// }
-//
-// pub struct TCPTIMESTAMP {
-//     sender: u32,
-//     reply: u32,
-// }
 pub struct TCPUserTimeout;
 impl TCPUserTimeout {
     fn desc(data: u16) -> String {
@@ -133,6 +124,11 @@ impl TCPOption {
         format!("Kind: {} ({})", tcp_option_kind_mapper(self.kind as u16), self.kind)
     }
 }
+pub struct TCPSegment {
+    pub index: u32,
+    pub size: usize,
+}
+
 
 type TCPOptions = Ref2<MultiBlock<TCPOption>>;
 #[derive(Default, Packet)]
@@ -150,7 +146,9 @@ pub struct TCP {
     pub options: Option<TCPOptions>,
     pub state: TCPState,
     pub info: Option<TCPInfo>,
+    pub segment: Option<Ref2<Vec<TCPSegment>>>,
 }
+
 
 impl std::fmt::Display for TCP {
     fn fmt(&self, fmt: &mut Formatter) -> std::fmt::Result {
@@ -231,6 +229,15 @@ impl TCP {
     }
     fn len_desc(&self) -> String {
         format!("{:04b} .... = Header Length: 32 bytes ({})", self.len, self.len)
+    }
+    fn segments(&self) -> Option<PacketContext<Vec<TCPSegment>>>{
+        if let Some(refs) = &self.segment {
+            let packet = Frame::_create(refs.clone());
+            let p = packet.get().borrow();
+            drop(p);
+            return Some(packet);
+        }
+        None
     }
 }
 pub struct TCPVisitor;
@@ -339,6 +346,7 @@ impl crate::common::base::Visitor for TCPVisitor {
         if left_size > 0 {
             packet._build(reader, reader.cursor(), p.payload_len.into(), format!("TCP payload ({} bytes)", left_size));
         }
+        // packet.build_packet_lazy(format!(""), TCP::segments);
         frame.add_tcp(packet._clone_obj());
         drop(p);
         Ok((ProtocolData::TCP(packet), "none"))

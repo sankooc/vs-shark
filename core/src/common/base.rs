@@ -180,9 +180,9 @@ where
     pub fn _build_lazy(&self, reader: &Reader, start: usize, size: usize, render: fn(&T) -> String) {
         self.fields.borrow_mut().push(Box::new(StringPosition { start, size, data: reader.get_raw(), render }));
     }
-    pub fn _build_intern_lazy(&self, render: fn(&T) -> Option<Field>) {
-        self.fields.borrow_mut().push(Box::new(PhantomBuilder { render }));
-    }
+    // pub fn build_packet_lazy<K>(&self, summary: String, render: fn(&T) -> Option<PacketContext<K>>) {
+    //     self.fields.borrow_mut().push(Box::new(PhantomBuilder { render, summary }));
+    // }
 
     pub fn build_skip(&self, reader: &Reader, size: usize) {
         let start = reader.cursor();
@@ -264,13 +264,21 @@ where
     }
 }
 
-pub struct PhantomBuilder<T> {
-    pub render: fn(&T) -> Option<Field>,
+pub struct PhantomBuilder<K, T> {
+    pub summary: String,
+    pub render: fn(&T) -> Option<PacketContext<K>>,
 
 }
-impl<T> FieldBuilder<T> for PhantomBuilder<T> {
+impl<K, T> FieldBuilder<T> for PhantomBuilder<K, T> {
     fn build(&self, t: &T) -> Option<Field> {
-        (self.render)(t)
+        let _packet = (self.render)(t);
+        if let Some(packet) = _packet {
+            let mut field = Field::new(0, 0, Rc::new(Vec::new()), self.summary.clone());
+            let fields = packet.get_fields();
+            field.children = fields;
+            return Some(field)
+        }
+        None
     }
 
     fn data(&self) -> Rc<Vec<u8>> {
@@ -373,6 +381,7 @@ pub enum TCPDetail {
     RESET,
     NONE,
 }
+
 
 pub struct Segment {
     pub index: u32,
@@ -960,8 +969,6 @@ impl Frame {
         return Reader::new_raw(self.data());
     }
     pub fn _create_packet<K>(val: Ref2<K>) -> PacketContext<K>
-    where
-        K: PacketBuilder,
     {
         PacketContext { val, fields: RefCell::new(Vec::new()) }
     }
@@ -972,9 +979,9 @@ impl Frame {
         let val = K::new();
         Frame::_create_packet(Rc::new(RefCell::new(val)))
     }
-    pub fn _create<K>(val: K) -> PacketContext<K> {
+    pub fn _create<K>(val: Ref2<K>) -> PacketContext<K> {
         PacketContext {
-            val: Rc::new(RefCell::new(val)),
+            val,
             fields: RefCell::new(Vec::new()),
         }
     }
