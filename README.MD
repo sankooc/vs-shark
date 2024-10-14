@@ -1,97 +1,112 @@
 <p align="center">
-  <img src="assets/icon2.png" width="200px" alt="Logo">
+  <img src="assets/icon2.png" width="200px" alt="VS-Shark Logo">
 </p>
+
 <p align="center">
   <a href="/">
-    <img src="https://img.shields.io/github/license/sankooc/vs-shark">
+    <img src="https://img.shields.io/github/license/sankooc/vs-shark" alt="License">
   </a>
   <a href="https://marketplace.visualstudio.com/items?itemName=sankooc.pcapviewer">
-    <img src="https://img.shields.io/visual-studio-marketplace/d/sankooc.pcapviewer">
+    <img src="https://img.shields.io/visual-studio-marketplace/i/sankooc.pcapviewer" alt="Install Count">
+  </a>
+  <a href="https://marketplace.visualstudio.com/items?itemName=sankooc.pcapviewer">
+    <img src="https://img.shields.io/visual-studio-marketplace/d/sankooc.pcapviewer" alt="Download Count">
+  </a>
+  <a href="https://marketplace.visualstudio.com/items?itemName=sankooc.pcapviewer">
+    <img src="https://img.shields.io/visual-studio-marketplace/last-updated/sankooc.pcapviewer" alt="Last Updated">
   </a>
   <a href="/">
-    <img src="https://img.shields.io/github/languages/count/sankooc/vs-shark">
+    <img src="https://img.shields.io/github/languages/count/sankooc/vs-shark" alt="Language Count">
   </a>
   <a href="/">
-    <img src="https://img.shields.io/visual-studio-marketplace/stars/sankooc.pcapviewer">
+    <img src="https://img.shields.io/visual-studio-marketplace/stars/sankooc.pcapviewer" alt="Marketplace Stars">
   </a>
   <a href="/">
-    <img src="https://img.shields.io/npm/unpacked-size/nshark">
-  </a>
-  <a href="/">
-    <img src="https://img.shields.io/github/stars/sankooc/vs-shark">
+    <img src="https://img.shields.io/npm/unpacked-size/nshark" alt="Unpacked Size">
   </a>
   <a>
-    <img src="https://visitor-badge.lithub.cc/badge?page_id=sankooc_vs-shark&left_color=gray&right_color=green">
+    <img src="https://visitor-badge.lithub.cc/badge?page_id=sankooc_vs-shark&left_color=gray&right_color=green" alt="Visitor Badge">
   </a>
 </p>
+
+---
 
 ## Overview
 
-**pcapviewer** is an open-source tool designed to analyze PCAP/PCAPNG (Packet Capture) files. It serves as a packet analysis tool, allowing users to inspect different layers of captured network traffic in detail, from Ethernet to Application layers. Its features are suitable for developers and network engineers who need quick, efficient access to packet-level data without the overhead of full-scale tools like Wireshark.
-
+**PcapViewer** is an open-source packet analysis tool designed to efficiently handle PCAP/PCAPNG (Packet Capture) files. It enables users to dive into network traffic and inspect various protocol layers, from the physical Ethernet layer to the application layer, providing a streamlined alternative to full-scale tools like Wireshark. With its lightweight nature, it’s ideal for developers, network administrators, and engineers who need quick insights into network packets.
 
 ---
+
+### Key Features
+
 - **Protocol Support**:
   - **File Formats**: PCAP, PCAPNG
   - **Link Layer**: Ethernet II, PPPoE, IEEE 1905.1a
   - **Network Layer**: IPv4, IPv6, ARP, ICMP, IGMP
   - **Transport Layer**: TCP, UDP
   - **Application Layer**: TLS, HTTP, DNS, DHCP, SSDP
-  
----
-### Online
-
-[PcapViewer](https://sankooc.github.io/pcap/)
 
 ---
 
-### Features
+### Online Demo
+
+Try out [PcapViewer](https://sankooc.github.io/pcap/) in your browser.
+
+---
+
+### Features in Action
 
 #### Demo
 
-<img src="https://i.ibb.co/x6NNTBp/cap2.gif" width="80%"/>
+<img src="https://i.ibb.co/x6NNTBp/cap2.gif" width="80%" alt="PcapViewer Demo"/>
 
+#### IP Packet Overview
 
-#### ip packet overview
+<img src="assets/overview.png" width="80%" alt="IP Packet Overview"/>
 
-<img src="assets/overview.png" width="80%"/>
+#### IP Packet List
 
-#### ip packet list
+<img src="assets/frame.png" width="80%" alt="IP Packet List"/>
 
-<img src="assets/frame.png" width="80%"/>
+#### TCP Conversations
 
-#### tcp conversations
+<img src="assets/conv.png" width="80%" alt="TCP Conversations"/>
 
-<img src="assets/conv.png" width="80%"/>
+#### HTTP Connection
 
-### http connection
+<img src="assets/http.png" width="80%" alt="HTTP Connection"/>
 
-<img src="assets/http.png" width="80%"/>
+#### DNS Response
 
-#### dns response
+<img src="assets/dns.png" width="80%" alt="DNS Response"/>
 
-<img src="assets/dns.png" width="80%"/>
+---
+
+### VS Code Extension
+
+Install the **PcapViewer** extension from the [VSCode Marketplace](https://marketplace.visualstudio.com/items?itemName=sankooc.pcapviewer) for seamless integration into your Visual Studio Code environment.
+
+---
+
+### ZED Extension
+
+> Coming soon...
+
+---
+
+### Contribution
+
+We welcome contributions! If you'd like to contribute, please check out the guidelines (coming soon) and open a pull request or issue.
+
+---
+
+### Contact
+
+For any inquiries or suggestions, feel free to reach out to us (details coming soon).
 
 ---
 
 
-### VSCode Extention
+### Conclusion
 
- Install from  [VSCode Marketplace](https://marketplace.visualstudio.com/items?itemName=sankooc.pcapviewer)
-
-### ZED Extention
-
-> TODO 
-
-### Contribution
-
-> TODO
-
-### Contact 
-
-> TODO
-
-### Changelog
-
-> TODO
-
+**PcapViewer** is your go-to lightweight tool for quick packet capture analysis. With its broad protocol support and efficient design, it’s perfect for everyday network troubleshooting and analysis tasks. Install the VS Code extension or try the online demo to get started today!
