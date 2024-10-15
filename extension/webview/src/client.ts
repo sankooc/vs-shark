@@ -1,66 +1,5 @@
 import { load, WContext, FrameInfo, Field } from 'rshark';
-import { pick } from 'lodash';
-import { ComLog, ComMessage, IContextInfo, OverviewSource, IOverviewData, IFrameInfo, Pagination, IResult, CField, HexV } from './common';
-
-
-const convert = (frames: FrameInfo[]): any => {
-  const scale = 24;
-  const start = frames[0].time;
-  const end = frames[frames.length - 1].time;
-  const duration = end - start;
-  const per = Math.floor(duration / scale);
-  const result: Statc[] = [];
-  let cur = start;
-  let limit = cur + per;
-  let rs = Statc.create(start, per);
-  const ps = new Set<string>();
-  const getArray = (num: number): Statc => {
-    if (num < limit) {
-      return rs;
-    }
-    result.push(rs);
-    rs = Statc.create(limit, per);
-    limit = limit + per;
-    return getArray(num);
-  }
-  let _total = 0;
-  for (const item of frames) {
-    const origin = item.len;
-    _total += item.len;
-    const it = getArray(item.time);
-    it.size += origin;
-    it.count += 1;
-    const pname = item.protocol?.toLowerCase() || '';
-    it.addLable(pname, item);
-    ps.add(pname);
-  }
-
-  const categories = ['total'];
-  const map: any = {
-    total: []
-  };
-  ps.forEach((c) => {
-    categories.push(c);
-    map[c] = [];
-  });
-  const labels = [];
-  const countlist = [];
-  for (const rs of result) {
-    const { size, count, stc, start } = rs;
-    labels.push(start);
-    countlist.push(count);
-    map.total.push(size)
-    ps.forEach((c) => {
-      map[c].push(stc.get(c) || 0);
-    });
-  }
-  const overview = new OverviewSource();
-  overview.legends = categories;
-  overview.labels = labels;
-  overview.counts = countlist;
-  overview.valMap = map;
-  return overview;
-}
+import { ComLog, ComMessage, IContextInfo, OverviewSource, IOverviewData, Pagination, IResult, CField, HexV } from './common';
 
 export class Statc {
   size: number = 0;
@@ -80,27 +19,6 @@ export class Statc {
     return item;
   }
 }
-class FieldImlp implements CField {
-  // start: number;
-  // size: number;
-  summary: string;
-  children?: CField[];
-  constructor(f: Field) {
-    // this.start = f.start;
-    // this.size = f.size;
-    this.summary = f.summary;
-    this.children = (f.children || []).map((_f) => new FieldImlp(_f));
-  }
-  // data(): Uint8Array {
-  //   return this.f.data;
-  // }
-};
-// const convertField = (f: Field) => {
-//   const start = f.start;
-//   const size = f.size;
-//   const summary = f.summary;
-//   const children = f.children;
-// }
 export abstract class PCAPClient {
   level: string = 'trace';
   ready: boolean = false;
@@ -159,15 +77,9 @@ export abstract class PCAPClient {
     if (!inx.length) {
       return null;
     }
-    const fields = this.ctx.get_fields(index);
-    let val: Field = fields[parseInt(inx[0])];
-    for (let i = 1; i < inx.length; i += 1) {
-      val = val.children[parseInt(inx[i])];
-      if (!val) {
-        return null;
-      }
-    }
-    return val;
+    const stack = inx.map((f) => {return parseInt(f)});
+    const ff = this.ctx.pick_field(index, new Uint16Array(stack));
+    return ff;
   }
   _hex(index: number, key: string): void {
     const field = this.getHex(index, key);
@@ -209,11 +121,11 @@ export abstract class PCAPClient {
       this.emitMessage(new ComMessage('_dns', this._cache.dns));
     }
   }
-  getFields(index: number): CField[] {
-    return this.ctx.get_fields(index).map((_f) => new FieldImlp(_f))
+  _pick_field(index: number, stack: number[]): void {
+
   }
   _fields(index: number): void {
-    this.emitMessage(new ComMessage('_fields', this.getFields(index)));
+    this.emitMessage(new ComMessage('_fields', this.ctx.get_fields(index)));
   }
   _http(): void {
     if (!this._cache.http) {

@@ -2,7 +2,7 @@
 mod unit {
     use log::info;
 
-    use core::{common::io::Reader, common::base::{Field, PacketContext}, specs::{self, ProtocolData}};
+    use core::{common::{base::PacketContext, concept::Field, io::Reader}, specs::{self, ProtocolData}};
     use std::{fs, rc::Rc, str::from_utf8};
     fn build_reader(name: &str) -> Vec<u8> {
       let fname = format!("./tests/bin/{}.in", name);

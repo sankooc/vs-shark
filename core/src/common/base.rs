@@ -29,55 +29,9 @@ use anyhow::{bail, Result};
 use crate::common::io::Reader;
 use crate::common::{FileInfo, FileType};
 
-use super::{concept::{Connect, Criteria, DNSRecord, FrameInfo, HttpMessage, ListResult, TCPConversation, TLSHS}, io::SliceReader};
+use super::{concept::{Connect, Criteria, DNSRecord, Field, FrameInfo, HttpMessage, ListResult, TCPConversation, TLSHS}, io::SliceReader};
 
-#[derive(Default, Clone)]
-pub struct Field {
-    pub start: usize,
-    pub size: usize,
-    pub summary: String,
-    pub data: Rc<Vec<u8>>,
-    pub children: Vec<Field>,
-}
-impl Field {
-    pub fn new(start: usize, size: usize, data: Rc<Vec<u8>>, summary: String) -> Field {
-        Field {
-            start,
-            size,
-            data,
-            summary,
-            children: Vec::new(),
-        }
-    }
-    pub fn new2(summary: String, data: Rc<Vec<u8>>, vs: Vec<Field>) -> Field {
-        Field {
-            start: 0,
-            size: 0,
-            data,
-            summary,
-            children: vs,
-        }
-    }
-    pub fn new3(summary: String) -> Field {
-        Field {
-            start: 0,
-            size: 0,
-            data: Rc::new(Vec::new()),
-            summary,
-            children: Vec::new(),
-        }
-    }
-}
 
-impl Field {
-    pub fn summary(&self) -> String {
-        self.summary.clone()
-    }
-
-    pub fn children(&self) -> &[Field] {
-        &self.children
-    }
-}
 pub fn date_str(ts: u64) -> String {
     let d = UNIX_EPOCH + Duration::from_micros(ts);
     let datetime = DateTime::<Utc>::from(d);
@@ -988,6 +942,10 @@ impl Frame {
             rs.push(Field::new2(e.summary(), self.data.clone(), vs));
         }
         rs
+    }
+    pub fn get_fields_json(&self) -> core::result::Result<String, Error> {
+        let fields = self.get_fields();
+        serde_json::to_string(&fields)
     }
     pub fn data(&self) -> Rc<Vec<u8>> {
         self.data.clone()

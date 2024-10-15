@@ -1,14 +1,12 @@
-use core::common::concept::Criteria;
+use core::common::concept::{Criteria, Field};
 use std::collections::HashSet;
 
 use core::common::base::Instance;
 use core::entry::*;
 use std::ops::Deref;
 use js_sys::Uint8Array;
-// use serde_json::Error;
 use wasm_bindgen::prelude::*;
 
-use crate::entity::Field;
 
 
 
@@ -79,20 +77,6 @@ pub struct WContext {
 }
 
 
-// fn _convert(f_status: FIELDSTATUS) -> &'static str {
-//     match f_status {
-//         FIELDSTATUS::WARN => "deactive",
-//         FIELDSTATUS::ERROR => "errordata",
-//         _ => "info"
-//     }
-// }
-
-// fn wrap_return_str(func: fn() -> Result<String, Error>) -> String {
-//     if let Ok(str) = func() {
-//         return str;
-//     }
-//     return "{}".into()
-// }
 #[wasm_bindgen]
 impl WContext {
     #[wasm_bindgen(constructor)]
@@ -121,7 +105,6 @@ impl WContext {
         }
         return "{}".into()
     }
-
     #[wasm_bindgen]
     pub fn select_http_count(&self, _: Vec<String>) -> usize {
         let ctx = self.ctx.context();
@@ -149,30 +132,45 @@ impl WContext {
         }
         set.into_iter().collect()
     }
-
-    // #[wasm_bindgen]
-    // pub fn get_frames(&mut self) -> Vec<FrameInfo> {
-    //     let info = self.ctx.context().get_info();
-    //     let start_ts = info.start_time;
-    //     let mut rs = Vec::new();
-    //     for frame in self.ctx.get_frames().iter() {
-    //         let item = WContext::_frame(frame, start_ts);
-    //         rs.push(item);
-    //     }
-    //     rs
-    // }
     #[wasm_bindgen]
-    pub fn get_fields(&self, index: u32) -> Vec<Field> {
+    pub fn get_fields(&self, index: u32) -> String {
         let binding = self.ctx.get_frames();
         let f = binding.get(index as usize).unwrap();
-        f.get_fields().iter().map(|f| Field::convert(&f)).collect()
+        if let Ok(str) = f.get_fields_json() {
+            return str;
+        }
+        return "[]".into()
+    }
+    #[wasm_bindgen]
+    pub fn pick_field(&self, index: u32, stack: Vec<u16>) -> super::entity::Field {
+        let binding = self.ctx.get_frames();
+        let f = binding.get(index as usize).unwrap();
+        let list = f.get_fields();
+
+        let mut _list:&[Field] = &list;
+        for index in 0..stack.len() {
+            let sel = *stack.get(index).unwrap();
+            if index >= stack.len() - 1 {
+                //
+                if let Some(_field) = _list.get(sel as usize) {
+                    return super::entity::Field::convert(_field);
+                }
+                break;
+            }
+            if let Some(_field) = _list.get(sel as usize) {
+                _list = _field.children();
+            } else {
+                break;
+            }
+        }
+        super::entity::Field::empty()
     }
     #[wasm_bindgen]
     pub fn select_dns_items(&self) -> String {
         if let Ok(str) = self.ctx.context().get_dns_record_json() {
             return str;
         }
-        return "{}".into()
+        return "[]".into()
     }
     #[wasm_bindgen]
     pub fn select_dns_count(&self) -> usize {
@@ -189,7 +187,7 @@ impl WContext {
         if let Ok(str) = self.ctx.context().get_conversation_json() {
             return str;
         }
-        return "{}".into()
+        return "[]".into()
     }
     #[wasm_bindgen]
     pub fn statistic(&self) -> String {
@@ -211,7 +209,7 @@ impl WContext {
         if let Ok(str) = self.ctx.context().get_tls_connection_json() {
             return str;
         }
-        return "{}".into()
+        return "[]".into()
     }
     #[wasm_bindgen]
     pub fn select_tls_count(&self) -> usize {

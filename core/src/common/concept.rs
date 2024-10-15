@@ -89,9 +89,6 @@ impl HttpMessage {
 
         Self { ts, head, headers, body, _type, method, path, len }
     }
-    // pub fn new (index: u32, source: String, target: String, head:String, headers: Vec<String>, body: Option<Rc<Vec<u8>>>) -> Self {
-    //   Self{index, source, target, head, headers, body}
-    // }
 }
 
 #[derive(Serialize)]
@@ -388,4 +385,56 @@ fn _convert(f_status: FIELDSTATUS) -> &'static str {
       FIELDSTATUS::ERROR => "errordata",
       _ => "info"
   }
+}
+
+
+#[derive(Default, Clone, Serialize)]
+pub struct Field {
+    #[serde(skip_serializing)]
+    pub start: usize,
+    #[serde(skip_serializing)]
+    pub size: usize,
+    pub summary: String,
+    #[serde(skip_serializing)]
+    pub data: Rc<Vec<u8>>,
+    pub children: Vec<Field>,
+}
+impl Field {
+    pub fn new(start: usize, size: usize, data: Rc<Vec<u8>>, summary: String) -> Field {
+        Field {
+            start,
+            size,
+            data,
+            summary,
+            children: Vec::new(),
+        }
+    }
+    pub fn new2(summary: String, data: Rc<Vec<u8>>, vs: Vec<Field>) -> Field {
+        Field {
+            start: 0,
+            size: 0,
+            data,
+            summary,
+            children: vs,
+        }
+    }
+    pub fn new3(summary: String) -> Field {
+        Field {
+            start: 0,
+            size: 0,
+            data: Rc::new(Vec::new()),
+            summary,
+            children: Vec::new(),
+        }
+    }
+}
+
+impl Field {
+    pub fn summary(&self) -> String {
+        self.summary.clone()
+    }
+
+    pub fn children(&self) -> &[Field] {
+        &self.children
+    }
 }

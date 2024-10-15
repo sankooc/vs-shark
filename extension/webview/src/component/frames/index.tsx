@@ -4,7 +4,7 @@ import {emitMessage, onMessage} from '../../connect';
 import DTable from '../dataTable2';
 import Stack from '../tree';
 import HexView from '../detail';
-import { IFrameInfo, IListResult } from "../../gen";
+import { IField, IFrameInfo, IListResult } from "../../gen";
 
 
 const PAGE_SIZE = 500;
@@ -12,7 +12,7 @@ function FrameList() {
   const [filter, setFilter] = useState<any[]>([]);
   const [options, setOptions] = useState<string[]>([]);
   const [{items, start, total}, setItems] = useState<IListResult<IFrameInfo>>({items: [], total: 1, start: 0 });
-  const [stacks, setStack] = useState<CField[]>([]);
+  const [stacks, setStack] = useState<IField[]>([]);
   const [index, setIndex] = useState(0);
   const [hex, setHex] = useState<HexV>(null);
   const ref = useRef(null);
@@ -24,12 +24,11 @@ function FrameList() {
       const { type, body, requestId } = e.data;
       switch (type) {
         case '_frame': {
-          // console.log(deserialize(body));
           setItems(deserialize(body));
           break;
         }
         case '_fields': {
-          setStack(body);
+          setStack(deserialize(body));
           break
         }
         case '_hex': {
