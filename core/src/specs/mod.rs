@@ -1,6 +1,7 @@
 use crate::{
-    common::io::Reader, common::base::{Context, Element, Field, Frame, PacketContext, Visitor}
+    common::io::Reader, common::base::{Context, Element, Frame, PacketContext, Visitor}
 };
+use crate::common::concept::Field;
 
 pub mod arp;
 pub mod dhcp;

@@ -3,10 +3,10 @@ import React, { useState, useEffect } from 'react';
 import { Tree, TreeNodeClickEvent } from 'primereact/tree';
 import { TreeNode } from 'primereact/treenode';
 import './app.css';
-import { CField } from '../../common';
+import { IField } from '../../gen';
 const className = 'vector';
 class StackProps {
-    items: CField[];
+    items: IField[];
     frame: number;
     onSelect: (frame: number, key: string, field:any) => void;
 }
@@ -15,7 +15,7 @@ export default function Stack(props:StackProps) {
     useEffect(() => {
         setStore({key: ''})
     }, [props.frame]);
-    const mapper = (it: CField, key: string): TreeNode => {
+    const mapper = (it: IField, key: string): TreeNode => {
         const rs = {
             key,
             label: it.summary,

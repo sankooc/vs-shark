@@ -1,15 +1,12 @@
-use std::borrow::Borrow;
-use std::cmp;
+use core::common::concept::{Criteria, Field};
 use std::collections::HashSet;
 
-use core::common::FIELDSTATUS;
-use core::common::base::{ Element, Frame, Instance};
+use core::common::base::Instance;
 use core::entry::*;
 use std::ops::Deref;
 use js_sys::Uint8Array;
 use wasm_bindgen::prelude::*;
 
-use crate::entity::{DNSRecord, Field, TCPConversation, WTLSHS};
 
 
 
@@ -80,14 +77,6 @@ pub struct WContext {
 }
 
 
-fn _convert(f_status: FIELDSTATUS) -> &'static str {
-    match f_status {
-        FIELDSTATUS::WARN => "deactive",
-        FIELDSTATUS::ERROR => "errordata",
-        _ => "info"
-    }
-}
-
 #[wasm_bindgen]
 impl WContext {
     #[wasm_bindgen(constructor)]
@@ -108,72 +97,14 @@ impl WContext {
         self.ctx.get_frames().len()
     }
     
-    fn _frame(frame: &Frame, start_ts: u64) -> FrameInfo {
-        let mut item = FrameInfo {
-            ..Default::default()
-        };
-        let sum = frame.summary.borrow();
-        item.index = sum.index;
-        item.time = (frame.ts - start_ts) as u32;
-        item.len = frame.capture_size;
-        match &sum.ip {
-            Some(ip) => {
-                let _ip = ip.as_ref().borrow();
-                item.source = _ip.source_ip_address();
-                item.dest = _ip.target_ip_address();
-            }
-            None => {}
-        }
-        item.protocol = sum.protocol.clone();
-        item.info = frame.info();
-        item.status = "info".into();
-        let reff = frame.eles.as_ref().borrow();
-        match reff.last() {
-            Some(ele) => {
-                item.status = _convert(ele.status()).into();
-            },
-            _ => {}
-        }
-        item.irtt = 1;
-        item
-    }
-
-    
     #[wasm_bindgen]
-    pub fn select_frame_items(&mut self, start: usize, size: usize, criteria: Vec<String>) -> FrameResult {
-        let info = self.ctx.context().get_info();
-        let start_ts = info.start_time;
-        let _fs = self.ctx.get_frames();
-        let mut total = 0;
-        let mut items = Vec::new();
-        if criteria.len() > 0 {
-            let mut left = size;
-            let _filters = HashSet::from_iter(criteria.iter().cloned());
-            for frame in _fs.iter() {
-                if frame.do_match(&_filters) {
-                    total += 1;
-                    if total > start && left > 0 {
-                        left -= 1;
-                        let item = WContext::_frame(frame, start_ts);
-                        items.push(item);
-                    }
-                }
-            }
-            return FrameResult::new(start, total, items);
+    pub fn select_frame_items(&mut self, start: usize, size: usize, criteria: Vec<String>) -> String {
+        let cri = Criteria{start, size, criteria};
+        if let Ok(str) = self.ctx.get_frames_json(cri) {
+            return str;
         }
-        total = _fs.len();
-        if total <= start {
-            return FrameResult::new(start, 0, Vec::new());
-        }
-        let end = cmp::min(start + size, total);
-        let _data = &_fs[start..end];
-        for frame in _data.iter() {
-            let item = WContext::_frame(frame, start_ts);
-            items.push(item);
-        }
-        FrameResult::new(start, total, items)
+        return "{}".into()
     }
-
     #[wasm_bindgen]
     pub fn select_http_count(&self, _: Vec<String>) -> usize {
         let ctx = self.ctx.context();
@@ -201,34 +132,45 @@ impl WContext {
         }
         set.into_iter().collect()
     }
-
     #[wasm_bindgen]
-    pub fn get_frames(&mut self) -> Vec<FrameInfo> {
-        let info = self.ctx.context().get_info();
-        let start_ts = info.start_time;
-        let mut rs = Vec::new();
-        for frame in self.ctx.get_frames().iter() {
-            let item = WContext::_frame(frame, start_ts);
-            rs.push(item);
-        }
-        rs
-    }
-    #[wasm_bindgen]
-    pub fn get_fields(&self, index: u32) -> Vec<Field> {
+    pub fn get_fields(&self, index: u32) -> String {
         let binding = self.ctx.get_frames();
         let f = binding.get(index as usize).unwrap();
-        f.get_fields().iter().map(|f| Field::convert(&f)).collect()
-    }
-
-    
-    #[wasm_bindgen]
-    pub fn select_dns_items(&self) -> Vec<DNSRecord> {
-        let mut rs = Vec::new();
-        for d in self.ctx.context().dns.iter() {
-            let aa = d.as_ref().borrow();
-            rs.push(DNSRecord::create(aa));
+        if let Ok(str) = f.get_fields_json() {
+            return str;
         }
-        rs
+        return "[]".into()
+    }
+    #[wasm_bindgen]
+    pub fn pick_field(&self, index: u32, stack: Vec<u16>) -> super::entity::Field {
+        let binding = self.ctx.get_frames();
+        let f = binding.get(index as usize).unwrap();
+        let list = f.get_fields();
+
+        let mut _list:&[Field] = &list;
+        for index in 0..stack.len() {
+            let sel = *stack.get(index).unwrap();
+            if index >= stack.len() - 1 {
+                //
+                if let Some(_field) = _list.get(sel as usize) {
+                    return super::entity::Field::convert(_field);
+                }
+                break;
+            }
+            if let Some(_field) = _list.get(sel as usize) {
+                _list = _field.children();
+            } else {
+                break;
+            }
+        }
+        super::entity::Field::empty()
+    }
+    #[wasm_bindgen]
+    pub fn select_dns_items(&self) -> String {
+        if let Ok(str) = self.ctx.context().get_dns_record_json() {
+            return str;
+        }
+        return "[]".into()
     }
     #[wasm_bindgen]
     pub fn select_dns_count(&self) -> usize {
@@ -241,18 +183,11 @@ impl WContext {
         cons.len()
     }
     #[wasm_bindgen]
-    pub fn select_conversation_items(&self) -> Vec<TCPConversation>{
-        let ct = self.ctx.context();
-        let cons = ct.conversations();
-        let mut rs = Vec::new();
-        for con in cons.values().into_iter() {
-            let reff = con.borrow();
-            let (source, target) = reff.sort(ct.statistic.ip.get_map());
-            let tcp = TCPConversation::new(source, target, ct);
-            rs.push(tcp);
-            drop(reff);
+    pub fn select_conversation_items(&self) -> String {
+        if let Ok(str) = self.ctx.context().get_conversation_json() {
+            return str;
         }
-        rs
+        return "[]".into()
     }
     #[wasm_bindgen]
     pub fn statistic(&self) -> String {
@@ -270,12 +205,15 @@ impl WContext {
         }
     }
     #[wasm_bindgen]
-    pub fn select_tls_items(&self) -> Vec<WTLSHS> {
-        self.ctx.context().tls_connection_info().iter().map(|f| WTLSHS::new(f.to_owned())).collect::<_>()
+    pub fn select_tls_items(&self) -> String {
+        if let Ok(str) = self.ctx.context().get_tls_connection_json() {
+            return str;
+        }
+        return "[]".into()
     }
     #[wasm_bindgen]
     pub fn select_tls_count(&self) -> usize {
-        self.ctx.context().tls_connection_info().len()
+        self.ctx.context().tls_connection_infos().len()
     }
 }
 

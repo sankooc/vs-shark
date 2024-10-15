@@ -17,7 +17,7 @@ function HexView(props: { data?: HexV }) {
   } else {
     return <div style={{padding: '10px'}}> No Data </div>
   }
-  return <TabView className="w-full detail-tab" style={{padding: 0}}>
+  return <TabView className="w-full h-full flex flex-column detail-tab" style={{padding: 0}}>
     <TabPanel header="Frame" style={{padding: 0}}>
       <Hex data={props.data}/>
     </TabPanel>

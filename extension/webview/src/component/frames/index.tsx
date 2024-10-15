@@ -1,30 +1,34 @@
 import React, { useEffect, useState, useRef } from "react";
-import { CField, ComMessage, HexV, IResult } from "../../common";
+import { CField, ComMessage, HexV, IResult, deserialize } from "../../common";
 import {emitMessage, onMessage} from '../../connect';
 import DTable from '../dataTable2';
 import Stack from '../tree';
 import HexView from '../detail';
+import { IField, IFrameInfo, IListResult } from "../../gen";
 
 
 const PAGE_SIZE = 500;
 function FrameList() {
   const [filter, setFilter] = useState<any[]>([]);
   const [options, setOptions] = useState<string[]>([]);
-  const [{items, page, size, total}, setItems] = useState<IResult>({items: [], page: 1, size: 0, total: 0});
-  const [stacks, setStack] = useState<CField[]>([]);
+  const [{items, start, total}, setItems] = useState<IListResult<IFrameInfo>>({items: [], total: 1, start: 0 });
+  const [stacks, setStack] = useState<IField[]>([]);
   const [index, setIndex] = useState(0);
   const [hex, setHex] = useState<HexV>(null);
   const ref = useRef(null);
+
+  const page = Math.floor(start / PAGE_SIZE) + 1;
+  const size = PAGE_SIZE;
   const mountHook = () => {
     const remv = onMessage('message', (e: any) => {
       const { type, body, requestId } = e.data;
       switch (type) {
         case '_frame': {
-          setItems(body);
+          setItems(deserialize(body));
           break;
         }
         case '_fields': {
-          setStack(body);
+          setStack(deserialize(body));
           break
         }
         case '_hex': {
@@ -56,12 +60,6 @@ function FrameList() {
     emitMessage(new ComMessage('fields', item.index - 1));
     setHex(new HexV(new Uint8Array()));
   };
-  // if(ref?.current) {
-  //   ref.current.scrollIntoView({
-  //     behavior: "smooth",
-  //     block: "start"
-  //   })
-  // }
   const getStyle = (item) => {
     switch(item.status){
       case 'deactive':

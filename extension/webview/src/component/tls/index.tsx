@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from "react";
 import DTable from '../dataTable';
-import { ComMessage, ITLS } from "../../common";
+import { ComMessage } from "../../common";
 import { emitMessage } from "../../connect";
 import './index.css';
+import { ITLSHandshake } from "../../common";
 
 
 class Props {
-  items: ITLS[]
+  items: ITLSHandshake[]
 }
 
 const suggest_ciphers = [
@@ -68,13 +69,13 @@ const TLSComponent = (props: Props) => {
     total: items.length
   };
   const columes = [
-    { body: (data: ITLS) => <span>{data.source + ' -> ' + data.target}</span>, header: 'connect' },
-    { body: (data: ITLS) => <span>{arr_to_string(data.server_name)}</span>, header: 'host' },
-    { body: (data: ITLS) => <span>{arr_to_string(data.support_version)}</span>, header: 'support_version' },
-    { body: (data: ITLS) => <span>{arr_to_string(data.support_negotiation)}</span>, header: 'support_neg', style: { width: '8vw' } },
+    { body: (data: ITLSHandshake) => <span>{data.source + ' -> ' + data.target}</span>, header: 'connect' },
+    { body: (data: ITLSHandshake) => <span>{arr_to_string(data.server_name)}</span>, header: 'host' },
+    { body: (data: ITLSHandshake) => <span>{arr_to_string(data.support_version)}</span>, header: 'support_version' },
+    { body: (data: ITLSHandshake) => <span>{arr_to_string(data.support_negotiation)}</span>, header: 'support_neg', style: { width: '8vw' } },
     { field: 'used_version', header: 'used_version', style: { width: '6vw' } },
     { field: 'used_cipher', header: 'used_cipher' },
-    { body: (data: ITLS) => <span>{arr_to_string(data.used_negotiation)}</span>, header: 'used_neg', style: { width: '5vw' } },
+    { body: (data: ITLSHandshake) => <span>{arr_to_string(data.used_negotiation)}</span>, header: 'used_neg', style: { width: '5vw' } },
   ]
   const _props = {
     cols: columes,

@@ -1,3 +1,5 @@
+import { ITLSHS } from "./gen";
+
 export function deserialize<T>(content: string): T {
     return JSON.parse(content)
 }
@@ -20,29 +22,29 @@ export class ComLog {
         this.msg = msg;
     }
 }
-export class CTreeItem {
-    key?: string;
-    label: string;
-    index?: [number, number];
-    children: CTreeItem[] = [];
-    constructor(label: string) {
-        this.label = label;
-    }
-    append(label: string): CTreeItem {
-        const item = new CTreeItem(label);
-        this.children.push(item);
-        return item;
-    }
-    addIndex(label: string, start: number, size: number): CTreeItem {
-        if (!size) {
-            return this.append(label);
-        }
-        const item = new CTreeItem(label);
-        item.index = [start, size];
-        this.children.push(item);
-        return item;
-    }
-}
+// export class CTreeItem {
+//     key?: string;
+//     label: string;
+//     index?: [number, number];
+//     children: CTreeItem[] = [];
+//     constructor(label: string) {
+//         this.label = label;
+//     }
+//     append(label: string): CTreeItem {
+//         const item = new CTreeItem(label);
+//         this.children.push(item);
+//         return item;
+//     }
+//     addIndex(label: string, start: number, size: number): CTreeItem {
+//         if (!size) {
+//             return this.append(label);
+//         }
+//         const item = new CTreeItem(label);
+//         item.index = [start, size];
+//         this.children.push(item);
+//         return item;
+//     }
+// }
 
 export class HexV {
     data: Uint8Array;
@@ -79,10 +81,6 @@ export interface IContextInfo {
     tcp_count: number;
     tls_count: number;
     cost: number,
-    // conversation: number,
-    // dns: number,
-    // http: number,
-    // statistic: IStatistic,
 }
 
 export interface ILineData {
@@ -106,18 +104,18 @@ export class Pagination {
     size: number;
     filter: string[];
 }
-export interface IFrameInfo {
-    no: number;
-    time: number;
-    source: string;
-    dest: string;
-    protocol: string;
-    // iRtt: number;
-    len: number;
-    // style: string;
-    info: string;
-    status: string;
-}
+// export interface IFrameInfo {
+//     no: number;
+//     time: number;
+//     source: string;
+//     dest: string;
+//     protocol: string;
+//     // iRtt: number;
+//     len: number;
+//     // style: string;
+//     info: string;
+//     status: string;
+// }
 
 export interface IResult {
     items: any[],
@@ -126,69 +124,12 @@ export interface IResult {
     size: number;
 }
 
-export interface IEndpoint {
-    ip: string,
-    port: number,
-    host: string,
-    count: number,
-    throughput: number,
-    retransmission: number,
-    invalid: number,
-}
-
-export interface IConversation {
-    source: IEndpoint,
-    target: IEndpoint,
-    // source_ip: string,
-    // source_port: number,
-    // source_host: string,
-    // target_ip: string,
-    // target_port: number,
-    // target_host: string,
-    // count: number,
-    // throughput: number,
-}
-
-export interface IDNSRecord {
-    name: string,
-    _type: string,
-    content: string,
-    class: string,
-    ttl: number,
-}
-
 export interface CField {
     summary: string,
     children?: CField[],
 }
 
-export interface IHttpEnity {
-    host: string,
-    port: number,
-    head: string,
-    header: string[],
-    content_len: number,
-    content: Uint8Array,
-}
-export interface IHttp {
+export interface ITLSHandshake extends ITLSHS {
     index?: number,
-    method: string,
-    status: string,
-    ttr: number,
-    req: IHttpEnity,
-    res: IHttpEnity,
-}
-
-export interface ITLS {
-    index?: number,
-    source: string,
-    target: string,
-    server_name: string[],
-    support_version: string[],
-    support_cipher: string[],
-    support_negotiation: string[],
-    used_version: string,
-    used_cipher: string,
-    used_negotiation: string[],
     status?: string,
 }

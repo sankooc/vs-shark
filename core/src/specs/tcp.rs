@@ -8,7 +8,7 @@ use pcap_derive::Packet;
 
 use crate::{
     common::{
-        base::{Context, Frame, PacketBuilder, PacketContext, TCPDetail, TCPInfo},
+        base::{Context, Frame, FrameRefer, PacketBuilder, PacketContext, TCPDetail, TCPInfo, TCPSegment, TCPSegments },
         io::{AReader, Reader},
         Description, MultiBlock, PortPacket, Ref2, FIELDSTATUS,
     },
@@ -124,11 +124,6 @@ impl TCPOption {
         format!("Kind: {} ({})", tcp_option_kind_mapper(self.kind as u16), self.kind)
     }
 }
-pub struct TCPSegment {
-    pub index: u32,
-    pub size: usize,
-}
-
 
 type TCPOptions = Ref2<MultiBlock<TCPOption>>;
 #[derive(Default, Packet)]
@@ -146,7 +141,7 @@ pub struct TCP {
     pub options: Option<TCPOptions>,
     pub state: TCPState,
     pub info: Option<TCPInfo>,
-    pub segment: Option<Ref2<Vec<TCPSegment>>>,
+    pub frame_refer: Ref2<FrameRefer>,
 }
 
 
@@ -230,10 +225,20 @@ impl TCP {
     fn len_desc(&self) -> String {
         format!("{:04b} .... = Header Length: 32 bytes ({})", self.len, self.len)
     }
-    fn segments(&self) -> Option<PacketContext<Vec<TCPSegment>>>{
-        if let Some(refs) = &self.segment {
+    fn segments(&self) -> Option<PacketContext<TCPSegments>>{
+        let reff = self.frame_refer.as_ref().borrow();
+        if let Some(refs) = &reff.segments {
             let packet = Frame::_create(refs.clone());
+
             let p = packet.get().borrow();
+            let mut _count = 0;
+            for item in p.items.iter() {
+                let TCPSegment {index, size} = item;
+                let txt = format!("[Frame: {}, payload: {}-{} ({} bytes)]", *index, _count, _count + *size -1, *size );
+                packet.build_txt(txt);
+                _count += *size;
+            }
+            packet.build_txt(format!("[Segment count: {}]", p.items.len()));
             drop(p);
             return Some(packet);
         }
@@ -319,6 +324,7 @@ impl crate::common::base::Visitor for TCPVisitor {
         let _start = reader.left()? as u16;
         let packet: PacketContext<TCP> = Frame::create_packet();
         let mut p = packet.get().borrow_mut();
+        p.frame_refer = frame.refer.clone();
         p.source_port = packet.build_lazy(reader, Reader::_read16_be, Description::source_port)?;
         p.target_port = packet.build_lazy(reader, Reader::_read16_be, Description::target_port)?;
         p.sequence = packet.build_lazy(reader, Reader::_read32_be, TCP::sequence_desc)?;
@@ -346,7 +352,7 @@ impl crate::common::base::Visitor for TCPVisitor {
         if left_size > 0 {
             packet._build(reader, reader.cursor(), p.payload_len.into(), format!("TCP payload ({} bytes)", left_size));
         }
-        // packet.build_packet_lazy(format!(""), TCP::segments);
+        packet.build_packet_lazy(TCP::segments);
         frame.add_tcp(packet._clone_obj());
         drop(p);
         Ok((ProtocolData::TCP(packet), "none"))

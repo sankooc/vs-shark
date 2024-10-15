@@ -2,7 +2,7 @@ import React, { ReactElement, useEffect, useState } from "react";
 import { MenuItem } from 'primereact/menuitem';
 import { Badge } from 'primereact/badge';
 import { Menu } from 'primereact/menu';
-import { ComMessage, IContextInfo, IConversation, IDNSRecord, ILines, IStatistic, ITLS, deserialize } from '../common';
+import { ComMessage, IContextInfo, ILines, IStatistic, deserialize } from '../common';
 import Loading from './loading';
 import ErrPage from './error';
 import { onMessage, log, emitMessage } from '../connect';
@@ -21,7 +21,7 @@ import TLSComponent from './tls';
 // import mock_iptype from '../mock/iptype.json';
 // import _dnsRecords from '../mock/dns.json';
 import _httpRecords from '../mock/http.json';
-import { IConnect, IHttpMessage } from "../gen";
+import { IConnect, IDNSRecord, IHttpMessage, ITCPConversation, ITLSHS } from "../gen";
 // import _tlsRecords from '../mock/tls.json';
 
 
@@ -46,9 +46,9 @@ const Main = () => {
   const [framedata, setFramedata] = useState<ILines>(null);
   const [httpdata, setHttpdata] = useState<IStatistic>(null);
   const [dnsRecords, setDnsRecords] = useState<IDNSRecord[]>([]);
-  const [conversations, setConversations] = useState<IConversation[]>([]);
+  const [conversations, setConversations] = useState<ITCPConversation[]>([]);
   const [https, setHttps] = useState<IConnect<IHttpMessage>[]>([]);
-  const [tlsRecords, setTlsRecords] = useState<ITLS[]>([]);
+  const [tlsRecords, setTlsRecords] = useState<ITLSHS[]>([]);
   useEffect(() => {
     onMessage('message', (e: any) => {
       const { type, body, requestId } = e.data;
@@ -67,15 +67,15 @@ const Main = () => {
           break;
         }
         case '_dns': {
-          setDnsRecords(body);
+          setDnsRecords(deserialize(body));
           break;
         }
         case '_tls': {
-          setTlsRecords(body);
+          setTlsRecords(deserialize(body));
           break;
         }
         case '_conversation': {
-          setConversations(body);
+          setConversations(deserialize(body));
           break;
         }
         case '_frame_statistic': {

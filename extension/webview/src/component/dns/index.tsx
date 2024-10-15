@@ -1,8 +1,9 @@
 import React, { ReactElement, useEffect } from "react";
-import { ComMessage, IDNSRecord } from "../../common";
+import { ComMessage } from "../../common";
 import { emitMessage } from '../../connect';
 import { TreeTable } from 'primereact/treetable';
 import { Column, ColumnProps } from 'primereact/column';
+import { IDNSRecord } from "../../gen";
 class Proto {
   items: IDNSRecord[]
 }
