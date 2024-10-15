@@ -880,13 +880,13 @@ pub struct Frame {
     pub origin_size: u32,
     pub summary: FrameSummary,
     data: Rc<Vec<u8>>,
-    pub eles: Ref2<Vec<ProtocolData>>,
+    pub eles: Vec<ProtocolData>,
     pub refer: Ref2<FrameRefer>,
 }
 impl Frame {
     pub fn new(data: Vec<u8>, ts: u64, capture_size: u32, origin_size: u32, index: u32, link_type: u32) -> Frame {
         let f = Frame {
-            eles: Rc::new(RefCell::new(Vec::new())),
+            eles: Vec::new(),
             refer: Rc::new(RefCell::new(FrameRefer{index, ts, ..Default::default()})),
             summary: FrameSummary { index, link_type, ..Default::default() },
             data: Rc::new(data),
@@ -907,8 +907,7 @@ impl Frame {
         protos.contains(&proto)
     }
     pub fn info(&self) -> String {
-        let reff = self.eles.as_ref().borrow();
-        let the_last = reff.last();
+        let the_last = self.eles.last();
         match the_last {
             Some(data) => data.info(),
             None => "N/A".into(),
@@ -984,7 +983,7 @@ impl Frame {
         lists.push(Field::new3(format!("Frame Length: {} bytes ({} bits)", self.origin_size, self.origin_size * 8)));
         lists.push(Field::new3(format!("Capture Length: {} bytes ({} bits)", self.capture_size, self.capture_size * 8)));
         rs.push(Field::new2(self.to_string(), Rc::new(Vec::new()), lists));
-        for e in self.eles.as_ref().borrow().iter() {
+        for e in self.eles.iter() {
             let vs = e.get_fields();
             rs.push(Field::new2(e.summary(), self.data.clone(), vs));
         }
@@ -1085,7 +1084,7 @@ impl Frame {
             }
             _ => {}
         }
-        let mut reff = self.eles.as_ref().borrow_mut();
+        let reff = &mut self.eles;
         reff.push(ele);
         let mut ref_ = self.refer.as_ref().borrow_mut();
         if let Some(app_) = ref_._app_cache.take() {
@@ -1094,7 +1093,6 @@ impl Frame {
         drop(ref_);
         let mref = &mut self.summary;
         mref.protocol = format!("{}", reff.last().unwrap());
-        drop(reff);
     }
 }
 
