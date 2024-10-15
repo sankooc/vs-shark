@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import { IHttpEnity } from "../../common";
 import { TabView, TabPanel } from 'primereact/tabview';
 import fflate from 'fflate';
 import { IHttpMessage } from "../../gen";

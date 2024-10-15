@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import "./index.css";
-import { ComMessage, IHttpEnity } from "../../common";
+import { ComMessage } from "../../common";
 import { emitMessage } from "../../connect";
 import SubComponnet from './subview';
 import { IConnect, IHttpMessage } from "../../gen";

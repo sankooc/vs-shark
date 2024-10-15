@@ -4,7 +4,7 @@ use serde::Serialize;
 
 use crate::specs::http::{HttpType, Request, Response, HTTP};
 
-use super::Ref2;
+use super::{base::{Context, DomainService, Endpoint}, Ref2};
 
 #[derive(Default)]
 pub struct TCPConnectInfo{
@@ -246,7 +246,7 @@ pub struct IPINFO {
 
 
 
-#[derive(Default,Clone)]
+#[derive(Default,Clone, Serialize)]
 pub struct TLSHS {
   pub source: String,
   pub target: String,
@@ -257,4 +257,62 @@ pub struct TLSHS {
   pub used_version: String,
   pub used_cipher: String,
   pub used_negotiation: Vec<String>,
+}
+
+
+#[derive(Serialize)]
+pub struct DNSRecord {
+  name: String,
+  _type: String,
+  proto: String,
+  class: String,
+  content: String,
+  pub ttl: u32,
+}
+
+impl DNSRecord {
+  pub fn create(data: &dyn DomainService) -> DNSRecord {
+      DNSRecord {
+          // from: tcp.
+          name: data.name(),
+          _type: data._type(),
+          proto: data.proto(),
+          class: data.class(),
+          content: data.content(),
+          ttl: data.ttl(),
+      }
+  }
+}
+
+
+#[derive(Serialize)]
+pub struct WEndpoint {
+    ip: String,
+    pub port: u16,
+    host: String,
+    pub count: u16,
+    pub throughput: u32,
+    pub retransmission: u16,
+    pub invalid: u16,
+}
+
+impl WEndpoint {
+    fn new(ep: &Endpoint, ctx: &Context) -> Self {
+        let (ip, port, host) = ctx._to_hostnames(ep);
+        let info = &ep.info;
+        Self{ ip, port, host, count: info.count, throughput: info.throughput, retransmission: info.retransmission, invalid: info.invalid }
+    }
+}
+
+#[derive(Serialize)]
+pub struct TCPConversation{
+    source: WEndpoint,
+    target: WEndpoint,
+}
+impl TCPConversation {
+    pub fn new(s: &Endpoint, t: &Endpoint, ctx: &Context) -> Self {
+        let source = WEndpoint::new(s, ctx);
+        let target = WEndpoint::new(t, ctx);
+        Self{source, target}
+    }
 }

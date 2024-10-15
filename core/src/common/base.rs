@@ -19,6 +19,7 @@ use crate::{
 use chrono::{DateTime, Utc};
 use enum_dispatch::enum_dispatch;
 use log::error;
+use serde_json::Error;
 use std::{
     borrow::Borrow, cell::RefCell, collections::{HashMap, HashSet, VecDeque}, net::{Ipv4Addr, Ipv6Addr}, ops::{Deref, DerefMut}, rc::Rc, time::{Duration, UNIX_EPOCH}
 };
@@ -28,7 +29,7 @@ use anyhow::{bail, Result};
 use crate::common::io::Reader;
 use crate::common::{FileInfo, FileType};
 
-use super::{concept::{Connect, HttpMessage, TLSHS}, io::SliceReader};
+use super::{concept::{Connect, DNSRecord, HttpMessage, TCPConversation, TLSHS}, io::SliceReader};
 
 #[derive(Default, Clone)]
 pub struct Field {
@@ -1101,16 +1102,15 @@ pub struct Context {
     pub count: u32,
     pub cost: usize,
     pub info: FileInfo,
-    pub dns: Vec<Ref2<RecordResource>>,
+    pub dns: Vec<DNSRecord>,
     pub conversation_map: HashMap<String, RefCell<TCPConnection>>,
     http_list: Vec<Connect<HttpMessage>>,
     pub statistic: Statistic,
     pub dns_map: HashMap<String, String>,
-    // pub flush: Cell<bool>,
 }
 
 
-fn _append_http_to (list: &mut Vec<HttpMessage>, mut messages: Vec<(u64, Rc<RefCell<HTTP>>)>, ref_statis: &mut Statistic){
+fn _append_http_to (list: &mut Vec<HttpMessage>, mut messages: Vec<(u64, Ref2<HTTP>)>, ref_statis: &mut Statistic){
     loop {
         if let Some((ts, msg)) = messages.pop() {
             let _msg = msg.as_ref().borrow();
@@ -1201,6 +1201,12 @@ impl Context {
         drop(reff);
     }
    
+    fn get_dns_record(&self) -> &[DNSRecord] {
+        &self.dns
+    }
+    pub fn get_dns_record_json(&self) -> core::result::Result<String, Error>{
+        serde_json::to_string(self.get_dns_record())
+    }
     pub fn add_dns_record(&mut self, rr: Ref2<RecordResource>) {
         let _rr = rr.as_ref().borrow();
         let mut _map = &mut self.dns_map;
@@ -1213,8 +1219,9 @@ impl Context {
             }
             _ => {}
         }
+        let ins = DNSRecord::create(_rr.deref());
         drop(_rr);
-        self.dns.push(rr);
+        self.dns.push(ins);
     }
     pub fn get_info(&self) -> FileInfo {
         self.info.clone()
@@ -1224,6 +1231,22 @@ impl Context {
     }
     pub fn conversations(&self) -> &HashMap<String, RefCell<TCPConnection>> {
         &self.conversation_map
+    }
+    pub fn get_conversation_items(&self) -> Vec<TCPConversation> {
+        let cons = self.conversations();
+        let mut rs = Vec::new();
+        for con in cons.values().into_iter() {
+            let reff = con.borrow();
+            let (source, target) = reff.sort(self.statistic.ip.get_map());
+            let tcp = TCPConversation::new(source, target, self);
+            rs.push(tcp);
+            drop(reff);
+        }
+        rs
+    }
+    pub fn get_conversation_json(&self) -> core::result::Result<String, Error>{
+        let items = self.get_conversation_items();
+        serde_json::to_string(&items)
     }
     pub fn tcp_key(ip: &dyn IPPacket, packet: &TCP) -> (String, bool) {
         let source = format!("{}:{}", ip.source_ip_address(), packet.source_port());
@@ -1285,7 +1308,7 @@ impl Context {
         }
     }
 
-    pub fn tls_connection_info(&self) -> Vec<TLSHS> {
+    pub fn tls_connection_infos(&self) -> Vec<TLSHS> {
         let _c_list = self.conversations();
         let _clist = _c_list.values();
         let mut list = Vec::new();
@@ -1340,6 +1363,10 @@ impl Context {
             }
         }
         list
+    }
+    pub fn get_tls_connection_json(&self) -> core::result::Result<String, Error>{
+        let items = self.tls_connection_infos();
+        serde_json::to_string(&items)
     }
     pub fn _to_hostnames(&self, ep: &Endpoint) -> (String, u16, String) {
         let host = ep.host.clone();
@@ -1434,7 +1461,7 @@ impl Instance {
         _info.dns_count = ctx.get_dns_count();
         _info.tcp_count = ctx.conversations().len();
         _info.http_count = ctx.get_http().len();
-        _info.tls_count = ctx.tls_connection_info().len();
+        _info.tls_count = ctx.tls_connection_infos().len();
         _info.cost = ctx.cost();
         _info
     }

@@ -7,9 +7,10 @@ use core::common::base::{ Element, Frame, Instance};
 use core::entry::*;
 use std::ops::Deref;
 use js_sys::Uint8Array;
+// use serde_json::Error;
 use wasm_bindgen::prelude::*;
 
-use crate::entity::{DNSRecord, Field, TCPConversation, WTLSHS};
+use crate::entity::Field;
 
 
 
@@ -88,6 +89,12 @@ fn _convert(f_status: FIELDSTATUS) -> &'static str {
     }
 }
 
+// fn wrap_return_str(func: fn() -> Result<String, Error>) -> String {
+//     if let Ok(str) = func() {
+//         return str;
+//     }
+//     return "{}".into()
+// }
 #[wasm_bindgen]
 impl WContext {
     #[wasm_bindgen(constructor)]
@@ -219,16 +226,12 @@ impl WContext {
         let f = binding.get(index as usize).unwrap();
         f.get_fields().iter().map(|f| Field::convert(&f)).collect()
     }
-
-    
     #[wasm_bindgen]
-    pub fn select_dns_items(&self) -> Vec<DNSRecord> {
-        let mut rs = Vec::new();
-        for d in self.ctx.context().dns.iter() {
-            let aa = d.as_ref().borrow();
-            rs.push(DNSRecord::create(aa));
+    pub fn select_dns_items(&self) -> String {
+        if let Ok(str) = self.ctx.context().get_dns_record_json() {
+            return str;
         }
-        rs
+        return "{}".into()
     }
     #[wasm_bindgen]
     pub fn select_dns_count(&self) -> usize {
@@ -241,18 +244,11 @@ impl WContext {
         cons.len()
     }
     #[wasm_bindgen]
-    pub fn select_conversation_items(&self) -> Vec<TCPConversation>{
-        let ct = self.ctx.context();
-        let cons = ct.conversations();
-        let mut rs = Vec::new();
-        for con in cons.values().into_iter() {
-            let reff = con.borrow();
-            let (source, target) = reff.sort(ct.statistic.ip.get_map());
-            let tcp = TCPConversation::new(source, target, ct);
-            rs.push(tcp);
-            drop(reff);
+    pub fn select_conversation_items(&self) -> String {
+        if let Ok(str) = self.ctx.context().get_conversation_json() {
+            return str;
         }
-        rs
+        return "{}".into()
     }
     #[wasm_bindgen]
     pub fn statistic(&self) -> String {
@@ -270,12 +266,15 @@ impl WContext {
         }
     }
     #[wasm_bindgen]
-    pub fn select_tls_items(&self) -> Vec<WTLSHS> {
-        self.ctx.context().tls_connection_info().iter().map(|f| WTLSHS::new(f.to_owned())).collect::<_>()
+    pub fn select_tls_items(&self) -> String {
+        if let Ok(str) = self.ctx.context().get_tls_connection_json() {
+            return str;
+        }
+        return "{}".into()
     }
     #[wasm_bindgen]
     pub fn select_tls_count(&self) -> usize {
-        self.ctx.context().tls_connection_info().len()
+        self.ctx.context().tls_connection_infos().len()
     }
 }
 

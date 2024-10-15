@@ -1,6 +1,6 @@
 import { load, WContext, FrameInfo, Field } from 'rshark';
 import { pick } from 'lodash';
-import { ComLog, ComMessage, IContextInfo, OverviewSource, IOverviewData, IFrameInfo, Pagination, IResult, IConversation, IDNSRecord, CField, HexV, IHttp } from './common';
+import { ComLog, ComMessage, IContextInfo, OverviewSource, IOverviewData, IFrameInfo, Pagination, IResult, CField, HexV } from './common';
 
 
 const convert = (frames: FrameInfo[]): any => {
@@ -193,33 +193,18 @@ export abstract class PCAPClient {
       this.emitMessage(new ComMessage('_frame', data));
     }
   }
-  getConversations(): IConversation[] {
-    const _data = this.ctx.select_conversation_items();
-    return _data.map((f) => {
-      const source = f.source;
-      const target = f.target;
-      return {
-        source: pick(source, 'ip', 'port', 'host', 'count', 'throughput', 'retransmission', 'invalid'),
-        target: pick(target, 'ip', 'port', 'host', 'count', 'throughput', 'retransmission', 'invalid'),
-      }
-    })
-  }
   _conversation(): void {
     if (this.ready && this.ctx) {
       if (!this._cache.conversation) {
-        this._cache.conversation = this.getConversations()
+        this._cache.conversation = this.ctx.select_conversation_items()
       }
       this.emitMessage(new ComMessage('_conversation', this._cache.conversation));
     }
   }
-  getDNS(): IDNSRecord[] {
-    return this.ctx.select_dns_items();
-  }
   _dns(): void {
     if (this.ready && this.ctx) {
       if (!this._cache.dns) {
-        const items = this.getDNS().map(f => pick(f, 'name', '_type', 'content', 'class', 'ttl'));
-        this._cache.dns = items
+        this._cache.dns = this.ctx.select_dns_items()
       }
       this.emitMessage(new ComMessage('_dns', this._cache.dns));
     }
@@ -243,8 +228,7 @@ export abstract class PCAPClient {
   _tls(): void {
     if (this.ready && this.ctx) {
       if (!this._cache.tls) {
-        const tlses = this.ctx.select_tls_items();
-        this._cache.tls = tlses.map(f => pick(f, 'source', 'target', 'server_name', 'support_version', 'support_cipher', 'support_negotiation', 'used_version', 'used_cipher', 'used_negotiation'));
+        this._cache.tls = this.ctx.select_tls_items();
       }
       this.emitMessage(new ComMessage('_tls', this._cache.tls));
     }
