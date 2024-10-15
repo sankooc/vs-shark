@@ -41,7 +41,7 @@
 
 - **Protocol Support**:
   - **File Formats**: PCAP, PCAPNG
-  - **Link Layer**: Ethernet II, PPPoE, IEEE 1905.1a
+  - **Link Layer**: Ethernet II, PPPoE, IEEE 1905.1a,SSL
   - **Network Layer**: IPv4, IPv6, ARP, ICMP, IGMP
   - **Transport Layer**: TCP, UDP
   - **Application Layer**: TLS, HTTP, DNS, DHCP, SSDP
