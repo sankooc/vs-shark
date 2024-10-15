@@ -9,6 +9,8 @@ $foreground: #ebdbb2;
 
 $c-fg-0: #fbf1c7;
 
+$c-bg-h-0: #1d2021;
+
 $c-blue: #458588;
 $c-green: #98971a;
 $c-red: #cc241d;
@@ -40,7 +42,7 @@ $t-errdata-font: #F5F5F5;
 
 
 $t-arp: $w-green;
-$t-arp-font: $c-fg-0;
+$t-arp-font: $c-bg-h-0;
 
 
 $t-http: $c-green;
@@ -53,7 +55,7 @@ $t-tls: $c-aqua;
 $t-tls-font: $c-fg-0;
 
 $t-udp: $c-yellow;
-$t-udp-font: $c-fg-0;
+$t-udp-font: $c-bg-h-0;
 
 
 $t-dns: #C0D6E8;

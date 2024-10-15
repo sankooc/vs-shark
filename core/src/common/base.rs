@@ -21,7 +21,7 @@ use enum_dispatch::enum_dispatch;
 use log::error;
 use serde_json::Error;
 use std::{
-    borrow::Borrow, cell::RefCell, collections::{HashMap, HashSet, VecDeque}, net::{Ipv4Addr, Ipv6Addr}, ops::{Deref, DerefMut}, rc::Rc, time::{Duration, UNIX_EPOCH}
+    borrow::Borrow, cell::RefCell, cmp, collections::{HashMap, HashSet, VecDeque}, net::{Ipv4Addr, Ipv6Addr}, ops::{Deref, DerefMut}, rc::Rc, time::{Duration, UNIX_EPOCH}
 };
 
 use anyhow::{bail, Result};
@@ -29,7 +29,7 @@ use anyhow::{bail, Result};
 use crate::common::io::Reader;
 use crate::common::{FileInfo, FileType};
 
-use super::{concept::{Connect, DNSRecord, HttpMessage, TCPConversation, TLSHS}, io::SliceReader};
+use super::{concept::{Connect, Criteria, DNSRecord, FrameInfo, HttpMessage, ListResult, TCPConversation, TLSHS}, io::SliceReader};
 
 #[derive(Default, Clone)]
 pub struct Field {
@@ -1439,6 +1439,46 @@ impl Instance {
     }
     pub fn get_frames(&self) -> &[Frame] {
         &self.frames
+    }
+    pub fn get_frames_by(&self, cri: Criteria) -> ListResult<FrameInfo>{
+        let Criteria {start, size, criteria} = cri;
+        let info = self.context().get_info();
+        let start_ts = info.start_time;
+        let _fs = self.get_frames();
+        let mut total = 0;
+        let mut items = Vec::new();
+        if criteria.len() > 0 {
+            let mut left = size;
+            let _filters = HashSet::from_iter(criteria.iter().cloned());
+            for frame in _fs.iter() {
+                if frame.do_match(&_filters) {
+                    total += 1;
+                    if total > start && left > 0 {
+                        left -= 1;
+                        let item = FrameInfo::new(frame, start_ts);
+                        items.push(item);
+                    }
+                }
+            }
+            return ListResult::new(start, total, items);
+        }
+        total = _fs.len();
+        if total <= start {
+            return ListResult::new(start, 0, Vec::new());
+        }
+        let end = cmp::min(start + size, total);
+        let _data = &_fs[start..end];
+        for frame in _data.iter() {
+            let item = FrameInfo::new(frame, start_ts);
+            items.push(item);
+        }
+        ListResult::new(start, total, items)
+
+    }
+
+    pub fn get_frames_json(&self, cri: Criteria) -> core::result::Result<String, Error> {
+        let item = self.get_frames_by(cri);
+        serde_json::to_string(&item)
     }
     pub fn update_ts(&mut self, ts: u64) {
         let info = &mut self.ctx.info;

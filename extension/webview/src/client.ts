@@ -177,15 +177,15 @@ export abstract class PCAPClient {
       this.emitMessage(new ComMessage('_hex', data));
     }
   }
-  getFrames(pag: Pagination): IResult {
+  getFrames(pag: Pagination): String {
     const { page, size } = pag;
     const start = (page - 1) * size;
-    const rs = this.ctx.select_frame_items(start, size, pag.filter || []);
-    const data = rs.items().map((f, inx) => {
-      const emb = pick(f, 'index', 'time', 'status', 'len', 'info', 'irtt', 'protocol', 'dest', 'source');
-      return emb;
-    });
-    return { items: data, page, size, total: rs.total };
+    return this.ctx.select_frame_items(start, size, pag.filter || []);
+    // const data = rs.items().map((f, inx) => {
+    //   const emb = pick(f, 'index', 'time', 'status', 'len', 'info', 'irtt', 'protocol', 'dest', 'source');
+    //   return emb;
+    // });
+    // return { items: data, page, size, total: rs.total };
   }
   _frame(pag: Pagination): void {
     if (this.ready && this.ctx) {

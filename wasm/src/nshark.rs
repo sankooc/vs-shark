@@ -1,9 +1,7 @@
-use std::borrow::Borrow;
-use std::cmp;
+use core::common::concept::Criteria;
 use std::collections::HashSet;
 
-use core::common::FIELDSTATUS;
-use core::common::base::{ Element, Frame, Instance};
+use core::common::base::Instance;
 use core::entry::*;
 use std::ops::Deref;
 use js_sys::Uint8Array;
@@ -81,13 +79,13 @@ pub struct WContext {
 }
 
 
-fn _convert(f_status: FIELDSTATUS) -> &'static str {
-    match f_status {
-        FIELDSTATUS::WARN => "deactive",
-        FIELDSTATUS::ERROR => "errordata",
-        _ => "info"
-    }
-}
+// fn _convert(f_status: FIELDSTATUS) -> &'static str {
+//     match f_status {
+//         FIELDSTATUS::WARN => "deactive",
+//         FIELDSTATUS::ERROR => "errordata",
+//         _ => "info"
+//     }
+// }
 
 // fn wrap_return_str(func: fn() -> Result<String, Error>) -> String {
 //     if let Ok(str) = func() {
@@ -115,69 +113,13 @@ impl WContext {
         self.ctx.get_frames().len()
     }
     
-    fn _frame(frame: &Frame, start_ts: u64) -> FrameInfo {
-        let mut item = FrameInfo {
-            ..Default::default()
-        };
-        let sum = frame.summary.borrow();
-        item.index = sum.index;
-        item.time = (frame.ts - start_ts) as u32;
-        item.len = frame.capture_size;
-        match &sum.ip {
-            Some(ip) => {
-                let _ip = ip.as_ref().borrow();
-                item.source = _ip.source_ip_address();
-                item.dest = _ip.target_ip_address();
-            }
-            None => {}
-        }
-        item.protocol = sum.protocol.clone();
-        item.info = frame.info();
-        item.status = "info".into();
-        match frame.eles.last() {
-            Some(ele) => {
-                item.status = _convert(ele.status()).into();
-            },
-            _ => {}
-        }
-        item.irtt = 1;
-        item
-    }
-
-    
     #[wasm_bindgen]
-    pub fn select_frame_items(&mut self, start: usize, size: usize, criteria: Vec<String>) -> FrameResult {
-        let info = self.ctx.context().get_info();
-        let start_ts = info.start_time;
-        let _fs = self.ctx.get_frames();
-        let mut total = 0;
-        let mut items = Vec::new();
-        if criteria.len() > 0 {
-            let mut left = size;
-            let _filters = HashSet::from_iter(criteria.iter().cloned());
-            for frame in _fs.iter() {
-                if frame.do_match(&_filters) {
-                    total += 1;
-                    if total > start && left > 0 {
-                        left -= 1;
-                        let item = WContext::_frame(frame, start_ts);
-                        items.push(item);
-                    }
-                }
-            }
-            return FrameResult::new(start, total, items);
+    pub fn select_frame_items(&mut self, start: usize, size: usize, criteria: Vec<String>) -> String {
+        let cri = Criteria{start, size, criteria};
+        if let Ok(str) = self.ctx.get_frames_json(cri) {
+            return str;
         }
-        total = _fs.len();
-        if total <= start {
-            return FrameResult::new(start, 0, Vec::new());
-        }
-        let end = cmp::min(start + size, total);
-        let _data = &_fs[start..end];
-        for frame in _data.iter() {
-            let item = WContext::_frame(frame, start_ts);
-            items.push(item);
-        }
-        FrameResult::new(start, total, items)
+        return "{}".into()
     }
 
     #[wasm_bindgen]
@@ -208,17 +150,17 @@ impl WContext {
         set.into_iter().collect()
     }
 
-    #[wasm_bindgen]
-    pub fn get_frames(&mut self) -> Vec<FrameInfo> {
-        let info = self.ctx.context().get_info();
-        let start_ts = info.start_time;
-        let mut rs = Vec::new();
-        for frame in self.ctx.get_frames().iter() {
-            let item = WContext::_frame(frame, start_ts);
-            rs.push(item);
-        }
-        rs
-    }
+    // #[wasm_bindgen]
+    // pub fn get_frames(&mut self) -> Vec<FrameInfo> {
+    //     let info = self.ctx.context().get_info();
+    //     let start_ts = info.start_time;
+    //     let mut rs = Vec::new();
+    //     for frame in self.ctx.get_frames().iter() {
+    //         let item = WContext::_frame(frame, start_ts);
+    //         rs.push(item);
+    //     }
+    //     rs
+    // }
     #[wasm_bindgen]
     pub fn get_fields(&self, index: u32) -> Vec<Field> {
         let binding = self.ctx.get_frames();

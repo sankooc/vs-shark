@@ -79,6 +79,7 @@ const Main = () => {
           break;
         }
         case '_frame_statistic': {
+          // console.log(deserialize(body));
           setFramedata(body)
           break;
         }
