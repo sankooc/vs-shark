@@ -1380,12 +1380,14 @@ impl Instance {
     }
     pub fn create(&mut self, data: Vec<u8>, ts: u64, capture_size: u32, origin_size: u32) {
         let ctx = &mut self.ctx;
+        let file_type = &ctx.info.file_type;
         let count = ctx.count;
         ctx.count += 1;
         let link_type = ctx.info.link_type;
         let mut f = Frame::new(data, ts, capture_size, origin_size, count, link_type);
         let reader = f.get_reader();
-        let mut next = crate::specs::execute(link_type, &f, &reader);
+
+        let mut next = crate::specs::execute(file_type,link_type, &f, &reader);
         'ins: loop {
             let _result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| crate::specs::parse(&mut f, ctx, &reader, next)));
             match _result {

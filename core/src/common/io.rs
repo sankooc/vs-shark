@@ -141,7 +141,8 @@ pub trait AReader:Clone {
         true
     }
     fn _back(&self, len: usize) {
-        self._set(self.cursor() - len);
+        let _len = cmp::min(len, self.cursor());
+        self._set(self.cursor() - _len);
     }
     fn _slice(&self, _len: usize) -> &[u8] {
         let lef = self.left();
@@ -158,10 +159,8 @@ pub trait AReader:Clone {
     fn read8(&self) -> Result<u8> {
         let a = self._get_data()[self.cursor()];
         self._move(1);
-        // Ok(u8::from_be_bytes([a]))
         Ok(a)
     }
-
     fn read_string(&self, size: usize) -> Result<String> {
         let _data = self.slice(size);
         let str = from_utf8(_data)?;
@@ -288,7 +287,6 @@ pub trait AReader:Clone {
         self._move(len);
         IO::read16(data, endian)
     }
-
     fn read32(&self, endian: bool) -> Result<u32> {
         let len = 4;
         let data: &[u8] = self._slice(len);
@@ -314,7 +312,7 @@ pub trait AReader:Clone {
     fn read_ipv4(&self) -> Result<std::net::Ipv4Addr> {
         let len = 4;
         if self.left() < len {
-            bail!("sized")
+            bail!(DataError::BitSize)
         }
         let mut data: [u8; 4] = [0; 4];
         data.copy_from_slice(self._slice(len));
@@ -324,14 +322,13 @@ pub trait AReader:Clone {
     fn read_ipv6(&self) -> Result<std::net::Ipv6Addr> {
         let len = 16;
         if self.left() < len {
-            bail!("sized")
+            bail!(DataError::BitSize)
         }
         let mut data: [u8; 16] = [0; 16];
         data.copy_from_slice(self._slice(len));
         self._move(len);
         Ok(IPv6Address::new(data))
     }
-    
     fn left(&self) -> usize {
         if self._get_data().len() < self.cursor() {
             return 0;
@@ -354,10 +351,6 @@ pub trait AReader:Clone {
         None
     }
     fn read_tlv(&self) -> Result<usize> {
-        // let a = self._get_data()[self.cursor()];
-        // if a != DER_SEQUENCE {
-        //     bail!("not_der_format");
-        // }
         let b = self._get_data()[self.cursor() + 1];
         let len: usize = match b {
             0x82 => {
