@@ -242,7 +242,7 @@ pub trait AReader:Clone {
         let (str, refer2) = _reader.read_compress_string()?;
         rs.push_str(str.as_str());
         if refer2 {
-            Ok(self.read_dns_compress_string(archor, rs.as_str())?)
+            Ok(_reader.read_dns_compress_string(archor, rs.as_str())?)
         } else {
             Ok(rs)
         }

@@ -1366,9 +1366,6 @@ impl Instance {
         let mut f = Frame::new(data, ts, capture_size, origin_size, count, link_type);
         let reader = f.get_reader();
         let mut next = crate::specs::execute(link_type, &f, &reader);
-        if count == 530 {
-            println!("");
-        }
         'ins: loop {
             let _result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| crate::specs::parse(&mut f, ctx, &reader, next)));
             match _result {
