@@ -91,7 +91,6 @@ const Main = () => {
     _start = Date.now();
     emitMessage(new ComMessage('ready', 'demo'));
   }, []);
-  
   const convert = (): MenuItem[] => {
     const mitems: MenuItem[] = [];
     const addPanel = (id: string, label: string, extra: string, icon: string = ''): void => {
@@ -123,7 +122,8 @@ const Main = () => {
         return <TLSComponent items={tlsRecords}/>
     }
     return <Overview framedata={framedata} metadata={meta} httpdata={httpdata} />;
-  };
+  }; 
+  // console.log('main', status, select, meta);
   if (status == 0) {
     return <Loading/>
     // return <TLSComponent items={tlsRecords}/>
@@ -135,8 +135,6 @@ const Main = () => {
     return <ErrPage />
   }
   const navItems = convert();
-  const items = [{ label: select }];
-    const home = { icon: 'pi pi-home' }
   return (<>
     <div className="card h-full">
       {/* <BreadCrumb model={items} home={home} /> */}

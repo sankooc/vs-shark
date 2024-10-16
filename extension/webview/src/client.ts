@@ -47,6 +47,8 @@ export abstract class PCAPClient {
       } catch (e) {
         this.emitMessage(new ComMessage('_error', "failed to open file"));
       }
+    } else {
+      this._info();
     }
   }
   getInfo(): IContextInfo {

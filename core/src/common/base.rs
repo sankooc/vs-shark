@@ -8,7 +8,7 @@ use crate::{
     specs::{
         dns::{RecordResource, ResourceType, DNS},
         http::{self, HTTPVisitor, HttpType, HTTP},
-        tcp::{ ACK, FIN, RESET, SYNC, TCP},
+        tcp::{ACK, FIN, RESET, SYNC, TCP},
         tls::{
             handshake::{HandshakeClientHello, HandshakeServerHello, HandshakeType},
             TLSRecorMessage, TLSVisitor, TLS,
@@ -21,7 +21,14 @@ use enum_dispatch::enum_dispatch;
 use log::error;
 use serde_json::Error;
 use std::{
-    borrow::Borrow, cell::RefCell, cmp, collections::{HashMap, HashSet, VecDeque}, net::{Ipv4Addr, Ipv6Addr}, ops::{Deref, DerefMut}, rc::Rc, time::{Duration, UNIX_EPOCH}
+    borrow::Borrow,
+    cell::RefCell,
+    cmp,
+    collections::{HashMap, HashSet, VecDeque},
+    net::{Ipv4Addr, Ipv6Addr},
+    ops::{Deref, DerefMut},
+    rc::Rc,
+    time::{Duration, UNIX_EPOCH},
 };
 
 use anyhow::{bail, Result};
@@ -29,8 +36,10 @@ use anyhow::{bail, Result};
 use crate::common::io::Reader;
 use crate::common::{FileInfo, FileType};
 
-use super::{concept::{Connect, Criteria, DNSRecord, Field, FrameInfo, HttpMessage, ListResult, TCPConversation, TLSHS}, io::SliceReader};
-
+use super::{
+    concept::{Connect, Criteria, DNSRecord, Field, FrameInfo, HttpMessage, ListResult, TCPConversation, TLSHS},
+    io::SliceReader,
+};
 
 pub fn date_str(ts: u64) -> String {
     let d = UNIX_EPOCH + Duration::from_micros(ts);
@@ -50,7 +59,7 @@ pub trait Visitor {
     fn visit(&self, frame: &mut Frame, ctx: &mut Context, reader: &Reader) -> Result<(ProtocolData, &'static str)>;
 }
 
-pub trait FieldBuilder<T>{
+pub trait FieldBuilder<T> {
     fn build(&self, t: &T) -> Option<Field>;
     fn data(&self) -> Rc<Vec<u8>>;
 }
@@ -129,7 +138,10 @@ where
     pub fn _build_lazy(&self, reader: &Reader, start: usize, size: usize, render: fn(&T) -> String) {
         self.fields.borrow_mut().push(Box::new(StringPosition { start, size, data: reader.get_raw(), render }));
     }
-    pub fn build_packet_lazy<K: 'static>(&self, render: fn(&T) -> Option<PacketContext<K>>) where K: PacketBuilder {
+    pub fn build_packet_lazy<K: 'static>(&self, render: fn(&T) -> Option<PacketContext<K>>)
+    where
+        K: PacketBuilder,
+    {
         self.fields.borrow_mut().push(Box::new(PhantomBuilder { render }));
     }
     pub fn build_skip(&self, reader: &Reader, size: usize) {
@@ -215,9 +227,11 @@ where
 pub struct PhantomBuilder<K, T> {
     // pub summary: String,
     pub render: fn(&T) -> Option<PacketContext<K>>,
-
 }
-impl<K, T> FieldBuilder<T> for PhantomBuilder<K, T> where K:PacketBuilder {
+impl<K, T> FieldBuilder<T> for PhantomBuilder<K, T>
+where
+    K: PacketBuilder,
+{
     fn build(&self, t: &T) -> Option<Field> {
         let _packet = (self.render)(t);
         if let Some(packet) = _packet {
@@ -225,7 +239,7 @@ impl<K, T> FieldBuilder<T> for PhantomBuilder<K, T> where K:PacketBuilder {
             let mut field = Field::new(0, 0, Rc::new(Vec::new()), sum);
             let fields = packet.get_fields();
             field.children = fields;
-            return Some(field)
+            return Some(field);
         }
         None
     }
@@ -331,7 +345,6 @@ pub enum TCPDetail {
     NONE,
 }
 
-
 pub struct Segment {
     pub frame_refer: Ref2<FrameRefer>,
     pub size: usize,
@@ -379,8 +392,8 @@ impl Endpoint {
     fn add_packet(&mut self, rs: Result<ProtocolData>, frame_refer: Option<Ref2<FrameRefer>>, segments: Vec<TCPSegment>) -> Option<Ref2<TCPSegments>> {
         if let Some(_ref) = frame_refer {
             let mut last_refer = _ref.as_ref().borrow_mut();
-            let ts =last_refer.ts;
-            
+            let ts = last_refer.ts;
+
             if let Ok(result) = rs {
                 let mut _type = "";
                 if let ProtocolData::TLS(pcaket) = &result {
@@ -391,7 +404,7 @@ impl Endpoint {
                     _type = "HTTP";
                 }
                 last_refer._app_cache = Some(result);
-                let seg = TCPSegments{items: segments, _type};
+                let seg = TCPSegments { items: segments, _type };
                 return Some(Rc::new(RefCell::new(seg)));
             }
             drop(last_refer);
@@ -407,14 +420,14 @@ impl Endpoint {
         if let Some(segments) = &mut self._segments {
             loop {
                 if let Some(seg) = segments.pop_front() {
-                    let Segment { size, frame_refer} = seg;
+                    let Segment { size, frame_refer } = seg;
                     let f = frame_refer.as_ref().borrow();
                     let ts = f.ts;
                     let index = f.index;
                     _ts = ts;
                     if size <= _index {
                         _index -= size;
-                        index_list.push(TCPSegment{index, size});
+                        index_list.push(TCPSegment { index, size });
                         if segments.len() == 0 {
                             last_one = Some(frame_refer.clone());
                             break;
@@ -423,8 +436,11 @@ impl Endpoint {
                         }
                     } else {
                         last_one = Some(frame_refer.clone());
-                        index_list.push(TCPSegment{index, size: _index});
-                        segments.push_front(Segment { size: (size - _index), frame_refer: frame_refer.clone()});
+                        index_list.push(TCPSegment { index, size: _index });
+                        segments.push_front(Segment {
+                            size: (size - _index),
+                            frame_refer: frame_refer.clone(),
+                        });
                         _index = 0;
                         break;
                     }
@@ -456,7 +472,6 @@ impl Endpoint {
         }
     }
     pub fn add_segment(&mut self, data: Vec<u8>, frame_refer: Ref2<FrameRefer>) {
-
         let segment = Segment { frame_refer, size: data.len() };
         let mut _data = data;
         self._cache.append(&mut _data);
@@ -552,7 +567,7 @@ impl Endpoint {
                     } else {
                         break;
                     }
-                };
+                }
                 drop(_reader);
                 if complete {
                     let reader2 = SliceReader::new(&self._cache);
@@ -580,7 +595,7 @@ impl Endpoint {
                         } else {
                             break;
                         }
-                    };
+                    }
                 }
             }
             TCPPAYLOAD::TLS(next_size) => {
@@ -712,7 +727,7 @@ impl Endpoint {
             };
         }
     }
-    fn add_http(&mut self, http: Ref2<crate::specs::http::HTTP>,ts: u64) {
+    fn add_http(&mut self, http: Ref2<crate::specs::http::HTTP>, ts: u64) {
         self.http_messages.push((ts, http));
     }
     // (ack_correct, same_with_last_packet)
@@ -796,9 +811,9 @@ pub struct TCPSegments {
     pub _type: &'static str,
 }
 
-impl PacketBuilder for TCPSegments{
+impl PacketBuilder for TCPSegments {
     fn new() -> Self {
-        TCPSegments{items: Vec::new(), _type: ""}
+        TCPSegments { items: Vec::new(), _type: "" }
     }
 
     fn summary(&self) -> String {
@@ -841,7 +856,7 @@ impl Frame {
     pub fn new(data: Vec<u8>, ts: u64, capture_size: u32, origin_size: u32, index: u32, link_type: u32) -> Frame {
         let f = Frame {
             eles: Vec::new(),
-            refer: Rc::new(RefCell::new(FrameRefer{index, ts, ..Default::default()})),
+            refer: Rc::new(RefCell::new(FrameRefer { index, ts, ..Default::default() })),
             summary: FrameSummary { index, link_type, ..Default::default() },
             data: Rc::new(data),
             ts,
@@ -953,8 +968,7 @@ impl Frame {
     pub fn get_reader(&self) -> Reader {
         return Reader::new_raw(self.data());
     }
-    pub fn _create_packet<K>(val: Ref2<K>) -> PacketContext<K>
-    {
+    pub fn _create_packet<K>(val: Ref2<K>) -> PacketContext<K> {
         PacketContext { val, fields: RefCell::new(Vec::new()) }
     }
     pub fn create_packet<K>() -> PacketContext<K>
@@ -965,10 +979,7 @@ impl Frame {
         Frame::_create_packet(Rc::new(RefCell::new(val)))
     }
     pub fn _create<K>(val: Ref2<K>) -> PacketContext<K> {
-        PacketContext {
-            val,
-            fields: RefCell::new(Vec::new()),
-        }
+        PacketContext { val, fields: RefCell::new(Vec::new()) }
     }
     pub fn get_tcp_map_key(&self) -> (String, bool) {
         let sum = &self.summary;
@@ -1065,8 +1076,7 @@ pub struct Context {
     pub dns_map: HashMap<String, String>,
 }
 
-
-fn _append_http_to (list: &mut Vec<HttpMessage>, mut messages: Vec<(u64, Ref2<HTTP>)>, ref_statis: &mut Statistic){
+fn _append_http_to(list: &mut Vec<HttpMessage>, mut messages: Vec<(u64, Ref2<HTTP>)>, ref_statis: &mut Statistic) {
     loop {
         if let Some((ts, msg)) = messages.pop() {
             let _msg = msg.as_ref().borrow();
@@ -1082,14 +1092,13 @@ fn _append_http_to (list: &mut Vec<HttpMessage>, mut messages: Vec<(u64, Ref2<HT
             if let Some(ct) = &_msg.content_type {
                 ref_statis.http_type.inc(ct);
             }
-            let msg = HttpMessage::new(ts/1000, _msg.deref());
+            let msg = HttpMessage::new(ts / 1000, _msg.deref());
             list.push(msg);
             drop(_msg);
         } else {
             break;
         }
     }
-
 }
 impl Context {
     pub fn cost(&self) -> usize {
@@ -1101,7 +1110,7 @@ impl Context {
     pub fn http_list_json(&self) -> String {
         serde_json::to_string(&self.http_list).unwrap()
     }
-    pub fn http_content(&self, index: usize, ts: u64) -> Option<Rc<Vec<u8>>>{
+    pub fn http_content(&self, index: usize, ts: u64) -> Option<Rc<Vec<u8>>> {
         if let Some(conn) = self.http_list.get(index) {
             for msg in conn.list.iter() {
                 if msg.ts == ts {
@@ -1111,8 +1120,8 @@ impl Context {
         }
         None
     }
-    fn resolve_http(&mut self){
-        let list = &mut(self.http_list);
+    fn resolve_http(&mut self) {
+        let list = &mut (self.http_list);
         let ref_statis: &mut Statistic = &mut self.statistic;
         list.clear();
         for con in (&mut self.conversation_map).values().into_iter() {
@@ -1121,7 +1130,7 @@ impl Context {
             let source = _s.stringfy();
             let target = _t.stringfy();
             let index = list.len();
-            let mut msg_: Connect<HttpMessage> = Connect{source, target, index, list: Vec::new()};
+            let mut msg_: Connect<HttpMessage> = Connect { source, target, index, list: Vec::new() };
             let mut messages = Vec::new();
             messages.append(&mut reff.ep1.http_messages);
             _append_http_to(&mut msg_.list, messages, ref_statis);
@@ -1156,11 +1165,11 @@ impl Context {
         }
         drop(reff);
     }
-   
+
     fn get_dns_record(&self) -> &[DNSRecord] {
         &self.dns
     }
-    pub fn get_dns_record_json(&self) -> core::result::Result<String, Error>{
+    pub fn get_dns_record_json(&self) -> core::result::Result<String, Error> {
         serde_json::to_string(self.get_dns_record())
     }
     pub fn add_dns_record(&mut self, rr: Ref2<RecordResource>) {
@@ -1200,7 +1209,7 @@ impl Context {
         }
         rs
     }
-    pub fn get_conversation_json(&self) -> core::result::Result<String, Error>{
+    pub fn get_conversation_json(&self) -> core::result::Result<String, Error> {
         let items = self.get_conversation_items();
         serde_json::to_string(&items)
     }
@@ -1232,7 +1241,7 @@ impl Context {
             true => (&mut _conn.ep1, &mut _conn.ep2),
             false => (&mut _conn.ep2, &mut _conn.ep1),
         };
-        
+
         let tcp_len = packet.payload_len;
         let detail = main.update(packet, frame);
         let detail_copy = detail.clone();
@@ -1320,7 +1329,7 @@ impl Context {
         }
         list
     }
-    pub fn get_tls_connection_json(&self) -> core::result::Result<String, Error>{
+    pub fn get_tls_connection_json(&self) -> core::result::Result<String, Error> {
         let items = self.tls_connection_infos();
         serde_json::to_string(&items)
     }
@@ -1388,7 +1397,7 @@ impl Instance {
         }
         self.frames.push(f);
     }
-    pub fn flush(&mut self){
+    pub fn flush(&mut self) {
         let ctx = &mut self.ctx;
         ctx.resolve_http();
     }
@@ -1398,8 +1407,8 @@ impl Instance {
     pub fn get_frames(&self) -> &[Frame] {
         &self.frames
     }
-    pub fn get_frames_by(&self, cri: Criteria) -> ListResult<FrameInfo>{
-        let Criteria {start, size, criteria} = cri;
+    pub fn get_frames_by(&self, cri: Criteria) -> ListResult<FrameInfo> {
+        let Criteria { start, size, criteria } = cri;
         let info = self.context().get_info();
         let start_ts = info.start_time;
         let _fs = self.get_frames();
@@ -1431,7 +1440,6 @@ impl Instance {
             items.push(item);
         }
         ListResult::new(start, total, items)
-
     }
 
     pub fn get_frames_json(&self, cri: Criteria) -> core::result::Result<String, Error> {

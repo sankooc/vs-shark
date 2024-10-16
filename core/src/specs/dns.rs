@@ -119,10 +119,12 @@ impl Question {
         let archor = opt.unwrap();
 
         let _read = |reader: &Reader| {
-            let name_ref = reader.read16(true)?;
-            return reader.read_dns_compress_string(archor, "", name_ref);
+            return reader.read_dns_compress_string(archor, "");
         };
         p.name = packet.build_lazy(reader, _read, Question::name)?;
+        if p.name == "" {
+            p.name = "<Root>".into();
+        }
         p._type = packet.build_lazy(reader, Reader::_read16_be, Question::_type)?;
         p.class = packet.build_lazy(reader, Reader::_read16_be, Question::class)?;
         Ok(())
@@ -277,9 +279,9 @@ impl DNSVisitor {
         let archor = opt.unwrap();
         let packet: PacketContext<RecordResource> = Frame::create_packet();
         let mut p: std::cell::RefMut<RecordResource> = packet.get().borrow_mut();
-        let name_ref = reader.read16(true)?;
         let _read = |reader: &Reader| {
-            return reader.read_dns_compress_string(archor, "", name_ref);
+            // let name_ref = reader.read16(true)?;
+            return reader.read_dns_compress_string(archor, "");
         };
         p.name = packet.build_lazy(reader, _read, RecordResource::name)?;
         p._type = packet.build_lazy(reader, Reader::_read16_be, RecordResource::_type)?;
