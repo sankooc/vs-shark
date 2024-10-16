@@ -58,27 +58,39 @@ Try out [PcapViewer](https://sankooc.github.io/pcap/) in your browser.
 
 #### Demo
 
-<img src="https://i.ibb.co/x6NNTBp/cap2.gif" width="80%" alt="PcapViewer Demo"/>
+<img src="https://i.ibb.co/x6NNTBp/cap2.gif" width="80%" alt="PcapViewer Demo"/>  
 
-#### IP Packet Overview
 
-<img src="assets/overview.png" width="80%" alt="IP Packet Overview"/>
 
-#### IP Packet List
 
-<img src="assets/frame.png" width="80%" alt="IP Packet List"/>
+<details>
+  <summary>IP Packet Overview</summary>
+  <img src="assets/overview.png" width="80%" alt="IP Packet Overview"/>
+</details>
 
-#### TCP Conversations
+---
 
-<img src="assets/conv.png" width="80%" alt="TCP Conversations"/>
+<details>
+  <summary>IP Packet List</summary>
+  <img src="assets/frame.png" width="80%" alt="IP Packet List"/>
+</details>
 
-#### HTTP Connection
+---
 
-<img src="assets/http.png" width="80%" alt="HTTP Connection"/>
+<details>
+  <summary>TCP Conversations</summary>
+  <img src="assets/conv.png" width="80%" alt="TCP Conversations"/>
+</details>
 
-#### DNS Response
-
-<img src="assets/dns.png" width="80%" alt="DNS Response"/>
+<details>
+  <summary>HTTP Connection</summary>
+  <img src="assets/http.png" width="80%" alt="HTTP Connection"/>
+</details>
+---
+<details>
+  <summary>DNS Response</summary>
+  <img src="assets/dns.png" width="80%" alt="DNS Response"/>
+</details>
 
 ---
 
