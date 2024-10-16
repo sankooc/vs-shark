@@ -51,7 +51,9 @@ impl AReader for SliceReader<'_> {
         return self.cursor.get();
     }
     fn _set(&self, cursor: usize) {
-        self.cursor.set(cursor);
+        let len = self._get_data().len();
+        let min = cmp::min(len, cursor);
+        self.cursor.set(min);
     }
 }
 
@@ -69,7 +71,9 @@ impl AReader for Reader {
         return self.cursor.get();
     }
     fn _set(&self, cursor: usize) {
-        self.cursor.set(cursor);
+        let len = self._get_data().len();
+        let min = cmp::min(len, cursor);
+        self.cursor.set(min);
     }
 }
 impl Reader {
@@ -139,11 +143,14 @@ pub trait AReader:Clone {
     fn _back(&self, len: usize) {
         self._set(self.cursor() - len);
     }
-    fn _slice(&self, len: usize) -> &[u8] {
+    fn _slice(&self, _len: usize) -> &[u8] {
+        let lef = self.left();
+        let len = cmp::min(lef, _len);
         &self._get_data()[self.cursor()..self.cursor() + len]
     }
-    fn slice(&self, len: usize) -> &[u8] {
-        // let c = self.cursor;
+    fn slice(&self, _len: usize) -> &[u8] {
+        let lef = self.left();
+        let len = cmp::min(lef, _len);
         let _tmp = self._slice(len);
         self._move(len);
         _tmp
@@ -192,7 +199,7 @@ pub trait AReader:Clone {
     fn read_compress_string(&self) -> Result<(String, bool)> {
         let mut list: Vec<String> = Vec::new();
         loop {
-            if self.left()? == 2 {
+            if self.left() == 2 {
                 return Ok((list.into_iter().collect::<Vec<_>>().join("."), true));
             }
             let next = self._get_data()[self.cursor()];
@@ -203,7 +210,7 @@ pub trait AReader:Clone {
             if next >= 0xc0 {
                 return Ok((list.into_iter().collect::<Vec<_>>().join("."), true));
             }
-            let __left = self.left()?;
+            let __left = self.left();
             if next as usize > __left {
                 return Ok((list.into_iter().collect::<Vec<_>>().join("."), false));
             }
@@ -257,7 +264,7 @@ pub trait AReader:Clone {
     fn read_netbios_string(&self) -> Result<String> {
         let mut list: Vec<String> = Vec::new();
         loop {
-            if self.left()? < 1 {
+            if self.left() < 1 {
                 return Ok(list.join(""));
             }
             let next = self._get_data()[self.cursor()] as usize;
@@ -265,7 +272,7 @@ pub trait AReader:Clone {
                 self._move(1);
                 return Ok(list.join(""));
             }
-            if next > self.left()? {
+            if next > self.left() {
                 return Ok(list.join(""));
             }
             let _size = self.read8()? as usize;
@@ -296,7 +303,7 @@ pub trait AReader:Clone {
     }
     fn read_mac(&self) -> Result<MacAddress> {
         let len = 6;
-        if self.left()? < len {
+        if self.left() < len {
             bail!(DataError::BitSize)
         }
         let mut data: [u8; 6] = [0; 6];
@@ -306,7 +313,7 @@ pub trait AReader:Clone {
     }
     fn read_ipv4(&self) -> Result<std::net::Ipv4Addr> {
         let len = 4;
-        if self.left()? < len {
+        if self.left() < len {
             bail!("sized")
         }
         let mut data: [u8; 4] = [0; 4];
@@ -316,7 +323,7 @@ pub trait AReader:Clone {
     }
     fn read_ipv6(&self) -> Result<std::net::Ipv6Addr> {
         let len = 16;
-        if self.left()? < len {
+        if self.left() < len {
             bail!("sized")
         }
         let mut data: [u8; 16] = [0; 16];
@@ -324,18 +331,18 @@ pub trait AReader:Clone {
         self._move(len);
         Ok(IPv6Address::new(data))
     }
-    fn left(&self) -> Result<usize> {
+    
+    fn left(&self) -> usize {
         if self._get_data().len() < self.cursor() {
-            // bail!("outbound")
-            return Ok(0);
+            return 0;
         }
-        Ok(self._get_data().len() - self.cursor())
+        self._get_data().len() - self.cursor()
     }
     fn has(&self) -> bool {
         return self.cursor() < self._get_data().len();
     }
     fn _read_space(&self, limit: usize) -> Option<String> {
-        if self.left().unwrap() < limit {
+        if self.left() < limit {
             return None;
         }
         for inx in 0..limit {
@@ -384,7 +391,7 @@ pub trait AReader:Clone {
         false
     }
     fn try_read_enter(&self, limit: usize) -> Result<String> {
-        let end = self.left().unwrap();
+        let end = self.left();
         if end <= 2 {
             bail!("end of stream");
         }
@@ -399,7 +406,7 @@ pub trait AReader:Clone {
         bail!("cannot find cf")
     }
     fn read_enter(&self) -> Result<String> {
-        let end = self.left().unwrap() - 2;
+        let end = self.left() - 2;
         for inx in 0..end {
             if self.enter_flag(inx) {
                 let rs = from_utf8(self.slice(inx))?;

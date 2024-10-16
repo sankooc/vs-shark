@@ -9,7 +9,22 @@ import { TreeNode } from "primereact/treenode";
 class Proto {
   items: IConnect<IHttpMessage>[];
 }
-
+const getHeaderValue = (header, key): string => {
+  if(!header || !key){
+    return '';
+  }
+  for(const head of header){
+    let toks = head.split(':');
+    if(toks && toks.length > 1){
+      const [hk, vl] = toks;
+      if(hk.toLowerCase() == key.toLowerCase()){
+        const [v] = vl.split(';');
+        return v.trim();
+      }
+    }
+  }
+  return '';
+};
 const HttpComponnet = (props: Proto) => {
   const mountHook = () => {
     emitMessage(new ComMessage('http', null));
@@ -50,15 +65,15 @@ const HttpComponnet = (props: Proto) => {
   }
   const itemMapper = (item: IConnect<IHttpMessage>): TreeNode => {
     const _items = (item.list || []).sort((a, b) => (a.ts - b.ts));
-    
     let _res_count = 0;
     let _req_count = 0;
     let __type = '';
     let total = 0;
     const messages = _items.map((msg) => {
-      const { _type, method } = msg;
+      const { method, headers } = msg;
       const isResp = method.match(/^\d+$/);
       isResp ? _res_count ++ : _req_count ++;
+      const _type = getHeaderValue(headers, "content-type");
       __type = __type || _type;
       const mes = isResp? 'response' :'request';
       total += msg.len;
@@ -88,23 +103,6 @@ const HttpComponnet = (props: Proto) => {
     };
     return rs;
   }
-  // const result = {
-  //   items,
-  //   page: 1,
-  //   size: items.length,
-  //   total: items.length
-  // };
-  // const header = <div className="card flex flex-nowrap gap-3 p-fluid">
-  //   {/* <Mult label="Method: " _options={opts[0]} select={setMethods} ></Mult>
-  //   <Mult label="Status: " _options={opts[1]} select={setStatus} ></Mult>
-  //   <Mult label="Source: " _options={opts[2]} select={setSource} ></Mult>
-  //   <Mult label="Target:"  _options={opts[3]} select={setDest} ></Mult> */}
-  // </div>;
-  // const _props = {
-  //   header,
-  //   cols: columes,
-  //   result
-  // };
   return (<div className="flex flex-column h-full w-full" id="http-page">
     <SubComponnet cols={columes} items={items.map(itemMapper)}/>
   </div>

@@ -98,18 +98,17 @@ impl HTTPVisitor {
 
 fn pick_value(head: &str, key: &str) -> Option<String> {
     let mut aa = head.split(":");
-    let mut rs = None;
     if let Some(_head) = aa.next() {
         if _head.to_lowercase() == key {
             if let Some(v) = aa.next() {
                 let mut vs = v.split(";");
                 if let Some(value) = vs.next() {
-                    rs = Some(value.trim().into());
+                    return Some(value.trim().into());
                 }
             }
         }
     }
-    rs
+    None
 }
 
 pub fn parse(reader: &impl AReader) -> Result<HTTP>  {
@@ -141,7 +140,7 @@ pub fn parse(reader: &impl AReader) -> Result<HTTP>  {
     }
 
     loop {
-        if reader.left()? == 0 {
+        if reader.left() == 0 {
             return Ok(p);
         }
         if reader.enter_flag(0) {

@@ -6,14 +6,10 @@ use crate::{
     },
     constants::link_type_mapper,
     specs::{
-        dns::{RecordResource, ResourceType, DNS},
-        http::{self, HTTPVisitor, HttpType, HTTP},
-        tcp::{ACK, FIN, RESET, SYNC, TCP},
-        tls::{
+        dns::{RecordResource, ResourceType, DNS}, error::ErrorVisitor, http::{self, HTTPVisitor, HttpType, HTTP}, tcp::{ACK, FIN, RESET, SYNC, TCP}, tls::{
             handshake::{HandshakeClientHello, HandshakeServerHello, HandshakeType},
             TLSRecorMessage, TLSVisitor, TLS,
-        },
-        ProtocolData,
+        }, ProtocolData
     },
 };
 use chrono::{DateTime, Utc};
@@ -406,6 +402,8 @@ impl Endpoint {
                 last_refer._app_cache = Some(result);
                 let seg = TCPSegments { items: segments, _type };
                 return Some(Rc::new(RefCell::new(seg)));
+            } else {
+                // println!("")
             }
             drop(last_refer);
         }
@@ -503,7 +501,7 @@ impl Endpoint {
                 if let Ok(http) = http::parse(&reader) {
                     let len = http.len;
                     let is_chunked = http.chunked;
-                    let exist = reader.left().unwrap();
+                    let exist = reader.left();
                     let reff = Rc::new(RefCell::new(http));
                     if len > 0 {
                         self.connec_type = TCPPAYLOAD::HTTPLEN(reff);
@@ -606,18 +604,40 @@ impl Endpoint {
                     // remove all
                     let data: Vec<u8> = self._cache.drain(..).collect();
                     let reader = Reader::new_raw(Rc::new(data));
-                    let rs = TLSVisitor.visit(&reader);
-                    self.shift_cache(None, rs);
+                    let _rs = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| TLSVisitor.visit(&reader)));
+                    if let Ok(rs) = _rs {
+                        self.shift_cache(None, rs);
+                    } else {
+                        let _rs = ErrorVisitor.visit2(&reader, "error");
+                        self.shift_cache(None, _rs);
+                    }
                     self._segments = None;
                     self._cache = Vec::new();
                     self.connec_type = TCPPAYLOAD::NONE;
                 } else {
                     let mount: Vec<u8> = self._cache.drain(0..size).collect();
-                    let reader = Reader::new_raw(Rc::new(mount));
-                    let rs = TLSVisitor.visit(&reader);
-                    self.connec_type = TCPPAYLOAD::NONE;
-                    self.shift_cache(Some(size), rs);
-                    self.update_segment();
+                    let data_ref = Rc::new(mount);
+                    let reader = Reader::new_raw(data_ref.clone());
+                    let _rs = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| TLSVisitor.visit(&reader)));
+                    if let Ok(rs) = _rs {
+                        self.connec_type = TCPPAYLOAD::NONE;
+                        self.shift_cache(Some(size), rs);
+                        self.update_segment();
+                    } else {
+                        // if let Some(insegments) = &self._segments {
+                        //     print!("frames: [");
+                        //     for s in insegments.iter() {
+                        //         print!("{} ", s.frame_refer.as_ref().borrow().index)
+                        //     }
+                        // }
+                        // println!("] size{}", size);
+                        // print!("data: [");
+                        // for bt in data_ref.as_ref() {
+                        //     print!("{:02x}", *bt);
+                        // }
+                        // println!("]");
+                        self.shift_cache(Some(size), ErrorVisitor.visit2(&reader, "error"));
+                    }
                 }
             }
             TCPPAYLOAD::NONE => {
@@ -1380,7 +1400,7 @@ impl Instance {
                     Err(e) => {
                         error!("parse_frame_failed index:[{}] at {}", count, next);
                         error!("msg:[{}]", e.to_string());
-                        let (ep, _) = crate::specs::error::ErrorVisitor.visit(&f, &reader, &next).unwrap();
+                        let (ep, _) = crate::specs::error::ErrorVisitor.visit(&f, &reader,&next).unwrap();
                         f.add_element(ctx, ep, &reader);
                         // process::exit(0x0100);
                         break 'ins;
@@ -1477,7 +1497,7 @@ impl Instance {
         let ctx = self.context();
         let info = &ctx.info;
         if info.start_time > info.end_time {
-            bail!("time error");
+            return Ok(Lines::empty());
         }
         let duration = info.end_time - info.start_time;
         let start = info.start_time;

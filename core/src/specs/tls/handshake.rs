@@ -1,3 +1,4 @@
+// use std::cell::RefCell;
 use std::fmt::Formatter;
 use std::rc::Rc;
 
@@ -505,37 +506,40 @@ pub struct HandshakeClientHello {
     session: Vec<u8>,
     ciper_suites: Ref2<CupherSuites>,
     compress_method: Ref2<CompressMethod>,
-    extensions: Ref2<ExtenstionPack>,
+    extensions: Option<ExtenstionPack>,
 }
 impl HandshakeClientHello {
     pub fn server_name(&self) -> Option<Vec<String>> {
-        let exps = self.extensions.as_ref().borrow();
-        for ext in exps.items.iter() {
-            if let Some(_info) = &ext.borrow().info {
-                if let ExtensionType::ServerName(v) = _info {
-                    return Some(v.clone())
+        if let Some(exps) = &self.extensions {
+            for ext in exps.items.iter() {
+                if let Some(_info) = &ext.borrow().info {
+                    if let ExtensionType::ServerName(v) = _info {
+                        return Some(v.clone())
+                    }
                 }
             }
         }
         None
     }
     pub fn versions(&self) -> Option<Vec<String>> {
-        let exps = self.extensions.as_ref().borrow();
-        for ext in exps.items.iter() {
-            if let Some(_info) = &ext.borrow().info {
-                if let ExtensionType::Version(v) = _info {
-                    return Some(v.clone());
+        if let Some(exps) = &self.extensions {
+            for ext in exps.items.iter() {
+                if let Some(_info) = &ext.borrow().info {
+                    if let ExtensionType::Version(v) = _info {
+                        return Some(v.clone());
+                    }
                 }
             }
         }
         None
     }
     pub fn negotiation(&self) -> Option<Vec<String>> {
-        let exps = self.extensions.as_ref().borrow();
-        for ext in exps.items.iter() {
-            if let Some(_info) = &ext.borrow().info {
-                if let ExtensionType::Negotiation(v) = _info {
-                    return Some(v.clone());
+        if let Some(exps) = &self.extensions {
+            for ext in exps.items.iter() {
+                if let Some(_info) = &ext.borrow().info {
+                    if let ExtensionType::Negotiation(v) = _info {
+                        return Some(v.clone());
+                    }
                 }
             }
         }
@@ -547,7 +551,7 @@ impl HandshakeClientHello {
         drop(reff);
         list
     }
-    fn create(reader: &Reader, packet: &PacketContext<HandshakeProtocol>) -> Result<Self> {
+    fn create(reader: &Reader, packet: &PacketContext<HandshakeProtocol>, _finish: usize) -> Result<Self> {
         reader.read8()?;
         let min = reader.read8()?;
         let version_desc = format!("Version: {} (0x03{})", tls_min_type_mapper(min), min);
@@ -559,7 +563,12 @@ impl HandshakeClientHello {
         packet._build(reader, reader.cursor() - session_len as usize, session_len as usize, format!("Session: {}", hexlize(session)));
         let ciper_suites: Ref2<CupherSuites> = packet.build_packet(reader, CupherSuites::create, None, None)?;
         let compress_method = packet.build_packet(reader, CompressMethod::create, None, None)?;
-        let extensions = packet.build_packet(reader, ExtenstionPack::create, None, None)?;
+        let mut extensions = None;
+        if reader.left() > 0 {
+            let ext = packet.build_packet(reader, ExtenstionPack::create, None, None)?;
+            extensions = Some(ext.take());
+        }
+        // let extensions = packet.build_packet(reader, ExtenstionPack::create, None, None)?;
         Ok(HandshakeClientHello {
             random: random.to_vec(),
             session: session.to_vec(),
@@ -575,20 +584,21 @@ pub struct HandshakeServerHello {
     session: Vec<u8>,
     pub ciper_suite: u16,
     method: u8,
-    extensions: Ref2<ExtenstionPack>,
+    extensions: Option<ExtenstionPack>,
 }
 impl HandshakeServerHello {
     pub fn ciper_suite(&self)-> String {
         tls_cipher_suites_mapper(self.ciper_suite)
     }
     pub fn versions(&self) -> Option<String> {
-        let exps = self.extensions.as_ref().borrow();
-        for ext in exps.items.iter() {
-            if let Some(_info) = &ext.borrow().info {
-                if let ExtensionType::Version(v) = _info {
-                    // return v.get(0).clone();
-                    if let Some(version) = v.get(0) {
-                        return Some(version.into())
+        if let Some(exps) = &self.extensions {
+            for ext in exps.items.iter() {
+                if let Some(_info) = &ext.borrow().info {
+                    if let ExtensionType::Version(v) = _info {
+                        // return v.get(0).clone();
+                        if let Some(version) = v.get(0) {
+                            return Some(version.into())
+                        }
                     }
                 }
             }
@@ -596,17 +606,18 @@ impl HandshakeServerHello {
         None
     }
     pub fn negotiation(&self) -> Option<Vec<String>> {
-        let exps = self.extensions.as_ref().borrow();
-        for ext in exps.items.iter() {
-            if let Some(_info) = &ext.borrow().info {
-                if let ExtensionType::Negotiation(v) = _info {
-                    return Some(v.clone());
+        if let Some(ex) = &self.extensions {
+            for ext in ex.items.iter() {
+                if let Some(_info) = &ext.borrow().info {
+                    if let ExtensionType::Negotiation(v) = _info {
+                        return Some(v.clone());
+                    }
                 }
             }
         }
         None
     }
-    fn create(reader: &Reader, packet: &PacketContext<HandshakeProtocol>) -> Result<Self> {
+    fn create(reader: &Reader, packet: &PacketContext<HandshakeProtocol>, _finish: usize) -> Result<Self> {
         reader.read8()?;
         let min = reader.read8()?;
         let version_desc = format!("Version: {} (0x03{})", tls_min_type_mapper(min), min);
@@ -618,14 +629,24 @@ impl HandshakeServerHello {
         packet._build(reader, reader.cursor() - session_len as usize, session_len as usize, format!("Session: {}", hexlize(session)));
         let ciper_suite = packet.build_fn(reader, Reader::_read16_be, CupherSuites::_type)?;
         let method = packet.build_format(reader, Reader::_read8, "Compression Method: ({})")?;
-        let extensions = packet.build_packet(reader, ExtenstionPack::create, None, None)?;
+        if reader.left() > 0 {
+            let extensions = packet.build_packet(reader, ExtenstionPack::create, None, None)?;
+            return Ok(HandshakeServerHello {
+                random: random.to_vec(),
+                session: session.to_vec(),
+                ciper_suite,
+                method,
+                extensions: Some(extensions.take()),
+            });
+        }
         Ok(HandshakeServerHello {
             random: random.to_vec(),
             session: session.to_vec(),
             ciper_suite,
             method,
-            extensions,
+            extensions: None,
         })
+        
     }
 }
 
@@ -746,7 +767,7 @@ impl HandshakeProtocol {
                 p.msg = HandshakeType::Encrypted;
                 return Ok(());
             }
-            if head_len as usize > reader.left()? {
+            if head_len as usize > reader.left() {
                 p.msg = HandshakeType::Encrypted;
                 return Ok(());
             }
@@ -758,10 +779,10 @@ impl HandshakeProtocol {
 
             match head_type {
                 1 => {
-                    p.msg = HandshakeType::ClientHello(Rc::new(HandshakeClientHello::create(reader, packet)?));
+                    p.msg = HandshakeType::ClientHello(Rc::new(HandshakeClientHello::create(reader, packet, _finish)?));
                 }
                 2 => {
-                    p.msg = HandshakeType::ServerHello(Rc::new(HandshakeServerHello::create(reader, packet)?));
+                    p.msg = HandshakeType::ServerHello(Rc::new(HandshakeServerHello::create(reader, packet, _finish)?));
                 }
                 11 => {
                     let pk = packet.build_packet(reader, HandshakeCertificate::create, Some(_finish), None)?;

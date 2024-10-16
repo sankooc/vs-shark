@@ -47,7 +47,7 @@ pub struct IPv4 {
 
 impl IPv4 {
     fn _create(reader: &Reader, packet: &PacketContext<Self>, p: &mut std::cell::RefMut<Self>, _: Option<PacketOpt>) -> Result<()> {
-        let _start = reader.left()?;
+        let _start = reader.left();
         let head = reader.read8()?;
         let head_len = head & 0x0f;
         let _ = reader.read8(); //tos
@@ -72,7 +72,7 @@ impl IPv4 {
         if ext > 0 {
             reader.slice((ext * 4) as usize);
         }
-        let _stop = reader.left()?;
+        let _stop = reader.left();
         if total_len == 0 {
             p.payload_len = None;
         } else {

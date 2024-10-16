@@ -51,7 +51,7 @@ impl IEE80211 {
         p.present = packet.build_format(reader, Reader::_read32_ne, "Header length: {}")?;
         let _len = p.len - 8;
         packet.build_skip(reader, _len as usize);
-        let left = reader.left()?;
+        let left = reader.left();
         if left < 34 {
             return Ok(());
         }

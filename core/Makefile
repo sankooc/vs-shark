@@ -1,5 +1,5 @@
 unit:
-	RUST_LOG=debug RUST_BACKTRACE=full cargo test unit::test_certificate -- --nocapture
+	RUST_LOG=debug RUST_BACKTRACE=full cargo test unit -- --nocapture
 test:
 	RUST_LOG=debug RUST_BACKTRACE=full cargo test tests::real -- --nocapture
 clean:

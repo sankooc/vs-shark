@@ -28,7 +28,7 @@ impl Ethernet {
         p.target_mac = packet.build_lazy(reader, Reader::_read_mac, Description::target_mac).ok();
         // let ptype = packet.build_lazy(reader, Reader::_read16_be, Description::ptype)?;
         let ptype = reader.read16(true)?;
-        if reader.left()? == ptype as usize {
+        if reader.left() == ptype as usize {
             p.len = ptype;
             p.ptype = 1010;// IEEE 802.3
             packet._build(reader, reader.cursor() - 2, 2, format!("Length: {}", ptype));

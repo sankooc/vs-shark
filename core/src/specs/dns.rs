@@ -22,10 +22,10 @@ type Authority = Ref2<MultiBlock<RecordResource>>;
 pub struct DNS {
     transaction_id: u16,
     flag: u16,
-    questions: u16,
+    pub questions: u16,
     pub answer_rr: u16,
-    authority_rr: u16,
-    additional_rr: u16,
+    pub authority_rr: u16,
+    pub additional_rr: u16,
     opcode: u16,
     is_response: bool,
     questions_ref: MultiBlock<Questions>,
@@ -328,7 +328,7 @@ impl DNSVisitor {
 }
 
 impl DNSVisitor {
-    fn visit2(&self, reader: &Reader) -> Result<(ProtocolData, &'static str)> {
+    pub fn visit2(&self, reader: &Reader) -> Result<(ProtocolData, &'static str)> {
         let packet = DNS::create(reader, None)?;
         Ok((ProtocolData::DNS(packet), "none"))
     }

@@ -127,7 +127,7 @@ impl TLS {
         return Ok((is_tls, len as usize));
     }
     pub fn check(reader: &Reader) -> Result<(bool, usize)> {
-        let left = reader.left()?;
+        let left = reader.left();
         if left <= 5 {
             return Ok((false, 0));
         }
@@ -196,7 +196,7 @@ impl TLSVisitor {
         let packet: PacketContext<TLS> = Frame::create_packet();
         let mut p: std::cell::RefMut<'_, TLS> = packet.get().borrow_mut();
         loop {
-            let left_size = reader.left()?;
+            let left_size = reader.left();
             if left_size == 0 {
                 //TODO FLUSH SEGMENT
                 break;
