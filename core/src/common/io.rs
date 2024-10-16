@@ -115,7 +115,7 @@ impl Reader {
     pub fn _read_dns_query(reader: &Reader) -> Result<String> {
         reader.read_dns_query()
     }
-    pub fn _read_compress_string(reader: &Reader) -> Result<(String, u16)> {
+    pub fn _read_compress_string(reader: &Reader) -> Result<(String, bool)> {
         reader.read_compress_string()
     }
     pub fn _read_netbios_string(reader: &Reader) -> Result<String> {
@@ -189,23 +189,23 @@ pub trait AReader:Clone {
         }
         Ok(list.into_iter().collect::<Vec<_>>().join("."))
     }
-    fn read_compress_string(&self) -> Result<(String, u16)> {
+    fn read_compress_string(&self) -> Result<(String, bool)> {
         let mut list: Vec<String> = Vec::new();
         loop {
             if self.left()? == 2 {
-                return Ok((list.into_iter().collect::<Vec<_>>().join("."), self.read16(true)?));
+                return Ok((list.into_iter().collect::<Vec<_>>().join("."), true));
             }
             let next = self._get_data()[self.cursor()];
             if next == 0 {
                 self._move(1);
-                return Ok((list.into_iter().collect::<Vec<_>>().join("."), 0));
+                return Ok((list.into_iter().collect::<Vec<_>>().join("."), false));
             }
             if next >= 0xc0 {
-                return Ok((list.into_iter().collect::<Vec<_>>().join("."), self.read16(true)?));
+                return Ok((list.into_iter().collect::<Vec<_>>().join("."), true));
             }
             let __left = self.left()?;
             if next as usize > __left {
-                return Ok((list.into_iter().collect::<Vec<_>>().join("."), 0));
+                return Ok((list.into_iter().collect::<Vec<_>>().join("."), false));
             }
             let _size = self.read8()?;
             if _size > 0 {
@@ -214,17 +214,19 @@ pub trait AReader:Clone {
             }
         }
     }
-    fn read_dns_compress_string(&self, archor: usize, def: &str, refer: u16) -> Result<String> {
-        if refer == 0 {
-            // self._move(1);
+    fn read_dns_compress_string(&self, archor: usize, def: &str) -> Result<String> {
+        let next = self._get_data()[self.cursor()];
+        if next == 0 {
+            self._move(1);
             return Ok(def.into());
         }
+        let refer = self.read16(true)?;
         let pre = refer >> 8;
         if pre < 0xc0 {
             self._back(2);
             let (str, refer2) = self.read_compress_string()?;
-            if refer2 > 0 {
-                return Ok(self.read_dns_compress_string(archor, &str, refer2)?);
+            if refer2 {
+                return Ok(self.read_dns_compress_string(archor, &str)?);
             } else {
                 return Ok(str);
             }
@@ -239,15 +241,18 @@ pub trait AReader:Clone {
         }
         let (str, refer2) = _reader.read_compress_string()?;
         rs.push_str(str.as_str());
-        if refer2 > 0 {
-            Ok(self.read_dns_compress_string(archor, rs.as_str(), refer2)?)
+        if refer2 {
+            Ok(self.read_dns_compress_string(archor, rs.as_str())?)
         } else {
             Ok(rs)
         }
     }
     fn _read_compress(&self, archor: usize) -> Result<String> {
-        let (pre, str_ref) = self.read_compress_string()?;
-        self.read_dns_compress_string(archor, &pre, str_ref)
+        let (pre, has_next) = self.read_compress_string()?;
+        if has_next {
+            return self.read_dns_compress_string(archor, &pre)
+        }
+        Ok(pre)
     }
     fn read_netbios_string(&self) -> Result<String> {
         let mut list: Vec<String> = Vec::new();
