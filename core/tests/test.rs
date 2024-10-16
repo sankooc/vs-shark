@@ -1,7 +1,5 @@
 #[cfg(test)]
 mod unit {
-    use log::info;
-
     use core::{common::{base::PacketContext, concept::Field, io::Reader}, specs::{self, ProtocolData}};
     use std::{fs, rc::Rc, str::from_utf8};
     fn build_reader(name: &str) -> Vec<u8> {
@@ -19,7 +17,7 @@ mod unit {
     
     fn _dis(inx: usize, field: &Field) {
         //assert_eq!("hello       ", format!("{:width$}", "hello", width=12));
-        info!("{:pad$}- {}", "", field.summary(), pad = inx);
+        println!("{:pad$}- {}", "", field.summary(), pad = inx);
         let fields = field.children();
         for f in fields.iter() {
             _dis(inx + 1, f);
@@ -32,10 +30,7 @@ mod unit {
       }
     }
 
-    // fn mock_frame() -> Frame {
-    //   // let instance = Instance::new(FileType::PCAPNG);
-    //   Frame::new(Vec::new(), 12, 10000, 10000, 1, 1)
-    // }
+    
     #[test]
     fn test_ethernet() {
       // let frame = mock_frame();
@@ -55,8 +50,65 @@ mod unit {
       }
     }
     #[test]
+    fn test_dns_query() {
+      let data: Vec<u8> = build_reader("dns_query");
+      let reader = Reader::new_raw(Rc::new(data));
+      let (prop, next) = specs::dns::DNSVisitor.visit2(&reader).unwrap();
+      assert_eq!(next, "none");
+      match &prop {
+        ProtocolData::DNS(el) => {
+          let val = el.get().borrow();
+          assert_eq!(val.questions, 1);
+          assert_eq!(val.answer_rr, 0);
+          assert_eq!(val.authority_rr, 0);
+          assert_eq!(val.additional_rr, 0);
+        },
+        _ => {
+          assert!(false);
+        }
+      }
+    }
+    #[test]
+    fn test_dns_auth() {
+      // env_logger::builder().is_test(true).try_init().unwrap();
+      let data: Vec<u8> = build_reader("dns_auth");
+      let reader = Reader::new_raw(Rc::new(data));
+      let (prop, next) = specs::dns::DNSVisitor.visit2(&reader).unwrap();
+      assert_eq!(next, "none");
+      match &prop {
+        ProtocolData::DNS(el) => {
+          let val = el.get().borrow();
+          assert_eq!(val.questions, 1);
+          assert_eq!(val.answer_rr, 0);
+          assert_eq!(val.authority_rr, 1);
+          assert_eq!(val.additional_rr, 1);
+          inspect(el);
+        },
+        _ => {
+          assert!(false);
+        }
+      }
+    }
+    #[test]
+    fn test_tls_err1() {
+      let data: Vec<u8> = build_reader("tls");
+      let reader = Reader::new_raw(Rc::new(data));
+      let prop = specs::tls::TLSVisitor.visit(&reader).unwrap();
+      if let ProtocolData::TLS(tls_packet) = prop {
+        let tls = tls_packet.get().borrow();
+        assert_eq!(tls.records.len(), 1);
+      }
+    }
+    // #[test]
+    // fn test_tls_err2() {
+    //   let data: Vec<u8> = build_reader("tls_2");
+    //   let reader = Reader::new_raw(Rc::new(data));
+    //   let (_prop) = specs::tls::TLSVisitor.visit(&reader).unwrap();
+    // }
+
+    #[test]
     fn test_certificate() {
-      env_logger::builder().is_test(true).try_init().unwrap();
+      // env_logger::builder().is_test(true).try_init().unwrap();
       let data: Vec<u8> = build_reader("certificate");
       let reader = Reader::new_raw(Rc::new(data));
       let ins = specs::tls::handshake::Certificate::create(&reader, Some(1425)).unwrap();

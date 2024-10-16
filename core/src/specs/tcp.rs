@@ -321,7 +321,7 @@ impl TCPVisitor {
 
 impl crate::common::base::Visitor for TCPVisitor {
     fn visit(&self, frame: &mut Frame, _ctx: &mut Context, reader: &Reader) -> Result<(ProtocolData, &'static str)> {
-        let _start = reader.left()? as u16;
+        let _start = reader.left() as u16;
         let packet: PacketContext<TCP> = Frame::create_packet();
         let mut p = packet.get().borrow_mut();
         p.frame_refer = frame.refer.clone();
@@ -339,7 +339,7 @@ impl crate::common::base::Visitor for TCPVisitor {
             let options = packet.build_packet(reader, TCPVisitor::read_options, Some(len as usize), Some("Options".into()))?;
             p.options = Some(options);
         }
-        let left_size = reader.left().unwrap_or(0) as u16;
+        let left_size = reader.left() as u16;
         p.payload_len = left_size;
         let ip_packet = frame.get_ip();
         let unwap = ip_packet.deref().borrow();

@@ -34,7 +34,7 @@ impl SSDP {
     
     fn _create(reader: &Reader, packet: &PacketContext<Self>, p: &mut std::cell::RefMut<Self>, _: Option<PacketOpt>) -> Result<()> {
         loop {
-            if reader.left()? == 0 {
+            if reader.left() == 0 {
                 break;
             }
             if reader.enter_flag(0) {
@@ -43,7 +43,7 @@ impl SSDP {
             let header = packet.build_format(reader, Reader::_read_enter, "{}")?;
             p.header.push(header);
         }
-        let dlen = reader.left()?;
+        let dlen = reader.left();
         packet._build(reader, reader.cursor(), dlen, format!("File Data: {} bytes",dlen));
         Ok(())
     }

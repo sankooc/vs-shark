@@ -170,7 +170,7 @@ impl LineData {
     }
 }
 
-#[derive(Serialize)]
+#[derive(Default, Serialize)]
 pub struct Lines {
     x: Vec<String>,
     y: HashSet<String>,
@@ -180,6 +180,9 @@ pub struct Lines {
 impl Lines {
     pub fn new(x: Vec<String>, y: HashSet<String>, data: Vec<LineData>) -> Self {
         Self { x, y, data }
+    }
+    pub fn empty() -> Self {
+        Lines{..Default::default()}
     }
     pub fn to_json(&self) -> String {
         serde_json::to_string(self).unwrap()

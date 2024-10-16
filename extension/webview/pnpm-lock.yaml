@@ -5072,5 +5072,5 @@ packages:
 
   file:../../wasm/pkg:
     resolution: {directory: ../../wasm/pkg, type: directory}
-    name: nshark
+    name: pkg
     dev: false

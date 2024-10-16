@@ -40,10 +40,23 @@ impl ErrorVisitor {
         p.proto = proto;
         drop(p);        
         let start = reader.cursor();
-        let left_size = reader.left()?;
+        let left_size = reader.left();
         if left_size > 0 {
             packet._build(reader, start, left_size, format!("Packet length: {}", left_size));
         }
         Ok((super::ProtocolData::ERROR(packet), "none"))
+    }
+    
+    pub fn visit2(&self, reader: &Reader, proto: &'static str) -> Result<ProtocolData> {
+        let packet: PacketContext<Error> = Frame::create_packet();
+        let mut p = packet.get().borrow_mut();
+        p.proto = proto;
+        drop(p);        
+        let start = reader.cursor();
+        let left_size = reader.left();
+        if left_size > 0 {
+            packet._build(reader, start, left_size, format!("Packet length: {}", left_size));
+        }
+        Ok(super::ProtocolData::ERROR(packet))
     }
 }

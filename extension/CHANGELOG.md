@@ -31,3 +31,6 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 - 0.3.8
   * optimize communication between workbench to viewer
+
+- 0.4.0
+- 0.5.0
