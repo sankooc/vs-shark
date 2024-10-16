@@ -82,10 +82,13 @@ Try out [PcapViewer](https://sankooc.github.io/pcap/) in your browser.
   <img src="assets/conv.png" width="80%" alt="TCP Conversations"/>
 </details>
 
+---
+
 <details>
   <summary>HTTP Connection</summary>
   <img src="assets/http.png" width="80%" alt="HTTP Connection"/>
 </details>
+
 ---
 <details>
   <summary>DNS Response</summary>
