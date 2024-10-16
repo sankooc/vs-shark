@@ -79,10 +79,10 @@ impl DNS {
             let qs: Ref2<Vec<Ref2<RecordResource>>> = packet.build_packet(reader, _read, None, Some("Answers".into()))?;
             p.answers_ref = Some(qs);
         }
-        if authority_rr > 0 {
-            let _read = |reader: &Reader, _: Option<()>| DNSVisitor::read_rrs(reader, authority_rr, _cur);
-            p.authorities_ref = packet.build_packet(reader, _read, None, Some("Authorities".into())).ok();
-        }
+        // if authority_rr > 0 {
+        //     let _read = |reader: &Reader, _: Option<()>| DNSVisitor::read_rrs(reader, authority_rr, _cur);
+        //     p.authorities_ref = packet.build_packet(reader, _read, None, Some("Authorities".into())).ok();
+        // }
         p.flag = flag;
         p.questions = questions;
         p.answer_rr = answer_rr;
