@@ -2,7 +2,7 @@
 	"name": "pcapviewer",
 	"displayName": "pcapviewer",
 	"description": "pcap/pcapng file analyzer",
-	"version": "0.3.7",
+	"version": "0.3.8",
 	"publisher": "sankooc",
 	"repository": {
 		"type": "git",
@@ -42,7 +42,7 @@
 	"scripts": {
 		"cp1": "cp webview/src/common.ts src/common.ts",
 		"cp2": "cp webview/src/client.ts src/client.ts",
-		"cp3": "cp webview/src/client.ts src/gen.ts",
+		"cp3": "cp webview/src/gen.ts src/gen.ts",
 		"build": "npm run cp1 && npm run cp2 && npm run cp3 && cd webview && npm run css && npm run build",
 		"vscode:prepublish": "pnpm run package",
 		"compile": "webpack && cp node_modules/rshark/nshark* dist/",
