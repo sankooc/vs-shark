@@ -105,8 +105,8 @@ impl DHCPVisitor {
 
         p.hardware_len = packet.build_format(reader, Reader::_read8, "Hardware Address Len: {}")?;
         p.hops = packet.build_format(reader, Reader::_read8, "Protocol size: {}")?;
-        p.transaction_id = packet.build_format(reader, Reader::_read32_be, "")?;
-        p.sec = packet.build_format(reader, Reader::_read16_be, "")?;
+        p.transaction_id = packet.build_format(reader, Reader::_read32_be, "Transaction ID: {}")?;
+        p.sec = packet.build_format(reader, Reader::_read16_be, "Seconds elapsed: {}")?;
         p.flag = reader.read16(false)?;
         p.client_address = packet.build_format(reader, Reader::_read_ipv4, "Client Address: {}").ok();
         p.your_address = packet.build_format(reader, Reader::_read_ipv4, "Client Address: {}").ok();

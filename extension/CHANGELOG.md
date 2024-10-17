@@ -32,5 +32,9 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - 0.3.8
   * optimize communication between workbench to viewer
 
+- 0.3.9
+  * fix dhcp recognize
+  * pcapng loopback type
+
 - 0.4.0
 - 0.5.0
