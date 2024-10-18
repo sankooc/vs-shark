@@ -376,7 +376,7 @@ pub struct Endpoint {
     pub http_messages: Vec<(u64, Ref2<crate::specs::http::HTTP>)>,
 
     pub _segments: Option<VecDeque<Segment>>,
-    pub _cache: Vec<u8>,
+    pub _buffer: Vec<u8>,
 
     pub connec_type: TCPPAYLOAD,
 }
@@ -399,7 +399,7 @@ impl Endpoint {
                     self.add_http(packet._clone_obj(), ts);
                     _type = "HTTP";
                 }
-                last_refer._app_cache = Some(result);
+                last_refer._app_packet = Some(result);
                 let seg = TCPSegments { items: segments, _type };
                 return Some(Rc::new(RefCell::new(seg)));
             } else {
@@ -456,23 +456,23 @@ impl Endpoint {
     }
     pub fn clear(&mut self) {
         self._segments = Some(VecDeque::new());
-        self._cache = Vec::new();
+        self._buffer = Vec::new();
     }
     fn shift(&mut self, size: usize) -> Vec<u8> {
-        let mut _cache = Vec::new();
-        _cache.append(&mut self._cache);
-        if size < self._cache.len() {
-            self._cache = _cache[size..].to_vec();
-            _cache[..size].to_vec()
+        let mut _buffer = Vec::new();
+        _buffer.append(&mut self._buffer);
+        if size < self._buffer.len() {
+            self._buffer = _buffer[size..].to_vec();
+            _buffer[..size].to_vec()
         } else {
-            self._cache = Vec::new();
-            _cache
+            self._buffer = Vec::new();
+            _buffer
         }
     }
     pub fn add_segment(&mut self, data: Vec<u8>, frame_refer: Ref2<FrameRefer>) {
         let segment = Segment { frame_refer, size: data.len() };
         let mut _data = data;
-        self._cache.append(&mut _data);
+        self._buffer.append(&mut _data);
         match self._segments.as_mut() {
             Some(mut _list) => {
                 _list.push_back(segment);
@@ -492,7 +492,7 @@ impl Endpoint {
     pub fn update_segment(&mut self) {
         match &self.connec_type {
             TCPPAYLOAD::HTTPPRE => {
-                let reader = SliceReader::new(&self._cache);
+                let reader = SliceReader::new(&self._buffer);
                 if !HTTPVisitor::check(&reader) {
                     drop(reader);
                     self.clear();
@@ -505,18 +505,18 @@ impl Endpoint {
                     let reff = Rc::new(RefCell::new(http));
                     if len > 0 {
                         self.connec_type = TCPPAYLOAD::HTTPLEN(reff);
-                        self._cache = reader.slice(exist).to_vec();
+                        self._buffer = reader.slice(exist).to_vec();
                         return self.update_segment();
                     } else if is_chunked {
                         self.connec_type = TCPPAYLOAD::HTTPCHUNKED(reff);
-                        self._cache = reader.slice(exist).to_vec();
+                        self._buffer = reader.slice(exist).to_vec();
                         return self.update_segment();
                     } else {
                         let size = reader.cursor();
 
                         let rs = http::no_content(reff.clone());
 
-                        self._cache = reader.slice(exist).to_vec();
+                        self._buffer = reader.slice(exist).to_vec();
                         self.shift_cache(Some(size), rs);
                         self.clear();
                         // parse
@@ -526,7 +526,7 @@ impl Endpoint {
             }
             TCPPAYLOAD::HTTPLEN(http) => {
                 let len = http.as_ref().borrow().len;
-                let clen = self._cache.len();
+                let clen = self._buffer.len();
                 if clen > len {
                     let cloned = http.clone();
                     let body = self.shift(len);
@@ -545,7 +545,7 @@ impl Endpoint {
             }
             TCPPAYLOAD::HTTPCHUNKED(_http) => {
                 //https://stackoverflow.com/questions/16460012/how-to-get-the-size-of-chunk-in-http-response-using-java-if-transfer-encoding-is
-                let _reader = SliceReader::new(&self._cache);
+                let _reader = SliceReader::new(&self._buffer);
                 // let mut data = Vec::new();
                 let mut complete = false;
                 loop {
@@ -568,7 +568,7 @@ impl Endpoint {
                 }
                 drop(_reader);
                 if complete {
-                    let reader2 = SliceReader::new(&self._cache);
+                    let reader2 = SliceReader::new(&self._buffer);
                     let mut data = Vec::new();
                     loop {
                         if let Ok(line) = reader2.try_read_enter(30) {
@@ -577,7 +577,7 @@ impl Endpoint {
                                     reader2._move(2);
                                     reader2._move(2);
                                     let _size = reader2.cursor();
-                                    self._cache.drain(0.._size);
+                                    self._buffer.drain(0.._size);
                                     let rs = http::content_len(_http.clone(), data);
                                     self.shift_cache(None, rs);
                                     self.clear();
@@ -598,11 +598,11 @@ impl Endpoint {
             }
             TCPPAYLOAD::TLS(next_size) => {
                 let size = *next_size;
-                let clen = self._cache.len();
+                let clen = self._buffer.len();
                 if size > clen {
                 } else if size == clen {
                     // remove all
-                    let data: Vec<u8> = self._cache.drain(..).collect();
+                    let data: Vec<u8> = self._buffer.drain(..).collect();
                     let reader = Reader::new_raw(Rc::new(data));
                     let _rs = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| TLSVisitor.visit(&reader)));
                     if let Ok(rs) = _rs {
@@ -612,10 +612,10 @@ impl Endpoint {
                         self.shift_cache(None, _rs);
                     }
                     self._segments = None;
-                    self._cache = Vec::new();
+                    self._buffer = Vec::new();
                     self.connec_type = TCPPAYLOAD::NONE;
                 } else {
-                    let mount: Vec<u8> = self._cache.drain(0..size).collect();
+                    let mount: Vec<u8> = self._buffer.drain(0..size).collect();
                     let data_ref = Rc::new(mount);
                     let reader = Reader::new_raw(data_ref.clone());
                     let _rs = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| TLSVisitor.visit(&reader)));
@@ -641,15 +641,15 @@ impl Endpoint {
                 }
             }
             TCPPAYLOAD::NONE => {
-                let cache_len = self._cache.len();
+                let cache_len = self._buffer.len();
                 if cache_len > 5 {
-                    let (is_tls, len) = TLS::_check(&self._cache).unwrap();
+                    let (is_tls, len) = TLS::_check(&self._buffer).unwrap();
                     if is_tls {
                         self.connec_type = TCPPAYLOAD::TLS(len + 5);
                         return self.update_segment();
                     }
                 }
-                let reader = SliceReader::new(&self._cache);
+                let reader = SliceReader::new(&self._buffer);
                 if HTTPVisitor::check(&reader) {
                     self.connec_type = TCPPAYLOAD::HTTPPRE;
                     return self.update_segment();
@@ -660,7 +660,7 @@ impl Endpoint {
     pub fn flush_segment(&mut self) {
         self.update_segment();
         self._segments = None;
-        self._cache = Vec::new();
+        self._buffer = Vec::new();
         self.connec_type = TCPPAYLOAD::NONE;
     }
     fn clear_segment(&mut self) {}
@@ -849,7 +849,7 @@ impl PacketBuilder for TCPSegments {
 pub struct FrameRefer {
     index: u32,
     ts: u64,
-    pub _app_cache: Option<ProtocolData>,
+    pub _app_packet: Option<ProtocolData>,
     pub segments: Option<Ref2<TCPSegments>>,
 }
 #[derive(Default)]
@@ -890,6 +890,10 @@ impl Frame {
     }
     pub fn get_protocol(&self) -> String {
         self.summary.protocol.to_lowercase()
+    }
+    fn set_protocol(&mut self, pro: String) {
+        let mref = &mut self.summary;
+        mref.protocol = format!("{}", pro);
     }
     pub fn do_match(&self, protos: &HashSet<String>) -> bool {
         let proto = self.get_protocol();
@@ -957,7 +961,7 @@ impl Frame {
         }
         drop(val);
     }
-    pub fn update_tcp(&mut self, packet: &mut TCP, ctx: &mut Context, reader: &Reader) {
+    fn update_tcp(&mut self, packet: &mut TCP, ctx: &mut Context, reader: &Reader) {
         let ippacket = self.get_ip();
         let refer = ippacket.deref().borrow();
         ctx.update_tcp(self, refer.deref(), packet, reader)
@@ -982,7 +986,7 @@ impl Frame {
         let fields = self.get_fields();
         serde_json::to_string(&fields)
     }
-    pub fn data(&self) -> Rc<Vec<u8>> {
+    fn data(&self) -> Rc<Vec<u8>> {
         self.data.clone()
     }
     pub fn get_reader(&self) -> Reader {
@@ -1001,21 +1005,21 @@ impl Frame {
     pub fn _create<K>(val: Ref2<K>) -> PacketContext<K> {
         PacketContext { val, fields: RefCell::new(Vec::new()) }
     }
-    pub fn get_tcp_map_key(&self) -> (String, bool) {
-        let sum = &self.summary;
-        let _ip = sum.ip.clone().expect("no_ip_layer");
-        let _tcp = sum.tcp.clone().expect("no_tcp_layer");
-        let refer = _ip.deref().borrow();
-        let tcp_refer = _tcp.deref().borrow();
-        Context::tcp_key(refer.deref(), tcp_refer.deref())
-    }
+    // pub fn get_tcp_map_key(&self) -> (String, bool) {
+    //     let sum = &self.summary;
+    //     let _ip = sum.ip.clone().expect("no_ip_layer");
+    //     let _tcp = sum.tcp.clone().expect("no_tcp_layer");
+    //     let refer = _ip.deref().borrow();
+    //     let tcp_refer = _tcp.deref().borrow();
+    //     Context::tcp_key(refer.deref(), tcp_refer.deref())
+    // }
 
-    fn _create_http_request(&self) -> HttpRequestBuilder {
-        let (source, dest) = self.get_ip_address();
-        let (srp, dsp) = self.get_port();
-        HttpRequestBuilder::new(source, dest, srp, dsp)
-    }
-    fn ipv4_sta(_ip: &Option<Ipv4Addr>, ctx: &mut Context) {
+    // fn _create_http_request(&self) -> HttpRequestBuilder {
+    //     let (source, dest) = self.get_ip_address();
+    //     let (srp, dsp) = self.get_port();
+    //     HttpRequestBuilder::new(source, dest, srp, dsp)
+    // }
+    fn ipv4_collect(_ip: &Option<Ipv4Addr>, ctx: &mut Context) {
         let _map = &mut ctx.statistic.ip_type;
         if let Some(ip) = _ip {
             if ip.is_private() {
@@ -1033,7 +1037,7 @@ impl Frame {
             }
         }
     }
-    fn ipv6_sta(_ip: &Option<Ipv6Addr>, ctx: &mut Context) {
+    fn ipv6_collect(_ip: &Option<Ipv6Addr>, ctx: &mut Context) {
         let _map = &mut ctx.statistic.ip_type;
         if let Some(ip) = _ip {
             if ip.is_loopback() {
@@ -1050,15 +1054,15 @@ impl Frame {
             ProtocolData::IPV4(packet) => {
                 self.update_ip(ctx, packet._clone_obj());
                 let ip = packet.get().borrow();
-                Frame::ipv4_sta(&ip.source_ip, ctx);
-                Frame::ipv4_sta(&ip.target_ip, ctx);
+                Frame::ipv4_collect(&ip.source_ip, ctx);
+                Frame::ipv4_collect(&ip.target_ip, ctx);
                 drop(ip);
             }
             ProtocolData::IPV6(packet) => {
                 self.update_ip(ctx, packet._clone_obj());
                 let ip = packet.get().borrow();
-                Frame::ipv6_sta(&ip.source_ip, ctx);
-                Frame::ipv6_sta(&ip.target_ip, ctx);
+                Frame::ipv6_collect(&ip.source_ip, ctx);
+                Frame::ipv6_collect(&ip.target_ip, ctx);
                 drop(ip);
             }
             ProtocolData::ARP(packet) => {
@@ -1076,12 +1080,12 @@ impl Frame {
         let reff = &mut self.eles;
         reff.push(ele);
         let mut ref_ = self.refer.as_ref().borrow_mut();
-        if let Some(app_) = ref_._app_cache.take() {
+        if let Some(app_) = ref_._app_packet.take() {
             reff.push(app_);
         }
         drop(ref_);
-        let mref = &mut self.summary;
-        mref.protocol = format!("{}", reff.last().unwrap());
+        let protocol = format!("{}", reff.last().unwrap());
+        self.set_protocol(protocol);
     }
 }
 

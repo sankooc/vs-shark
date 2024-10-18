@@ -76,7 +76,8 @@ impl<'a> Parser<'a> {
             let right = self.parse_value()?;
             Ok(Expr::Binary(Box::new(left), op, Box::new(right)))
         } else {
-            Ok(left)
+            // Ok(left)
+            Err("No value".to_string())
         }
     }
 

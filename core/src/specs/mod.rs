@@ -62,6 +62,7 @@ type UDP = PacketContext<udp::UDP>;
 type ICMP = PacketContext<icmp::ICMP>;
 type ICMPv6 = PacketContext<icmp::ICMP6>;
 type DNS = PacketContext<dns::DNS>;
+// type MDNS = PacketContext<dns::DNS>;
 type DHCP = PacketContext<dhcp::DHCP>;
 type HTTP = PacketContext<http::HTTP>;
 type SSDP = PacketContext<ssdp::SSDP>;
@@ -89,6 +90,7 @@ pub enum ProtocolData {
     ICMPv6,
     IGMP,
     DNS,
+    // MDNS,
     DHCP,
     HTTP,
     SSDP,
