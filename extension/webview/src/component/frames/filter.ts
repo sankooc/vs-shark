@@ -16,7 +16,7 @@ class Parser {
         let expr = this.parseTerm();
 
         while (this.peek() === '&&' || this.peek() === '||') {
-            let operator = this.consume();
+            let operator = this.consume(undefined);
             let right = this.parseTerm();
             expr = { type: 'Binary', left: expr, operator: operator, right: right };
         }
@@ -25,14 +25,14 @@ class Parser {
     }
 
     // 解析单个term (处理括号或比较操作)
-    parseTerm() {
+    parseTerm(): any {
         if (this.peek() === '(') {
-            this.consume();  // 消耗 '('
+            this.consume(undefined);  // 消耗 '('
             let expr = this.parseExpression();
             if (this.peek() !== ')') {
                 throw new Error('Missing closing parenthesis');
             }
-            this.consume();  // 消耗 ')'
+            this.consume(undefined);  // 消耗 ')'
             return { type: 'Group', expression: expr };
         } else {
             return this.parseComparison();
@@ -40,7 +40,7 @@ class Parser {
     }
 
     // 解析比较操作 (例如 =, !=, <, >, >=, <=)
-    parseComparison() {
+    parseComparison(): any {
         let left = this.parseValue();
 
         let operator = this.peekComparisonOperator();
@@ -123,8 +123,8 @@ class Parser {
     }
 }
 
-const input = "tcp.ip  && (act.count >= 1 || ppc.c < 12)";
-const parser = new Parser(input);
-const result = parser.parse();
+// const input = "tcp.ip  && (act.count >= 1 || ppc.c < 12)";
+// const parser = new Parser(input);
+// const result = parser.parse();
 
-console.log(JSON.stringify(result, null, 2));
+// console.log(JSON.stringify(result, null, 2));
