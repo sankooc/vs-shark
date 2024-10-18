@@ -53,8 +53,29 @@ mod unit {
             }
         }
     }
+    #[test] 
+    fn test_dns_rr_srv() {
+        // env_logger::builder().is_test(true).try_init().unwrap();
+        let data: Vec<u8> = build_reader("dns_srv");
+        let reader = Reader::new_raw(Rc::new(data));
+        let (prop, next) = specs::dns::DNSVisitor.visit2(&reader).unwrap();
+        assert_eq!(next, "none");
+        match &prop {
+            ProtocolData::DNS(el) => {
+                let val = el.get().borrow();
+                assert_eq!(val.questions, 0);
+                assert_eq!(val.answer_rr, 2);
+                assert_eq!(val.authority_rr, 0);
+                assert_eq!(val.additional_rr, 5);
+                inspect(el);
+            }
+            _ => {
+                assert!(false);
+            }
+        }
+    }
     #[test]
-    fn test_dns_query() {
+    fn test_dns_query() { 
         let data: Vec<u8> = build_reader("dns_query");
         let reader = Reader::new_raw(Rc::new(data));
         let (prop, next) = specs::dns::DNSVisitor.visit2(&reader).unwrap();
