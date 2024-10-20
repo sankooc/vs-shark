@@ -19,7 +19,8 @@ pub mod error;
 use anyhow::bail;
 use enum_dispatch::enum_dispatch;
 use strum_macros::Display;
-
+use std::cell::RefMut;
+use crate::common::filter::PacketProps;
 
 
 pub const DEF_STATUS: &str = "info";

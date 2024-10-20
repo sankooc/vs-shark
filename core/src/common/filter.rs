@@ -36,7 +36,6 @@ impl PacketProps{
         None
     }
     pub fn merge(&mut self, other: &mut PacketProps) {
-        // other._map.drain()
         for (key, values) in other._map.drain() {
             self._map
                 .entry(key)

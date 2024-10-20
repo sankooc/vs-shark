@@ -18,7 +18,7 @@ use log::error;
 use serde_json::Error;
 use std::{
     borrow::Borrow,
-    cell::RefCell,
+    cell::{RefCell, RefMut},
     cmp,
     collections::{HashMap, HashSet, VecDeque},
     net::{Ipv4Addr, Ipv6Addr},
@@ -33,7 +33,7 @@ use crate::common::io::Reader;
 use crate::common::{FileInfo, FileType};
 
 use super::{
-    concept::{Connect, Criteria, DNSRecord, Field, FrameInfo, HttpMessage, ListResult, TCPConversation, TLSHS}, io::SliceReader
+    concept::{Connect, Criteria, DNSRecord, Field, FrameInfo, HttpMessage, ListResult, TCPConversation, TLSHS}, filter::PacketProps, io::SliceReader
 };
 
 pub fn date_str(ts: u64) -> String {
@@ -48,6 +48,7 @@ pub trait Element {
     fn get_fields(&self) -> Vec<Field>;
     fn status(&self) -> FIELDSTATUS;
     fn info(&self) -> String;
+    fn props(&self) -> RefMut<PacketProps>;
 }
 
 pub trait Visitor {
@@ -74,6 +75,7 @@ impl<T> PacketBuilder for MultiBlock<T> {
 pub struct PacketContext<T: ?Sized> {
     val: Ref2<T>,
     fields: RefCell<Vec<Box<dyn FieldBuilder<T>>>>,
+    props: RefCell<PacketProps>,
 }
 
 impl<T> PacketContext<T> {
@@ -114,10 +116,14 @@ where
     fn info(&self) -> String {
         self.get().borrow().info()
     }
-
     fn status(&self) -> FIELDSTATUS {
         self.get().borrow().status()
     }
+    
+    fn props(&self) -> RefMut<PacketProps> {
+        self.props.borrow_mut()
+    }
+    
 }
 impl<T> PacketContext<T>
 where
@@ -214,6 +220,11 @@ where
         let rs = packet._clone_obj();
         let end = reader.cursor();
         let size = end - start;
+        let mut props = self.props.borrow_mut();
+        let mut _props = packet.props.borrow_mut();
+        props.merge(_props.deref_mut());
+        drop(_props);
+        drop(props);
         self.fields.borrow_mut().push(Box::new(FieldPosition { start, size, data: reader.get_raw(), head, packet }));
         Ok(rs)
     }
@@ -870,11 +881,12 @@ pub struct Frame {
     data: Rc<Vec<u8>>,
     pub eles: Vec<ProtocolData>,
     pub refer: Ref2<FrameRefer>,
-    // pub props: PacketProps<_>,
+    pub props: PacketProps,
 }
 impl Frame {
     pub fn new(data: Vec<u8>, ts: u64, capture_size: u32, origin_size: u32, index: u32, link_type: u32) -> Frame {
         let f = Frame {
+            props: PacketProps::new(),
             eles: Vec::new(),
             refer: Rc::new(RefCell::new(FrameRefer { index, ts, ..Default::default() })),
             summary: FrameSummary { index, link_type, ..Default::default() },
@@ -895,9 +907,9 @@ impl Frame {
         let mref = &mut self.summary;
         mref.protocol = format!("{}", pro);
     }
-    pub fn do_match(&self, protos: &HashSet<String>) -> bool {
-        let proto = self.get_protocol();
-        protos.contains(&proto)
+    pub fn do_match(&self, statement: &str) -> bool {
+        return self.props.match_expr(statement);
+        // return &self.get_protocol() == statement;
     }
     pub fn info(&self) -> String {
         let the_last = self.eles.last();
@@ -993,7 +1005,7 @@ impl Frame {
         return Reader::new_raw(self.data());
     }
     pub fn _create_packet<K>(val: Ref2<K>) -> PacketContext<K> {
-        PacketContext { val, fields: RefCell::new(Vec::new()) }
+        PacketContext { props: RefCell::new(PacketProps::new()), val, fields: RefCell::new(Vec::new()) }
     }
     pub fn create_packet<K>() -> PacketContext<K>
     where
@@ -1003,7 +1015,7 @@ impl Frame {
         Frame::_create_packet(Rc::new(RefCell::new(val)))
     }
     pub fn _create<K>(val: Ref2<K>) -> PacketContext<K> {
-        PacketContext { val, fields: RefCell::new(Vec::new()) }
+        PacketContext { props: RefCell::new(PacketProps::new()), val, fields: RefCell::new(Vec::new()) }
     }
     // pub fn get_tcp_map_key(&self) -> (String, bool) {
     //     let sum = &self.summary;
@@ -1078,13 +1090,20 @@ impl Frame {
             _ => {}
         }
         let reff = &mut self.eles;
+        let mut _props = ele.props();
+        self.props.merge(_props.deref_mut());
+        drop(_props);
         reff.push(ele);
         let mut ref_ = self.refer.as_ref().borrow_mut();
         if let Some(app_) = ref_._app_packet.take() {
+            let mut _props = app_.props();
+            self.props.merge(_props.deref_mut());
+            drop(_props);
             reff.push(app_);
         }
         drop(ref_);
         let protocol = format!("{}", reff.last().unwrap());
+        self.props.add(protocol.clone().to_lowercase().leak(), "");
         self.set_protocol(protocol);
     }
 }
@@ -1440,11 +1459,11 @@ impl Instance {
         let _fs = self.get_frames();
         let mut total = 0;
         let mut items = Vec::new();
-        if criteria.len() > 0 {
+        let _criteria = criteria.trim();
+        if _criteria.len() > 0 {
             let mut left = size;
-            let _filters = HashSet::from_iter(criteria.iter().cloned());
             for frame in _fs.iter() {
-                if frame.do_match(&_filters) {
+                if frame.do_match(&_criteria) {
                     total += 1;
                     if total > start && left > 0 {
                         left -= 1;
