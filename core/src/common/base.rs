@@ -33,8 +33,7 @@ use crate::common::io::Reader;
 use crate::common::{FileInfo, FileType};
 
 use super::{
-    concept::{Connect, Criteria, DNSRecord, Field, FrameInfo, HttpMessage, ListResult, TCPConversation, TLSHS},
-    io::SliceReader,
+    concept::{Connect, Criteria, DNSRecord, Field, FrameInfo, HttpMessage, ListResult, TCPConversation, TLSHS}, io::SliceReader
 };
 
 pub fn date_str(ts: u64) -> String {
@@ -871,6 +870,7 @@ pub struct Frame {
     data: Rc<Vec<u8>>,
     pub eles: Vec<ProtocolData>,
     pub refer: Ref2<FrameRefer>,
+    // pub props: PacketProps<_>,
 }
 impl Frame {
     pub fn new(data: Vec<u8>, ts: u64, capture_size: u32, origin_size: u32, index: u32, link_type: u32) -> Frame {
