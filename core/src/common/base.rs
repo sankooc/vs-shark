@@ -57,6 +57,7 @@ pub trait Visitor {
 
 pub trait FieldBuilder<T> {
     fn build(&self, t: &T) -> Option<Field>;
+    fn get_props(&self) -> Option<(&'static str, &'static str)>;
     fn data(&self) -> Rc<Vec<u8>>;
 }
 
@@ -129,50 +130,66 @@ impl<T> PacketContext<T>
 where
     T: PacketBuilder + 'static,
 {
-    pub fn _build(&self, reader: &Reader, start: usize, size: usize, content: String) {
-        self.fields.borrow_mut().push(Box::new(TXTPosition { start, size, data: reader.get_raw(), content }));
+    pub fn set(&self, key: &'static str, val: String) {
+        let mut _props = self.props.borrow_mut();
+        _props.add(key, val.leak());
+    }
+    pub fn _build(&self, reader: &Reader, start: usize, size: usize, props: Option<(&'static str, &'static str)>, content: String) {
+        self.fields.borrow_mut().push(Box::new(TXTPosition { start, size, data: reader.get_raw(), content, props }));
     }
     pub fn build_txt(&self, content: String) {
-        self.fields.borrow_mut().push(Box::new(TXTPosition { start: 0, size: 0, data: Rc::new(Vec::new()), content }));
+        self.fields.borrow_mut().push(Box::new(TXTPosition { start: 0, size: 0, data: Rc::new(Vec::new()), content, props: None }));
     }
 
-    pub fn _build_lazy(&self, reader: &Reader, start: usize, size: usize, render: fn(&T) -> String) {
-        self.fields.borrow_mut().push(Box::new(StringPosition { start, size, data: reader.get_raw(), render }));
+    pub fn _build_lazy(&self, reader: &Reader, start: usize, size: usize, props: Option<(&'static str, &'static str)>, render: fn(&T) -> String) {
+        self.fields.borrow_mut().push(Box::new(StringPosition { start, size, data: reader.get_raw(), render, props}));
     }
     pub fn build_packet_lazy<K: 'static>(&self, render: fn(&T) -> Option<PacketContext<K>>)
     where
         K: PacketBuilder,
     {
-        self.fields.borrow_mut().push(Box::new(PhantomBuilder { render }));
+        self.fields.borrow_mut().push(Box::new(PhantomBuilder { render, props: None }));
     }
     pub fn build_skip(&self, reader: &Reader, size: usize) {
         let start = reader.cursor();
         let content = format!("resolve later [{}]", size);
         reader.slice(size);
-        self._build(reader, start, size, content);
+        self._build(reader, start, size, None, content);
     }
 
-    pub fn build_lazy<K>(&self, reader: &Reader, opt: impl Fn(&Reader) -> Result<K>, render: fn(&T) -> String) -> Result<K> {
+    pub fn build_lazy<K>(&self, reader: &Reader, opt: impl FnOnce(&Reader) -> Result<K>, key: Option<&'static str>, render: fn(&T) -> String) -> Result<K>  where K:ToString {
         let start = reader.cursor();
         let val: K = opt(reader)?;
         let end = reader.cursor();
         let size = end - start;
-        self._build_lazy(reader, start, size, render);
+        let mut props:Option<(&str, &str)> = None;
+        if let Some(k) = key {
+            let v = val.to_string();
+            self.set(k, v.clone());
+            props = Some((k, v.leak()));
+        }
+        self._build_lazy(reader, start, size, props, render);
         Ok(val)
     }
     pub fn build_compact(&self, content: String, data: Rc<Vec<u8>>) {
         let size = data.len();
-        self.fields.borrow_mut().push(Box::new(TXTPosition { start: 0, size, data, content }));
+        self.fields.borrow_mut().push(Box::new(TXTPosition { start: 0, size, data, content, props: None }));
     }
     pub fn append_string(&self, content: String, data: Rc<Vec<u8>>) {
-        self.fields.borrow_mut().push(Box::new(TXTPosition { start: 0, size: 0, data, content }));
+        self.fields.borrow_mut().push(Box::new(TXTPosition { start: 0, size: 0, data, content, props: None }));
     }
-    pub fn build<K>(&self, reader: &Reader, opt: impl Fn(&Reader) -> K, content: String) -> K {
+    pub fn build<K>(&self, reader: &Reader, opt: impl FnOnce(&Reader) -> K, key: Option<&'static str>, content: String) -> K where K:ToString {
         let start = reader.cursor();
         let val: K = opt(reader);
         let end = reader.cursor();
         let size = end - start;
-        self._build(reader, start, size, content);
+        let mut props:Option<(&str, &str)> = None;
+        if let Some(k) = key {
+            let v = val.to_string();
+            self.set(k, v.clone());
+            props = Some((k, v.leak()));
+        }
+        self._build(reader, start, size, props, content);
         val
     }
 
@@ -182,32 +199,45 @@ where
             return;
         }
         let from = cur - step;
-        self._build(reader, from, step, content);
+        self._build(reader, from, step,None, content);
     }
 
-    pub fn build_format<K>(&self, reader: &Reader, opt: impl Fn(&Reader) -> Result<K>, tmp: &str) -> Result<K>
+    pub fn build_format<K>(&self, reader: &Reader, opt: impl FnOnce(&Reader) -> Result<K>, key: Option<&'static str>, tmp: &str) -> Result<K>
     where
         K: ToString,
     {
         let start = reader.cursor();
         let val: K = opt(reader)?;
+
         let end = reader.cursor();
         let size = end - start;
         let content = tmp.replace("{}", val.to_string().as_str());
-        self._build(reader, start, size, content);
+        let mut props:Option<(&str, &str)> = None;
+        if let Some(k) = key {
+            let v = val.to_string();
+            self.set(k, v.clone());
+            props = Some((k, v.leak()));
+        }
+        self._build(reader, start, size, props ,content);
         Ok(val)
     }
 
-    pub fn build_fn<K>(&self, reader: &Reader, opt: impl Fn(&Reader) -> Result<K>, mapper: impl Fn(K) -> String) -> Result<K>
+    pub fn build_fn<K>(&self, reader: &Reader, opt: impl FnOnce(&Reader) -> Result<K>, key: Option<&'static str>, mapper: impl Fn(K) -> String) -> Result<K>
     where
-        K: Clone,
+        K: Clone + ToString,
     {
         let start = reader.cursor();
         let val: K = opt(reader)?;
         let end = reader.cursor();
         let size = end - start;
+        let mut props:Option<(&str, &str)> = None;
+        if let Some(k) = key {
+            let v = val.to_string();
+            self.set(k, v.clone());
+            props = Some((k, v.leak()));
+        }
         let content = mapper(val.clone());
-        self.fields.borrow_mut().push(Box::new(TXTPosition { start, size, data: reader.get_raw(), content }));
+        self.fields.borrow_mut().push(Box::new(TXTPosition { start, size, data: reader.get_raw(), content, props }));
         Ok(val)
     }
     pub fn build_packet<K, M>(&self, reader: &Reader, opt: impl Fn(&Reader, Option<M>) -> Result<PacketContext<K>>, packet_opt: Option<M>, head: Option<String>) -> Result<Ref2<K>>
@@ -225,14 +255,14 @@ where
         props.merge(_props.deref_mut());
         drop(_props);
         drop(props);
-        self.fields.borrow_mut().push(Box::new(FieldPosition { start, size, data: reader.get_raw(), head, packet }));
+        self.fields.borrow_mut().push(Box::new(FieldPosition { start, size, data: reader.get_raw(), head, packet, props: None }));
         Ok(rs)
     }
 }
 
 pub struct PhantomBuilder<K, T> {
-    // pub summary: String,
     pub render: fn(&T) -> Option<PacketContext<K>>,
+    props:Option<(&'static str, &'static str)>,
 }
 impl<K, T> FieldBuilder<T> for PhantomBuilder<K, T>
 where
@@ -253,11 +283,15 @@ where
     fn data(&self) -> Rc<Vec<u8>> {
         Rc::new(Vec::new())
     }
+    fn get_props(&self) -> Option<(&'static str, &'static str)> {
+        self.props.clone()
+    }
 }
 pub struct Position<T> {
     pub start: usize,
     pub size: usize,
     data: Rc<Vec<u8>>,
+    props:Option<(&'static str, &'static str)>,
     pub render: fn(usize, usize, &T) -> Field,
 }
 impl<T> FieldBuilder<T> for Position<T> {
@@ -267,6 +301,9 @@ impl<T> FieldBuilder<T> for Position<T> {
 
     fn data(&self) -> Rc<Vec<u8>> {
         self.data.clone()
+    }
+    fn get_props(&self) -> Option<(&'static str, &'static str)> {
+        self.props.clone()
     }
 }
 
@@ -278,6 +315,7 @@ where
     pub size: usize,
     data: Rc<Vec<u8>>,
     head: Option<String>,
+    props:Option<(&'static str, &'static str)>,
     pub packet: PacketContext<T>,
 }
 impl<T, K> FieldBuilder<T> for FieldPosition<K>
@@ -298,6 +336,9 @@ where
     fn data(&self) -> Rc<Vec<u8>> {
         self.data.clone()
     }
+    fn get_props(&self) -> Option<(&'static str, &'static str)> {
+        self.props.clone()
+    }
 }
 
 pub struct StringPosition<T> {
@@ -305,6 +346,7 @@ pub struct StringPosition<T> {
     pub size: usize,
     data: Rc<Vec<u8>>,
     pub render: fn(&T) -> String,
+    props:Option<(&'static str, &'static str)>,
 }
 impl<T> FieldBuilder<T> for StringPosition<T> {
     fn build(&self, t: &T) -> Option<Field> {
@@ -315,6 +357,9 @@ impl<T> FieldBuilder<T> for StringPosition<T> {
     fn data(&self) -> Rc<Vec<u8>> {
         self.data.clone()
     }
+    fn get_props(&self) -> Option<(&'static str, &'static str)> {
+        self.props.clone()
+    }
 }
 
 pub struct TXTPosition {
@@ -322,6 +367,7 @@ pub struct TXTPosition {
     size: usize,
     data: Rc<Vec<u8>>,
     content: String,
+    props:Option<(&'static str, &'static str)>,
 }
 impl<T> FieldBuilder<T> for TXTPosition {
     fn build(&self, _: &T) -> Option<Field> {
@@ -329,6 +375,10 @@ impl<T> FieldBuilder<T> for TXTPosition {
     }
     fn data(&self) -> Rc<Vec<u8>> {
         self.data.clone()
+    }
+    
+    fn get_props(&self) -> Option<(&'static str, &'static str)> {
+        self.props.clone()
     }
 }
 

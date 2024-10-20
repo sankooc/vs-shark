@@ -31,10 +31,10 @@ impl PPPoESS {
         let head = reader.read8()?;
         p.version = head >> 4;
         p._type = head & 0x0f;
-        p.code = packet.build_lazy(reader, Reader::_read8, PPPoESS::code)?;
-        p.session_id = packet.build_lazy(reader, Reader::_read16_be, PPPoESS::session_id)?;
-        p.payload = packet.build_lazy(reader, Reader::_read16_be, PPPoESS::payload)?;
-        p.ptype = packet.build_lazy(reader, Reader::_read16_be, PPPoESS::ptype)?;
+        p.code = packet.build_lazy(reader, Reader::_read8, Some("ppp.code"), PPPoESS::code)?;
+        p.session_id = packet.build_lazy(reader, Reader::_read16_be,Some("ppp.session.id"), PPPoESS::session_id)?;
+        p.payload = packet.build_lazy(reader, Reader::_read16_be, Some("ppp.pload"),PPPoESS::payload)?;
+        p.ptype = packet.build_lazy(reader, Reader::_read16_be, Some("ppp.ptype"),PPPoESS::ptype)?;
         Ok(())
     }
 }

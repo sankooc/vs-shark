@@ -69,25 +69,25 @@ impl TLSRecord {
         }
     }
     fn _create(reader: &Reader, packet: &PacketContext<Self>, p: &mut std::cell::RefMut<Self>, _: Option<PacketOpt>) -> Result<()> {
-        p._type = packet.build_lazy(reader, Reader::_read8, TLSRecord::_type_desc)?;
+        p._type = packet.build_lazy(reader, Reader::_read8, Some("tls.record.type"), TLSRecord::_type_desc)?;
         reader.read8()?;
-        p.min = packet.build_lazy(reader, Reader::_read8, TLSRecord::version_desc)?;
-        let len = packet.build_format(reader, Reader::_read16_be, "Length: {}")?;
+        p.min = packet.build_lazy(reader, Reader::_read8, Some("tls.record.version"), TLSRecord::version_desc)?;
+        let len = packet.build_format(reader, Reader::_read16_be, None,"Length: {}")?;
         p.len = len;
         let finish = reader.cursor() + p.len as usize;
 
         let _read = |reader: &Reader| {
             reader.slice(len as usize);
-            Ok(())
+            Ok("")
         };
         match p._type {
             20 => {
                 p.message = TLSRecorMessage::CHANGECIPHERSPEC;
-                packet.build_lazy(reader, _read, TLSRecord::message)?;
+                packet.build_lazy(reader, _read, None,TLSRecord::message)?;
             }
             21 => {
                 p.message = TLSRecorMessage::ALERT;
-                packet.build_lazy(reader, _read, TLSRecord::message)?;
+                packet.build_lazy(reader, _read, None, TLSRecord::message)?;
             }
             22 => {
                 let pk = packet.build_packet(reader, TLSHandshake::create, Some(finish), None)?;
@@ -95,10 +95,10 @@ impl TLSRecord {
             }
             23 => {
                 p.message = TLSRecorMessage::APPLICAION;
-                packet.build_lazy(reader, _read, TLSRecord::message)?;
+                packet.build_lazy(reader, _read, None, TLSRecord::message)?;
             }
             _ => {
-                packet.build_lazy(reader, _read, TLSRecord::message)?;
+                packet.build_lazy(reader, _read, None, TLSRecord::message)?;
             }
         }
         if finish > reader.cursor() {

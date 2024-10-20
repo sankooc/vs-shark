@@ -1,15 +1,15 @@
 use std::fmt::Formatter;
 
+use super::ProtocolData;
+use crate::common::io::Reader;
+use crate::{
+    common::base::{Frame, PacketBuilder, PacketContext, PacketOpt},
+    common::{IPPacket, MacAddress, FIELDSTATUS},
+    constants::{arp_hardware_type_mapper, arp_oper_type_mapper, etype_mapper},
+};
 use anyhow::Result;
 use pcap_derive::{Packet2, Visitor3};
 use std::net::Ipv4Addr;
-use crate::{
-    common::{IPPacket, MacAddress, FIELDSTATUS},
-    constants::{arp_hardware_type_mapper, arp_oper_type_mapper, etype_mapper},
-    common::base::{ Frame, PacketBuilder, PacketContext, PacketOpt},
-};
-use crate::common::io::Reader;
-use super::ProtocolData;
 
 #[derive(Default, Packet2)]
 pub struct ARP {
@@ -76,15 +76,15 @@ impl ARP {
         arp_oper_type_mapper(self.operation)
     }
     fn _create(reader: &Reader, packet: &PacketContext<Self>, p: &mut std::cell::RefMut<Self>, _: Option<PacketOpt>) -> Result<()> {
-        p.hardware_type = packet.build_lazy(reader, Reader::_read16_be, ARP::hardware_type_desc)?;
-        p.protocol_type = packet.build_lazy(reader, Reader::_read16_be, ARP::protocol_type_desc)?;
-        p.hardware_size = packet.build_format(reader, Reader::_read8, "Hardware size: {}")?;
-        p.protocol_size = packet.build_format(reader, Reader::_read8, "Protocol size: {}")?;
-        p.operation = packet.build_lazy(reader, Reader::_read16_be, ARP::operation_type_desc)?;
-        p.sender_mac = packet.build_format(reader, Reader::_read_mac, "Sender MAC address: ({})").ok();
-        p.sender_ip = packet.build_format(reader, Reader::_read_ipv4, "Sender IP address: {}").ok();
-        p.target_mac = packet.build_format(reader, Reader::_read_mac, "Target MAC address: ({})").ok();
-        p.target_ip = packet.build_format(reader, Reader::_read_ipv4, "Target IP address: {}").ok();
+        p.hardware_type = packet.build_lazy(reader, Reader::_read16_be, Some("arp.hardware.type"), ARP::hardware_type_desc)?;
+        p.protocol_type = packet.build_lazy(reader, Reader::_read16_be, Some("arp.protocol.type"), ARP::protocol_type_desc)?;
+        p.hardware_size = packet.build_format(reader, Reader::_read8, Some("arp.hardware.len"), "Hardware size: {}")?;
+        p.protocol_size = packet.build_format(reader, Reader::_read8, Some("arp.protocol.len"), "Protocol size: {}")?;
+        p.operation = packet.build_lazy(reader, Reader::_read16_be, Some("arp.operation.type"), ARP::operation_type_desc)?;
+        p.sender_mac = packet.build_format(reader, Reader::_read_mac, Some("arp.sender.mac.address"), "Sender MAC address: ({})").ok();
+        p.sender_ip = packet.build_format(reader, Reader::_read_ipv4, Some("arp.sender.ip.address"), "Sender IP address: {}").ok();
+        p.target_mac = packet.build_format(reader, Reader::_read_mac, Some("arp.target.mac.address"), "Target MAC address: ({})").ok();
+        p.target_ip = packet.build_format(reader, Reader::_read_ipv4, Some("arp.target.mac.address"), "Target IP address: {}").ok();
         Ok(())
     }
 }

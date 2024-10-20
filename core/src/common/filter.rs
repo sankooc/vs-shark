@@ -19,13 +19,13 @@ impl PacketProps{
     }
     pub fn add(&mut self, key: &'static str, val: &'static str){
         
-        if let Some(set) = self._map.get_mut(&key) {
-            set.insert(val);
-        } else {
-            let mut _set = HashSet::new();
-            _set.insert(val);
-            self._map.insert(key, _set);
-        }
+        // if let Some(set) = self._map.get_mut(&key) {
+        //     set.insert(val);
+        // } else {
+        //     let mut _set = HashSet::new();
+        //     _set.insert(val);
+        //     self._map.insert(key, _set);
+        // }
     }
     pub fn get(&self, key: &'static str) -> Option<Vec<&'static str>>{
         if let Some(set) = self._map.get(&key) {
@@ -36,12 +36,12 @@ impl PacketProps{
         None
     }
     pub fn merge(&mut self, other: &mut PacketProps) {
-        for (key, values) in other._map.drain() {
-            self._map
-                .entry(key)
-                .or_insert_with(HashSet::new)
-                .extend(values);
-        }
+        // for (key, values) in other._map.drain() {
+        //     self._map
+        //         .entry(key)
+        //         .or_insert_with(HashSet::new)
+        //         .extend(values);
+        // }
     }
 
     pub fn match_expr(&self, statement: &str) -> bool {

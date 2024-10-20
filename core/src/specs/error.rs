@@ -41,9 +41,9 @@ impl ErrorVisitor {
         drop(p);
         let start = reader.cursor();
         let left_size = reader.left();
-        packet._build(reader, 0, start + left_size, format!("Full Packet: {}", start + left_size));
+        packet._build(reader, 0, start + left_size, None, format!("Full Packet: {}", start + left_size));
         if left_size > 0 {
-            packet._build(reader, start, left_size, format!("Packet length: {}", left_size));
+            packet._build(reader, start, left_size, None, format!("Packet length: {}", left_size));
         }
         super::ProtocolData::ERROR(packet)
     }

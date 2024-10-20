@@ -8,9 +8,9 @@ use anyhow::Result;
 use pcap_derive::{Packet2, Visitor3, NINFO};
 
 use crate::{
+    common::base::{Frame, PacketBuilder, PacketContext, PacketOpt},
     common::{io::Reader, MultiBlock},
     constants::{dns_class_mapper, nbns_type_mapper},
-    common::base::{Frame, PacketBuilder, PacketContext, PacketOpt},
 };
 
 use super::ProtocolData;
@@ -35,12 +35,12 @@ impl std::fmt::Display for NBNS {
 }
 impl NBNS {
     fn _create(reader: &Reader, packet: &PacketContext<Self>, p: &mut std::cell::RefMut<Self>, _: Option<PacketOpt>) -> Result<()> {
-        p.transaction_id = packet.build_format(reader, Reader::_read16_be, "Transaction ID: {}")?;
-        p.flag = packet.build_format(reader, Reader::_read16_be, "Flags: {}")?;
-        p.questions = packet.build_format(reader, Reader::_read16_be, "Questions: {}")?;
-        p.answer_rr = packet.build_format(reader, Reader::_read16_be, "Answer RRs: {}")?;
-        p.authority_rr = packet.build_format(reader, Reader::_read16_be, "Authority RRs: {}")?;
-        p.additional_rr = packet.build_format(reader, Reader::_read16_be, "Additional RRs: {}")?;
+        p.transaction_id = packet.build_format(reader, Reader::_read16_be, Some("nbns.transaction.id"), "Transaction ID: {}")?;
+        p.flag = packet.build_format(reader, Reader::_read16_be, None, "Flags: {}")?;
+        p.questions = packet.build_format(reader, Reader::_read16_be, Some("nbns.question.count"), "Questions: {}")?;
+        p.answer_rr = packet.build_format(reader, Reader::_read16_be, Some("nbns.answer.count"), "Answer RRs: {}")?;
+        p.authority_rr = packet.build_format(reader, Reader::_read16_be, Some("nbns.authority.count"), "Authority RRs: {}")?;
+        p.additional_rr = packet.build_format(reader, Reader::_read16_be, Some("nbns.additional.count"), "Additional RRs: {}")?;
         Ok(())
     }
 }
@@ -69,9 +69,9 @@ impl Question {
         format!("Class: {} ({:#06x})", dns_class_mapper(q.class), q.class)
     }
     fn _create(reader: &Reader, packet: &PacketContext<Self>, p: &mut std::cell::RefMut<Self>, _: Option<PacketOpt>) -> Result<()> {
-        p.name = packet.build_lazy(reader, Reader::_read_netbios_string, Question::name)?;
-        p._type = packet.build_lazy(reader, Reader::_read16_be, Question::_type)?;
-        p.class = packet.build_lazy(reader, Reader::_read16_be, Question::class)?;
+        p.name = packet.build_lazy(reader, Reader::_read_netbios_string, Some("nbns.question.name"), Question::name)?;
+        p._type = packet.build_lazy(reader, Reader::_read16_be, Some("nbns.question.type"), Question::_type)?;
+        p.class = packet.build_lazy(reader, Reader::_read16_be, Some("nbns.question.class"), Question::class)?;
         Ok(())
     }
 }

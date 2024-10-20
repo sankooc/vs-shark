@@ -1,17 +1,17 @@
 use pcap_derive::{Packet2, Visitor3, NINFO};
 
-use crate::common::MacAddress;
-use crate::constants::etype_mapper;
 use crate::common::base::PacketOpt;
+use crate::common::io::AReader;
+use crate::common::MacAddress;
+use crate::common::FIELDSTATUS;
+use crate::constants::etype_mapper;
 use crate::specs::ProtocolData;
 use crate::{
-    common::io::Reader,
     common::base::{Frame, PacketBuilder, PacketContext},
+    common::io::Reader,
 };
-use crate::common::io::AReader;
 use anyhow::{Ok, Result};
 use std::fmt::Display;
-use crate::common::FIELDSTATUS;
 
 use super::get_next_from_type;
 
@@ -45,10 +45,10 @@ impl IEE80211 {
         format!("Protocol: {} ({:#06x})", etype_mapper(self.ptype), self.ptype)
     }
     fn _create(reader: &Reader, packet: &PacketContext<Self>, p: &mut std::cell::RefMut<Self>, _: Option<PacketOpt>) -> Result<()> {
-        p.version = packet.build_format(reader, Reader::_read8, "Header revision: {}")?;
-        packet.build_format(reader, Reader::_read8, "Header pad: {}")?;
-        p.len = packet.build_format(reader, Reader::_read16_ne, "Header length: {}")?;
-        p.present = packet.build_format(reader, Reader::_read32_ne, "Header length: {}")?;
+        p.version = packet.build_format(reader, Reader::_read8, Some("80211.version"), "Header revision: {}")?;
+        packet.build_format(reader, Reader::_read8, Some("80211.header.pad"), "Header pad: {}")?;
+        p.len = packet.build_format(reader, Reader::_read16_ne, Some("80211.header.len"), "Header length: {}")?;
+        p.present = packet.build_format(reader, Reader::_read32_ne, Some("80211.header.present"), "Header Presend: {}")?;
         let _len = p.len - 8;
         packet.build_skip(reader, _len as usize);
         let left = reader.left();
@@ -57,18 +57,18 @@ impl IEE80211 {
         }
         p.head = reader.read16(true)?;
         p.duration = reader.read16(true)?;
-        p.receiver = Some(packet.build_format(reader, Reader::_read_mac, "Receiver address: {}")?);
-        p.transmitter = Some(packet.build_format(reader, Reader::_read_mac, "Transmitter address: {}")?);
-        p.destination = Some(packet.build_format(reader, Reader::_read_mac, "Destination address: {}")?);
-        let _sq = packet.build_format(reader, Reader::_read16_ne, "Sequence No: {}")?;
+        p.receiver = Some(packet.build_format(reader, Reader::_read_mac, Some("80211.receiver.address"), "Receiver address: {}")?);
+        p.transmitter = Some(packet.build_format(reader, Reader::_read_mac, Some("80211.transmitter.address"), "Transmitter address: {}")?);
+        p.destination = Some(packet.build_format(reader, Reader::_read_mac, Some("80211.destination.address"), "Destination address: {}")?);
+        let _sq = packet.build_format(reader, Reader::_read16_ne, Some("80211.sequence.no"), "Sequence No: {}")?;
         p.sequence = _sq >> 4;
-        p.qos = packet.build_format(reader, Reader::_read16_ne, "Qos Control: {}")?;
+        p.qos = packet.build_format(reader, Reader::_read16_ne, Some("80211.qos.control"), "Qos Control: {}")?;
 
         p.dsap = reader.read8()?;
         p.ssap = reader.read8()?;
         p.control_field = reader.read8()?;
         reader._move(3);
-        p.ptype = packet.build_lazy(reader, Reader::_read16_be, IEE80211::ptype_str)?;
+        p.ptype = packet.build_lazy(reader, Reader::_read16_be, Some("80211.prorocol.type"),IEE80211::ptype_str)?;
         Ok(())
     }
 }
@@ -81,7 +81,7 @@ impl Display for IEE80211 {
 #[derive(Visitor3)]
 pub struct IEE80211Visitor;
 impl IEE80211Visitor {
-    fn visit2(&self, reader: &Reader) -> Result<(ProtocolData, &'static str)>{
+    fn visit2(&self, reader: &Reader) -> Result<(ProtocolData, &'static str)> {
         let packet = IEE80211::create(reader, None)?;
         let p = packet.get();
         let ptype = p.borrow().ptype;

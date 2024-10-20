@@ -3,12 +3,12 @@ use std::{fmt::Formatter, net::Ipv4Addr};
 use anyhow::Result;
 use pcap_derive::{Packet, Visitor3};
 
+use crate::common::io::Reader;
 use crate::{
+    common::base::{Frame, PacketBuilder, PacketContext},
     common::{io::AReader, MacAddress, Ref2, FIELDSTATUS},
     constants::{arp_hardware_type_mapper, dhcp_option_type_mapper, dhcp_type_mapper},
-    common::base::{Frame, PacketBuilder, PacketContext},
 };
-use crate::common::io::Reader;
 
 use super::ProtocolData;
 
@@ -100,19 +100,19 @@ impl DHCPVisitor {
     fn visit2(&self, reader: &Reader) -> Result<(ProtocolData, &'static str)> {
         let packet: PacketContext<DHCP> = Frame::create_packet();
         let mut p = packet.get().borrow_mut();
-        p.op = packet.build_lazy(reader, Reader::_read8, DHCP::op)?;
-        p.hardware_type = packet.build_lazy(reader, Reader::_read8, DHCP::hardware_type_desc)?;
+        p.op = packet.build_lazy(reader, Reader::_read8, Some("dhcp.op"), DHCP::op)?;
+        p.hardware_type = packet.build_lazy(reader, Reader::_read8, Some("dhcp.hardware.type"), DHCP::hardware_type_desc)?;
 
-        p.hardware_len = packet.build_format(reader, Reader::_read8, "Hardware Address Len: {}")?;
-        p.hops = packet.build_format(reader, Reader::_read8, "Protocol size: {}")?;
-        p.transaction_id = packet.build_format(reader, Reader::_read32_be, "Transaction ID: {}")?;
-        p.sec = packet.build_format(reader, Reader::_read16_be, "Seconds elapsed: {}")?;
+        p.hardware_len = packet.build_format(reader, Reader::_read8, Some("dhcp.hardware.address.len"), "Hardware Address Len: {}")?;
+        p.hops = packet.build_format(reader, Reader::_read8, Some("dhcp.prorocol.len"), "Protocol size: {}")?;
+        p.transaction_id = packet.build_format(reader, Reader::_read32_be, Some("dhcp.transaction.id"), "Transaction ID: {}")?;
+        p.sec = packet.build_format(reader, Reader::_read16_be, Some("dhcp.second.elasped"), "Seconds elapsed: {}")?;
         p.flag = reader.read16(false)?;
-        p.client_address = packet.build_format(reader, Reader::_read_ipv4, "Client Address: {}").ok();
-        p.your_address = packet.build_format(reader, Reader::_read_ipv4, "Client Address: {}").ok();
-        p.next_server_address = packet.build_format(reader, Reader::_read_ipv4, "Client Address: {}").ok();
-        p.relay_address = packet.build_format(reader, Reader::_read_ipv4, "Client Address: {}").ok();
-        p.mac_address = packet.build_format(reader, Reader::_read_mac, "Client Address: {}").ok();
+        p.client_address = packet.build_format(reader, Reader::_read_ipv4, Some("dhcp.client.address"), "Client Address: {}").ok();
+        p.your_address = packet.build_format(reader, Reader::_read_ipv4, Some("dhcp.your.address"), "Youre Address: {}").ok();
+        p.next_server_address = packet.build_format(reader, Reader::_read_ipv4, Some("dhcp.next.server.address"), "Next Server Address: {}").ok();
+        p.relay_address = packet.build_format(reader, Reader::_read_ipv4, Some("dhcp.relay.address"), "Relay Address: {}").ok();
+        p.mac_address = packet.build_format(reader, Reader::_read_mac, Some("dhcp.mac.address"), "Mac Address: {}").ok();
         reader._move(10); //padding
         reader._move(64); //sname
         reader._move(128); //file
@@ -127,13 +127,13 @@ impl DHCPVisitor {
                 0 => m_option.extension = DHCPExtention::PAD,
                 0xff => m_option.extension = DHCPExtention::END,
                 53 => {
-                    let len = option_packet.build_format(reader, Reader::_read8, "Length: {}")?;
+                    let len = option_packet.build_format(reader, Reader::_read8, Some("dhcp.option.len"), "Length: {}")?;
                     m_option.len = len;
-                    p._type = option_packet.build_fn(reader, Reader::_read8, DHCP::dhcp_message_type_desc)?;
+                    p._type = option_packet.build_fn(reader, Reader::_read8, Some("dhcp.type"), DHCP::dhcp_message_type_desc)?;
                     m_option.extension = DHCPExtention::MESSAGETYPE(p._type);
                 }
                 _ => {
-                    let len = option_packet.build_format(reader, Reader::_read8, "Length: {}")?;
+                    let len = option_packet.build_format(reader, Reader::_read8, Some("dhcp.option.len"), "Length: {}")?;
                     m_option.len = len;
                     m_option.extension = DHCPExtention::DEFAULT(reader.slice(len as usize).to_vec())
                 }
