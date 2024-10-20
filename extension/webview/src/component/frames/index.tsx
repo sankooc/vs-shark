@@ -47,13 +47,13 @@ function FrameList() {
   };
   useEffect(mountHook, []);
   const columes = [
-    { field: 'index', header: 'index', style: { width: '4%' } },
-    { field: 'time', header: 'micro sec', style: { width: '8%' } },
-    { field: 'source', header: 'source', style: { width: '15%' }},
-    { field: 'dest', header: 'dest', style: { width: '15%' }},
-    { field: 'protocol', header: 'protocol', style: { width: '5%' } },
-    { field: 'len', header: 'len', style: { width: '5%' } },
-    { field: 'info', header: 'info', style: { width: '20vw' }  }
+    { field: 'index', header: 'index', style: { width: '4rem' } },
+    { field: 'time', header: 'micro sec', style: { width: '7rem' } },
+    { field: 'source', header: 'source', style: { width: '17.5rem' }},
+    { field: 'dest', header: 'dest', style: { width: '17.5rem' }},
+    { field: 'protocol', header: 'protocol', style: { width: '5.5rem' } },
+    { field: 'len', header: 'len', style: { width: '5.5rem' } },
+    { field: 'info', header: 'info' }
   ];
   const onSelect = (item: any): void => {
     setIndex(item.index);

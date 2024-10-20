@@ -8,6 +8,7 @@ use std::rc::Rc;
 pub mod concept;
 pub mod io;
 pub mod base;
+pub mod filter;
 
 pub type Ref2<T> = Rc<RefCell<T>>;
 pub type MultiBlock<T> = Vec<Ref2<T>>;

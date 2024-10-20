@@ -289,7 +289,7 @@ dependencies = [
 
 [[package]]
 name = "nshark"
-version = "0.3.2"
+version = "0.3.6"
 dependencies = [
  "core",
  "env_logger",

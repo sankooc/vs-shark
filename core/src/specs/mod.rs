@@ -1,6 +1,4 @@
-use crate::{
-    common::io::Reader, common::base::{Context, Element, Frame, PacketContext, Visitor}
-};
+use crate::common::{base::{Context, Element, Frame, PacketContext, Visitor}, io::Reader, FileType};
 use crate::common::concept::Field;
 
 pub mod arp;
@@ -28,9 +26,12 @@ pub const DEF_STATUS: &str = "info";
 
 use crate::common::io::AReader;
 use crate::common::FIELDSTATUS;
-pub fn execute(link_type: u32, _: &Frame, reader: &Reader) -> &'static str {
+pub fn execute(file_type: &FileType, link_type: u32, _: &Frame, reader: &Reader) -> &'static str {
     match link_type {
         0 => {
+            if let FileType::PCAPNG = file_type {
+                return "loopback";
+            }
             let _head = reader._slice(16);
             if _head[0] == 0 && _head[5] == 6 {
                 let lat = &_head[14..16];
@@ -50,6 +51,7 @@ pub fn execute(link_type: u32, _: &Frame, reader: &Reader) -> &'static str {
 
 type ERROR = PacketContext<error::Error>;
 type ETHERNET = PacketContext<ethernet::ii::Ethernet>;
+type NULL = PacketContext<ethernet::null::NULL>;
 type PPPoESS = PacketContext<ethernet::pppoes::PPPoESS>;
 type SSL = PacketContext<ethernet::ssl::SSL>;
 type IPV4 = PacketContext<ip4::IPv4>;
@@ -60,6 +62,7 @@ type UDP = PacketContext<udp::UDP>;
 type ICMP = PacketContext<icmp::ICMP>;
 type ICMPv6 = PacketContext<icmp::ICMP6>;
 type DNS = PacketContext<dns::DNS>;
+// type MDNS = PacketContext<dns::DNS>;
 type DHCP = PacketContext<dhcp::DHCP>;
 type HTTP = PacketContext<http::HTTP>;
 type SSDP = PacketContext<ssdp::SSDP>;
@@ -77,6 +80,7 @@ pub enum ProtocolData {
     ETHERNET,
     PPPoESS,
     SSL,
+    NULL,
     IPV4,
     IPV6,
     ARP,
@@ -86,6 +90,7 @@ pub enum ProtocolData {
     ICMPv6,
     IGMP,
     DNS,
+    // MDNS,
     DHCP,
     HTTP,
     SSDP,
@@ -113,8 +118,9 @@ pub fn _parse(proto: &'static str) -> anyhow::Result<&dyn Visitor>{
         "nbns" => &nbns::NBNSVisitor,
         "dns" => &dns::DNSVisitor,
         "ssdp" => &ssdp::SSDPVisitor,
-        // "mdns" => &dns::MDNSVisitor,
+        "mdns" => &dns::MDNSVisitor,
         "dhcp" => &dhcp::DHCPVisitor,
+        "loopback" => &ethernet::null::NullVisitor,
         // "tls" => &tls::TLSVisitor,
         // "http" => &http::HTTPVisitor,
         _ => bail!("none"),

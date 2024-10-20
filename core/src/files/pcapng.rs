@@ -13,12 +13,15 @@ fn parse_head(data: &[u8]) -> Result<String> {
 
 fn parse_interface(data: &[u8]) -> Result<u16> {
     let reader = SliceReader::new(data);
-    reader.read16(false)
+    let lt = reader.read16(false)?;
+    let _revert = reader.read16(false)?;
+    let _snap_len = reader.read32(true)?;
+    Ok(lt)
 }
 
 fn parse_enhance(instance: &mut Instance, data: &[u8]) -> Result<()>{
     let reader = SliceReader::new(data);
-    let _interface_id = reader.read32(false);
+    let _interface_id = reader.read32(false)?;
     let mut ts = reader.read32(false)? as u64;
     let low_ts = reader.read32(false)? as u64;
     let captured = reader.read32(false)?;
@@ -33,7 +36,6 @@ fn parse_enhance(instance: &mut Instance, data: &[u8]) -> Result<()>{
     let _ = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
         instance.create(raw.to_vec(), ts, captured, origin);
     }));
-    // ctx.create(raw.to_vec(), ts, captured, origin);
     Ok(())
 }
 pub fn parse(data: &[u8]) -> Result<Instance> {

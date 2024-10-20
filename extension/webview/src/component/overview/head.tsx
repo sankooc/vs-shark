@@ -29,10 +29,14 @@ export default function Head(props: Props) {
         </>
     );
 
+    let duration = 0;
     const meta = props.data;
+    if(meta.end_time > meta.start_time){
+        duration = meta.end_time - meta.start_time;
+    }
     const values = [
         { label: 'FileType', value: meta.file_type, icon: 'pi pi-inbox'},
-        { label: 'Time', value: new String(meta.end_time - meta.start_time).replace(/(\d)(?=(\d\d\d)+(?!\d))/g, "$1,") + " micro", icon: 'pi pi-inbox'},
+        { label: 'Time', value: new String(duration).replace(/(\d)(?=(\d\d\d)+(?!\d))/g, "$1,") + " micro", icon: 'pi pi-inbox'},
         { label: 'Frames', value: meta.frame_count, icon: 'pi pi-inbox'},
         { label: 'TCP', value: meta.tcp_count, icon: 'pi pi-inbox'},
         { label: 'DNS Record', value: meta.dns_count, icon: 'pi pi-inbox'},

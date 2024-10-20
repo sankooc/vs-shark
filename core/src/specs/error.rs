@@ -34,29 +34,24 @@ impl Error {
 pub struct ErrorVisitor;
 
 impl ErrorVisitor {
-    pub fn visit(&self, _: &Frame, reader: &Reader, proto: &'static str) -> Result<(ProtocolData, &'static str)> {
+    pub fn build(reader: &Reader, proto: &'static str) -> ProtocolData {
         let packet: PacketContext<Error> = Frame::create_packet();
         let mut p = packet.get().borrow_mut();
         p.proto = proto;
-        drop(p);        
+        drop(p);
         let start = reader.cursor();
         let left_size = reader.left();
+        packet._build(reader, 0, start + left_size, format!("Full Packet: {}", start + left_size));
         if left_size > 0 {
             packet._build(reader, start, left_size, format!("Packet length: {}", left_size));
         }
-        Ok((super::ProtocolData::ERROR(packet), "none"))
+        super::ProtocolData::ERROR(packet)
+    }
+    pub fn visit(&self, _: &Frame, reader: &Reader, proto: &'static str) -> Result<(ProtocolData, &'static str)> {
+        Ok((ErrorVisitor::build(reader, proto), "none"))
     }
     
     pub fn visit2(&self, reader: &Reader, proto: &'static str) -> Result<ProtocolData> {
-        let packet: PacketContext<Error> = Frame::create_packet();
-        let mut p = packet.get().borrow_mut();
-        p.proto = proto;
-        drop(p);        
-        let start = reader.cursor();
-        let left_size = reader.left();
-        if left_size > 0 {
-            packet._build(reader, start, left_size, format!("Packet length: {}", left_size));
-        }
-        Ok(super::ProtocolData::ERROR(packet))
+        Ok(ErrorVisitor::build(reader, proto))
     }
 }

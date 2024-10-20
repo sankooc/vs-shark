@@ -127,14 +127,15 @@ tr[role=row]{
     td, tr { 
         padding: 1px !important;
     }
-    // tr[aria-level='1'] {
+    tr[aria-level='1'] {
+        background-color: $c-aqua;
+    }
+    tr[aria-level='2']{
+        background-color: $w-aqua;
+        color: $c-bg-1;
+    }
+    // tr[aria-level='2']:nth-child(2n) {
     //     background-color: #557C56;
     // }
-    tr[aria-level='2']:nth-child(2n + 1) {
-        background-color: #8d99ae;
-    }
-    tr[aria-level='2']:nth-child(2n) {
-        background-color: #557C56;
-    }
 }
 

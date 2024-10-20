@@ -62,6 +62,10 @@ const Main = () => {
           setHttps(deserialize(body));
           break;
         }
+        case '_reset': {
+          setStatus(0);
+          break;
+        }
         case '_error': {
           setStatus(2);
           break;

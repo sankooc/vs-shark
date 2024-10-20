@@ -167,6 +167,7 @@ pub enum ResourceType {
     CNAME(String),
     PTR(String),
     SOA(String),
+    SRV(u16, u16, u16, String),
     #[default]
     EMPTY,
 }
@@ -180,6 +181,7 @@ impl ResourceType {
             ResourceType::PTR(str) => str.into(),
             ResourceType::SOA(str) => str.into(),
             ResourceType::AAAA(str) => str.to_string(),
+            ResourceType::SRV(_,_, port, target) => format!("{}:{}", target, port),
         }
     }
 }
@@ -285,9 +287,10 @@ impl DNSVisitor {
         };
         p.name = packet.build_lazy(reader, _read, RecordResource::name)?;
         p._type = packet.build_lazy(reader, Reader::_read16_be, RecordResource::_type)?;
-        p.class = packet.build_lazy(reader, Reader::_read16_be, RecordResource::class)?;
+        p.class = packet.build_lazy(reader, Reader::_read16_be, RecordResource::class)? & 0x00ff;
         p.ttl = packet.build_lazy(reader, Reader::_read32_be, RecordResource::ttl)?;
         p.len = packet.build_lazy(reader, Reader::_read16_be, RecordResource::len)?;
+        let _finish = p.len as usize + reader.cursor();
         match p._type {
             1 => {
                 if p.len == 4 {
@@ -306,6 +309,15 @@ impl DNSVisitor {
                 } else {
                     reader.slice(p.len as usize);
                 }
+            }
+            33 => {
+                let priority = packet.build_format(reader, Reader::_read16_be, "Priority: {}")?;
+                let weigth = packet.build_format(reader, Reader::_read16_be, "Weight: {}")?;
+                let port = packet.build_format(reader, Reader::_read16_be, "Port: {}")?;
+                let _read = |reader: &Reader| reader._read_compress(archor);
+                let target = packet.build_format(reader, _read, "Target: {}")?;
+                p.data = ResourceType::SRV(priority, weigth, port, target);
+                reader._set(_finish);
             }
             _ => {
                 reader.slice(p.len as usize);

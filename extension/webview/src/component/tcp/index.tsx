@@ -31,8 +31,8 @@ const TCPList = (props: Proto) => {
   const items = props.items;
   const sortable = items.length < 3000;
   const columes = [
-    { header: 'source', body: (data: ITCPConversation) => <span>{append(data.source.ip, data.source.port, data.source.host)}</span>,style: { width: '30%' }},
-    { header: 'target', body: (data: ITCPConversation) => <span>{append(data.target.ip, data.target.port, data.target.host)}</span> ,style: { width: '30%' }},
+    { header: 'source', body: (data: ITCPConversation) => <span>{append(data.source.ip, data.source.port, data.source.host)}</span>,style: { width: '30rem' }},
+    { header: 'target', body: (data: ITCPConversation) => <span>{append(data.target.ip, data.target.port, data.target.host)}</span> ,style: { width: '30rem' }},
     { header: 's-accuracy', body: (data: ITCPConversation) => <span>{inv(data.source)}</span>  },
     { sortable, field: 'source.throughput', header: 's-throughput'  },
     { header: 't-accuracy', body: (data: ITCPConversation) => <span>{inv(data.target)}</span>  },
