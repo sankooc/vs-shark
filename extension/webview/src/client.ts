@@ -94,7 +94,7 @@ export abstract class PCAPClient {
   getFrames(pag: Pagination): String {
     const { page, size } = pag;
     const start = (page - 1) * size;
-    return this.ctx.select_frame_items(start, size, pag.filter || []);
+    return this.ctx.select_frame_items(start, size, pag.filter);
     // const data = rs.items().map((f, inx) => {
     //   const emb = pick(f, 'index', 'time', 'status', 'len', 'info', 'irtt', 'protocol', 'dest', 'source');
     //   return emb;

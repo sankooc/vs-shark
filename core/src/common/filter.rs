@@ -17,7 +17,7 @@ impl PacketProps{
     pub fn new() -> Self {
         Self{_map: HashMap::new()}
     }
-    pub fn add(&mut self, key: &'static str, val: &'static str){
+    pub fn add(&mut self, _key: &'static str, _val: &'static str){
         
         // if let Some(set) = self._map.get_mut(&key) {
         //     set.insert(val);
@@ -35,7 +35,7 @@ impl PacketProps{
         }
         None
     }
-    pub fn merge(&mut self, other: &mut PacketProps) {
+    pub fn merge(&mut self, _other: &mut PacketProps) {
         // for (key, values) in other._map.drain() {
         //     self._map
         //         .entry(key)

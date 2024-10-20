@@ -18,7 +18,7 @@ use log::error;
 use serde_json::Error;
 use std::{
     borrow::Borrow,
-    cell::{RefCell, RefMut},
+    cell::RefCell,
     cmp,
     collections::{HashMap, HashSet, VecDeque},
     net::{Ipv4Addr, Ipv6Addr},
@@ -48,7 +48,7 @@ pub trait Element {
     fn get_fields(&self) -> Vec<Field>;
     fn status(&self) -> FIELDSTATUS;
     fn info(&self) -> String;
-    fn props(&self) -> RefMut<PacketProps>;
+    // fn props(&self) -> RefMut<PacketProps>;
 }
 
 pub trait Visitor {
@@ -76,7 +76,7 @@ impl<T> PacketBuilder for MultiBlock<T> {
 pub struct PacketContext<T: ?Sized> {
     val: Ref2<T>,
     fields: RefCell<Vec<Box<dyn FieldBuilder<T>>>>,
-    props: RefCell<PacketProps>,
+    // props: RefCell<PacketProps>,
 }
 
 impl<T> PacketContext<T> {
@@ -121,19 +121,19 @@ where
         self.get().borrow().status()
     }
     
-    fn props(&self) -> RefMut<PacketProps> {
-        self.props.borrow_mut()
-    }
+    // fn props(&self) -> RefMut<PacketProps> {
+    //     self.props.borrow_mut()
+    // }
     
 }
 impl<T> PacketContext<T>
 where
     T: PacketBuilder + 'static,
 {
-    pub fn set(&self, key: &'static str, val: String) {
-        let mut _props = self.props.borrow_mut();
-        _props.add(key, val.leak());
-    }
+    // pub fn set(&self, key: &'static str, val: String) {
+    //     let mut _props = self.props.borrow_mut();
+    //     _props.add(key, val.leak());
+    // }
     pub fn _build(&self, reader: &Reader, start: usize, size: usize, props: Option<(&'static str, &'static str)>, content: String) {
         self.fields.borrow_mut().push(Box::new(TXTPosition { start, size, data: reader.get_raw(), content, props }));
     }
@@ -157,18 +157,18 @@ where
         self._build(reader, start, size, None, content);
     }
 
-    pub fn build_lazy<K>(&self, reader: &Reader, opt: impl FnOnce(&Reader) -> Result<K>, key: Option<&'static str>, render: fn(&T) -> String) -> Result<K>  where K:ToString {
+    pub fn build_lazy<K>(&self, reader: &Reader, opt: impl FnOnce(&Reader) -> Result<K>, _key: Option<&'static str>, render: fn(&T) -> String) -> Result<K>  where K:ToString {
         let start = reader.cursor();
         let val: K = opt(reader)?;
         let end = reader.cursor();
         let size = end - start;
-        let mut props:Option<(&str, &str)> = None;
-        if let Some(k) = key {
-            let v = val.to_string();
-            self.set(k, v.clone());
-            props = Some((k, v.leak()));
-        }
-        self._build_lazy(reader, start, size, props, render);
+        // let mut props:Option<(&str, &str)> = None;
+        // if let Some(k) = key {
+        //     let v = val.to_string();
+        //     self.set(k, v.clone());
+        //     props = Some((k, v.leak()));
+        // }
+        self._build_lazy(reader, start, size, None, render);
         Ok(val)
     }
     pub fn build_compact(&self, content: String, data: Rc<Vec<u8>>) {
@@ -178,18 +178,18 @@ where
     pub fn append_string(&self, content: String, data: Rc<Vec<u8>>) {
         self.fields.borrow_mut().push(Box::new(TXTPosition { start: 0, size: 0, data, content, props: None }));
     }
-    pub fn build<K>(&self, reader: &Reader, opt: impl FnOnce(&Reader) -> K, key: Option<&'static str>, content: String) -> K where K:ToString {
+    pub fn build<K>(&self, reader: &Reader, opt: impl FnOnce(&Reader) -> K, _key: Option<&'static str>, content: String) -> K where K:ToString {
         let start = reader.cursor();
         let val: K = opt(reader);
         let end = reader.cursor();
         let size = end - start;
-        let mut props:Option<(&str, &str)> = None;
-        if let Some(k) = key {
-            let v = val.to_string();
-            self.set(k, v.clone());
-            props = Some((k, v.leak()));
-        }
-        self._build(reader, start, size, props, content);
+        // let mut props:Option<(&str, &str)> = None;
+        // if let Some(k) = key {
+        //     let v = val.to_string();
+        //     self.set(k, v.clone());
+        //     props = Some((k, v.leak()));
+        // }
+        self._build(reader, start, size, None, content);
         val
     }
 
@@ -202,7 +202,7 @@ where
         self._build(reader, from, step,None, content);
     }
 
-    pub fn build_format<K>(&self, reader: &Reader, opt: impl FnOnce(&Reader) -> Result<K>, key: Option<&'static str>, tmp: &str) -> Result<K>
+    pub fn build_format<K>(&self, reader: &Reader, opt: impl FnOnce(&Reader) -> Result<K>, _key: Option<&'static str>, tmp: &str) -> Result<K>
     where
         K: ToString,
     {
@@ -212,17 +212,17 @@ where
         let end = reader.cursor();
         let size = end - start;
         let content = tmp.replace("{}", val.to_string().as_str());
-        let mut props:Option<(&str, &str)> = None;
-        if let Some(k) = key {
-            let v = val.to_string();
-            self.set(k, v.clone());
-            props = Some((k, v.leak()));
-        }
-        self._build(reader, start, size, props ,content);
+        // let mut props:Option<(&str, &str)> = None;
+        // if let Some(k) = key {
+        //     let v = val.to_string();
+        //     self.set(k, v.clone());
+        //     props = Some((k, v.leak()));
+        // }
+        self._build(reader, start, size, None ,content);
         Ok(val)
     }
 
-    pub fn build_fn<K>(&self, reader: &Reader, opt: impl FnOnce(&Reader) -> Result<K>, key: Option<&'static str>, mapper: impl Fn(K) -> String) -> Result<K>
+    pub fn build_fn<K>(&self, reader: &Reader, opt: impl FnOnce(&Reader) -> Result<K>, _key: Option<&'static str>, mapper: impl Fn(K) -> String) -> Result<K>
     where
         K: Clone + ToString,
     {
@@ -230,14 +230,14 @@ where
         let val: K = opt(reader)?;
         let end = reader.cursor();
         let size = end - start;
-        let mut props:Option<(&str, &str)> = None;
-        if let Some(k) = key {
-            let v = val.to_string();
-            self.set(k, v.clone());
-            props = Some((k, v.leak()));
-        }
+        // let mut props:Option<(&str, &str)> = None;
+        // if let Some(k) = key {
+        //     let v = val.to_string();
+        //     self.set(k, v.clone());
+        //     props = Some((k, v.leak()));
+        // }
         let content = mapper(val.clone());
-        self.fields.borrow_mut().push(Box::new(TXTPosition { start, size, data: reader.get_raw(), content, props }));
+        self.fields.borrow_mut().push(Box::new(TXTPosition { start, size, data: reader.get_raw(), content, props: None }));
         Ok(val)
     }
     pub fn build_packet<K, M>(&self, reader: &Reader, opt: impl Fn(&Reader, Option<M>) -> Result<PacketContext<K>>, packet_opt: Option<M>, head: Option<String>) -> Result<Ref2<K>>
@@ -250,11 +250,11 @@ where
         let rs = packet._clone_obj();
         let end = reader.cursor();
         let size = end - start;
-        let mut props = self.props.borrow_mut();
-        let mut _props = packet.props.borrow_mut();
-        props.merge(_props.deref_mut());
-        drop(_props);
-        drop(props);
+        // let mut props = self.props.borrow_mut();
+        // let mut _props = packet.props.borrow_mut();
+        // props.merge(_props.deref_mut());
+        // drop(_props);
+        // drop(props);
         self.fields.borrow_mut().push(Box::new(FieldPosition { start, size, data: reader.get_raw(), head, packet, props: None }));
         Ok(rs)
     }
@@ -957,8 +957,14 @@ impl Frame {
         let mref = &mut self.summary;
         mref.protocol = format!("{}", pro);
     }
-    pub fn do_match(&self, statement: &str) -> bool {
-        return self.props.match_expr(statement);
+    pub fn do_match(&self, statement: &[&str]) -> bool {
+        // return self.props.match_expr(statement);
+        for state in statement {
+            if *state == &self.get_protocol() {
+                return true
+            }
+        }
+        false
         // return &self.get_protocol() == statement;
     }
     pub fn info(&self) -> String {
@@ -1055,7 +1061,8 @@ impl Frame {
         return Reader::new_raw(self.data());
     }
     pub fn _create_packet<K>(val: Ref2<K>) -> PacketContext<K> {
-        PacketContext { props: RefCell::new(PacketProps::new()), val, fields: RefCell::new(Vec::new()) }
+        // PacketContext { props: RefCell::new(PacketProps::new()), val, fields: RefCell::new(Vec::new()) }
+        PacketContext { val, fields: RefCell::new(Vec::new()) }
     }
     pub fn create_packet<K>() -> PacketContext<K>
     where
@@ -1065,7 +1072,8 @@ impl Frame {
         Frame::_create_packet(Rc::new(RefCell::new(val)))
     }
     pub fn _create<K>(val: Ref2<K>) -> PacketContext<K> {
-        PacketContext { props: RefCell::new(PacketProps::new()), val, fields: RefCell::new(Vec::new()) }
+        // PacketContext { props: RefCell::new(PacketProps::new()), val, fields: RefCell::new(Vec::new()) }
+        PacketContext { val, fields: RefCell::new(Vec::new()) }
     }
     // pub fn get_tcp_map_key(&self) -> (String, bool) {
     //     let sum = &self.summary;
@@ -1140,15 +1148,15 @@ impl Frame {
             _ => {}
         }
         let reff = &mut self.eles;
-        let mut _props = ele.props();
-        self.props.merge(_props.deref_mut());
-        drop(_props);
+        // let mut _props = ele.props();
+        // self.props.merge(_props.deref_mut());
+        // drop(_props);
         reff.push(ele);
         let mut ref_ = self.refer.as_ref().borrow_mut();
         if let Some(app_) = ref_._app_packet.take() {
-            let mut _props = app_.props();
-            self.props.merge(_props.deref_mut());
-            drop(_props);
+            // let mut _props = app_.props();
+            // self.props.merge(_props.deref_mut());
+            // drop(_props);
             reff.push(app_);
         }
         drop(ref_);
@@ -1512,8 +1520,10 @@ impl Instance {
         let _criteria = criteria.trim();
         if _criteria.len() > 0 {
             let mut left = size;
+            
+            let clist: Vec<&str> = _criteria.split("&").collect();
             for frame in _fs.iter() {
-                if frame.do_match(&_criteria) {
+                if frame.do_match(&clist) {
                     total += 1;
                     if total > start && left > 0 {
                         left -= 1;

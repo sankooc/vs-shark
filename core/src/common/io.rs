@@ -201,6 +201,9 @@ pub trait AReader:Clone {
             if self.left() == 2 {
                 return Ok((list.into_iter().collect::<Vec<_>>().join("."), true));
             }
+            if self.left() == 0 {
+                return Ok((list.into_iter().collect::<Vec<_>>().join("."), false));
+            }
             let next = self._get_data()[self.cursor()];
             if next == 0 {
                 self._move(1);
@@ -221,6 +224,9 @@ pub trait AReader:Clone {
         }
     }
     fn read_dns_compress_string(&self, archor: usize, def: &str) -> Result<String> {
+        if self.left() == 0 {
+            return Ok("".into());
+        }
         let next = self._get_data()[self.cursor()];
         if next == 0 {
             self._move(1);
