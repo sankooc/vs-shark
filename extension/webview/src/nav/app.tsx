@@ -1,6 +1,7 @@
 import React, { MutableRefObject, useEffect, useRef, useState } from 'react';
 import { Menubar } from 'primereact/menubar';
 import { Avatar } from 'primereact/avatar';
+import { Sidebar } from 'primereact/sidebar';
 import { ComLog, ComMessage } from '../common';
 import { PCAPClient } from '../client';
 import init from 'rshark';
@@ -25,6 +26,7 @@ export default function CommandDemo() {
 
     const [name, setName] = useState('');
     const [visible, setVisible] = useState(false);
+    const [cl, setCl] = useState(false);
     const [client, setClient] = useState<Client>(null);
     
     function add_comment() {
@@ -85,9 +87,16 @@ export default function CommandDemo() {
         },
     ];
     const _style= visible ? { backgroundColor: '#2196F3', color: '#ffffff' } : {};
+
+    const getStyle = (v: boolean): any => {
+        return v ? { backgroundColor: '#2196F3', color: '#ffffff' } : {};
+    }
     const end = (
         <div className="flex align-items-center gap-2" style={{ paddingRight: '10px' }}>
-            <Avatar icon="pi pi-comment" shape="circle" style={_style} onClick={() => {
+            {/* <Avatar icon="pi pi-book" shape="circle" style={getStyle(cl)} onClick={() => {
+                setCl(!cl);
+            }} /> */}
+            <Avatar icon="pi pi-comment" shape="circle" style={getStyle(visible)} onClick={() => {
                 setVisible(!visible);
             }} />
             <Avatar icon="pi pi-github" shape="circle"  onClick={() => {
@@ -97,11 +106,19 @@ export default function CommandDemo() {
     );
     return (
         <>
-            <Menubar model={items} style={{ padding: 0 }} end={end} />
+            <Menubar model={items} style={{ padding: '8px 0px' }} end={end} />
             <input type="file" ref={inputRef} style={{ display: "none" }} onChangeCapture={onFileChangeCapture} />
+            <Sidebar visible={cl} position="right" onHide={() => setCl(false)}>
+                <h2>v0.3.10</h2>
+                <p>
+                </p>
+            </Sidebar>
             <iframe id="main" ref={iframeRef} src="frame.html" style={{ width: '100', display: visible? 'none': 'block'}}></iframe>
             <div id="comments" className="utterances" style={{width:"100%", overflow: "auto", height: "540px", display: visible? 'block': 'none'}}></div>
             {/* <div className="footbar"></div> */}
+            <div className="footbar">
+                <p>v0.3.10</p>
+            </div>
         </>
     )
 }
