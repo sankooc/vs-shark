@@ -28,9 +28,13 @@
 			{
 				"viewType": "proto.pcapng",
 				"displayName": "pcapng",
+				"priority": "default",
 				"selector": [
 					{
 						"filenamePattern": "*.pcapng"
+					},
+					{
+						"filenamePattern": "*.cap"
 					},
 					{
 						"filenamePattern": "*.pcap"
