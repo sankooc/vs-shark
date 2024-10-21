@@ -53,7 +53,34 @@ pub fn packet2_macro_derive(input: TokenStream) -> TokenStream {
     gen.into()
 }
 
-
+#[proc_macro_derive(PropsPacket)]
+pub fn proto_packet_macro_derive(input: TokenStream) -> TokenStream {
+    let ast:syn::DeriveInput = syn::parse(input).unwrap();
+    let name = &ast.ident;
+    let gen = quote! {
+        impl PacketBuilder for #name {
+            fn new() -> Self {
+                Self {
+                    ..Default::default()
+                }
+            }
+            fn summary(&self) -> String {
+                self.to_string()
+            }
+        }
+        impl #name {
+            pub fn create(reader: &Reader, opt: Option<PacketOpt>) -> Result<PacketContext<Self>> {
+                let packet: PacketContext<Self> = Frame::create_packet();
+                let mut p = packet.get().borrow_mut();
+                let rs = Self::_create_with_props(reader, &packet, &mut p, opt);
+                drop(p);
+                rs?;
+                Ok(packet)
+            }
+        }
+    };
+    gen.into()
+}
 #[proc_macro_derive(Packet3)]
 pub fn packet3_macro_derive(input: TokenStream) -> TokenStream {
     let ast:syn::DeriveInput = syn::parse(input).unwrap();

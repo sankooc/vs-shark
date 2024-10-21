@@ -2,6 +2,7 @@ use crate::common::{base::{Context, Element, Frame, PacketContext, Visitor}, io:
 use crate::common::concept::Field;
 
 pub mod arp;
+pub mod rarp;
 pub mod dhcp;
 pub mod dns;
 pub mod ethernet;
@@ -19,8 +20,8 @@ pub mod error;
 use anyhow::bail;
 use enum_dispatch::enum_dispatch;
 use strum_macros::Display;
-
-
+use crate::common::filter::PacketProps;
+use std::cell::RefCell;
 
 pub const DEF_STATUS: &str = "info";
 
@@ -52,11 +53,13 @@ pub fn execute(file_type: &FileType, link_type: u32, _: &Frame, reader: &Reader)
 type ERROR = PacketContext<error::Error>;
 type ETHERNET = PacketContext<ethernet::ii::Ethernet>;
 type NULL = PacketContext<ethernet::null::NULL>;
-type PPPoESS = PacketContext<ethernet::pppoes::PPPoESS>;
+type PPPoES = PacketContext<ethernet::pppoes::PPPoESS>;
+type PPPoED = PacketContext<ethernet::pppoes::PPPoED>;
 type SSL = PacketContext<ethernet::ssl::SSL>;
 type IPV4 = PacketContext<ip4::IPv4>;
 type IPV6 = PacketContext<ip6::IPv6>;
 type ARP = PacketContext<arp::ARP>;
+type RARP = PacketContext<rarp::RARP>;
 type TCP = PacketContext<tcp::TCP>;
 type UDP = PacketContext<udp::UDP>;
 type ICMP = PacketContext<icmp::ICMP>;
@@ -78,7 +81,8 @@ type NBNS = PacketContext<nbns::NBNS>;
 pub enum ProtocolData {
     ERROR,
     ETHERNET,
-    PPPoESS,
+    PPPoES,
+    PPPoED,
     SSL,
     NULL,
     IPV4,
@@ -89,6 +93,7 @@ pub enum ProtocolData {
     ICMP,
     ICMPv6,
     IGMP,
+    RARP,
     DNS,
     // MDNS,
     DHCP,
@@ -103,13 +108,15 @@ pub enum ProtocolData {
 pub fn _parse(proto: &'static str) -> anyhow::Result<&dyn Visitor>{
     let rs:&dyn Visitor = match proto {
         "ethernet" => &ethernet::ii::EthernetVisitor,
-        "pppoess" => &ethernet::pppoes::PPPoESSVisitor,
+        "pppoes" => &ethernet::pppoes::PPPoESSVisitor,
+        "pppoed" => &ethernet::pppoes::PPPoEDVisitor,
         "ssl" => &ethernet::ssl::SSLVisitor,
         "ieee802.11" => &ethernet::radiotap::IEE80211Visitor,
         "ieee1905.a" => &ethernet::ieee1905a::IEEE1905AVisitor,
         "ipv4" => &ip4::IP4Visitor,
         "ipv6" => &ip6::IP6Visitor,
         "arp" => &arp::ARPVisitor,
+        "rarp" => &rarp::RARPVisitor,
         "tcp" => &tcp::TCPVisitor,
         "udp" => &udp::UDPVisitor,
         "icmp" => &icmp::ICMPVisitor,

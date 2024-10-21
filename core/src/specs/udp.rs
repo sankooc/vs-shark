@@ -42,12 +42,12 @@ pub struct UDP {
 
 impl UDP {
     fn _create(reader: &Reader, packet: &PacketContext<Self>, p: &mut std::cell::RefMut<Self>, _:Option<PacketOpt>) -> Result<()> {
-        let source = packet.build_lazy(reader, Reader::_read16_be, Description::source_port)?;
-        let target = packet.build_lazy(reader, Reader::_read16_be, Description::target_port)?;
-        let len = packet.build_lazy(reader, Reader::_read16_be, Description::packet_length)?;
+        let source = packet.build_lazy(reader, Reader::_read16_be, Some("udp.source.port"), Description::source_port)?;
+        let target = packet.build_lazy(reader, Reader::_read16_be, Some("udp.target.port"),Description::target_port)?;
+        let len = packet.build_lazy(reader, Reader::_read16_be, Some("udp.packet.len"),Description::packet_length)?;
         let crc = reader.read16(false)?;
         let playload_size = len - 8;
-        packet._build(reader, reader.cursor(), playload_size as usize, format!("UDP payload ({} bytes)", playload_size));
+        packet._build(reader, reader.cursor(), playload_size as usize, Some(("tcp.playload.len", playload_size.to_string().leak())),format!("UDP payload ({} bytes)", playload_size));
         p.source_port = source;
         p.target_port = target;
         p.len = len;
@@ -85,12 +85,12 @@ impl UDPVisitor {
     fn visit2(&self, reader: &Reader) -> Result<(ProtocolData, &'static str)> {
         let packet: PacketContext<UDP> = Frame::create_packet();
         let mut p = packet.get().borrow_mut();
-        let source = packet.build_lazy(reader, Reader::_read16_be, Description::source_port)?;
-        let target = packet.build_lazy(reader, Reader::_read16_be, Description::target_port)?;
-        let len = packet.build_lazy(reader, Reader::_read16_be, Description::packet_length)?;
+        let source = packet.build_lazy(reader, Reader::_read16_be, Some("udp.source.port"), Description::source_port)?;
+        let target = packet.build_lazy(reader, Reader::_read16_be, Some("udp.target.port"),Description::target_port)?;
+        let len = packet.build_lazy(reader, Reader::_read16_be, Some("udp.packet.len"),Description::packet_length)?;
         let crc = reader.read16(false)?;
         let playload_size = len - 8;
-        packet._build(reader, reader.cursor(), playload_size as usize, format!("UDP payload ({} bytes)", playload_size));
+        packet._build(reader, reader.cursor(), playload_size as usize, Some(("tcp.playload.len", playload_size.to_string().leak())), format!("UDP payload ({} bytes)", playload_size));
         p.source_port = source;
         p.target_port = target;
         p.len = len;

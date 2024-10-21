@@ -77,7 +77,7 @@ function FrameList() {
   };
   const request = (event) => {
     const {rows, page} = event;
-    const _filter = filter.map(f => f.code);
+    const _filter = filter.map(f => f.code).join('&');
     emitMessage(new ComMessage('frame', {page: page + 1, size: rows, filter: _filter}));
   }
   const extraFilter = {
@@ -85,7 +85,7 @@ function FrameList() {
     value: filter,
     onChange: (e) => {
       setFilter(e.value);
-      const _filter =  e.value.map(f => f.code);
+      const _filter =  e.value.map(f => f.code).join('&');
       emitMessage(new ComMessage('frame', {page:1, size: PAGE_SIZE, filter: _filter}));
     }
   }

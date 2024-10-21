@@ -4,7 +4,9 @@ use anyhow::Result;
 use pcap_derive::{Packet, Visitor3};
 
 use crate::{
-    common::{io::Reader, FIELDSTATUS}, constants::igmp_type_mapper, common::base::{Frame, PacketBuilder, PacketContext}
+    common::base::{Frame, PacketBuilder, PacketContext},
+    common::{io::Reader, FIELDSTATUS},
+    constants::igmp_type_mapper,
 };
 
 use super::ProtocolData;
@@ -42,9 +44,9 @@ impl IGMPVisitor {
     fn visit2(&self, reader: &Reader) -> Result<(ProtocolData, &'static str)> {
         let packet: PacketContext<IGMP> = Frame::create_packet();
         let mut p = packet.get().borrow_mut();
-        p._type = packet.build_lazy(reader, Reader::_read8, IGMP::_type)?;
-        p.resp = packet.build_format(reader, Reader::_read8, "Max Resp Time: {} sec)")?;
-        p.checksum = packet.build_format(reader, Reader::_read16_be, "Checksum: {}")?;
+        p._type = packet.build_lazy(reader, Reader::_read8, Some("igmp.type"), IGMP::_type)?;
+        p.resp = packet.build_format(reader, Reader::_read8, Some("igmp.resp.time"), "Max Resp Time: {} sec)")?;
+        p.checksum = packet.build_format(reader, Reader::_read16_be, None, "Checksum: {}")?;
         //TODO ADD
         drop(p);
         Ok((super::ProtocolData::IGMP(packet), "none"))

@@ -34,7 +34,22 @@ mod unit {
             _dis(1, f);
         }
     }
-
+    #[test]
+    fn test_ppp_lcp() {
+        // let frame = mock_frame();
+        let data: Vec<u8> = build_reader("ppp.lcp");
+        let reader = Reader::new_raw(Rc::new(data));
+        let (prop, _) = specs::ethernet::pppoes::PPPoESSVisitor.visit2(&reader).unwrap();
+        match &prop {
+            ProtocolData::PPPoES(el) => {
+                // let val = el.get().borrow();
+                inspect(el); 
+            } 
+            _ => {
+                assert!(false);
+            }
+        }
+    }
     #[test]
     fn test_ethernet() {
         // let frame = mock_frame();

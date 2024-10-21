@@ -6,13 +6,13 @@ use anyhow::Result;
 use pcap_derive::Visitor3;
 use pcap_derive::{Packet, Packet2, NINFO};
 
-use crate::common::io::Reader;
+use crate::common::base::{DomainService, Frame, PacketBuilder, PacketContext, PacketOpt};
 use crate::common::io::AReader;
+use crate::common::io::Reader;
 use crate::common::MultiBlock;
 use crate::common::Ref2;
 use crate::common::FIELDSTATUS;
 use crate::constants::{dns_class_mapper, dns_type_mapper};
-use crate::common::base::{DomainService, Frame, PacketBuilder, PacketContext, PacketOpt};
 
 use super::ProtocolData;
 
@@ -64,12 +64,12 @@ impl DNS {
     }
     fn _create<PacketOpt>(reader: &Reader, packet: &PacketContext<Self>, p: &mut std::cell::RefMut<Self>, _: Option<PacketOpt>) -> Result<()> {
         let _cur = reader.cursor();
-        p.transaction_id = packet.build_lazy(reader, Reader::_read16_be, DNS::transaction_id)?;
-        let flag = packet.build_lazy(reader, Reader::_read16_be, DNS::flag)?;
-        let questions = packet.build_lazy(reader, Reader::_read16_be, DNS::questions)?;
-        let answer_rr = packet.build_lazy(reader, Reader::_read16_be, DNS::answer_rr)?;
-        let authority_rr = packet.build_lazy(reader, Reader::_read16_be, DNS::authority_rr)?;
-        let additional_rr = packet.build_lazy(reader, Reader::_read16_be, DNS::additional_rr)?;
+        p.transaction_id = packet.build_lazy(reader, Reader::_read16_be, Some("dns.transaction.id"), DNS::transaction_id)?;
+        let flag = packet.build_lazy(reader, Reader::_read16_be, None,DNS::flag)?;
+        let questions = packet.build_lazy(reader, Reader::_read16_be, Some("dns.question.count"), DNS::questions)?;
+        let answer_rr = packet.build_lazy(reader, Reader::_read16_be, Some("dns.answer.count"),DNS::answer_rr)?;
+        let authority_rr = packet.build_lazy(reader, Reader::_read16_be, Some("dns.authority.count"),DNS::authority_rr)?;
+        let additional_rr = packet.build_lazy(reader, Reader::_read16_be, Some("dns.additional.count"),DNS::additional_rr)?;
         p.is_response = (flag >> 15) > 0;
         p.opcode = (flag >> 11) & 0xf;
         let qs = packet.build_packet(reader, Questions::create, Some((questions, _cur)), None)?;
@@ -121,12 +121,12 @@ impl Question {
         let _read = |reader: &Reader| {
             return reader.read_dns_compress_string(archor, "");
         };
-        p.name = packet.build_lazy(reader, _read, Question::name)?;
+        p.name = packet.build_lazy(reader, _read, Some("dns.question.name"),Question::name)?;
         if p.name == "" {
             p.name = "<Root>".into();
         }
-        p._type = packet.build_lazy(reader, Reader::_read16_be, Question::_type)?;
-        p.class = packet.build_lazy(reader, Reader::_read16_be, Question::class)?;
+        p._type = packet.build_lazy(reader, Reader::_read16_be, Some("dns.question.type"), Question::_type)?;
+        p.class = packet.build_lazy(reader, Reader::_read16_be, Some("dns.question.class"), Question::class)?;
         Ok(())
     }
 }
@@ -181,7 +181,7 @@ impl ResourceType {
             ResourceType::PTR(str) => str.into(),
             ResourceType::SOA(str) => str.into(),
             ResourceType::AAAA(str) => str.to_string(),
-            ResourceType::SRV(_,_, port, target) => format!("{}:{}", target, port),
+            ResourceType::SRV(_, _, port, target) => format!("{}:{}", target, port),
         }
     }
 }
@@ -285,38 +285,38 @@ impl DNSVisitor {
             // let name_ref = reader.read16(true)?;
             return reader.read_dns_compress_string(archor, "");
         };
-        p.name = packet.build_lazy(reader, _read, RecordResource::name)?;
-        p._type = packet.build_lazy(reader, Reader::_read16_be, RecordResource::_type)?;
-        p.class = packet.build_lazy(reader, Reader::_read16_be, RecordResource::class)? & 0x00ff;
-        p.ttl = packet.build_lazy(reader, Reader::_read32_be, RecordResource::ttl)?;
-        p.len = packet.build_lazy(reader, Reader::_read16_be, RecordResource::len)?;
+        p.name = packet.build_lazy(reader, _read, Some("dns.record.resource.name"), RecordResource::name)?;
+        p._type = packet.build_lazy(reader, Reader::_read16_be, Some("dns.record.resource.type"),RecordResource::_type)?;
+        p.class = packet.build_lazy(reader, Reader::_read16_be, Some("dns.record.resource.class"),RecordResource::class)? & 0x00ff;
+        p.ttl = packet.build_lazy(reader, Reader::_read32_be, Some("dns.record.resource.ttl"),RecordResource::ttl)?;
+        p.len = packet.build_lazy(reader, Reader::_read16_be, Some("dns.record.resource.len"),RecordResource::len)?;
         let _finish = p.len as usize + reader.cursor();
         match p._type {
             1 => {
                 if p.len == 4 {
-                    p.data = ResourceType::A(packet.build_format(reader, Reader::_read_ipv4, "Address: {}")?);
+                    p.data = ResourceType::A(packet.build_format(reader, Reader::_read_ipv4, Some("dns.resource.address"), "Address: {}")?);
                 } else {
                     reader.slice(p.len as usize);
                 }
             }
             5 => {
                 let _read = |reader: &Reader| reader._read_compress(archor);
-                p.data = ResourceType::CNAME(packet.build_format(reader, _read, "CNAME: {}")?);
+                p.data = ResourceType::CNAME(packet.build_format(reader, _read, Some("dns.resource.cname"), "CNAME: {}")?);
             }
             28 => {
                 if p.len == 16 {
-                    p.data = ResourceType::AAAA(packet.build_format(reader, Reader::_read_ipv6, "Address: {}")?);
+                    p.data = ResourceType::AAAA(packet.build_format(reader, Reader::_read_ipv6, Some("dns.resource.address"), "Address: {}")?);
                 } else {
                     reader.slice(p.len as usize);
                 }
             }
             33 => {
-                let priority = packet.build_format(reader, Reader::_read16_be, "Priority: {}")?;
-                let weigth = packet.build_format(reader, Reader::_read16_be, "Weight: {}")?;
-                let port = packet.build_format(reader, Reader::_read16_be, "Port: {}")?;
+                let priority = packet.build_format(reader, Reader::_read16_be, Some("dns.resource.priority"), "Priority: {}")?;
+                let weight = packet.build_format(reader, Reader::_read16_be, Some("dns.resource.weight"), "Weight: {}")?;
+                let port = packet.build_format(reader, Reader::_read16_be, Some("dns.resource.port"), "Port: {}")?;
                 let _read = |reader: &Reader| reader._read_compress(archor);
-                let target = packet.build_format(reader, _read, "Target: {}")?;
-                p.data = ResourceType::SRV(priority, weigth, port, target);
+                let target = packet.build_format(reader, _read, Some("dns.resource.target"), "Target: {}")?;
+                p.data = ResourceType::SRV(priority, weight, port, target);
                 reader._set(_finish);
             }
             _ => {

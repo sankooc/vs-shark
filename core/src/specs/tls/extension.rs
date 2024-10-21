@@ -27,16 +27,16 @@ impl Display for ServerName {
 
 impl ServerName {
     fn _create(reader: &Reader, packet: &PacketContext<Self>, p: &mut std::cell::RefMut<Self>, _:Option<PacketOpt>) -> Result<()> {
-        p.list_len = packet.build_format(reader, Reader::_read16_be, "Server Name list length: {}")?;
+        p.list_len = packet.build_format(reader, Reader::_read16_be, Some("tls.handshake.server.name.list"),"Server Name list length: {}")?;
         let finish = reader.cursor() + p.list_len as usize;
         loop {
             if reader.cursor() >= finish {
                 break;
             }
-            packet.build_format(reader, Reader::_read8, "Server Name Type: host_name ({})")?;
-            let len = packet.build_format(reader, Reader::_read16_be, "Server Name Length: {}")?;
+            packet.build_format(reader, Reader::_read8, Some("tls.handshake.server.name.type"),"Server Name Type: host_name ({})")?;
+            let len = packet.build_format(reader, Reader::_read16_be, Some("tls.handshake.server.name.length"),"Server Name Length: {}")?;
             let read_str = |reader: &Reader| reader.read_string(len as usize);
-            let hostname = packet.build_format(reader, read_str, "Server Name: {}")?;
+            let hostname = packet.build_format(reader, read_str, Some("tls.handshake.server"),"Server Name: {}")?;
             // info!("host: {}", hostname);
             p.names.push(hostname);
         }

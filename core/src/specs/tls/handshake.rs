@@ -3,16 +3,17 @@ use std::fmt::Formatter;
 use std::rc::Rc;
 
 use crate::common::io::AReader;
+use crate::common::util::hexlize;
 use crate::constants::ec_points_type_mapper;
 use anyhow::{bail, Result};
-use pcap_derive::Packet2;
 use pcap_derive::BerPacket;
+use pcap_derive::Packet2;
 
 use crate::common::Ref2;
 use crate::{
+    common::base::{Frame, PacketBuilder, PacketContext, PacketOpt},
     common::io::Reader,
     constants::{tls_cipher_suites_mapper, tls_extension_mapper, tls_hs_message_type_mapper, tls_min_type_mapper},
-    common::base::{Frame, PacketBuilder, PacketContext, PacketOpt},
 };
 
 use super::ber::SEQUENCE;
@@ -34,10 +35,10 @@ impl CupherSuites {
         format!("Cipher Suite: {} ({:#06x})", tls_cipher_suites_mapper(data), data)
     }
     fn _create(reader: &Reader, packet: &PacketContext<Self>, p: &mut std::cell::RefMut<Self>, _: Option<PacketOpt>) -> Result<()> {
-        let len = packet.build_format(reader, Reader::_read16_be, "Cipher Suites Length: {}")?;
+        let len = packet.build_format(reader, Reader::_read16_be, Some("tls.handshake.cipher.length"), "Cipher Suites Length: {}")?;
         let _len = len / 2;
         for _ in 0.._len {
-            let code = packet.build_fn(reader, Reader::_read16_be, CupherSuites::_type)?;
+            let code = packet.build_fn(reader, Reader::_read16_be, Some("tls.handshake.cipher.type"), CupherSuites::_type)?;
             p.suites.push(code);
         }
         Ok(())
@@ -56,9 +57,9 @@ impl std::fmt::Display for CompressMethod {
 }
 impl CompressMethod {
     fn _create(reader: &Reader, packet: &PacketContext<Self>, p: &mut std::cell::RefMut<Self>, _: Option<PacketOpt>) -> Result<()> {
-        let len = packet.build_format(reader, Reader::_read8, "Compression Methods Length: {}")?;
+        let len = packet.build_format(reader, Reader::_read8, Some("tls.handshake.compression.method.length"), "Compression Methods Length: {}")?;
         for _ in 0..len {
-            let code = packet.build_format(reader, Reader::_read8, "Compression Method:({})")?;
+            let code = packet.build_format(reader, Reader::_read8, Some("tls.handshake.compression.method"), "Compression Method:({})")?;
             p.methods.push(code);
         }
         Ok(())
@@ -80,7 +81,7 @@ impl ExtenstionPack {
         format!("Cipher Suite: {} ({:#06x})", tls_cipher_suites_mapper(data), data)
     }
     fn _create(reader: &Reader, packet: &PacketContext<Self>, p: &mut std::cell::RefMut<Self>, _: Option<PacketOpt>) -> Result<()> {
-        let len = packet.build_format(reader, Reader::_read16_be, "Extensions Length: {}")?;
+        let len = packet.build_format(reader, Reader::_read16_be, Some("tls.handshake.extension.length"), "Extensions Length: {}")?;
         let finish = reader.cursor() + len as usize;
         loop {
             if reader.cursor() >= finish {
@@ -111,8 +112,8 @@ impl Extenstion {
         format!("Type: {} ({})", self._type(), self._type)
     }
     fn _create(reader: &Reader, packet: &PacketContext<Self>, p: &mut std::cell::RefMut<Self>, _: Option<PacketOpt>) -> Result<()> {
-        p._type = packet.build_lazy(reader, Reader::_read16_be, Extenstion::_type_desc)?;
-        p.len = packet.build_format(reader, Reader::_read16_be, "Length: {}")?;
+        p._type = packet.build_lazy(reader, Reader::_read16_be, Some("tls.extension.type"), Extenstion::_type_desc)?;
+        p.len = packet.build_format(reader, Reader::_read16_be, None, "Length: {}")?;
         if p.len > 0 {
             let finish = reader.cursor() + p.len as usize;
             match p._type {
@@ -131,10 +132,10 @@ impl Extenstion {
                     p.info = Some(ExtensionType::Version(reff.versions));
                 }
                 0x000b => {
-                    let elen = packet.build_format(reader, Reader::read8, "EC point formats Length: {}")?;
+                    let elen = packet.build_format(reader, Reader::read8, Some("tls.handshake.ecpoint.len"), "EC point formats Length: {}")?;
                     if elen == 1 {
                         let format = reader.read8()?;
-                        let _content = format!("EC point format: {} ({})",ec_points_type_mapper(format), format);
+                        let _content = format!("EC point format: {} ({})", ec_points_type_mapper(format), format);
                         packet.build_backward(reader, 1, _content);
                     }
                 }
@@ -149,9 +150,6 @@ impl Extenstion {
     }
 }
 
-fn hexlize(data: &[u8]) -> String {
-    data.iter().map(|f| format!("{:02x}", f)).collect::<String>()
-}
 
 // #[derive(Default, Packet2)]
 // pub struct Certificates {}
@@ -215,9 +213,7 @@ impl SEQUENCE for Extensions {
 }
 
 #[derive(Default, BerPacket)]
-pub struct SubjectPublicKey {
-
-}
+pub struct SubjectPublicKey {}
 impl SubjectPublicKey {
     fn _summary(&self) -> &'static str {
         "SubjectPublicKey"
@@ -241,8 +237,7 @@ impl SEQUENCE for SubjectPublicKey {
 
 #[derive(Default, BerPacket)]
 pub struct SubjectPublicKeyInfo {
-    signature: Option<Signature>
-
+    signature: Option<Signature>,
 }
 impl SubjectPublicKeyInfo {
     fn _summary(&self) -> &'static str {
@@ -256,9 +251,7 @@ impl SEQUENCE for SubjectPublicKeyInfo {
                 let item = packet.build_packet(reader, Signature::create, Some(len), None)?.take();
                 self.signature = Some(item);
             }
-            1 => {
-
-            }
+            1 => {}
             _ => {}
         }
         Ok(())
@@ -299,7 +292,6 @@ pub struct RdnSequence {
     val: TLVOBJ,
 }
 impl RdnSequence {
-
     fn _summary(&self) -> &'static str {
         "RdnSequence"
     }
@@ -316,14 +308,14 @@ impl SEQUENCE for RdnSequence {
                 let val = super::ber::parse(_type, reader.slice(len))?;
                 packet.build_backward(reader, len, format!("Printable String: {}", val));
                 self.val = val;
-            },
+            }
         }
         Ok(())
     }
 }
 #[derive(Default, BerPacket)]
 pub struct RdnSequenceList {
-    items: Vec<RdnSequence>
+    items: Vec<RdnSequence>,
 }
 impl RdnSequenceList {
     fn _summary(&self) -> &'static str {
@@ -340,7 +332,7 @@ impl SEQUENCE for RdnSequenceList {
 
 #[derive(Default, BerPacket)]
 pub struct Rdn {
-    list: Option<RdnSequenceList>
+    list: Option<RdnSequenceList>,
 }
 impl Rdn {
     fn _summary(&self) -> &'static str {
@@ -380,8 +372,7 @@ impl SEQUENCE for Signature {
             1 => {
                 // 0x0500
             }
-            _ => {
-            }
+            _ => {}
         }
         Ok(())
     }
@@ -456,13 +447,11 @@ impl SEQUENCE for TBSCertificate {
     }
 }
 
-
 #[derive(Default, Packet2)]
 pub struct Certificate {
     tbs_certificate: Option<TBSCertificate>,
     signature: Option<Signature>,
     value: TLVOBJ,
-
     // sign
 }
 impl std::fmt::Display for Certificate {
@@ -514,7 +503,7 @@ impl HandshakeClientHello {
             for ext in exps.items.iter() {
                 if let Some(_info) = &ext.borrow().info {
                     if let ExtensionType::ServerName(v) = _info {
-                        return Some(v.clone())
+                        return Some(v.clone());
                     }
                 }
             }
@@ -547,7 +536,7 @@ impl HandshakeClientHello {
     }
     pub fn ciphers(&self) -> Vec<String> {
         let reff = self.ciper_suites.as_ref().borrow();
-        let list = reff.suites.iter().map(|f|tls_cipher_suites_mapper(*f)).collect::<_>();
+        let list = reff.suites.iter().map(|f| tls_cipher_suites_mapper(*f)).collect::<_>();
         drop(reff);
         list
     }
@@ -555,12 +544,12 @@ impl HandshakeClientHello {
         reader.read8()?;
         let min = reader.read8()?;
         let version_desc = format!("Version: {} (0x03{})", tls_min_type_mapper(min), min);
-        packet._build(reader, reader.cursor() - 2, 2, version_desc);
+        packet._build(reader, reader.cursor() - 2, 2, None, version_desc);
         let random = reader.slice(0x20);
-        packet._build(reader, reader.cursor() - 0x20, 0x20, format!("Random: {}", hexlize(random)));
-        let session_len = packet.build_format(reader, Reader::_read8, "Session ID Length: {}")?;
+        packet._build(reader, reader.cursor() - 0x20, 0x20, None, format!("Random: {}", hexlize(random)));
+        let session_len = packet.build_format(reader, Reader::_read8, None, "Session ID Length: {}")?;
         let session = reader.slice(session_len as usize);
-        packet._build(reader, reader.cursor() - session_len as usize, session_len as usize, format!("Session: {}", hexlize(session)));
+        packet._build(reader, reader.cursor() - session_len as usize, session_len as usize, None, format!("Session: {}", hexlize(session)));
         let ciper_suites: Ref2<CupherSuites> = packet.build_packet(reader, CupherSuites::create, None, None)?;
         let compress_method = packet.build_packet(reader, CompressMethod::create, None, None)?;
         let mut extensions = None;
@@ -587,7 +576,7 @@ pub struct HandshakeServerHello {
     extensions: Option<ExtenstionPack>,
 }
 impl HandshakeServerHello {
-    pub fn ciper_suite(&self)-> String {
+    pub fn ciper_suite(&self) -> String {
         tls_cipher_suites_mapper(self.ciper_suite)
     }
     pub fn versions(&self) -> Option<String> {
@@ -597,7 +586,7 @@ impl HandshakeServerHello {
                     if let ExtensionType::Version(v) = _info {
                         // return v.get(0).clone();
                         if let Some(version) = v.get(0) {
-                            return Some(version.into())
+                            return Some(version.into());
                         }
                     }
                 }
@@ -621,14 +610,14 @@ impl HandshakeServerHello {
         reader.read8()?;
         let min = reader.read8()?;
         let version_desc = format!("Version: {} (0x03{})", tls_min_type_mapper(min), min);
-        packet._build(reader, reader.cursor() - 2, 2, version_desc);
+        packet._build(reader, reader.cursor() - 2, 2, None, version_desc);
         let random = reader.slice(0x20);
-        packet._build(reader, reader.cursor() - 0x20, 0x20, format!("Random: {}", hexlize(random)));
-        let session_len = packet.build_format(reader, Reader::_read8, "Session ID Length: {}")?;
+        packet._build(reader, reader.cursor() - 0x20, 0x20, None, format!("Random: {}", hexlize(random)));
+        let session_len = packet.build_format(reader, Reader::_read8, None, "Session ID Length: {}")?;
         let session = reader.slice(session_len as usize);
-        packet._build(reader, reader.cursor() - session_len as usize, session_len as usize, format!("Session: {}", hexlize(session)));
-        let ciper_suite = packet.build_fn(reader, Reader::_read16_be, CupherSuites::_type)?;
-        let method = packet.build_format(reader, Reader::_read8, "Compression Method: ({})")?;
+        packet._build(reader, reader.cursor() - session_len as usize, session_len as usize, None, format!("Session: {}", hexlize(session)));
+        let ciper_suite = packet.build_fn(reader, Reader::_read16_be, Some("cipher.type"), CupherSuites::_type)?;
+        let method = packet.build_format(reader, Reader::_read8, Some("tls.handshake.compression.method"), "Compression Method: ({})")?;
         if reader.left() > 0 {
             let extensions = packet.build_packet(reader, ExtenstionPack::create, None, None)?;
             return Ok(HandshakeServerHello {
@@ -646,7 +635,6 @@ impl HandshakeServerHello {
             method,
             extensions: None,
         })
-        
     }
 }
 
@@ -672,7 +660,7 @@ impl HandshakeCertificate {
         if finish != reader.cursor() + len as usize {
             bail!("Certificate parse error")
         }
-        packet._build(reader, reader.cursor() - 3, 3, format!("Certificates Length: {}", len));
+        packet._build(reader, reader.cursor() - 3, 3, Some(("certificates.size", len.to_string().leak())), format!("Certificates Length: {}", len));
         loop {
             if finish <= reader.cursor() {
                 break;
@@ -709,7 +697,7 @@ impl HandshakeCertificate {
 //     }
 // }
 
-#[derive(Default,Clone)]
+#[derive(Default, Clone)]
 pub enum HandshakeType {
     #[default]
     UNKNOWN,
@@ -773,8 +761,8 @@ impl HandshakeProtocol {
             }
             let h_type_desc = format!("Handshake Type: {} ({})", tls_hs_message_type_mapper(head_type), head_type);
             let h_len_desc = format!("Length: {}", head_len);
-            packet._build(reader, current - 4, 1, h_type_desc);
-            packet._build(reader, current - 3, 3, h_len_desc);
+            packet._build(reader, current - 4, 1, Some(("tls.handshake.type", head_type.to_string().leak())), h_type_desc);
+            packet._build(reader, current - 3, 3, Some(("tls.handshake.len", head_len.to_string().leak())), h_len_desc);
             let _finish = reader.cursor() + head_len as usize;
 
             match head_type {

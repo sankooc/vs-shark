@@ -25,11 +25,11 @@ impl Display for IEEE1905A {
 }
 impl IEEE1905A {
     fn _create(reader: &Reader, packet: &PacketContext<Self>, p: &mut std::cell::RefMut<Self>, _: Option<PacketOpt>) -> Result<()> {
-        p.version = packet.build_format(reader, Reader::_read8, "Message version: {}")?;
+        p.version = packet.build_format(reader, Reader::_read8, Some("1905.message.version"),"Message version: {}")?;
         reader.read8()?; //Message type: Topology response (0x0003)
-        p.message_type = packet.build_format(reader, Reader::_read16_be, "Message type: ({})")?;
-        p.message_id = packet.build_format(reader, Reader::_read16_be, "Message id: {}")?;
-        p.flagment = packet.build_format(reader, Reader::_read8, "Fragment id: {}")?;
+        p.message_type = packet.build_format(reader, Reader::_read16_be,Some("1905.message.type"), "Message type: ({})")?;
+        p.message_id = packet.build_format(reader, Reader::_read16_be,Some("1905.message.id"), "Message id: {}")?;
+        p.flagment = packet.build_format(reader, Reader::_read8, Some("1905.fragment.id"),"Fragment id: {}")?;
         Ok(())
     }
 }

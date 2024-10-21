@@ -40,11 +40,11 @@ impl SSDP {
             if reader.enter_flag(0) {
                 break;
             }
-            let header = packet.build_format(reader, Reader::_read_enter, "{}")?;
+            let header = packet.build_format(reader, Reader::_read_enter, None, "{}")?;
             p.header.push(header);
         }
         let dlen = reader.left();
-        packet._build(reader, reader.cursor(), dlen, format!("File Data: {} bytes",dlen));
+        packet._build(reader, reader.cursor(), dlen, Some(("ssdp.file.data.len", dlen.to_string().leak())), format!("File Data: {} bytes",dlen));
         Ok(())
     }
 }

@@ -1,6 +1,56 @@
-use std::collections::HashMap;
+use std::cmp;
+use std::collections::{HashMap, HashSet};
 use std::str::Chars;
 use std::iter::Peekable;
+pub trait Superem{
+    
+}
+pub trait FilterValue {
+    
+}
+
+pub struct PacketProps {
+    _map: HashMap<&'static str, HashSet<&'static str>>,
+}
+
+impl PacketProps{
+    pub fn new() -> Self {
+        Self{_map: HashMap::new()}
+    }
+    pub fn add(&mut self, key: &'static str, val: &'static str){
+        if let Some(set) = self._map.get_mut(&key) {
+            set.insert(val);
+        } else {
+            let mut _set = HashSet::new();
+            _set.insert(val);
+            self._map.insert(key, _set);
+        }
+    }
+    pub fn get(&self, key: &'static str) -> Option<Vec<&'static str>>{
+        if let Some(set) = self._map.get(&key) {
+            let mut aa: Vec<&'static str> = set.into_iter().map(|f| *f).collect();
+            aa.sort();
+            return Some(aa);
+        }
+        None
+    }
+    pub fn merge(&mut self, other: &mut PacketProps) {
+        for (key, values) in other._map.drain() {
+            self._map
+                .entry(key)
+                .or_insert_with(HashSet::new)
+                .extend(values);
+        }
+    }
+
+    pub fn match_expr(&self, statement: &str) -> bool {
+        let mut parser = Parser::new(statement);
+        if let Ok(expr) = parser.parse() {
+            return evaluate_expression(&expr, &self._map);
+        } 
+        false
+    }
+}
 
 #[derive(Debug, PartialEq)]
 pub enum Operator {
@@ -76,8 +126,8 @@ impl<'a> Parser<'a> {
             let right = self.parse_value()?;
             Ok(Expr::Binary(Box::new(left), op, Box::new(right)))
         } else {
-            // Ok(left)
-            Err("No value".to_string())
+            Ok(left)
+            // Err("No value".to_string())
         }
     }
 
@@ -154,7 +204,7 @@ impl<'a> Parser<'a> {
     }
 }
 // Evaluator to match expression with a dictionary of values
-pub fn evaluate_expression(expr: &Expr, data: &HashMap<String, String>) -> bool {
+pub fn evaluate_expression(expr: &Expr, data: &HashMap<&'static str, HashSet<&'static str>>) -> bool {
     match expr {
         Expr::Binary(left, op, right) => {
             let left_val = evaluate_expression(left, data);
@@ -165,30 +215,60 @@ pub fn evaluate_expression(expr: &Expr, data: &HashMap<String, String>) -> bool 
                 Operator::Or => left_val || right_val,
                 _ => {
                     let left_value = if let Expr::Value(ref key) = **left {
-                        data.get(key).unwrap_or(&"".to_string()).to_string()
+                        data.get(&(key.as_ref()))
                     } else {
                         return false;
                     };
 
-                    let right_value = if let Expr::Value(ref val) = **right {
-                        val.clone()
+                    let right_value:&str = if let Expr::Value(ref val) = **right {
+                        val
                     } else {
                         return false;
                     };
+                    if let Some(_set) = left_value {
+                        for v in _set.iter() {
+                            let left = *v;
+                            let max_len = cmp::max(left.len(), right_value.len());
+                            let result = match op {
+                                Operator::Equal => left == right_value,
+                                Operator::NotEqual => left != right_value,
+                                Operator::GreaterThan => {
+                                    let _left = format!("{:0>max_len$}", left);
+                                    let _right = format!("{:0>max_len$}", right_value);
+                                    _left > _right
+                                },
+                                Operator::LessThan => {
+                                    let _left = format!("{:0>max_len$}", left);
+                                    let _right = format!("{:0>max_len$}", right_value);
+                                    _left < _right
+                                },
+                                Operator::GreaterThanOrEqual => {
+                                    let _left = format!("{:0>max_len$}", left);
+                                    let _right = format!("{:0>max_len$}", right_value);
+                                    _left >= _right
 
-                    match op {
-                        Operator::Equal => left_value == right_value,
-                        Operator::NotEqual => left_value != right_value,
-                        Operator::GreaterThan => left_value > right_value,
-                        Operator::LessThan => left_value < right_value,
-                        Operator::GreaterThanOrEqual => left_value >= right_value,
-                        Operator::LessThanOrEqual => left_value <= right_value,
-                        _ => false,
+                                },
+                                Operator::LessThanOrEqual => {
+                                    let _left = format!("{:0>max_len$}", left);
+                                    let _right = format!("{:0>max_len$}", right_value);
+                                    _left <= _right
+                                },
+                                _ => false,
+                            };
+                            if result {
+                                return true;
+                            }
+                        }
+                        return false
+                    } else {
+                        return false;
                     }
                 }
             }
         }
         Expr::Group(inner_expr) => evaluate_expression(inner_expr, data),
-        Expr::Value(key) => data.contains_key(key),
+        Expr::Value(key) => {
+            data.contains_key(&(*key).as_ref())
+        },
     }
 }

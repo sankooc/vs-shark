@@ -36,7 +36,7 @@ export default function CommandDemo() {
         script.setAttribute('async', 'true');
         script.setAttribute('repo', 'sankooc/comments');
         script.setAttribute('issue-term', 'pathname');
-        script.setAttribute('theme', 'github-light');
+        script.setAttribute('theme', 'github-dark');
         anchor.appendChild(script);
     }
     useEffect(() => {
@@ -84,12 +84,13 @@ export default function CommandDemo() {
             ]
         },
     ];
+    const _style= visible ? { backgroundColor: '#2196F3', color: '#ffffff' } : {};
     const end = (
         <div className="flex align-items-center gap-2" style={{ paddingRight: '10px' }}>
-            <Avatar icon="pi pi-comment" shape="circle" onClick={() => {
+            <Avatar icon="pi pi-comment" shape="circle" style={_style} onClick={() => {
                 setVisible(!visible);
             }} />
-            <Avatar icon="pi pi-github" shape="circle" onClick={() => {
+            <Avatar icon="pi pi-github" shape="circle"  onClick={() => {
                 window.open('https://github.com/sankooc/vs-shark');
             }} />
         </div>
@@ -99,7 +100,7 @@ export default function CommandDemo() {
             <Menubar model={items} style={{ padding: 0 }} end={end} />
             <input type="file" ref={inputRef} style={{ display: "none" }} onChangeCapture={onFileChangeCapture} />
             <iframe id="main" ref={iframeRef} src="frame.html" style={{ width: '100', display: visible? 'none': 'block'}}></iframe>
-            <div id="comments" className="utterances" style={{width:"100%", overflow: "auto", height: "340px", display: visible? 'block': 'none'}}></div>
+            <div id="comments" className="utterances" style={{width:"100%", overflow: "auto", height: "540px", display: visible? 'block': 'none'}}></div>
             {/* <div className="footbar"></div> */}
         </>
     )

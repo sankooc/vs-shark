@@ -1,0 +1,14 @@
+#define VNDRSPCFC  0  /* Vendor Specific: RFC 2153 */
+#define CONFREQ    1  /* Configuration Request */
+#define CONFACK    2  /* Configuration Ack */
+#define CONFNAK    3  /* Configuration Nak */
+#define CONFREJ    4  /* Configuration Reject */
+#define TERMREQ    5  /* Termination Request */
+#define TERMACK    6  /* Termination Ack */
+#define CODEREJ    7  /* Code Reject */
+#define PROTREJ    8  /* Protocol Reject */
+#define ECHOREQ    9  /* Echo Request */
+#define ECHOREP    10 /* Echo Reply */
+#define DISCREQ    11 /* Discard Request */
+#define IDENT      12 /* Identification */
+#define TIMEREMAIN 13 /* Time remaining */

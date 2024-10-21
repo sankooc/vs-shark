@@ -98,7 +98,7 @@ impl WContext {
     }
     
     #[wasm_bindgen]
-    pub fn select_frame_items(&mut self, start: usize, size: usize, criteria: Vec<String>) -> String {
+    pub fn select_frame_items(&mut self, start: usize, size: usize, criteria: String) -> String {
         let cri = Criteria{start, size, criteria};
         if let Ok(str) = self.ctx.get_frames_json(cri) {
             return str;

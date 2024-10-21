@@ -12,7 +12,7 @@ use pcap_derive::{Packet2, Visitor3};
 use std::net::Ipv4Addr;
 
 #[derive(Default, Packet2)]
-pub struct ARP {
+pub struct RARP {
     hardware_type: u16,
     protocol_type: u16,
     hardware_size: u8,
@@ -24,7 +24,7 @@ pub struct ARP {
     target_ip: Option<Ipv4Addr>,
 }
 
-impl IPPacket for ARP {
+impl IPPacket for RARP {
     fn source_ip_address(&self) -> String {
         self.sender_ip.as_ref().unwrap().to_string()
     }
@@ -36,16 +36,16 @@ impl IPPacket for ARP {
     }
 }
 
-impl std::fmt::Display for ARP {
+impl std::fmt::Display for RARP {
     fn fmt(&self, fmt: &mut Formatter) -> std::fmt::Result {
         fmt.write_fmt(format_args!("Address Resolution Protocol ({})", self._operation_type()))
     }
 }
-impl crate::common::base::InfoPacket for ARP {
+impl crate::common::base::InfoPacket for RARP {
     fn info(&self) -> String {
         if self.operation == 1 {
             if self.source_ip_address() == self.target_ip_address() {
-                format!("ARP Announcement for {}", self.source_ip_address())
+                format!("RARP Announcement for {}", self.source_ip_address())
             } else {
                 format!("who has {}? tell {}", self.target_ip_address(), self.source_ip_address())
             }
@@ -58,7 +58,7 @@ impl crate::common::base::InfoPacket for ARP {
         FIELDSTATUS::INFO
     }
 }
-impl ARP {
+impl RARP {
     fn protocol_type_desc(&self) -> String {
         format!("Protocol type: {} ({})", etype_mapper(self.protocol_type), self.protocol_type)
     }
@@ -76,11 +76,11 @@ impl ARP {
         arp_oper_type_mapper(self.operation)
     }
     fn _create(reader: &Reader, packet: &PacketContext<Self>, p: &mut std::cell::RefMut<Self>, _: Option<PacketOpt>) -> Result<()> {
-        p.hardware_type = packet.build_lazy(reader, Reader::_read16_be, Some("arp.hardware.type"), ARP::hardware_type_desc)?;
-        p.protocol_type = packet.build_lazy(reader, Reader::_read16_be, Some("arp.protocol.type"), ARP::protocol_type_desc)?;
+        p.hardware_type = packet.build_lazy(reader, Reader::_read16_be, Some("arp.hardware.type"), RARP::hardware_type_desc)?;
+        p.protocol_type = packet.build_lazy(reader, Reader::_read16_be, Some("arp.protocol.type"), RARP::protocol_type_desc)?;
         p.hardware_size = packet.build_format(reader, Reader::_read8, Some("arp.hardware.len"), "Hardware size: {}")?;
         p.protocol_size = packet.build_format(reader, Reader::_read8, Some("arp.protocol.len"), "Protocol size: {}")?;
-        p.operation = packet.build_lazy(reader, Reader::_read16_be, Some("arp.operation.type"), ARP::operation_type_desc)?;
+        p.operation = packet.build_lazy(reader, Reader::_read16_be, Some("arp.operation.type"), RARP::operation_type_desc)?;
         p.sender_mac = packet.build_format(reader, Reader::_read_mac, Some("arp.sender.mac.address"), "Sender MAC address: ({})").ok();
         p.sender_ip = packet.build_format(reader, Reader::_read_ipv4, Some("arp.sender.ip.address"), "Sender IP address: {}").ok();
         p.target_mac = packet.build_format(reader, Reader::_read_mac, Some("arp.target.mac.address"), "Target MAC address: ({})").ok();
@@ -90,11 +90,11 @@ impl ARP {
 }
 
 #[derive(Visitor3)]
-pub struct ARPVisitor;
+pub struct RARPVisitor;
 
-impl ARPVisitor {
+impl RARPVisitor {
     pub fn visit2(&self, reader: &Reader) -> Result<(ProtocolData, &'static str)> {
-        let packet = ARP::create(reader, None)?;
-        Ok((ProtocolData::ARP(packet), "none"))
+        let packet = RARP::create(reader, None)?;
+        Ok((ProtocolData::RARP(packet), "none"))
     }
 }

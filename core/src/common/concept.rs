@@ -364,7 +364,7 @@ impl FrameInfo {
 }
 
 pub struct Criteria{
-  pub criteria: Vec<String>,
+  pub criteria: String,
   pub size: usize,
   pub start: usize,
 }
@@ -372,7 +372,7 @@ pub struct Criteria{
 #[derive(Serialize)]
 pub struct ListResult<T> {
   items: Vec<T>,
-  total: usize,
+  pub total: usize,
   start: usize,
 }
 

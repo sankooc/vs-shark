@@ -1,17 +1,17 @@
 use pcap_derive::{Packet2, Visitor3, NINFO};
 
-use crate::common::{Description, MacAddress, MacPacket, PtypePacket, DEF_EMPTY_MAC};
 use crate::common::base::PacketOpt;
+use crate::common::io::AReader;
+use crate::common::FIELDSTATUS;
+use crate::common::{Description, MacAddress, MacPacket, PtypePacket, DEF_EMPTY_MAC};
 use crate::specs::ProtocolData;
 use crate::{
-    common::io::Reader,
     common::base::{Frame, PacketBuilder, PacketContext},
+    common::io::Reader,
 };
-use crate::common::io::AReader;
 use anyhow::{Ok, Result};
 use std::cell::RefCell;
 use std::fmt::Display;
-use crate::common::FIELDSTATUS;
 
 use super::get_next_from_type;
 
@@ -24,18 +24,17 @@ pub struct Ethernet {
 }
 impl Ethernet {
     fn _create<PacketOpt>(reader: &Reader, packet: &PacketContext<Self>, p: &mut std::cell::RefMut<Self>, _: Option<PacketOpt>) -> Result<()> {
-        p.source_mac = packet.build_lazy(reader, Reader::_read_mac, Description::source_mac).ok();
-        p.target_mac = packet.build_lazy(reader, Reader::_read_mac, Description::target_mac).ok();
-        // let ptype = packet.build_lazy(reader, Reader::_read16_be, Description::ptype)?;
+        p.source_mac = packet.build_lazy(reader, Reader::_read_mac, Some("ethernet.source.mac"), Description::source_mac).ok();
+        p.target_mac = packet.build_lazy(reader, Reader::_read_mac, Some("ethernet.target.mac"), Description::target_mac).ok();
         let ptype = reader.read16(true)?;
         if reader.left() == ptype as usize {
             p.len = ptype;
-            p.ptype = 1010;// IEEE 802.3
-            packet._build(reader, reader.cursor() - 2, 2, format!("Length: {}", ptype));
+            p.ptype = 1010; // IEEE 802.3
+            packet._build(reader, reader.cursor() - 2, 2, None, format!("Length: {}", ptype));
             return Ok(());
         } else {
             p.ptype = ptype;
-            packet._build_lazy(reader, reader.cursor() - 2, 2, Description::ptype);
+            packet._build_lazy(reader, reader.cursor() - 2, 2, Some(("ethernet.protocol.type", ptype.to_string().leak())), Description::ptype);
         }
         Ok(())
     }
