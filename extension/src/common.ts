@@ -102,7 +102,7 @@ export interface IOverviewData {
 export class Pagination {
     page: number;
     size: number;
-    filter: string[];
+    filter: string;
 }
 // export interface IFrameInfo {
 //     no: number;

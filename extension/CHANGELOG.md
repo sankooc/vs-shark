@@ -35,6 +35,9 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - 0.3.9
   * fix dhcp recognize
   * pcapng loopback type
+  
+- 0.3.10
+  * add pppoed
 
 - 0.4.0
 - 0.5.0

@@ -91,6 +91,10 @@ tr[role=row]{
         background-color: $t-tls;
         color: $t-tls-font;
     }
+    &.ssdp{
+        background-color: $t-ssdp;
+        color: $t-ssdp-font;
+    }
     &.udp{
         background-color: $t-udp;
         color: $t-udp-font;
@@ -98,6 +102,14 @@ tr[role=row]{
     &.dns{
         background-color: $t-dns;
         color: $t-dns-font;
+    }
+    &.pppoed{
+        background-color: $t-pppoed;
+        color: $t-pppoed-font;
+    }
+    &.pppoes{
+        background-color: $t-pppoes;
+        color: $t-pppoes-font;
     }
     &.icmp, &.icmpv6{
         background-color: $t-icmp;
@@ -137,7 +149,7 @@ tr[role=row]{
         border-right: 1px solid $c-fg-0;
     }
     td, tr { 
-        padding: 1px !important;
+        // padding: 1px !important;
         font-size: 1rem;
         color: $c-fg-0;
         background-color: $c-aqua;
@@ -146,8 +158,10 @@ tr[role=row]{
         background-color: $c-aqua;
     }
     tr[aria-level='2']{
-        background-color: $w-aqua;
-        color: $c-bg-1;
+        td {
+            background-color: $c-blue;
+            color: $c-fg-0;
+        }
     }
     // tr[aria-level='2']:nth-child(2n) {
     //     background-color: #557C56;

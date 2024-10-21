@@ -39,7 +39,10 @@ const DNSList = (props: Proto) => {
     const first = its.shift();
     const it: any = { key: count + "", data: first };
     if(its.length){
-      it.children = its.map((f, inx) => ({ data: f, key: `${count}_${inx}` }));
+      it.children = its.map((f, inx) => {
+        delete f.name;
+        return { data: f, key: `${count}_${inx}` };
+      });
     }
     values.push(it);
     count += 1;
