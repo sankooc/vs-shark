@@ -2,6 +2,7 @@ use crate::common::{base::{Context, Element, Frame, PacketContext, Visitor}, io:
 use crate::common::concept::Field;
 
 pub mod arp;
+pub mod rarp;
 pub mod dhcp;
 pub mod dns;
 pub mod ethernet;
@@ -57,6 +58,7 @@ type SSL = PacketContext<ethernet::ssl::SSL>;
 type IPV4 = PacketContext<ip4::IPv4>;
 type IPV6 = PacketContext<ip6::IPv6>;
 type ARP = PacketContext<arp::ARP>;
+type RARP = PacketContext<rarp::RARP>;
 type TCP = PacketContext<tcp::TCP>;
 type UDP = PacketContext<udp::UDP>;
 type ICMP = PacketContext<icmp::ICMP>;
@@ -89,6 +91,7 @@ pub enum ProtocolData {
     ICMP,
     ICMPv6,
     IGMP,
+    RARP,
     DNS,
     // MDNS,
     DHCP,
@@ -110,6 +113,7 @@ pub fn _parse(proto: &'static str) -> anyhow::Result<&dyn Visitor>{
         "ipv4" => &ip4::IP4Visitor,
         "ipv6" => &ip6::IP6Visitor,
         "arp" => &arp::ARPVisitor,
+        "rarp" => &rarp::RARPVisitor,
         "tcp" => &tcp::TCPVisitor,
         "udp" => &udp::UDPVisitor,
         "icmp" => &icmp::ICMPVisitor,
