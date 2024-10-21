@@ -1,4 +1,5 @@
 const org = require('./webpack.config.js');
+const WorkboxPlugin = require('workbox-webpack-plugin');
 const path = require('path');
 
 module.exports = {
@@ -9,7 +10,14 @@ module.exports = {
   },
   output: {
       filename: './[name].js',
+      // path: __dirname + "/dist",
       path: __dirname + "/../../../sankooc.github.io/pcap"
   },
+  plugins: [
+    new WorkboxPlugin.GenerateSW({
+      clientsClaim: true,
+      skipWaiting: true
+    })
+  ],
   mode: "production"
 };

@@ -10,7 +10,7 @@
     "css": "npx sass src --no-source-map",
     "css-watch": "npx sass src --no-source-map --watch",
     "build": "npx webpack ",
-    "build-web": "npx webpack -c webpack.web.config.js"
+        "build-web": "npx webpack -c webpack.web.config.js"
   },
   "dependencies": {
     "@vscode/webview-ui-toolkit": "^1.2.2",
@@ -36,6 +36,7 @@
     "less": "^4.2.0",
     "less-loader": "^12.2.0",
     "node-sass": "^9.0.0",
+    "rs2ts": "^0.0.4",
     "sass": "^1.77.6",
     "source-map-loader": "^5.0.0",
     "style-loader": "^4.0.0",
@@ -44,7 +45,7 @@
     "url-loader": "^4.1.1",
     "webpack": "^5.92.1",
     "webpack-cli": "^5.1.4",
-    "rs2ts": "^0.0.4",
-    "webpack-dev-server": "^5.0.4"
+    "webpack-dev-server": "^5.0.4",
+    "workbox-webpack-plugin": "^7.1.0"
   }
 }

@@ -13,6 +13,11 @@ module.exports = {
 
     // primereact: 'primereact',
   },
+  
+  output: {
+    filename: './[name].js',
+    path: __dirname + "/dist",
+  },
   devServer: {
     client: {
       overlay: {
