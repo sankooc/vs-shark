@@ -44,13 +44,6 @@ const DTable = (props: Props) => {
   let inSight = `calc(${scrollHeight}vh - 1px)`;
   const space = 55;
   tableHeight = `calc(${scrollHeight}vh - ${space}px)`
-  // inSight = `calc(${scrollHeight}vh - ${space + 1}px)`;
-  // const onPageChange = (event) => {
-  //   if(props.request) {
-  //     setLoading(true);
-  //     props.request(event);
-  //   }
-  // }
   const rowClassName = (data: any) => {
     if (data.index !== undefined && data.index == select){
       return 'active';

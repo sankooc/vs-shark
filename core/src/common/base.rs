@@ -785,9 +785,9 @@ impl Endpoint {
             self.seq = tcp.sequence;
             self._checksum = tcp.crc;
             if _tcp_len == 0 {
-                if tcp.state.check(ACK) {
-                    return TCPDetail::KEEPALIVE;
-                }
+                // if tcp.state.check(ACK) {
+                //     return TCPDetail::KEEPALIVE;
+                // }
                 return TCPDetail::NONE;
             }
             self.next = tcp.sequence + _tcp_len;

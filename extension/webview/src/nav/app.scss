@@ -13,12 +13,17 @@
 }
 .p-menubar{
     a {
-        padding: 12px 10px !important;
+        font-size: 0.9rem;
+        padding: 6px 4px !important;
     }
 }
 .footbar {
-    height: 20px;
-    background-color: #3C3D37;
+    background-color: var(--vscode-editor-background);
+    border-top: 1px solid rgba(255, 255, 255, 0.12);
+    p {
+        text-align: right;
+        padding-right: 20px;
+    }
 }
 
 html, body, #app {
