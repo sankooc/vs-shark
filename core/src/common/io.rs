@@ -95,6 +95,7 @@ impl Reader {
     pub fn new_raw(raw: Rc<Vec<u8>>) -> Reader {
         Reader { _raw: raw, cursor: Cell::new(0) }
     }
+    
     pub fn _read_enter(reader: &Reader) -> Result<String> {
         reader.read_enter()
     }

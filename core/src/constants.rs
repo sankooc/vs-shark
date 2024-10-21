@@ -519,6 +519,192 @@ lazy_static! {
 		m.insert(65422, "XPF");
 		m
 	};
+	pub static ref ppp_lcp_option_type_map: HashMap<u8, &'static str> = {
+		let mut m = HashMap::new();
+		m.insert(0, "Vendor Specific");
+		m.insert(1, "Maximum Receive Unit");
+		m.insert(2, "Async Control Character Map");
+		m.insert(3, "Authentication Protocol");
+		m.insert(4, "Quality Protocol");
+		m.insert(5, "Magic Number");
+		m.insert(6, "Link Quality Monitoring");
+		m.insert(7, "Protocol Field Compression");
+		m.insert(8, "Address and Control Field Compression");
+		m.insert(9, "FCS Alternatives");
+		m.insert(10, "Self Describing Pad");
+		m.insert(11, "Numbered Mode");
+		m.insert(12, "Callback");
+		m.insert(13, "Compound Frames (Deprecated)");
+		m.insert(14, "Nominal Data Encapsulation (Deprecated)");
+		m.insert(15, "Multilink MRRU");
+		m.insert(16, "Multilink Short Sequence Number Header");
+		m.insert(17, "Multilink Endpoint Discriminator");
+		m.insert(18, "DCE Identifier");
+		m.insert(19, "Multi Link Plus Procedure");
+		m.insert(20, "Link Discriminator for BACP");
+		m.insert(21, "Authentication Option");
+		m.insert(22, "Consistent Overhead Byte Stuffing (COBS)");
+		m.insert(23, "Prefix Elision");
+		m.insert(24, "Multilink header format");
+		m.insert(25, "Internationalization");
+		m.insert(26, "Simple Data Link on SONET/SDH");
+		m
+	};
+	pub static ref ppp_type_map: HashMap<u16, &'static str> = {
+		let mut m = HashMap::new();
+		m.insert(1, "Padding Protocol");
+		m.insert(3, "ROHC small-CID");
+		m.insert(5, "ROHC large-CID");
+		m.insert(33, "Internet Protocol version 4");
+		m.insert(35, "OSI Network Layer");
+		m.insert(37, "Xerox NS IDP");
+		m.insert(39, "DECnet Phase IV");
+		m.insert(41, "Appletalk");
+		m.insert(43, "Novell IPX");
+		m.insert(45, "Van Jacobson Compressed TCP/IP");
+		m.insert(47, "Van Jacobson Uncompressed TCP/IP");
+		m.insert(49, "Bridging PDU");
+		m.insert(51, "Stream Protocol (ST-II)");
+		m.insert(53, "Banyan Vines");
+		m.insert(57, "AppleTalk EDDP");
+		m.insert(59, "AppleTalk SmartBuffered");
+		m.insert(61, "Multi-Link");
+		m.insert(63, "NETBIOS Framing");
+		m.insert(65, "Cisco Systems");
+		m.insert(67, "Ascom Timeplex");
+		m.insert(69, "Fujitsu Link Backup and Load Balancing (LBLB)");
+		m.insert(71, "DCA Remote Lan");
+		m.insert(73, "Serial Data Transport Protocol (PPP-SDTP)");
+		m.insert(75, "SNA over 802.2");
+		m.insert(77, "SNA");
+		m.insert(79, "IPv6 Header Compression ");
+		m.insert(81, "KNX Bridging Data");
+		m.insert(83, "Encryption");
+		m.insert(85, "Individual Link Encryption");
+		m.insert(87, "Internet Protocol version 6");
+		m.insert(89, "PPP Muxing");
+		m.insert(91, "Vendor-Specific Network Protocol (VSNP)");
+		m.insert(93, "TRILL Network Protocol (TNP)");
+		m.insert(97, "RTP IPHC Full Header");
+		m.insert(99, "RTP IPHC Compressed TCP");
+		m.insert(101, "RTP IPHC Compressed Non TCP");
+		m.insert(103, "RTP IPHC Compressed UDP 8");
+		m.insert(105, "RTP IPHC Compressed RTP 8");
+		m.insert(111, "Stampede Bridging");
+		m.insert(115, "MP+ Protocol");
+		m.insert(193, "NTCITS IPI");
+		m.insert(251, "Single link compression in multilink");
+		m.insert(253, "Compressed datagram");
+		m.insert(513, "802.1d Hello Packets");
+		m.insert(515, "IBM Source Routing BPDU");
+		m.insert(517, "DEC LANBridge100 Spanning Tree");
+		m.insert(519, "Cisco Discovery Protocol");
+		m.insert(521, "Netcs Twin Routing");
+		m.insert(523, "STP - Scheduled Transfer Protocol");
+		m.insert(525, "EDP - Extreme Discovery Protocol");
+		m.insert(529, "Optical Supervisory Channel Protocol (OSCP)");
+		m.insert(531, "Optical Supervisory Channel Protocol (OSCP)");
+		m.insert(561, "Luxcom");
+		m.insert(563, "Sigma Network Systems");
+		m.insert(565, "Apple Client Server Protocol");
+		m.insert(641, "MPLS Unicast");
+		m.insert(643, "MPLS Multicast");
+		m.insert(645, "IEEE p1284.4 standard - data packets");
+		m.insert(647, "ETSI TETRA Network Protocol Type 1");
+		m.insert(649, "Multichannel Flow Treatment Protocol");
+		m.insert(8291, "RTP IPHC Compressed TCP No Delta");
+		m.insert(8293, "RTP IPHC Context State");
+		m.insert(8295, "RTP IPHC Compressed UDP 16");
+		m.insert(8297, "RTP IPHC Compressed RTP 16");
+		m.insert(16385, "Cray Communications Control Protocol");
+		m.insert(16387, "CDPD Mobile Network Registration Protocol");
+		m.insert(16389, "Expand accelerator protocol");
+		m.insert(16391, "ODSICP NCP");
+		m.insert(16393, "DOCSIS DLL");
+		m.insert(16395, "Cetacean Network Detection Protocol");
+		m.insert(16417, "Stacker LZS");
+		m.insert(16419, "RefTek Protocol");
+		m.insert(16421, "Fibre Channel");
+		m.insert(16423, "EMIT Protocols");
+		m.insert(16475, "Vendor-Specific Protocol (VSP)");
+		m.insert(16477, "TRILL Link State Protocol (TLSP)");
+		m.insert(32801, "Internet Protocol Control Protocol");
+		m.insert(32803, "OSI Network Layer Control Protocol");
+		m.insert(32805, "Xerox NS IDP Control Protocol");
+		m.insert(32807, "DECnet Phase IV Control Protocol");
+		m.insert(32809, "AppleTalk Control Protocol");
+		m.insert(32811, "Novell IPX Control Protocol");
+		m.insert(32817, "Bridging NCP");
+		m.insert(32819, "Stream Protocol Control Protocol");
+		m.insert(32821, "Banyan Vines Control Protocol");
+		m.insert(32829, "Multi-Link Control Protocol");
+		m.insert(32831, "NETBIOS Framing Control Protocol");
+		m.insert(32833, "Cisco Systems Control Protocol");
+		m.insert(32835, "Ascom Timeplex");
+		m.insert(32837, "Fujitsu LBLB Control Protocol");
+		m.insert(32839, "DCA Remote Lan Network Control Protocol (RLNCP)");
+		m.insert(32841, "Serial Data Control Protocol (PPP-SDCP)");
+		m.insert(32843, "SNA over 802.2 Control Protocol");
+		m.insert(32845, "SNA Control Protocol");
+		m.insert(32847, "IP6 Header Compression Control Protocol");
+		m.insert(32849, "KNX Bridging Control Protocol");
+		m.insert(32851, "Encryption Control Protocol");
+		m.insert(32853, "Individual Link Encryption Control Protocol");
+		m.insert(32855, "IPv6 Control Protocol");
+		m.insert(32857, "PPP Muxing Control Protocol");
+		m.insert(32859, "Vendor-Specific Network Control Protocol (VSNCP)");
+		m.insert(32861, "TRILL Network Control Protocol");
+		m.insert(32879, "Stampede Bridging Control Protocol");
+		m.insert(32883, "MP+ Control Protocol");
+		m.insert(32961, "NTCITS IPI Control Protocol");
+		m.insert(33019, "Single link compression in multilink control");
+		m.insert(33021, "Compression Control Protocol");
+		m.insert(33287, "Cisco Discovery Protocol Control Protocol");
+		m.insert(33289, "Netcs Twin Routing");
+		m.insert(33291, "STP - Control Protocol");
+		m.insert(33293, "EDPCP - Extreme Discovery Protocol Control Protocol");
+		m.insert(33333, "Apple Client Server Protocol Control");
+		m.insert(33409, "MPLS Control Protocol");
+		m.insert(33413, "IEEE p1284.4 standard - Protocol Control");
+		m.insert(33415, "ETSI TETRA TNP1 Control Protocol");
+		m.insert(33417, "Multichannel Flow Treatment Protocol");
+		m.insert(49185, "Link Control Protocol");
+		m.insert(49187, "Password Authentication Protocol");
+		m.insert(49189, "Link Quality Report");
+		m.insert(49191, "Shiva Password Authentication Protocol");
+		m.insert(49193, "Callback Control Protocol (CBCP)");
+		m.insert(49195, "BACP Bandwidth Allocation Control Protocol");
+		m.insert(49197, "BAP Bandwidth Allocation Protocol");
+		m.insert(49243, "Vendor-Specific Authentication Protocol (VSAP)");
+		m.insert(49281, "Container Control Protocol");
+		m.insert(49699, "Challenge Handshake Authentication Protocol");
+		m.insert(49701, "RSA Authentication Protocol");
+		m.insert(49703, "Extensible Authentication Protocol");
+		m.insert(49705, "Mitsubishi Security Information Exchange Protocol (SIEP)");
+		m.insert(49775, "Stampede Bridging Authorization Protocol");
+		m.insert(49793, "Proprietary Authentication Protocol");
+		m.insert(49795, "Proprietary Authentication Protocol");
+		m.insert(50305, "Proprietary Node ID Authentication Protocol");
+		m
+	};
+	pub static ref ppp_lcp_type_map: HashMap<u8, &'static str> = {
+		let mut m = HashMap::new();
+		m.insert(0, "Vendor Specific");
+		m.insert(1, "Configuration Request");
+		m.insert(2, "Configuration Ack");
+		m.insert(3, "Configuration Nak");
+		m.insert(4, "Configuration Reject");
+		m.insert(5, "Termination Request");
+		m.insert(6, "Termination Ack");
+		m.insert(7, "Code Reject");
+		m.insert(8, "Protocol Reject");
+		m.insert(9, "Echo Request");
+		m.insert(10, "Echo Reply");
+		m.insert(11, "Discard Request");
+		m.insert(12, "Identification");
+		m.insert(13, "Time Remaining");
+		m
+	};
 	pub static ref arp_hardware_type_map: HashMap<u16, &'static str> = {
 		let mut m = HashMap::new();
 		m.insert(0, "Reserved");
@@ -2240,6 +2426,15 @@ pub fn dns_class_mapper(code:u16) -> String {
   }
 pub fn dns_type_mapper(code:u16) -> String {
     (*dns_type_map.get(&code).unwrap_or(&"unknown")).into()
+  }
+pub fn ppp_lcp_option_type_mapper(code:u8) -> String {
+    (*ppp_lcp_option_type_map.get(&code).unwrap_or(&"unknown")).into()
+  }
+pub fn ppp_type_mapper(code:u16) -> String {
+    (*ppp_type_map.get(&code).unwrap_or(&"unknown")).into()
+  }
+pub fn ppp_lcp_type_mapper(code:u8) -> String {
+    (*ppp_lcp_type_map.get(&code).unwrap_or(&"unknown")).into()
   }
 pub fn arp_hardware_type_mapper(code:u16) -> String {
     (*arp_hardware_type_map.get(&code).unwrap_or(&"unknown")).into()

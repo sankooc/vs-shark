@@ -6,7 +6,10 @@ export const rebuild = (key, fn) => {
   const rs = {};
   let aa = _key.split('\n');
   for (const a of aa){
-    const ars = a.trim().match(/^#define\s(\S+)\s+(\d+)\s.+$/);
+    const ars = a.trim().match(/^#define\s(\S+)\s+((0x)?[0-9,a-f]+)\s.+$/);
+    if(!ars){
+      console.log(a)
+    }
     if(ars.length < 3){
       continue;
     }
@@ -16,7 +19,10 @@ export const rebuild = (key, fn) => {
   aa = _val.split('\n');
   const rt = {};
   for (const a of aa){
-    const ars = a.trim().match(/\{\s+(\S+),\s+"(\S+)"\s+.+$/);
+    const ars = a.trim().match(/\{\s*(\S+),\s+"([^"]+)".+$/);
+    if(!ars){
+      console.log(a.trim())
+    }
     if(ars.length < 3){
       continue;
     }

@@ -1313,6 +1313,36 @@ export const PPP_DLL_NUMBER_MAP = {
     "c281": "Proprietary Authentication Protocol",
 }
 
+export const PPP_LCP_OPTION_MAP = {
+    0: "Vendor Specific",
+    1: "Maximum Receive Unit",
+    2: "Async Control Character Map",
+    3: "Authentication Protocol",
+    4: "Quality Protocol",
+    5: "Magic Number",
+    6: "Link Quality Monitoring",
+    7: "Protocol Field Compression",
+    8: "Address and Control Field Compression",
+    9: "FCS Alternatives",
+    10: "Self Describing Pad",
+    11: "Numbered Mode",
+    12: "Callback",
+    13: "Compound Frames (Deprecated)",
+    14: "Nominal Data Encapsulation (Deprecated)",
+    15: "Multilink MRRU",
+    16: "Multilink Short Sequence Number Header",
+    17: "Multilink Endpoint Discriminator",
+    18: "DCE Identifier",
+    19: "Multi Link Plus Procedure",
+    20: "Link Discriminator for BACP",
+    21: "Authentication Option",
+    22: "Consistent Overhead Byte Stuffing (COBS)",
+    23: "Prefix Elision",
+    24: "Multilink header format",
+    25: "Internationalization",
+    26: "Simple Data Link on SONET/SDH",
+}
+
 export const NBNS_TYPE_MAP = {
     1: 'A',
     2: 'NS',
