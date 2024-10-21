@@ -124,8 +124,23 @@ tr[role=row]{
 }
 #dns-page {
     overflow: auto;
+    
+    tr[aria-level="2"] {
+        button{
+            padding: 0;
+            width: 0 !important;
+            margin: 0 !important;
+        } 
+    }
+    td {
+        padding: 0 5px;
+        border-right: 1px solid $c-fg-0;
+    }
     td, tr { 
         padding: 1px !important;
+        font-size: 1rem;
+        color: $c-fg-0;
+        background-color: $c-aqua;
     }
     tr[aria-level='1'] {
         background-color: $c-aqua;

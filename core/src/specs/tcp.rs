@@ -8,7 +8,7 @@ use pcap_derive::Packet;
 
 use crate::{
     common::{
-        base::{Context, Frame, FrameRefer, PacketBuilder, PacketContext, TCPDetail, TCPInfo, TCPSegment, TCPSegments },
+        base::{Context, Frame, FrameRefer, PacketBuilder, PacketContext, TCPDetail, TCPInfo, TCPSegment, TCPSegments},
         io::{AReader, Reader},
         Description, MultiBlock, PortPacket, Ref2, FIELDSTATUS,
     },
@@ -144,7 +144,6 @@ pub struct TCP {
     pub frame_refer: Ref2<FrameRefer>,
 }
 
-
 impl std::fmt::Display for TCP {
     fn fmt(&self, fmt: &mut Formatter) -> std::fmt::Result {
         fmt.write_fmt(format_args!("Transmission Control Protocol, Src Port: {}, Dst Port: {}, Seq: {}, Ack: {}, Len: {}", self.source_port, self.target_port, self.sequence, self.acknowledge, self.len))
@@ -225,7 +224,7 @@ impl TCP {
     fn len_desc(&self) -> String {
         format!("{:04b} .... = Header Length: 32 bytes ({})", self.len, self.len)
     }
-    fn segments(&self) -> Option<PacketContext<TCPSegments>>{
+    fn segments(&self) -> Option<PacketContext<TCPSegments>> {
         let reff = self.frame_refer.as_ref().borrow();
         if let Some(refs) = &reff.segments {
             let packet = Frame::_create(refs.clone());
@@ -233,8 +232,8 @@ impl TCP {
             let p = packet.get().borrow();
             let mut _count = 0;
             for item in p.items.iter() {
-                let TCPSegment {index, size} = item;
-                let txt = format!("[Frame: {}, payload: {}-{} ({} bytes)]", *index, _count, _count + *size -1, *size );
+                let TCPSegment { index, size } = item;
+                let txt = format!("[Frame: {}, payload: {}-{} ({} bytes)]", *index, _count, _count + *size - 1, *size);
                 packet.build_txt(txt);
                 _count += *size;
             }
@@ -254,7 +253,7 @@ impl TCPVisitor {
         option.kind = packet.build_lazy(reader, Reader::_read8, Some("tcp.option.type"), TCPOption::kind)?;
         match option.kind {
             5 | 29 | 30 => {
-                let len = packet.build_format(reader, Reader::_read8, Some("tcp.option.len"),"Length: {}")?;
+                let len = packet.build_format(reader, Reader::_read8, Some("tcp.option.len"), "Length: {}")?;
                 option.len = len;
                 let raw = reader.slice((len - 2) as usize);
                 option.data = TCPOptionKind::BLOCK(raw.to_vec());
@@ -266,25 +265,25 @@ impl TCPVisitor {
                 option.data = TCPOptionKind::NOP;
             }
             2 => {
-                packet.build_format(reader, Reader::_read8, None,"Length: {}")?;
-                let value = packet.build_format(reader, Reader::_read16_be, Some("tcp.mss.len"),"MSS Value: {}")?;
+                packet.build_format(reader, Reader::_read8, None, "Length: {}")?;
+                let value = packet.build_format(reader, Reader::_read16_be, Some("tcp.mss.len"), "MSS Value: {}")?;
                 option.data = TCPOptionKind::MSS(value);
             }
             3 => {
-                packet.build_format(reader, Reader::_read8, None,"Length: {}")?;
-                let value = packet.build_format(reader, Reader::_read8, Some("tcp.shift.count"),"Shift count: {}")?;
+                packet.build_format(reader, Reader::_read8, None, "Length: {}")?;
+                let value = packet.build_format(reader, Reader::_read8, Some("tcp.shift.count"), "Shift count: {}")?;
                 option.data = TCPOptionKind::SCALE(value);
             }
             4 => {
-                packet.build_format(reader, Reader::_read8, Some("tcp.sack.len"),"Length: {}")?;
+                packet.build_format(reader, Reader::_read8, Some("tcp.sack.len"), "Length: {}")?;
                 option.data = TCPOptionKind::SACK;
             }
             8 => {
-                let len = packet.build_format(reader, Reader::_read8, None,"Length: {}")?;
+                let len = packet.build_format(reader, Reader::_read8, None, "Length: {}")?;
                 match len {
                     10 => {
-                        let sender = packet.build_format(reader, Reader::_read32_be, Some("tcp.option.sender"),"sender: {}")?;
-                        let reply = packet.build_format(reader, Reader::_read32_be, Some("tcp.option.reply"),"reply: {}")?;
+                        let sender = packet.build_format(reader, Reader::_read32_be, Some("tcp.option.sender"), "sender: {}")?;
+                        let reply = packet.build_format(reader, Reader::_read32_be, Some("tcp.option.reply"), "reply: {}")?;
                         option.data = TCPOptionKind::TIMESTAMP((sender, reply))
                     }
                     _ => {
@@ -295,8 +294,8 @@ impl TCPVisitor {
             }
             28 => {
                 //https://datatracker.ietf.org/doc/html/rfc5482
-                packet.build_format(reader, Reader::_read8, None,"Length: {}")?;
-                let value = packet.build_fn(reader, Reader::_read16_be,None, TCPUserTimeout::desc)?;
+                packet.build_format(reader, Reader::_read8, None, "Length: {}")?;
+                let value = packet.build_fn(reader, Reader::_read16_be, None, TCPUserTimeout::desc)?;
                 option.data = TCPOptionKind::USERTIMEOUT(value);
             }
             _ => {}
@@ -326,13 +325,13 @@ impl crate::common::base::Visitor for TCPVisitor {
         let mut p = packet.get().borrow_mut();
         p.frame_refer = frame.refer.clone();
         p.source_port = packet.build_lazy(reader, Reader::_read16_be, Some("tcp.source.port"), Description::source_port)?;
-        p.target_port = packet.build_lazy(reader, Reader::_read16_be, Some("tcp.target.port"),Description::target_port)?;
-        p.sequence = packet.build_lazy(reader, Reader::_read32_be, Some("tcp.sequence"),TCP::sequence_desc)?;
-        p.acknowledge = packet.build_lazy(reader, Reader::_read32_be, Some("tcp.acknowledge"),TCP::acknowledge_desc)?;
+        p.target_port = packet.build_lazy(reader, Reader::_read16_be, Some("tcp.target.port"), Description::target_port)?;
+        p.sequence = packet.build_lazy(reader, Reader::_read32_be, Some("tcp.sequence"), TCP::sequence_desc)?;
+        p.acknowledge = packet.build_lazy(reader, Reader::_read32_be, Some("tcp.acknowledge"), TCP::acknowledge_desc)?;
         let head = packet.build_lazy(reader, Reader::_read16_be, Some("tcp.head.len"), TCP::len_desc)?;
-        p.window = packet.build_format(reader, Reader::_read16_be, Some("tcp.window.size"),"Window: {}")?;
-        p.crc = packet.build_format(reader, Reader::_read16_be, None,"Checksum: {}")?;
-        p.urgent = packet.build_format(reader, Reader::_read16_be, None,"Urgent Pointer: {}")?;
+        p.window = packet.build_format(reader, Reader::_read16_be, Some("tcp.window.size"), "Window: {}")?;
+        p.crc = packet.build_format(reader, Reader::_read16_be, None, "Checksum: {}")?;
+        p.urgent = packet.build_format(reader, Reader::_read16_be, None, "Urgent Pointer: {}")?;
         p.set_head(head);
         let len = p.len;
         if len > 5 {

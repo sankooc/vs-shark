@@ -84,12 +84,13 @@ export default function CommandDemo() {
             ]
         },
     ];
+    const _style= visible ? { backgroundColor: '#2196F3', color: '#ffffff' } : {};
     const end = (
         <div className="flex align-items-center gap-2" style={{ paddingRight: '10px' }}>
-            <Avatar icon="pi pi-comment" shape="circle" onClick={() => {
+            <Avatar icon="pi pi-comment" shape="circle" style={_style} onClick={() => {
                 setVisible(!visible);
             }} />
-            <Avatar icon="pi pi-github" shape="circle" onClick={() => {
+            <Avatar icon="pi pi-github" shape="circle"  onClick={() => {
                 window.open('https://github.com/sankooc/vs-shark');
             }} />
         </div>

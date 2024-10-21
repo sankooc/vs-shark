@@ -26,7 +26,6 @@ impl Ethernet {
     fn _create<PacketOpt>(reader: &Reader, packet: &PacketContext<Self>, p: &mut std::cell::RefMut<Self>, _: Option<PacketOpt>) -> Result<()> {
         p.source_mac = packet.build_lazy(reader, Reader::_read_mac, Some("ethernet.source.mac"), Description::source_mac).ok();
         p.target_mac = packet.build_lazy(reader, Reader::_read_mac, Some("ethernet.target.mac"), Description::target_mac).ok();
-        // let ptype = packet.build_lazy(reader, Reader::_read16_be, Description::ptype)?;
         let ptype = reader.read16(true)?;
         if reader.left() == ptype as usize {
             p.len = ptype;

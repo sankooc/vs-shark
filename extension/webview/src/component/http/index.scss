@@ -57,18 +57,8 @@
     td {
         padding: 0 5px;
         border-right: 1px solid $c-fg-0;
-        // &.tree-head{
-        //     display: flex;
-        //     align-items: center;
-        //     i {
-        //         font-size: 1.2rem;
-        //         color: $c-fg-0;
-        //     }
-        // }
-        // text-align: center;
     }
     tr {
-        
         &[aria-level="2"] {
             button{
                 padding: 0;
