@@ -47,6 +47,12 @@ impl AReader for SliceReader<'_> {
     fn _get_data(&self) -> &[u8] {
         return self._data.unwrap();
     }
+    fn len(&self) -> usize {
+        match self._data {
+            Some(data) => data.len(),
+            _ => 0
+        }
+    }
     fn cursor(&self) -> usize {
         return self.cursor.get();
     }
@@ -66,6 +72,9 @@ pub struct Reader {
 impl AReader for Reader {
     fn _get_data(&self) -> &[u8] {
         return self._raw.as_ref();
+    }
+    fn len(&self) -> usize {
+        self._get_data().len()
     }
     fn cursor(&self) -> usize {
         return self.cursor.get();
@@ -130,6 +139,7 @@ impl Reader {
 pub trait AReader:Clone {
     fn _get_data(&self) -> &[u8];
     fn cursor(&self) -> usize;
+    fn len(&self) -> usize;
     fn _set(&self, cursor: usize);
     fn _move(&self, len: usize) -> bool {
         let t = self._get_data().len();
@@ -157,6 +167,9 @@ pub trait AReader:Clone {
         _tmp
     }
     fn read8(&self) -> Result<u8> {
+        if self.left() == 0 {
+            bail!("no_data");
+        }
         let a = self._get_data()[self.cursor()];
         self._move(1);
         Ok(a)
@@ -357,6 +370,9 @@ pub trait AReader:Clone {
         None
     }
     fn read_tlv(&self) -> Result<usize> {
+        if self.left() <= 1 {
+            bail!("no_data_for_tlv");
+        }
         let b = self._get_data()[self.cursor() + 1];
         let len: usize = match b {
             0x82 => {
@@ -382,6 +398,9 @@ pub trait AReader:Clone {
         Ok(len)
     }
     fn enter_flag(&self, inx: usize) -> bool {
+        if self.left() < inx + 1 {
+            return false
+        }
         let a = self._get_data()[self.cursor() + inx];
         let b = self._get_data()[self.cursor() + inx + 1];
         if a == 0x0d && b == 0x0a {
