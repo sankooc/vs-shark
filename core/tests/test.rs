@@ -3,7 +3,7 @@ mod unit {
     //https://wiki.wireshark.org/samplecaptures
     //https://github.com/chrissanders/packets/tree/master
     use core::{
-        common::{base::{PacketContext, Visitor}, concept::Field, io::Reader},
+        common::{base::PacketContext, concept::Field, io::Reader},
         specs::{self, ProtocolData},
     };
     use std::{fs, rc::Rc, str::from_utf8};
@@ -41,7 +41,7 @@ mod unit {
         let reader = Reader::new_raw(Rc::new(data));
         let (prop, _) = specs::ethernet::pppoes::PPPoESSVisitor.visit2(&reader).unwrap();
         match &prop {
-            ProtocolData::PPPoESS(el) => {
+            ProtocolData::PPPoES(el) => {
                 // let val = el.get().borrow();
                 inspect(el); 
             } 

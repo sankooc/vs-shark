@@ -12,7 +12,8 @@ pub fn get_next_from_type(ptype: u16) -> &'static str {
         0x086dd => "ipv6",
         0x0806 => "arp",
         0x8035 => "rarp",
-        0x8864 => "pppoess",
+        0x8864 => "pppoes",
+        0x8863 => "pppoed",
         _ => "none",
     }
 }

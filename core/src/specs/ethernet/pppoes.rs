@@ -154,11 +154,60 @@ impl PPPoESSVisitor {
         let ptype = p.borrow().ptype;
         if code == 0 {
             return match ptype {
-                33 => Ok((ProtocolData::PPPoESS(packet), "ipv4")),
-                87 => Ok((ProtocolData::PPPoESS(packet), "ipv6")),
-                _ => Ok((ProtocolData::PPPoESS(packet), "none")),
+                33 => Ok((ProtocolData::PPPoES(packet), "ipv4")),
+                87 => Ok((ProtocolData::PPPoES(packet), "ipv6")),
+                _ => Ok((ProtocolData::PPPoES(packet), "none")),
             };
         }
-        Ok((ProtocolData::PPPoESS(packet), "none"))
+        Ok((ProtocolData::PPPoES(packet), "none"))
+    }
+}
+
+
+
+#[derive(Default, Packet2, NINFO)]
+pub struct PPPoED {
+    version: u8,
+    _type: u8,
+    code: u8,
+    session_id: u16,
+    payload: u16,
+}
+impl Display for PPPoED {
+    fn fmt(&self, _f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        _f.write_str("PPP-over-Ethernet Discovery")
+    }
+}
+
+impl PPPoED {
+    fn _create(reader: &Reader, packet: &PacketContext<Self>, p: &mut std::cell::RefMut<Self>, _: Option<usize>) -> Result<()> {
+        let head = reader.read8()?;
+        p.version = head >> 4;
+        p._type = head & 0x0f;
+        p.code = packet.build_lazy(reader, Reader::_read8, Some("ppp.code"), PPPoED::code)?;
+        p.session_id = packet.build_lazy(reader, Reader::_read16_be,Some("ppp.session.id"), PPPoED::session_id)?;
+        p.payload = packet.build_lazy(reader, Reader::_read16_be, Some("ppp.pload"),PPPoED::payload)?;
+        Ok(())
+    }
+}
+
+impl PPPoED {
+    fn code(&self) -> String {
+        format!("Code: Session Data ({:#04x})", self.code)
+    }
+    fn session_id(&self) -> String {
+        format!("Session ID: {:#06x}", self.session_id)
+    }
+    fn payload(&self) -> String {
+        format!("Payload Length: {}", self.payload)
+    }
+}
+
+#[derive(Visitor3)]
+pub struct PPPoEDVisitor;
+impl PPPoEDVisitor {
+    pub fn visit2(&self, reader: &Reader) -> Result<(ProtocolData, &'static str)> {
+        let packet = PPPoED::create(reader, None)?;
+        Ok((ProtocolData::PPPoED(packet), "none"))
     }
 }

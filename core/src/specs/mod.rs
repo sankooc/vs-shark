@@ -53,7 +53,8 @@ pub fn execute(file_type: &FileType, link_type: u32, _: &Frame, reader: &Reader)
 type ERROR = PacketContext<error::Error>;
 type ETHERNET = PacketContext<ethernet::ii::Ethernet>;
 type NULL = PacketContext<ethernet::null::NULL>;
-type PPPoESS = PacketContext<ethernet::pppoes::PPPoESS>;
+type PPPoES = PacketContext<ethernet::pppoes::PPPoESS>;
+type PPPoED = PacketContext<ethernet::pppoes::PPPoED>;
 type SSL = PacketContext<ethernet::ssl::SSL>;
 type IPV4 = PacketContext<ip4::IPv4>;
 type IPV6 = PacketContext<ip6::IPv6>;
@@ -80,7 +81,8 @@ type NBNS = PacketContext<nbns::NBNS>;
 pub enum ProtocolData {
     ERROR,
     ETHERNET,
-    PPPoESS,
+    PPPoES,
+    PPPoED,
     SSL,
     NULL,
     IPV4,
@@ -106,7 +108,8 @@ pub enum ProtocolData {
 pub fn _parse(proto: &'static str) -> anyhow::Result<&dyn Visitor>{
     let rs:&dyn Visitor = match proto {
         "ethernet" => &ethernet::ii::EthernetVisitor,
-        "pppoess" => &ethernet::pppoes::PPPoESSVisitor,
+        "pppoes" => &ethernet::pppoes::PPPoESSVisitor,
+        "pppoed" => &ethernet::pppoes::PPPoEDVisitor,
         "ssl" => &ethernet::ssl::SSLVisitor,
         "ieee802.11" => &ethernet::radiotap::IEE80211Visitor,
         "ieee1905.a" => &ethernet::ieee1905a::IEEE1905AVisitor,
