@@ -1,8 +1,8 @@
-use core::common::concept::{Criteria, Field};
+use shark::common::concept::{Criteria, Field};
 use std::collections::HashSet;
 
-use core::common::base::Instance;
-use core::entry::*;
+use shark::common::base::Instance;
+use shark::entry::*;
 use std::ops::Deref;
 use js_sys::Uint8Array;
 use wasm_bindgen::prelude::*;

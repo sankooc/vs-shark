@@ -1,5 +1,5 @@
 loc:
-	wasm-pack build --target nodejs -d node
+	RUST_LOG=info wasm-pack build --target nodejs -d node
 web:
 	wasm-pack build --target web
 test:

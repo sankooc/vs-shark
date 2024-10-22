@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod unit {
-    use core::common::filter::{PacketProps, Parser};
+    use shark::common::filter::{PacketProps, Parser};
 
     #[test] 
     fn test_filter_express() {

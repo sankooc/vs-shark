@@ -1,0 +1,14 @@
+[package]
+name = "tui"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+clap = { version = "4.5.20", features = ["derive"] }
+color-eyre = "0.6.3"
+crossterm = "0.28.1"
+log = "0.4.22"
+ratatui = "0.29.0"
+strum = { version = "0.26.3"}
+strum_macros = "0.26.3"
+shark = { path = "../shark"}

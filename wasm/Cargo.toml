@@ -15,11 +15,11 @@ crate-type = ["cdylib"]
 [dependencies]
 js-sys = "0.3.69"
 wasm-bindgen = "0.2.93"
-core = { path = "../core" }
-serde = {version = "1.0.210", features = ["derive"]}
-serde_json = "1.0.128"
+shark = { path = "../shark" }
+
+[package.metadata.wasm-pack.profile.release]
+wasm-opt = false
 
 [dev-dependencies]
 log = "0.4.22"
 env_logger = "0.11.3"
-wasm-bindgen-test = "0.3.0"
