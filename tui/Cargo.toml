@@ -1,5 +1,5 @@
 [package]
-name = "tui"
+name = "shark_tui"
 version = "0.1.0"
 edition = "2021"
 
@@ -10,5 +10,5 @@ crossterm = "0.28.1"
 log = "0.4.22"
 ratatui = "0.29.0"
 strum = { version = "0.26.3"}
-strum_macros = "0.26.3"
 shark = { path = "../shark"}
+unicode-width = "0.2.0"

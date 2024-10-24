@@ -1,8 +1,7 @@
-use std::time::Duration;
+use std::ops::Deref;
 use super::Result;
 use ratatui::{
     buffer::Buffer,
-    crossterm::event::{self, Event, KeyCode, KeyEventKind},
     layout::{ Constraint, Layout, Rect},
     style::{palette::tailwind, Color, Stylize},
     text::Line,
@@ -13,59 +12,25 @@ use ratatui::{
 const GAUGE4_COLOR: Color = tailwind::ORANGE.c800;
 const CUSTOM_LABEL_COLOR: Color = tailwind::SLATE.c200;
 
-#[derive(Debug, Default, Clone, Copy)]
-pub struct App {
-    state: AppState,
-    progress4: f64,
-}
 
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
-enum AppState {
-    // Running,
+#[derive(Default)]
+pub enum PageState {
     #[default]
-    Started,
-    Quitting,
+    LOADING,
+    ERROR,
+}
+#[derive(Default)]
+pub struct App {
+    pub progress: f64,
+    pub state: PageState,
 }
 
 impl App {
-    pub fn run(mut self, mut terminal: DefaultTerminal) -> Result<()> {
-        while self.state != AppState::Quitting {
-            terminal.draw(|frame| frame.render_widget(&self, frame.area()))?;
-            self.handle_events()?;
-            self.update(terminal.size()?.width);
-        }
+    pub fn run(&mut self, terminal: &mut DefaultTerminal, state: PageState) -> Result<()> {
+        self.progress = (self.progress + 1.0).clamp(0.0, 100.0);
+        self.state = state;
+        terminal.draw(move |frame| frame.render_widget(self.deref(), frame.area()))?;
         Ok(())
-    }
-
-    pub fn update(&mut self, _: u16) {
-        if self.state != AppState::Started {
-            return;
-        }
-        self.progress4 = (self.progress4 + 1.0).clamp(0.0, 100.0);
-    }
-
-    pub fn handle_events(&mut self) -> Result<()> {
-        let timeout = Duration::from_secs_f32(1.0 / 20.0);
-        if event::poll(timeout)? {
-            if let Event::Key(key) = event::read()? {
-                if key.kind == KeyEventKind::Press {
-                    match key.code {
-                        KeyCode::Char(' ') | KeyCode::Enter => self.start(),
-                        KeyCode::Char('q') | KeyCode::Esc => self.quit(),
-                        _ => {}
-                    }
-                }
-            }
-        }
-        Ok(())
-    }
-
-    fn start(&mut self) {
-        self.state = AppState::Started;
-    }
-
-    fn quit(&mut self) {
-        self.state = AppState::Quitting;
     }
 }
 
@@ -87,11 +52,11 @@ impl App {
 
     fn render_gauge4(&self, area: Rect, buf: &mut Buffer) {
         let title = title_block("Parsing File...");
-        let label = format!("{:.1}%", self.progress4);
+        let label = format!("{:.1}%", self.progress);
         Gauge::default()
             .block(title)
             .gauge_style(GAUGE4_COLOR)
-            .ratio(self.progress4 / 100.0)
+            .ratio(self.progress / 100.0)
             .label(label)
             .use_unicode(true)
             .render(area, buf);

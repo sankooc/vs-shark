@@ -25,10 +25,9 @@
     <img src="https://img.shields.io/npm/unpacked-size/nshark" alt="Unpacked Size">
   </a>
   <a>
-    <img src="https://visitor-badge.lithub.cc/badge?page_id=sankooc_vs-shark&left_color=gray&right_color=green" alt="Visitor Badge">
+    <img src="https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fgithub.com%2Fshark%2Fhit-counter&count_bg=%2379C83D&title_bg=%23555555&icon=rust.svg&icon_color=%23E7E7E7&title=visitor&edge_flat=false)" alt="Visitor Badge">
   </a>
 </p>
-
 
 ## Overview
 

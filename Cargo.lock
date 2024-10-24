@@ -809,6 +809,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "shark_tui"
+version = "0.1.0"
+dependencies = [
+ "clap",
+ "color-eyre",
+ "crossterm",
+ "log",
+ "ratatui",
+ "shark",
+ "strum",
+ "unicode-width 0.2.0",
+]
+
+[[package]]
 name = "shlex"
 version = "1.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -964,20 +978,6 @@ dependencies = [
  "sharded-slab",
  "thread_local",
  "tracing-core",
-]
-
-[[package]]
-name = "tui"
-version = "0.1.0"
-dependencies = [
- "clap",
- "color-eyre",
- "crossterm",
- "log",
- "ratatui",
- "shark",
- "strum",
- "strum_macros",
 ]
 
 [[package]]

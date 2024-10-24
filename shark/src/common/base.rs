@@ -1617,7 +1617,7 @@ impl Instance {
         let duration = info.end_time - info.start_time;
         let start = info.start_time;
 
-        let zone = (duration / 25) + 1;
+        let zone = (duration / 20) + 1;
         let mut cur: u64 = list.first().unwrap().ts;
         let mut next = cur + zone;
         let mut t_list = Vec::new();
