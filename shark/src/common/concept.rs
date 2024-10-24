@@ -165,6 +165,12 @@ pub struct LineData {
     data: Vec<u32>,
 }
 impl LineData {
+    pub fn name(&self) -> String {
+        self.name.clone()
+    }
+    pub fn data(&self) -> &[u32] {
+        &self.data
+    }
     pub fn new(name: String, data: Vec<u32>) -> Self {
         Self { name, data }
     }
@@ -178,6 +184,15 @@ pub struct Lines {
 }
 
 impl Lines {
+    pub fn data(&self) -> &[LineData] {
+        &self.data
+    }
+    pub fn get_y(&self) -> &HashSet<String>{
+        &self.y
+    }
+    pub fn get_x(&self) -> &[String]{
+        &self.x
+    }
     pub fn new(x: Vec<String>, y: HashSet<String>, data: Vec<LineData>) -> Self {
         Self { x, y, data }
     }
@@ -320,15 +335,15 @@ impl TCPConversation {
 
 #[derive(Serialize,Default)]
 pub struct FrameInfo {
-    index: u32,
-    time: u32,
-    source: String,
-    dest: String,
-    protocol: String,
-    len: u32,
-    irtt: u16,
-    info: String,
-    status: String,
+    pub index: u32,
+    pub time: u32,
+    pub source: String,
+    pub dest: String,
+    pub protocol: String,
+    pub len: u32,
+    pub irtt: u16,
+    pub info: String,
+    pub status: String,
 }
 
 impl FrameInfo {
@@ -371,9 +386,9 @@ pub struct Criteria{
 
 #[derive(Serialize)]
 pub struct ListResult<T> {
-  items: Vec<T>,
+  pub items: Vec<T>,
   pub total: usize,
-  start: usize,
+  pub start: usize,
 }
 
 impl<T> ListResult<T> {

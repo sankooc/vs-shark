@@ -1,10 +1,10 @@
 [workspace]
 resolver = "2"
 members = [
+  "shark",
   "derive",
-  "core",
   "wasm"
-]
+, "tui"]
+
 [profile.release]
 panic = "unwind"
-opt-level = 3

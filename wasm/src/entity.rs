@@ -15,9 +15,9 @@ impl Field {
     pub fn empty() -> Self {
         Field{ start: 0, size: 0, data: Uint8Array::new(&JsValue::undefined()) }
     }
-    pub fn convert(embed: &core::common::concept::Field) -> Self {
+    pub fn convert(embed: &shark::common::concept::Field) -> Self {
         let (start, size);
-        core::common::concept::Field { start, size, .. } = *embed;
+        shark::common::concept::Field { start, size, .. } = *embed;
         let a: &[u8] = embed.data.as_ref();
         let data: Uint8Array = a.into();
         Field {
