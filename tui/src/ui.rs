@@ -113,7 +113,7 @@ impl Widget for &mut MainUi {
 
 impl MainUi {
     fn render_tabs(&self, area: Rect, buf: &mut Buffer) {
-        let titles = ["Overview", "Frames", "Conversation"].iter().map(create_tab_title);
+        let titles = ["Overview", "Frames"].iter().map(create_tab_title);
         let selected_tab_index = self.selected as usize;
         Tabs::new(titles).highlight_style(get_active_tab_color()).select(selected_tab_index).padding("", "").divider(" ").render(area, buf);
     }
