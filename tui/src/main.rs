@@ -5,7 +5,7 @@ use crossterm::event::KeyEventKind;
 use ratatui::DefaultTerminal;
 use shark::common::base::Instance;
 use shark::entry::load_data;
-use shark_tui::ui::MainUi;
+use shark_tui::ui::MainUI;
 use std::fs;
 use std::rc::Rc;
 use std::time::Duration;
@@ -23,10 +23,10 @@ struct Args {
     file: String,
 }
 
-fn main() -> Result<()> {     
+fn main() -> Result<()> {
     // let args = Args::parse(q); 
-    // println!("{}", args.file)   
-    let fname = "./sandbox/11.pcapng";
+    // println!("{}", args.file) 
+    let fname = "./sandbox/11.pcapng"; 
     // let fname = "./sandbox/dns.pcapng";
     
     let data: Vec<u8> = fs::read(fname).unwrap();
@@ -51,13 +51,13 @@ enum AppState {
 struct TApplication {
     state: AppState,
     terminal: DefaultTerminal,
-    ui: MainUi,
+    ui: MainUI,
 }
 
 impl TApplication {
     fn new(_instance: Instance, terminal: DefaultTerminal) -> Self {
         let instance = Rc::new(_instance);
-        let ui = MainUi::new(instance.clone());
+        let ui = MainUI::new(instance.clone());
         Self{ui, terminal, state: AppState::NORMAL}
     }
     fn run(&mut self) {

@@ -17,7 +17,7 @@ lazy_static = "1.5.0"
 log = "0.4.22"
 pcap_derive = { path = "../derive" }
 thiserror = "1.0.63"
-anyhow = "1.0.86"
+anyhow = "1.0.91"
 enum_dispatch = "0.3.13"
 strum = { version = "0.26.3", features = ["derive"]}
 strum_macros = "0.26.3"

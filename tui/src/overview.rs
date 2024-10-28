@@ -33,7 +33,7 @@ impl Widget for &mut App {
         Self: Sized,
     {
 
-        let [top, bottom] = Layout::vertical([Constraint::Length(6), Constraint::Min(12)]).areas(area);
+        let [top, bottom] = Layout::vertical([Constraint::Length(6), Constraint::Fill(12)]).areas(area);
 
 
         let _info = self.instance.pcap_info();

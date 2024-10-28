@@ -1,6 +1,8 @@
 
 ### Overview
 
+![](https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fgithub.com%2Fshark%2Fhit-counter&count_bg=%2379C83D&title_bg=%23555555&icon=rust.svg&icon_color=%23E7E7E7&title=visitor&edge_flat=false)
+
 **pcapviewer** is an open-source tool designed to analyze PCAP/PCAPNG (Packet Capture) files. It serves as a packet analysis tool, allowing users to inspect different layers of captured network traffic in detail, from Ethernet to Application layers. Its features are suitable for developers and network engineers who need quick, efficient access to packet-level data without the overhead of full-scale tools like Wireshark.
 
 
