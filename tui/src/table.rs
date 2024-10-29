@@ -160,30 +160,15 @@ impl App {
         });
 
         let select_row_style = get_select();
-        // let bar = " █ ";
         let t: Table<'_> = Table::new(rows, [Constraint::Length(5), Constraint::Max(20), Constraint::Max(20), Constraint::Max(6), Constraint::Max(6), Constraint::Min(70)])
             .header(header)
             .highlight_style(select_row_style)
-            // .row_highlight_style(select_row_style)
-            // .column_highlight_style(selected_col_style)
-            // .highlight_symbol(Text::from(vec!["".into(), bar.into(), bar.into(), "".into()]))
-            // .bg(BUFFER_BG)
             .highlight_spacing(HighlightSpacing::Always);
-        // Widget::render(t, area, buf);
         StatefulWidget::render(t, area, buf, &mut self.state);
     
         let scroll = Scrollbar::new(ScrollbarOrientation::VerticalRight);
         scroll.render(area, buf, &mut self.scroll_state);
     }
-
-    // fn render_footer(&self, buf: &mut Buffer, area: Rect) {
-    //     let info_footer = Paragraph::new(Text::from_iter(INFO_TEXT))
-    //         .style(Style::new().fg(ROW_FG).bg(BUFFER_BG))
-    //         .centered()
-    //         .block(Block::bordered().border_type(BorderType::Double).border_style(Style::new().fg(FOOTER_BORDER_COLOR)));
-    //     info_footer.render(area, buf);
-    //     // frame.render_widget(info_footer, area);
-    // }
 }
 
 impl ControlPanel for App {
