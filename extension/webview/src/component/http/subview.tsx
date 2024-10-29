@@ -49,7 +49,7 @@ const SubComponnet = (props: Props) => {
     return rs;
   }
   return (<>
-    <TreeTable className="flex-grow-1 flex-shink-1" onRowClick={onSelect} rowClassName={rowClass} value={props.items} style={{height: `${scrollHeight}vh`, overflow: 'auto'}} size={0}>
+    <TreeTable className="flex-grow-1 flex-shink-1" onRowClick={onSelect} rowClassName={rowClass} value={props.items} style={{height: `${scrollHeight}vh`, overflow: 'auto'}} >
         {props.cols.map((c: ColumnProps, inx: number): ReactElement => {
           return (<Column {...c} key={'col' + inx} ></Column>)
         })}
