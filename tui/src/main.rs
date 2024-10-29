@@ -16,7 +16,7 @@ use pcaps::Result;
 // use color_eyre::Result;
 use clap::Parser;
 
-/// Simple program to greet a person
+/// ----- pcapviewer ------
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
 struct Args {
