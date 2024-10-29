@@ -130,6 +130,7 @@ const Main = () => {
   // console.log('main', status, select, meta);
   if (status == 0) {
     return <Loading/>
+    // return <ErrPage/>
     // return <TLSComponent items={tlsRecords}/>
     // return <HttpComponnet items={_httpRecords} />
     // return <DNSList items={_dnsRecords}/>

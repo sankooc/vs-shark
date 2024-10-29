@@ -10,7 +10,7 @@
     "css": "npx sass src --no-source-map",
     "css-watch": "npx sass src --no-source-map --watch",
     "build": "npx webpack ",
-        "build-web": "npx webpack -c webpack.web.config.js"
+    "build-web": "npx webpack -c webpack.web.config.js"
   },
   "dependencies": {
     "@vscode/webview-ui-toolkit": "^1.2.2",
@@ -26,6 +26,7 @@
     "rshark": "file:../../wasm/pkg"
   },
   "devDependencies": {
+    "@svgr/webpack": "^8.1.0",
     "@types/node-sass": "^4.11.7",
     "@types/react": "^18.3.0",
     "@types/react-dom": "^18.3.0",
@@ -39,10 +40,9 @@
     "sass": "^1.77.6",
     "source-map-loader": "^5.0.0",
     "style-loader": "^4.0.0",
-    "svg-react-loader": "^0.4.6",
     "webpack": "^5.92.1",
     "webpack-cli": "^5.1.4",
-    "webpack-dev-server": "^5.0.4",
+    "webpack-dev-server": "^5.1.0",
     "workbox-webpack-plugin": "^7.1.0"
   }
 }

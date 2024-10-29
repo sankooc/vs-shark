@@ -14,7 +14,7 @@ module.exports = {
             { test: /\.tsx?$/, loader: "awesome-typescript-loader" },
             {
                 test: /\.svg$/,
-                loader: 'svg-react-loader'
+                use: ['@svgr/webpack'],
             },
             {
                 test: /\.(scss|less|css)$/,

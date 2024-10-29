@@ -1,6 +1,10 @@
 import React from "react";
 import './index.css';
+// import { ReactSVG } from 'react-svg'
 import Docs from "./doc.svg";
+
+// import ReactLogo from './doc.svg';
+
 
 
 const ErrPage = () => {
@@ -8,7 +12,7 @@ const ErrPage = () => {
   return (<div className="error-page">
     <main>
       <div>
-        <Docs />
+       <Docs/>
       </div>
       <div>
         <p>{content}</p>
