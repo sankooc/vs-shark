@@ -30,6 +30,7 @@ impl StackView {
         self.frame_index = index;
         self.items = items;
         self.state = TreeState::default();
+        self.hex.set_data(None);
     }
 
     pub fn get_field(&mut self) -> Option<(usize, usize, Rc<Vec<u8>>)>{

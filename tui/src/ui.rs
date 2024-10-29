@@ -86,6 +86,12 @@ impl MainUI {
     }
 
     pub fn quit(&mut self) {}
+    fn render_footer(&mut self, area: Rect, buf: &mut Buffer) {
+        match self.selected {
+            1 => Line::raw("◄ ► to change page | SHIFT+(▲ ▼) to change panel | Press q or ESC to quit").centered().render(area, buf),
+            _ => Line::raw("SHIFT+(◄ ►) to change tab | Press q or ESC to quit").centered().render(area, buf)
+        }
+    }
 }
 
 impl Widget for &mut MainUI {
@@ -111,7 +117,7 @@ impl Widget for &mut MainUI {
                 self.overview_page.render(_inner_area, buf);
             }
         }
-        render_footer(footer_area, buf);
+        self.render_footer(footer_area, buf);
     }
 }
 
@@ -121,10 +127,6 @@ impl MainUI {
         let selected_tab_index = self.selected as usize;
         Tabs::new(titles).highlight_style(get_active_tab_color()).select(selected_tab_index).padding("", "").divider(" ").render(area, buf);
     }
-}
-
-fn render_footer(area: Rect, buf: &mut Buffer) {
-    Line::raw("SHIFT+(◄ ►) to change tab | Press q or ESC to quit").centered().render(area, buf);
 }
 
 fn create_tab_title(title: impl Display) -> Line<'static> {
