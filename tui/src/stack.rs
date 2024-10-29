@@ -8,8 +8,8 @@ use tui_tree_widget::{Tree, TreeItem, TreeState};
 use crate::ControlPanel;
 
 pub struct StackView {
-    state: TreeState<String>,
-    items: Vec<TreeItem<'static, String>>,
+    state: TreeState<u16>,
+    items: Vec<TreeItem<'static, u16>>,
 }
 impl StackView {
     pub fn new() -> Self {
@@ -18,7 +18,7 @@ impl StackView {
             items: vec![],
         }
     }
-    pub fn set_items(&mut self, items: Vec<TreeItem<'static, String>>){
+    pub fn set_items(&mut self, items: Vec<TreeItem<'static, u16>>){
         self.items = items;
         self.state = TreeState::default();
     }
@@ -64,5 +64,7 @@ impl ControlPanel for StackView {
                 _ => true,
             };
         }
+        let sel = self.state.selected();
+        println!("{:?}", sel);
     }
 }

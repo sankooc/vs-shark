@@ -38,17 +38,17 @@ pub struct App {
 }
 const STEP: usize = 100;
 
-fn convert_fields(list: &[shark::common::concept::Field], pre: &str) -> Vec<TreeItem<'static, String>>{
+fn convert_fields(list: &[shark::common::concept::Field]) -> Vec<TreeItem<'static, u16>>{
     let mut rs = Vec::new();
     let mut count = 0;
     for item in list {
-        let identity = format!("{}-{}", pre, count);
+        // let identity = format!("{}-{}", pre, count);
         if item.children().len() > 0 {
-            let child = convert_fields(item.children(), &identity);
-            let it = TreeItem::new(identity, item.summary(), child).expect("need unique id");
+            let child = convert_fields(item.children());
+            let it = TreeItem::new(count, item.summary(), child).expect("need unique id");
             rs.push(it);
         } else {
-            rs.push(TreeItem::new_leaf(identity, item.summary()));
+            rs.push(TreeItem::new_leaf(count, item.summary()));
         }
         count += 1;
     }
@@ -77,7 +77,7 @@ impl App {
         let fs = self.instance.get_frames();
         let f = &fs[frame_index];
         let stacks = f.get_fields();
-        let stack_items = convert_fields(&stacks, "");
+        let stack_items = convert_fields(&stacks);
         self.stack_page.set_items(stack_items);
     }
     pub fn next_row(&mut self) {
@@ -244,5 +244,6 @@ impl Widget for &mut App {
         self.render_table(buf, rects[0]);
         let ch:[Rect; 2] = Layout::horizontal([Constraint::Fill(1); 2]).areas(rects[1]);
         self.stack_page.render(ch[0], buf);
+        super::hex::HexView{}.render(ch[1], buf);
     }
 }
