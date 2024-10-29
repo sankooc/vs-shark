@@ -521,6 +521,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "pcaps"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "crossterm",
+ "log",
+ "ratatui",
+ "shark",
+ "tui-tree-widget",
+]
+
+[[package]]
 name = "proc-macro2"
 version = "1.0.88"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -676,19 +689,6 @@ dependencies = [
  "strum",
  "strum_macros",
  "thiserror",
-]
-
-[[package]]
-name = "shark_tui"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "clap",
- "crossterm",
- "log",
- "ratatui",
- "shark",
- "tui-tree-widget",
 ]
 
 [[package]]

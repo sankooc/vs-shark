@@ -1,5 +1,5 @@
 [package]
-name = "shark_tui"
+name = "pcaps"
 version = "0.1.0"
 edition = "2021"
 

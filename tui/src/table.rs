@@ -61,7 +61,7 @@ impl App {
             cursor: SelectPanel::LIST,
             state: TableState::default().with_selected(0),
             scroll_state: ScrollbarState::new(0),
-            stack_page: super::stack::StackView::new(),
+            stack_page: super::stack::StackView::new(instance.clone()),
             instance,
             frames: Vec::new(),
             _start: 0,
@@ -78,7 +78,7 @@ impl App {
         let f = &fs[frame_index];
         let stacks = f.get_fields();
         let stack_items = convert_fields(&stacks);
-        self.stack_page.set_items(stack_items);
+        self.stack_page.set_items(inx, stack_items);
     }
     pub fn next_row(&mut self) {
         let i = match self.state.selected() {
@@ -242,8 +242,8 @@ impl Widget for &mut App {
         let vertical = Layout::vertical([Constraint::Min(5), Constraint::Min(5)]);
         let rects = vertical.split(area);
         self.render_table(buf, rects[0]);
-        let ch:[Rect; 2] = Layout::horizontal([Constraint::Fill(1); 2]).areas(rects[1]);
-        self.stack_page.render(ch[0], buf);
-        super::hex::HexView{}.render(ch[1], buf);
+        // let ch:[Rect; 2] = Layout::horizontal([Constraint::Fill(1); 2]).areas(rects[1]);
+        self.stack_page.render(rects[1], buf);
+        // super::hex::HexView::new().render(ch[1], buf);
     }
 }

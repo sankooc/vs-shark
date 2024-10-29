@@ -1,7 +1,7 @@
-use std::{cmp, io::BufRead, rc::Rc};
+use std::{cmp, rc::Rc};
 
 use ratatui::{
-    style::Styled, text::{Line, Span, Text}, widgets::{Block, Padding, Paragraph, Widget}
+    style::{Modifier, Stylize}, text::{Line, Span}, widgets::{Block, Padding, Paragraph, Widget}
 };
 
 use crate::theme::get_protocol_color;
@@ -14,23 +14,26 @@ impl HexView {
     pub fn new() -> Self {
         Self {data: None}
     }
+    pub fn set_data(&mut self, data: Option<(usize, usize, Rc<Vec<u8>>)>) {
+        self.data = data;
+    }
 }
 
-pub fn _convert_field() {
-    let start = 1;
-    let size = 3;
-    let data: Vec<u8> = vec![12, 32, 3, 2, 2, 1, 3, 4, 5, 4, 6, 4, 3, 3, 3, 4, 5, 3, 3, 4, 5, 54, 3, 3, 2, 23, 4, 5, 4, 3, 45, 54, 6, 2];
-    let len = data.len();
-    if len <= 0 {
-        return;
-    }
-    let lines: usize = (len - 1) / 16 + 1;
-}
+
 impl Widget for &mut HexView {
     fn render(self, area: ratatui::prelude::Rect, buf: &mut ratatui::prelude::Buffer) {
-
-        let data: Vec<u8> = vec![12, 32, 3, 2, 2, 1, 3, 4, 5, 4, 6, 4, 3, 3, 3, 4, 5, 3, 3, 4, 5, 54, 3, 3, 2, 23, 4, 5, 4, 3, 45, 54, 6, 2];
+        if let None = self.data {
+            return;
+        }
+        let _data = self.data.as_ref().unwrap();
+        let start = _data.0;
+        let size = _data.1;
+        let range = start..start+size;
+        let data = _data.2.clone();
         let len = data.len();
+        if len <= 0 {
+            return;
+        }
         let line_count: usize = (len - 1) / 16 + 1;
         let mut lines = Vec::new();
         let mut _cursor = 0;
@@ -39,17 +42,30 @@ impl Widget for &mut HexView {
             let mut ll = vec![index.style(get_protocol_color("tcp"))];
             let size = cmp::min(8, len - _cursor);
             let _data = &data[_cursor.._cursor + size];
-            let left = _data.iter().map(|f| format!("{:02x}", *f)).collect::<Vec<_>>().join(" ");
-            _cursor += 8;
-            let hex_style = get_protocol_color("tls");
-            ll.push(Span::from(left).style(hex_style.clone()));
+
+            // let mut hex_style = get_protocol_color("tls");
+            let get_style = |s| {
+                if range.contains(&(s-1)) {
+                    return get_protocol_color("dns");
+                } else {
+                    return get_protocol_color("tls");
+                }
+            };
+            let mut left = _data.iter().map(|f| {
+                _cursor+=1;
+                Span::from(format!("{:02x} ", *f)).add_modifier(Modifier::BOLD).style(get_style(_cursor))
+            }).collect::<Vec<Span>>();
+
+            ll.append(&mut left);
             if _cursor + 1 < len {
-                ll.push(Span::from("  ").style(hex_style.clone()));
+                ll.push(Span::from("  "));
                 let size = cmp::min(8, len - _cursor);
                 let _data = &data[_cursor.._cursor + size];
-                let right = _data.iter().map(|f| format!("{:02x}", *f)).collect::<Vec<_>>().join(" ");
-                ll.push(Span::from(right).style(hex_style.clone()));
-                _cursor += 8;
+                let mut right = _data.iter().map(|f| {
+                    _cursor+=1;
+                    Span::from(format!("{:02x} ", *f)).add_modifier(Modifier::BOLD).style(get_style(_cursor))
+                }).collect::<Vec<_>>();
+                ll.append(&mut right);
             }
 
             lines.push(Line::from(ll));
