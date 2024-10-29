@@ -1,4 +1,4 @@
-@import '../../common';
+@use '../../common';
 #detail {
     overflow: auto;
     margin: 0;
@@ -48,7 +48,7 @@
     flex-grow: 1;
 }
 #detail>.text .asc {
-    font-family: $base-family;
+    font-family: common.$base-family;
     white-space: break-spaces;
     word-break: break-all;
     height: 1.5rem;
@@ -69,7 +69,7 @@
     margin: 0 14px;
     padding: 0;
     text-align: right;
-    font-family: $base-family;
+    font-family: common.$base-family;
     height: 1.5rem;
     &.active {
         background-color: darkgoldenrod;
@@ -84,7 +84,7 @@
     height: 1.5rem;
     line-height: 1.5rem;
     cursor: pointer;
-    font-family: $base-family;
+    font-family: common.$base-family;
     &:hover {
         color: var(--vscode-list-focusOutline);
         background-color: var(--vscode-list-focusForeground);

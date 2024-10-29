@@ -1,16 +1,16 @@
-@import '../../common';
+@use '../../common';
 
 .tls-page {
 
     tr {
         &.status-warn {
-            background-color: $c-yellow !important;
-            color: $c-fg-0 !important;
+            background-color: common.$c-yellow !important;
+            color: common.$c-fg-0 !important;
         }
 
         &.status-normal {
-            background-color: $c-aqua;
-            color: $c-fg-0 !important;
+            background-color: common.$c-aqua;
+            color: common.$c-fg-0 !important;
         }
     }
 

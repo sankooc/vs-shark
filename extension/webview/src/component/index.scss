@@ -1,6 +1,6 @@
-@import '../var';
-@import '../theme';
-@import '../common';
+@use '../var';
+@use '../theme';
+@use '../common';
 $nav_selected_color: rebeccapurple;
 
 html, body {
@@ -41,7 +41,7 @@ li.active {
 
 
 tr, td {
-    font-family: $base-family;
+    font-family: common.$base-family;
 }
 tr td {
     text-overflow: ellipsis;
@@ -58,8 +58,8 @@ tr td {
   }
 
 tr[role=row]{
-    background-color: $t-def;
-    color: $t-def-font;
+    background-color: common.$t-def;
+    color: common.$t-def-font;
     &.active{
         animation-name: example;
         animation-duration: 3s;
@@ -68,52 +68,52 @@ tr[role=row]{
         color: var(--vscode-list-focusForeground);
     }
     &.errdata{
-        background-color: $t-errdata;
-        color: $t-errdata-font;
+        background-color: common.$t-errdata;
+        color: common.$t-errdata-font;
     }
     &.tcp{
-        background-color: $t-tcp;
-        color: $t-tcp-font;
+        background-color: common.$t-tcp;
+        color: common.$t-tcp-font;
     }
     &.arp{
-        background-color: $t-arp;
-        color: $t-arp-font;
+        background-color: common.$t-arp;
+        color: common.$t-arp-font;
     }
     &.http{
-        background-color: $t-http;
-        color: $t-http-font;
+        background-color: common.$t-http;
+        color: common.$t-http-font;
     }
     &.deactive{
-        background-color: $t-deactive;
-        color: $t-deactive-font;
+        background-color: common.$t-deactive;
+        color: common.$t-deactive-font;
     }
     &.tls{
-        background-color: $t-tls;
-        color: $t-tls-font;
+        background-color: common.$t-tls;
+        color: common.$t-tls-font;
     }
     &.ssdp{
-        background-color: $t-ssdp;
-        color: $t-ssdp-font;
+        background-color: common.$t-ssdp;
+        color: common.$t-ssdp-font;
     }
     &.udp{
-        background-color: $t-udp;
-        color: $t-udp-font;
+        background-color: common.$t-udp;
+        color: common.$t-udp-font;
     }
     &.dns{
-        background-color: $t-dns;
-        color: $t-dns-font;
+        background-color: common.$t-dns;
+        color: common.$t-dns-font;
     }
     &.pppoed{
-        background-color: $t-pppoed;
-        color: $t-pppoed-font;
+        background-color: common.$t-pppoed;
+        color: common.$t-pppoed-font;
     }
     &.pppoes{
-        background-color: $t-pppoes;
-        color: $t-pppoes-font;
+        background-color: common.$t-pppoes;
+        color: common.$t-pppoes-font;
     }
     &.icmp, &.icmpv6{
-        background-color: $t-icmp;
-        color: $t-icmp-font;
+        background-color: common.$t-icmp;
+        color: common.$t-icmp-font;
     }
 }
 
@@ -146,21 +146,21 @@ tr[role=row]{
     }
     td {
         padding: 0 5px;
-        border-right: 1px solid $c-fg-0;
+        border-right: 1px solid common.$c-fg-0;
     }
     td, tr { 
         // padding: 1px !important;
         font-size: 1rem;
-        color: $c-fg-0;
-        background-color: $c-aqua;
+        color: common.$c-fg-0;
+        background-color: common.$c-aqua;
     }
     tr[aria-level='1'] {
-        background-color: $c-aqua;
+        background-color: common.$c-aqua;
     }
     tr[aria-level='2']{
         td {
-            background-color: $c-blue;
-            color: $c-fg-0;
+            background-color: common.$c-blue;
+            color: common.$c-fg-0;
         }
     }
     // tr[aria-level='2']:nth-child(2n) {

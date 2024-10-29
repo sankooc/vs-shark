@@ -1,6 +1,6 @@
 // @import '../../var';
 // @import '../../theme';
-@import '../../common';
+@use '../../common';
 
 .http-dialog {
     padding: 1rem;
@@ -56,7 +56,7 @@
 #http-page {
     td {
         padding: 0 5px;
-        border-right: 1px solid $c-fg-0;
+        border-right: 1px solid common.$c-fg-0;
     }
     tr {
         &[aria-level="2"] {
@@ -66,29 +66,29 @@
                 margin: 0 !important;
             } 
         }
-        color: $c-fg-0;
-        background-color: $c-aqua;
+        color: common.$c-fg-0;
+        background-color: common.$c-aqua;
         &.type-request{
-            color: $c-fg-0;
-            background-color: $c-blue;
+            color: common.$c-fg-0;
+            background-color: common.$c-blue;
             cursor: pointer;
         }
         &.type-response{
-            color: $c-fg-0;
-            background-color: $c-green;
+            color: common.$c-fg-0;
+            background-color: common.$c-green;
             cursor: pointer;
         }
         &.status-401, &.status-400 {
-            background-color: $t-errdata !important;
-            color: $t-errdata-font !important;
+            background-color: common.$t-errdata !important;
+            color: common.$t-errdata-font !important;
         }
         &.status-200, &.status-201, &.status-100, &.status-204 {
-            background-color: $t-common !important;
-            color: $t-common-font !important;
+            background-color: common.$t-common !important;
+            color: common.$t-common-font !important;
         }
         &.status-301, &.status-302 {
-            background-color: $t-dns !important;
-            color: $t-dns-font !important;
+            background-color: common.$t-dns !important;
+            color: common.$t-dns-font !important;
         }
     }
     .http-viewer{

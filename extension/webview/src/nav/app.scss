@@ -1,5 +1,5 @@
-@import '../var';
-@import '../theme';
+@use '../var';
+@use '../theme';
 #app {
     justify-content:space-between;
     overflow: hidden;
