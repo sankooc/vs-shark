@@ -6,8 +6,10 @@ pub mod table;
 pub mod theme;
 pub mod overview;
 pub mod panel;
+pub mod stack;
+pub mod hex;
 
-pub type Result<T> = color_eyre::Result<T>;
+pub type Result<T> = anyhow::Result<T>;
 
 
 pub trait ControlPanel {

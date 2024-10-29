@@ -1,7 +1,7 @@
-use std::{cell::RefCell, fmt::Display, rc::Rc};
+use std::{fmt::Display, rc::Rc};
 
 use crate::{
-    theme::{get_active_tab_color, get_color, ACTIVE_TAB_COLOR},
+    theme::{get_active_tab_color, get_color, get_protocol_color, ACTIVE_TAB_COLOR},
     ControlPanel,
 };
 
@@ -11,30 +11,31 @@ use crossterm::event::KeyModifiers;
 use ratatui::{
     buffer::Buffer,
     crossterm::event::{Event, KeyCode, KeyEventKind},
-    layout::{Constraint, Layout, Rect},
-    style::Styled,
+    layout::{Constraint, Flex, Layout, Rect},
+    style::{Styled, Stylize},
     symbols,
     text::Line,
-    widgets::{Block, Padding, Tabs, Widget},
+    widgets::{Block, BorderType, Padding, Tabs, Widget},
     DefaultTerminal,
 };
 use shark::common::base::Instance;
 
-pub struct MainUi {
+pub struct MainUI {
     selected: u8,
-    overview_page: RefCell<super::overview::App>,
-    frame_page: RefCell<super::table::App>,
+    overview_page: super::overview::App,
+    frame_page: super::table::App
     // instance: Rc<Instance>,
 }
 
-impl MainUi {
+impl MainUI {
     pub fn new(instance: Rc<Instance>) -> Self {
         let frame_page = super::table::App::new(instance.clone());
         let overview_page = super::overview::App::new(instance.clone());
+        // let stack_page = super::stack::StackView::new();
         Self {
             // instance,
-            overview_page: RefCell::new(overview_page),
-            frame_page: RefCell::new(frame_page),
+            overview_page: overview_page,
+            frame_page,
             selected: 0,
         }
     }
@@ -44,6 +45,13 @@ impl MainUi {
         Ok(())
     }
 
+    fn _add_pop(&self, area: Rect, buf: &mut Buffer) {
+        let block = Block::bordered().blue();
+        block.render(area, buf);
+        let block = Block::bordered().padding(Padding::left(10)).border_type(BorderType::Rounded).title("Alert").style(get_protocol_color("tcp"));
+        let area = _popup_area(area, 60, 20);
+        block.render(area, buf);
+    }
     fn handle_events(&mut self, event: Option<Event>) -> std::io::Result<()> {
         if let Some(_event) = &event {
             if let Event::Key(key) = _event {
@@ -51,17 +59,16 @@ impl MainUi {
                 if shift_pressed {
                     if key.kind == KeyEventKind::Press {
                         match key.code {
-                            KeyCode::Char('l') | KeyCode::Right => self.next_tab(),
-                            KeyCode::Char('h') | KeyCode::Left => self.previous_tab(),
-                            _ => {}
+                            KeyCode::Right => self.next_tab(),
+                            KeyCode::Left => self.previous_tab(),
+                            _ => self.frame_page.control(_event)
                         }
                     }
                     return Ok(());
                 }
             }
-            let mut page = self.frame_page.borrow_mut();
-            page.control(_event);
-            drop(page);
+            
+            self.frame_page.control(_event);
         }
         Ok(())
     }
@@ -81,8 +88,10 @@ impl MainUi {
     pub fn quit(&mut self) {}
 }
 
-impl Widget for &mut MainUi {
+impl Widget for &mut MainUI {
     fn render(self, area: Rect, buf: &mut Buffer) {
+        // self.add_pop(area, buf);
+        // return;
         use Constraint::{Length, Min};
         let vertical = Layout::vertical([Length(1), Min(0), Length(1)]);
         let [header_area, inner_area, footer_area] = vertical.areas(area);
@@ -94,24 +103,19 @@ impl Widget for &mut MainUi {
         let block = Block::bordered().border_set(symbols::border::QUADRANT_OUTSIDE).padding(Padding::ZERO).border_style(ACTIVE_TAB_COLOR);
         let _inner_area = block.inner(inner_area);
         block.render(inner_area, buf);
-
         match self.selected {
             1 => {
-                let mut page = self.frame_page.borrow_mut();
-                page.render(_inner_area, buf);
-                drop(page);
+                self.frame_page.render(_inner_area, buf);
             }
             _ => {
-                let mut page = self.overview_page.borrow_mut();
-                page.render(_inner_area, buf);
-                drop(page);
+                self.overview_page.render(_inner_area, buf);
             }
         }
         render_footer(footer_area, buf);
     }
 }
 
-impl MainUi {
+impl MainUI {
     fn render_tabs(&self, area: Rect, buf: &mut Buffer) {
         let titles = ["Overview", "Frames"].iter().map(create_tab_title);
         let selected_tab_index = self.selected as usize;
@@ -125,4 +129,12 @@ fn render_footer(area: Rect, buf: &mut Buffer) {
 
 fn create_tab_title(title: impl Display) -> Line<'static> {
     format!("  {}  ", title).set_style(get_color("tab")).into()
+}
+
+fn _popup_area(area: Rect, percent_x: u16, percent_y: u16) -> Rect {
+    let vertical = Layout::vertical([Constraint::Percentage(percent_y)]).flex(Flex::Center);
+    let horizontal = Layout::horizontal([Constraint::Percentage(percent_x)]).flex(Flex::Center);
+    let [area] = vertical.areas(area);
+    let [area] = horizontal.areas(area);
+    area
 }

@@ -5,13 +5,14 @@ use crossterm::event::KeyEventKind;
 use ratatui::DefaultTerminal;
 use shark::common::base::Instance;
 use shark::entry::load_data;
-use shark_tui::ui::MainUi;
+use pcaps::ui::MainUI;
 use std::fs;
+use std::process;
 use std::rc::Rc;
 use std::time::Duration;
 use std::time::SystemTime;
 use std::time::UNIX_EPOCH;
-use shark_tui::Result;
+use pcaps::Result;
 // use color_eyre::Result;
 use clap::Parser;
 
@@ -23,10 +24,15 @@ struct Args {
     file: String,
 }
 
-fn main() -> Result<()> {     
-    // let args = Args::parse(q); 
-    // println!("{}", args.file)   
-    let fname = "./sandbox/11.pcapng";
+fn main() -> Result<()> {
+    let args = Args::parse();
+    let fname = args.file;
+    if !fs::exists(fname.clone()).unwrap() {
+        eprintln!("File [{fname}] not exists");
+        process::exit(1);
+    }
+
+    // let fname = "./sandbox/11.pcapng"; 
     // let fname = "./sandbox/dns.pcapng";
     
     let data: Vec<u8> = fs::read(fname).unwrap();
@@ -51,13 +57,13 @@ enum AppState {
 struct TApplication {
     state: AppState,
     terminal: DefaultTerminal,
-    ui: MainUi,
+    ui: MainUI,
 }
 
 impl TApplication {
     fn new(_instance: Instance, terminal: DefaultTerminal) -> Self {
         let instance = Rc::new(_instance);
-        let ui = MainUi::new(instance.clone());
+        let ui = MainUI::new(instance.clone());
         Self{ui, terminal, state: AppState::NORMAL}
     }
     fn run(&mut self) {
@@ -71,7 +77,7 @@ impl TApplication {
         }
     }
     pub fn handle_events(&mut self) -> Option<Event> {
-        let timeout = Duration::from_secs_f32(1.0 / 20.0);
+        let timeout = Duration::from_secs_f32(1.0 / 10.0);
         let mut _event: Option<Event> = None;
         if let Ok(_get) = event::poll(timeout) {
             if _get {

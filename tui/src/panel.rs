@@ -1,5 +1,4 @@
-use color_eyre::owo_colors::OwoColorize;
-use ratatui::{layout::{Constraint, Layout}, widgets::{Block, Padding, Paragraph, Widget}};
+use ratatui::{layout::{Constraint, Layout}, style::Stylize, widgets::{Block, Padding, Paragraph, Widget}};
 
 use crate::theme::panel_color;
 
@@ -26,9 +25,8 @@ impl Widget for &mut Panel {
             block.render(area, buf);
             let [top, bottom] = Layout::vertical([Constraint::Length(1), Constraint::Length(2)]).areas(ext);
             let _top = Paragraph::new(format!(" {}: ",self.label));
-            _ = _top.bold();
             _top.render(top, buf);
             let _bt = Paragraph::new(format!(" {}",self.val)).style(panel_color());
-            _bt.render(bottom, buf);
+            _bt.bold().render(bottom, buf);
     }
 }
