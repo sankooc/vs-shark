@@ -1,5 +1,6 @@
 use std::{cmp, rc::Rc};
 
+use crossterm::event::Event;
 use ratatui::{
     buffer::Buffer,
     layout::{Constraint, Layout, Rect},
@@ -13,7 +14,7 @@ use shark::common::{
     concept::{LineData, Lines},
 };
 
-use crate::{panel::Panel, theme::reverse_protocol};
+use crate::{panel::Panel, theme::reverse_protocol, ControlPanel};
 
 pub struct App {
     instance: Rc<Instance>,
@@ -59,6 +60,14 @@ impl Widget for &mut App {
         }
     }
 }
+
+
+impl ControlPanel for App {
+    fn control(&mut self, _: &Event) {
+    }
+    
+}
+
 
 fn render_line_chart(buf: &mut Buffer, area: Rect, state: &Lines) {
     let mut max = 0;

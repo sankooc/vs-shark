@@ -27,14 +27,12 @@ struct Args {
 fn main() -> Result<()> {
     let args = Args::parse();
     let fname = args.file;
+    // let fname = "./sandbox/11.pcapng"; 
+    // let fname = "../sandbox/dns.pcapng";
     if !fs::exists(fname.clone()).unwrap() {
         eprintln!("File [{fname}] not exists");
         process::exit(1);
     }
-
-    // let fname = "./sandbox/11.pcapng"; 
-    // let fname = "./sandbox/dns.pcapng";
-    
     let data: Vec<u8> = fs::read(fname).unwrap();
     let start = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis() as usize;
     if let Ok(mut _ctx) = load_data(&data) {
