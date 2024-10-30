@@ -90,11 +90,10 @@ impl ControlPanel for StackView {
     fn control(&mut self, event: &Event) {
         if let Event::Key(k) = event {
             match &k.code {
-                // KeyCode::Enter | KeyCode::Char(' ') => self.state.toggle_selected(),
-                KeyCode::Down | KeyCode::Char('j') => self.state.key_down(),
-                KeyCode::Up | KeyCode::Char('k') => self.state.key_up(),
-                KeyCode::Left | KeyCode::Char('h') => self.state.key_left(),
-                KeyCode::Right | KeyCode::Char('l') => self.state.key_right(),
+                KeyCode::Down => self.state.key_down(),
+                KeyCode::Up => self.state.key_up(),
+                KeyCode::Left => self.state.key_left(),
+                KeyCode::Right => self.state.key_right(),
                 _ => true,
             };
             let hex_data = self.get_field();

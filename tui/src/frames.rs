@@ -200,10 +200,10 @@ impl ControlPanel for App {
                 if let Event::Key(key) = event {
                     if key.kind == KeyEventKind::Press {
                         match key.code {
-                            KeyCode::Char('j') | KeyCode::Down => self.next_row(),
-                            KeyCode::Char('k') | KeyCode::Up => self.previous_row(),
-                            KeyCode::Char('l') | KeyCode::Right => self.next_page(),
-                            KeyCode::Char('h') | KeyCode::Left => self.previous_page(),
+                            KeyCode::Down => self.next_row(),
+                            KeyCode::Up => self.previous_row(),
+                            KeyCode::Right => self.next_page(),
+                            KeyCode::Left => self.previous_page(),
                             _ => {}
                         }
                     }

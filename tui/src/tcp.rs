@@ -4,7 +4,7 @@ use crossterm::event::Event;
 use ratatui::{layout::Constraint, widgets::{Cell, Widget}};
 use shark::common::{base::Instance, concept::TCPConversation};
 
-use crate::{control::{DataSource, UITable}, theme::{get_header_style, get_protocol_color, get_select}, ControlPanel};
+use crate::{control::{DataSource, UITable}, theme::{get_header_style, get_protocol_color}, ControlPanel};
 
 
 struct TCPMeta {
