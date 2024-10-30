@@ -23,18 +23,21 @@ use shark::common::base::Instance;
 pub struct MainUI {
     selected: u8,
     overview_page: super::overview::App,
-    frame_page: super::table::App
+    frame_page: super::frames::App,
+    tcp_page: super::tcp::TCPList,
     // instance: Rc<Instance>,
 }
 
 impl MainUI {
     pub fn new(instance: Rc<Instance>) -> Self {
-        let frame_page = super::table::App::new(instance.clone());
+        let frame_page = super::frames::App::new(instance.clone());
         let overview_page = super::overview::App::new(instance.clone());
+        let tcp_page = super::tcp::TCPList::new(instance.clone());
         // let stack_page = super::stack::StackView::new();
         Self {
             // instance,
-            overview_page: overview_page,
+            tcp_page,
+            overview_page,
             frame_page,
             selected: 0,
         }
@@ -44,6 +47,22 @@ impl MainUI {
         terminal.draw(|frame| frame.render_widget(self, frame.area()))?;
         Ok(())
     }
+
+    fn get_view(&mut self) -> &mut dyn ControlPanel {
+        match self.selected {
+            1 => &mut self.frame_page,
+            2 => &mut self.tcp_page,
+            _ => &mut self.overview_page
+        }
+    }
+    
+    // fn get_wigit(&mut self) -> Box<&dyn Widget> {
+    //     match self.selected {
+    //         1 => Box::new(&mut self.frame_page),
+    //         2 => Box::new(&mut self.tcp_page),
+    //         _ => Box::new(&mut self.overview_page)
+    //     }
+    // }
 
     fn _add_pop(&self, area: Rect, buf: &mut Buffer) {
         let block = Block::bordered().blue();
@@ -66,15 +85,15 @@ impl MainUI {
                     }
                     return Ok(());
                 }
+                self.get_view().control(_event);
             }
             
-            self.frame_page.control(_event);
         }
         Ok(())
     }
 
     pub fn next_tab(&mut self) {
-        if self.selected < 1 {
+        if self.selected < 2 {
             self.selected += 1;
         }
     }
@@ -89,6 +108,7 @@ impl MainUI {
     fn render_footer(&mut self, area: Rect, buf: &mut Buffer) {
         match self.selected {
             1 => Line::raw("◄ ► to change page | SHIFT+(▲ ▼) to change panel | Press q or ESC to quit").centered().render(area, buf),
+            // 2 => Line::raw("◄ ► to change page | SHIFT+(▲ ▼) to change panel | Press q or ESC to quit").centered().render(area, buf),
             _ => Line::raw("SHIFT+(◄ ►) to change tab | Press q or ESC to quit").centered().render(area, buf)
         }
     }
@@ -113,6 +133,9 @@ impl Widget for &mut MainUI {
             1 => {
                 self.frame_page.render(_inner_area, buf);
             }
+            2 => {
+                self.tcp_page.render(_inner_area, buf);
+            }
             _ => {
                 self.overview_page.render(_inner_area, buf);
             }
@@ -123,7 +146,7 @@ impl Widget for &mut MainUI {
 
 impl MainUI {
     fn render_tabs(&self, area: Rect, buf: &mut Buffer) {
-        let titles = ["Overview", "Frames"].iter().map(create_tab_title);
+        let titles = ["Overview", "Frames", "TCP"].iter().map(create_tab_title);
         let selected_tab_index = self.selected as usize;
         Tabs::new(titles).highlight_style(get_active_tab_color()).select(selected_tab_index).padding("", "").divider(" ").render(area, buf);
     }

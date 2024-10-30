@@ -9,7 +9,6 @@ use crossterm::event::{Event, KeyCode, KeyEventKind, KeyModifiers};
 use ratatui::{
     buffer::Buffer,
     layout::{Constraint, Layout, Rect},
-    text::Text,
     widgets::{Cell, HighlightSpacing, Row, Scrollbar, ScrollbarOrientation, ScrollbarState, StatefulWidget, Table, TableState, Widget},
 };
 use shark::common::{
@@ -42,7 +41,6 @@ fn convert_fields(list: &[shark::common::concept::Field]) -> Vec<TreeItem<'stati
     let mut rs = Vec::new();
     let mut count = 0;
     for item in list {
-        // let identity = format!("{}-{}", pre, count);
         if item.children().len() > 0 {
             let child = convert_fields(item.children());
             let it = TreeItem::new(count, item.summary(), child).expect("need unique id");
@@ -149,12 +147,12 @@ impl App {
 
         let rows = self.frames.iter().map(|data| {
             let mut rs: Vec<Cell> = Vec::new();
-            rs.push(Cell::from(Text::from(format!("{}", data.index))));
-            rs.push(Cell::from(Text::from(data.source.clone())));
-            rs.push(Cell::from(Text::from(data.dest.clone())));
-            rs.push(Cell::from(Text::from(data.protocol.clone())));
-            rs.push(Cell::from(Text::from(format!("{}", data.len))));
-            rs.push(Cell::from(Text::from(data.info.clone())));
+            rs.push(format!("{}", data.index).into());
+            rs.push(data.source.clone().into());
+            rs.push(data.dest.clone().into());
+            rs.push(data.protocol.clone().into());
+            rs.push(format!("{}", data.len).into());
+            rs.push(data.info.clone().into());
             let row_style = get_frame_color(data);
             rs.into_iter().collect::<Row>().style(row_style).height(1)
         });
@@ -173,8 +171,6 @@ impl App {
 
 impl ControlPanel for App {
     fn control(&mut self, event: &Event) {
-        
-        // let shift_pressed = _event.modifiers.contains(KeyModifiers::SHIFT);
         match event {
             Event::Key(_event) => {
                 let shift_pressed = _event.modifiers.contains(KeyModifiers::SHIFT);
@@ -221,8 +217,6 @@ impl ControlPanel for App {
 
 impl Widget for &mut App {
     fn render(self, area: Rect, buf: &mut Buffer)
-    where
-        Self: Sized,
     {
         let vertical = Layout::vertical([Constraint::Min(5), Constraint::Min(5)]);
         let rects = vertical.split(area);

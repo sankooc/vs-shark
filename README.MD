@@ -105,7 +105,7 @@ Install the **PcapViewer** extension from the [VSCode Marketplace](https://marke
 
 #### Install
 
-`cargo install --git https://github.com/sankooc/vs-shark --branch tui --bin pcaps`
+`cargo install --git https://github.com/sankooc/vs-shark --branch master --bin pcaps`
 
 #### Usage
 

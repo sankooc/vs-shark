@@ -2,12 +2,14 @@ use crossterm::event::Event;
 
 pub mod ui;
 pub mod loading;
-pub mod table;
+pub mod frames;
 pub mod theme;
 pub mod overview;
 pub mod panel;
 pub mod stack;
 pub mod hex;
+pub mod control;
+pub mod tcp;
 
 pub type Result<T> = anyhow::Result<T>;
 

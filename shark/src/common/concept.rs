@@ -318,6 +318,22 @@ impl WEndpoint {
             invalid: info.invalid,
         }
     }
+    pub fn normal_str(&self) -> String {
+        format!("{}:{}", self.ip, self.port)
+    }
+    pub fn count(&self) -> u16 {
+        self.count
+    }
+    pub fn throughput(&self) -> u32 {
+        self.throughput
+    }
+    pub fn accuracy(&self) -> f32 {
+        if self.count <= self.invalid + self.retransmission {
+            return 0.0;
+        }
+        let succ = (self.count - self.invalid - self.retransmission) as f32;
+        succ / self.count as f32 * 100.0
+    }
 }
 
 #[derive(Serialize)]
@@ -330,6 +346,19 @@ impl TCPConversation {
         let source = WEndpoint::new(s, ctx);
         let target = WEndpoint::new(t, ctx);
         Self { source, target }
+    }
+    pub fn source(&self) -> &WEndpoint {
+        &self.source
+    }
+    
+    pub fn target(&self) -> &WEndpoint {
+        &self.target
+    }
+    pub fn count(&self) -> u16 {
+        self.source.count() + self.target.count()
+    }
+    pub fn throughput(&self) -> u32 {
+        self.source.throughput() + self.target.throughput()
     }
 }
 
