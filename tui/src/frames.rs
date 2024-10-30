@@ -7,9 +7,7 @@ use crate::{
 
 use crossterm::event::{Event, KeyCode, KeyEventKind, KeyModifiers};
 use ratatui::{
-    buffer::Buffer,
-    layout::{Constraint, Layout, Rect},
-    widgets::{Cell, HighlightSpacing, Row, Scrollbar, ScrollbarOrientation, ScrollbarState, StatefulWidget, Table, TableState, Widget},
+    buffer::Buffer, layout::{Constraint, Layout, Rect}, style::{Modifier, Stylize}, widgets::{Cell, HighlightSpacing, Row, Scrollbar, ScrollbarOrientation, ScrollbarState, StatefulWidget, Table, TableState, Widget}
 };
 use shark::common::{
     base::Instance,
@@ -76,7 +74,7 @@ impl App {
         let f = &fs[frame_index];
         let stacks = f.get_fields();
         let stack_items = convert_fields(&stacks);
-        self.stack_page.set_items(inx, stack_items);
+        self.stack_page.set_items(self._start + inx, stack_items);
     }
     pub fn next_row(&mut self) {
         let i = match self.state.selected() {
@@ -154,7 +152,7 @@ impl App {
             rs.push(format!("{}", data.len).into());
             rs.push(data.info.clone().into());
             let row_style = get_frame_color(data);
-            rs.into_iter().collect::<Row>().style(row_style).height(1)
+            rs.into_iter().collect::<Row>().add_modifier(Modifier::BOLD).style(row_style).height(1)
         });
 
         let select_row_style = get_select();
