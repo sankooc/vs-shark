@@ -45,25 +45,32 @@ impl Widget for &mut HexView {
 
             // let mut hex_style = get_protocol_color("tls");
             let get_style = |s| {
-                if range.contains(&(s-1)) {
+                // if s < 1 {
+                //     return get_protocol_color("tls");
+                // }
+                if range.contains(&s) {
                     return get_protocol_color("dns");
                 } else {
                     return get_protocol_color("tls");
                 }
             };
+            let mut _style = get_style(_cursor);
             let mut left = _data.iter().map(|f| {
+                _style = get_style(_cursor);
                 _cursor+=1;
-                Span::from(format!("{:02x} ", *f)).add_modifier(Modifier::BOLD).style(get_style(_cursor))
+                Span::from(format!("{:02x} ", *f)).add_modifier(Modifier::BOLD).style(_style)
             }).collect::<Vec<Span>>();
 
             ll.append(&mut left);
-            if _cursor + 1 < len {
-                ll.push(Span::from("  "));
+            if _cursor < len {
+                _style = get_style(_cursor);
+                ll.push(Span::from("  ").style(_style));
                 let size = cmp::min(8, len - _cursor);
                 let _data = &data[_cursor.._cursor + size];
                 let mut right = _data.iter().map(|f| {
+                    _style = get_style(_cursor);
                     _cursor+=1;
-                    Span::from(format!("{:02x} ", *f)).add_modifier(Modifier::BOLD).style(get_style(_cursor))
+                    Span::from(format!("{:02x} ", *f)).add_modifier(Modifier::BOLD).style(_style)
                 }).collect::<Vec<_>>();
                 ll.append(&mut right);
             }
