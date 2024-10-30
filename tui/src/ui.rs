@@ -1,4 +1,4 @@
-use std::{fmt::Display, rc::Rc};
+use std::{fmt::Display, rc::Rc, time::Duration};
 
 use crate::{
     theme::{get_active_tab_color, get_color, get_protocol_color, ACTIVE_TAB_COLOR},
@@ -7,7 +7,7 @@ use crate::{
 
 use super::Result;
 
-use crossterm::event::KeyModifiers;
+use crossterm::event::{self, KeyModifiers};
 use ratatui::{
     buffer::Buffer,
     crossterm::event::{Event, KeyCode, KeyEventKind},
@@ -20,12 +20,17 @@ use ratatui::{
 };
 use shark::common::base::Instance;
 
+enum AppState {
+    RUNNING,
+    QUIT,
+}
+
 pub struct MainUI {
     selected: u8,
+    state: AppState,
     overview_page: super::overview::App,
     frame_page: super::frames::App,
     tcp_page: super::tcp::TCPList,
-    // instance: Rc<Instance>,
 }
 
 impl MainUI {
@@ -36,6 +41,7 @@ impl MainUI {
         // let stack_page = super::stack::StackView::new();
         Self {
             // instance,
+            state: AppState::RUNNING,
             tcp_page,
             overview_page,
             frame_page,
@@ -47,15 +53,46 @@ impl MainUI {
         terminal.draw(|frame| frame.render_widget(self, frame.area()))?;
         Ok(())
     }
-
+    pub fn run(&mut self) {
+        let mut terminal = ratatui::init();
+        loop {
+            let next_event = self.get_event();
+            if let AppState::QUIT = self.state {
+                break;
+            }
+            self.update(&mut terminal, next_event).unwrap();
+        }
+        ratatui::restore();
+    }
+    pub fn get_event(&mut self) -> Option<Event> {
+        let timeout = Duration::from_secs_f32(1.0 / 10.0);
+        let mut _event: Option<Event> = None;
+        if let Ok(_get) = event::poll(timeout) {
+            if _get {
+                if let Ok(_key) = event::read() {
+                    if let Event::Key(key) = &_key {
+                        if key.kind == KeyEventKind::Press {
+                            match key.code {
+                                KeyCode::Char('q') | KeyCode::Esc => self.state = AppState::QUIT,
+                                _ => {}
+                            }
+                        }
+                    }
+                    _event = Some(_key);
+                }
+            }
+        }
+        _event
+    }
+    
     fn get_view(&mut self) -> &mut dyn ControlPanel {
         match self.selected {
             1 => &mut self.frame_page,
             2 => &mut self.tcp_page,
-            _ => &mut self.overview_page
+            _ => &mut self.overview_page,
         }
     }
-    
+
     // fn get_wigit(&mut self) -> Box<&dyn Widget> {
     //     match self.selected {
     //         1 => Box::new(&mut self.frame_page),
@@ -80,14 +117,13 @@ impl MainUI {
                         match key.code {
                             KeyCode::Right => self.next_tab(),
                             KeyCode::Left => self.previous_tab(),
-                            _ => self.frame_page.control(_event)
+                            _ => self.frame_page.control(_event),
                         }
                     }
                     return Ok(());
                 }
                 self.get_view().control(_event);
             }
-            
         }
         Ok(())
     }
@@ -109,7 +145,7 @@ impl MainUI {
         match self.selected {
             1 => Line::raw("◄ ► to change page | SHIFT+(▲ ▼) to change panel | Press q or ESC to quit").centered().render(area, buf),
             // 2 => Line::raw("◄ ► to change page | SHIFT+(▲ ▼) to change panel | Press q or ESC to quit").centered().render(area, buf),
-            _ => Line::raw("SHIFT+(◄ ►) to change tab | Press q or ESC to quit").centered().render(area, buf)
+            _ => Line::raw("SHIFT+(◄ ►) to change tab | Press q or ESC to quit").centered().render(area, buf),
         }
     }
 }

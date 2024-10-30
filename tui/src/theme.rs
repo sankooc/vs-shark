@@ -103,5 +103,5 @@ pub fn get_color(class_name: &'static str) -> Style {
   }  
 }
 pub fn panel_color() -> Style {
-    Style::new().fg(GRUVBOX_BG_H_0)
+    Style::new().fg(GRUVBOX_FG)
 }

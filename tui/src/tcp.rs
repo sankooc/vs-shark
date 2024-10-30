@@ -4,7 +4,7 @@ use crossterm::event::Event;
 use ratatui::{layout::Constraint, widgets::{Cell, Widget}};
 use shark::common::{base::Instance, concept::TCPConversation};
 
-use crate::{control::{DataSource, UITable}, theme::{get_header_style, get_protocol_color, get_select}, ControlPanel};
+use crate::{control::{DataSource, UITable}, theme::{get_header_style, get_protocol_color}, ControlPanel};
 
 
 struct TCPMeta {
@@ -33,11 +33,11 @@ impl DataSource for TCPMeta {
     }
 
     fn select_style() -> ratatui::prelude::Style {
-        get_protocol_color("arp")
+        get_protocol_color("http")
     }
 
     fn get_cols() -> Vec<&'static str> {
-        vec!["Source", "Target", "s-acc", "s-throughput", "t-acc", "t-throughput", "count", "throughput"]
+        vec!["source", "target", "s-acc", "s-throughput", "t-acc", "t-throughput", "count", "throughput"]
     }
 
     fn cols_layout() -> Vec<ratatui::prelude::Constraint> {
@@ -45,7 +45,7 @@ impl DataSource for TCPMeta {
     }
 
     fn item_style(&self) -> ratatui::prelude::Style {
-        get_protocol_color("tls")
+        get_protocol_color("pppoed")
     }
 
     fn cell_data(&self) -> Vec<ratatui::widgets::Cell> {

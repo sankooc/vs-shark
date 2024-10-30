@@ -101,7 +101,7 @@ Install the **PcapViewer** extension from the [VSCode Marketplace](https://marke
 
 ### TUI 
 
-![](https://i.ibb.co/VSFHdBV/tui.gif)
+![](https://i.ibb.co/WVPTzP1/tui3.gif)
 
 #### Install
 
