@@ -5,7 +5,7 @@ pcap/pcapng analyzer in terminal
 
 ## DEMO
 
-![](https://i.ibb.co/VSFHdBV/tui.gif)
+![](https://i.ibb.co/WVPTzP1/tui3.gif)
 
 
 ## Install

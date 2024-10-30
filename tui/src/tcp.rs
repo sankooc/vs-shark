@@ -33,11 +33,11 @@ impl DataSource for TCPMeta {
     }
 
     fn select_style() -> ratatui::prelude::Style {
-        get_protocol_color("arp")
+        get_protocol_color("http")
     }
 
     fn get_cols() -> Vec<&'static str> {
-        vec!["Source", "Target", "s-acc", "s-throughput", "t-acc", "t-throughput", "count", "throughput"]
+        vec!["source", "target", "s-acc", "s-throughput", "t-acc", "t-throughput", "count", "throughput"]
     }
 
     fn cols_layout() -> Vec<ratatui::prelude::Constraint> {
@@ -45,7 +45,7 @@ impl DataSource for TCPMeta {
     }
 
     fn item_style(&self) -> ratatui::prelude::Style {
-        get_protocol_color("tls")
+        get_protocol_color("pppoed")
     }
 
     fn cell_data(&self) -> Vec<ratatui::widgets::Cell> {

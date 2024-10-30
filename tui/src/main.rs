@@ -22,7 +22,7 @@ fn main() -> Result<()> {
     let args = Args::parse();
     let fname = args.file;
     // let fname = "./sandbox/11.pcapng"; 
-    // let fname = "../sandbox/dns.pcapng";
+    // let fname = "./sandbox/dns.pcapng";
     if !fs::exists(fname.clone()).unwrap() {
         eprintln!("File [{fname}] not exists");
         process::exit(1);
