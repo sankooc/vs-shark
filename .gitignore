@@ -10,7 +10,7 @@ extension/media/
 # Added by cargo
 
 /target
-
+/release
 
 # Added by cargo
 #
