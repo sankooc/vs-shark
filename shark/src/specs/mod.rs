@@ -74,6 +74,7 @@ type TLS = PacketContext<tls::TLS>;
 type IEEE1905A = PacketContext<ethernet::ieee1905a::IEEE1905A>;
 type IEE80211 = PacketContext<ethernet::radiotap::IEE80211>;
 type NBNS = PacketContext<nbns::NBNS>;
+type Radiotap = PacketContext<ethernet::ieee80211::Radiotap>;
 
 #[enum_dispatch]
 #[derive(Display)]
@@ -103,6 +104,7 @@ pub enum ProtocolData {
     IEEE1905A,
     IEE80211,
     NBNS,
+    Radiotap,
 }
 
 pub fn _parse(proto: &'static str) -> anyhow::Result<&dyn Visitor>{
@@ -128,6 +130,7 @@ pub fn _parse(proto: &'static str) -> anyhow::Result<&dyn Visitor>{
         "mdns" => &dns::MDNSVisitor,
         "dhcp" => &dhcp::DHCPVisitor,
         "loopback" => &ethernet::null::NullVisitor,
+        "radiotap" => &ethernet::ieee80211::RadiotapVisitor,
         // "tls" => &tls::TLSVisitor,
         // "http" => &http::HTTPVisitor,
         _ => bail!("none"),

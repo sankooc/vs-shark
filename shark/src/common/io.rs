@@ -112,6 +112,10 @@ impl Reader {
     pub fn _read8(reader: &Reader) -> Result<u8> {
         reader.read8()
     }
+    pub fn _read_i8(reader: &Reader) -> Result<i8> {
+        let v = reader.read8()?;
+        Ok(i8::from_be_bytes([v]))
+    }
     pub fn _read16_be(reader: &Reader) -> Result<u16> {
         reader.read16(true)
     }
@@ -125,6 +129,12 @@ impl Reader {
     }
     pub fn _read32_ne(reader: &Reader) -> Result<u32> {
         reader.read32(false)
+    }
+    pub fn _read64_be(reader: &Reader) -> Result<u64> {
+        reader.read64(true)
+    }
+    pub fn _read64_ne(reader: &Reader) -> Result<u64> {
+        reader.read64(false)
     }
     pub fn _read_dns_query(reader: &Reader) -> Result<String> {
         reader.read_dns_query()

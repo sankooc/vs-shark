@@ -70,6 +70,7 @@ pub trait FieldBuilder<T> {
 
 pub type PacketOpt = usize;
 
+
 impl<T> PacketBuilder for MultiBlock<T> {
     fn new() -> MultiBlock<T> {
         Vec::new()
@@ -158,11 +159,11 @@ where
     pub fn _build_lazy(&self, reader: &Reader, start: usize, size: usize, props: Option<(&'static str, &'static str)>, render: fn(&T) -> String) {
         self.fields.borrow_mut().push(Box::new(StringPosition { start, size, data: reader.get_raw(), render, props }));
     }
-    pub fn build_packet_lazy<K: 'static>(&self, render: fn(&T) -> Option<PacketContext<K>>)
+    pub fn build_packet_no_position_lazy<K: 'static>(&self, render: fn(&T) -> Option<PacketContext<K>>)
     where
         K: PacketBuilder,
     {
-        self.fields.borrow_mut().push(Box::new(PhantomBuilder { render, props: None }));
+        self.fields.borrow_mut().push(Box::new(PhantomBuilder { start: 0, size: 0, data: Rc::new(Vec::new()), render, props: None }));
     }
     pub fn build_skip(&self, reader: &Reader, size: usize) {
         let start = reader.cursor();
@@ -290,11 +291,23 @@ where
         }));
         Ok(rs)
     }
+    pub fn build_packet_lazy<M, K: 'static>(&self, reader: &Reader, opt: impl FnOnce(&Reader) -> Result<M>, _props: Option<&'static str>, render: fn(&T) -> Option<PacketContext<K>>) -> Result<M> where K: PacketBuilder{
+        let start = reader.cursor();
+        let val: M = opt(reader)?;
+        let end = reader.cursor();
+        let size = end - start;
+        let data = reader.get_raw().clone();
+        self.fields.borrow_mut().push(Box::new(PhantomBuilder { start, size, data, render, props: None }));
+        Ok(val)
+    }
 }
 
 pub struct PhantomBuilder<K, T> {
     pub render: fn(&T) -> Option<PacketContext<K>>,
     props: Option<(&'static str, &'static str)>,
+    pub start: usize,
+    pub size: usize,
+    data: Rc<Vec<u8>>,
 }
 impl<K, T> FieldBuilder<T> for PhantomBuilder<K, T>
 where
@@ -304,7 +317,7 @@ where
         let _packet = (self.render)(t);
         if let Some(packet) = _packet {
             let sum = packet.get().borrow().summary();
-            let mut field = Field::new(0, 0, Rc::new(Vec::new()), sum);
+            let mut field = Field::new(self.start, self.size, Rc::new(Vec::new()), sum);
             let fields = packet.get_fields();
             field.children = fields;
             return Some(field);
@@ -313,7 +326,7 @@ where
     }
 
     fn data(&self) -> Rc<Vec<u8>> {
-        Rc::new(Vec::new())
+        self.data.clone()
     }
     fn get_props(&self) -> Option<(&'static str, &'static str)> {
         self.props.clone()

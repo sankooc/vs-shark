@@ -351,7 +351,7 @@ impl crate::common::base::Visitor for TCPVisitor {
         if left_size > 0 {
             packet._build(reader, reader.cursor(), p.payload_len.into(), Some(("tcp.playload.len", p.payload_len.to_string().leak())), format!("TCP payload ({} bytes)", left_size));
         }
-        packet.build_packet_lazy(TCP::segments);
+        packet.build_packet_no_position_lazy(TCP::segments);
         frame.add_tcp(packet._clone_obj());
         drop(p);
         Ok((ProtocolData::TCP(packet), "none"))
