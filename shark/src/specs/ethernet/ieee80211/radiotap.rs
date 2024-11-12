@@ -1,4 +1,10 @@
+use std::fmt::Display;
+
 use anyhow::{bail, Result};
+use pcap_derive::Packet2;
+use crate::common::base::{BitFlag, BitType, FlagData, Frame, PacketBuilder, PacketContext, PacketOpt};
+
+use crate::common::io::{AReader, Reader};
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum Kind {
     TSFT,
@@ -114,6 +120,124 @@ impl Kind {
             | Kind::RxFlags
             | Kind::TxFlags => 2,
             _ => 1,
+        }
+    }
+}
+
+#[derive(Default, Packet2)]
+pub struct MCS {
+    known: u8,
+    flag: u8,
+    index: u8,
+
+}
+impl Display for MCS {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        f.write_str("MCS information")
+    }
+}
+impl MCS {
+    fn known(&self) -> Option<PacketContext<BitFlag<u8>>> {
+        BitFlag::make::<MCSKnown>(self.known)
+    }
+    fn flag(&self) -> Option<PacketContext<BitFlag<u8>>> {
+        BitFlag::make::<MCSFlag>(self.flag)
+    }
+    fn _create(reader: &Reader, packet: &PacketContext<Self>, p: &mut std::cell::RefMut<Self>, _count: Option<usize>) -> Result<()> {
+        p.known = packet.build_packet_lazy(reader, Reader::_read8, None, MCS::known)?;
+        p.flag = packet.build_packet_lazy(reader, Reader::_read8, None, MCS::flag)?;
+        p.index = packet.build_format(reader, Reader::_read8, None, "MCS index: {}")?;
+        Ok(())
+    }
+}
+
+pub struct MCSKnown;
+
+impl FlagData<u8> for MCSKnown {
+    fn bits(inx: usize) -> Option<(u8, BitType<u8>)> {
+        match inx {
+            0 => {
+                Some((0x01, BitType::ABSENT("Bandwidth")))
+            }
+            1 => {
+                Some((0x02, BitType::ABSENT("MCS index")))
+            }
+            2 => {
+                Some((0x04, BitType::ABSENT("Guard interval")))
+            }
+            3 => {
+                Some((0x08, BitType::ABSENT("HT format")))
+            }
+            4 => {
+                Some((0x10, BitType::ABSENT("FEC type")))
+            }
+            5 => {
+                Some((0x20, BitType::ABSENT("STBC known")))
+            }
+            6 => {
+                Some((0x40, BitType::ABSENT("Ness known")))
+            }
+            7 => {
+                Some((0x80, BitType::ABSENT("Ness data")))
+            }
+            _ => None
+        }
+    }
+    
+    fn to_desc(_:usize, buffer: &mut String, word: &str, status: bool) {
+        buffer.push_str(word);
+        if status {
+            buffer.push_str(": Present");
+        } else {
+            buffer.push_str(": Absent");
+
+        }
+    }
+    
+    fn summary(title: &mut String, value: u8) {
+        title.push_str(format!("Known MCS information: {:#04x}", value).as_str());
+    }
+    
+    fn summary_ext(title: &mut String, desc: &str, status: bool) {
+        if status {
+            title.push_str(", ");
+            title.push_str(desc);
+        }
+    }
+}
+
+pub struct MCSFlag;
+impl FlagData<u8> for MCSFlag {
+    fn bits(inx: usize) -> Option<(u8, BitType<u8>)> {
+        match inx {
+            0 => {
+                Some((0x03, BitType::ONEoF(vec![(0x00, "bandwidth: 20"), (0x01, "bandwidth: 40"), (0x02, "bandwidth: 20L"), (0x03, "bandwidth: 20U")])))
+            }
+            1 => {
+                Some((0x04, BitType::ONEoF(vec![(0x00, "guard interval: long GI"), (0x04, "guard interval: short GI")])))
+            }
+            2 => {
+                Some((0x08, BitType::ONEoF(vec![(0x00, "HT format: mixed"), (0x08, "HT format: greenfield")])))
+            }
+            3 => {
+                Some((0x10, BitType::ONEoF(vec![(0x00, "FEC: BCC"), (0x10, "FEC: LDPC")])))
+            }
+            _ => None
+        }
+    }
+    
+    fn to_desc(_:usize, buffer: &mut String, word: &str, _: bool) {
+        buffer.push_str(word);
+    }
+    
+    fn summary(title: &mut String, value: u8) {
+        title.push_str(format!("Known Flag: {:#04x}", value).as_str());
+    }
+    
+    fn summary_ext(title: &mut String, desc: &str, status: bool) {
+        if status {
+            title.push_str(", ");
+            title.push_str(desc);
         }
     }
 }

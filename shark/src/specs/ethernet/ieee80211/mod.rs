@@ -1,11 +1,10 @@
-use std::fmt::{Binary, Display, Formatter};
-use std::ops::BitAnd;
+use std::fmt::{Display, Write};
 
 use anyhow::Result;
 use cons::get_he;
 use pcap_derive::{Packet2, Visitor3, NINFO};
 use radiotap::Kind;
-use crate::common::base::{PacketContext, PacketOpt};
+use crate::common::base::{BitFlag, BitType, FlagData, PacketContext, PacketOpt};
 use crate::common::io::AReader;
 use crate::{
     common::base::Frame,
@@ -23,7 +22,6 @@ pub struct Radiotap {
     revision: u8,
     pad: u8,
     length: u16,
-    mcs_known: u8,
 }
 
 impl Display for Radiotap {
@@ -32,9 +30,6 @@ impl Display for Radiotap {
     }
 }
 impl Radiotap {
-    fn mcs_known(&self) -> Option<PacketContext<BitFlag<u8>>> {
-        BitFlag::make::<MCSKnown>(self.mcs_known)
-    }
     fn _create(reader: &Reader, packet: &PacketContext<Self>, p: &mut std::cell::RefMut<Self>, _: Option<PacketOpt>) -> Result<()> {
         let start = reader.cursor();
         p.revision = packet.build_format(reader, Reader::_read8, Some("radiotap.header.revision"), "Header revision: {}")?;
@@ -71,7 +66,6 @@ impl Radiotap {
             }
         }
 
-        // present.reverse();
 
         for pre in present.iter() {
             if reader.cursor() >= finish {
@@ -89,7 +83,6 @@ impl Radiotap {
                 },
                 Kind::Flags => {
                     packet.build_format(reader, Reader::_read8, None, "Flags: {}")?;
-                    // reader.read8()?;
                 }
                 Kind::Rate => {
                     let v = reader.read8()? as f32;
@@ -185,9 +178,7 @@ impl Radiotap {
                     packet.build_backward(reader, 1, format!("x-channel max power: {}", maxpower));
                 }
                 Kind::MCS => {
-                    p.mcs_known = packet.build_packet_lazy(reader, Reader::_read8, None, Radiotap::mcs_known)?;
-                    let flag = reader.read8()?;
-                    let index = reader.read8()?;
+                    packet.build_packet(reader, radiotap::MCS::create, None, None)?;
                 }
                 Kind::AMPDUStatus => {
                     packet.build_format(reader, Reader::_read32_ne, None, "A-MPDU reference number: {}")?;
@@ -240,104 +231,6 @@ impl Radiotap {
     }
 }
 
-
-pub struct MCSKnown;
-
-impl FlagData<u8> for MCSKnown {
-    fn bits(inx: usize) -> Option<(u8, BitType<u8>)> {
-        match inx {
-            0 => {
-                Some((0x01, BitType::ABSENT("Bandwidth")))
-            }
-            1 => {
-                Some((0x02, BitType::ABSENT("MCS index")))
-            }
-            2 => {
-                Some((0x04, BitType::ABSENT("Guard interval")))
-            }
-            3 => {
-                Some((0x08, BitType::ABSENT("HT format")))
-            }
-            4 => {
-                Some((0x10, BitType::ABSENT("FEC type")))
-            }
-            5 => {
-                Some((0x20, BitType::ABSENT("STBC known")))
-            }
-            6 => {
-                Some((0x40, BitType::ABSENT("Ness known")))
-            }
-            7 => {
-                Some((0x80, BitType::ABSENT("Ness data")))
-            }
-            _ => None
-        }
-    }
-}
-
-#[derive(Clone)]
-pub enum BitType<T> {
-    ABSENT(&'static str),
-    ONEoF(Vec<(T, &'static str)>)
-}
-
-pub trait FlagData<T> where T:Binary + Copy + BitAnd + PartialEq<<T as BitAnd>::Output>, <T as BitAnd>::Output: PartialEq<T> {
-    fn bits(inx: usize) -> Option<(T, BitType<T>)>;
-}
-#[derive(Default)]
-pub struct BitFlag<T> where T:Binary + Copy + BitAnd + PartialEq<<T as BitAnd>::Output>, <T as BitAnd>::Output: PartialEq<T>  {
-    pub value: T
-}
-
-impl<T> std::fmt::Display for BitFlag<T> where T:Binary + Copy + BitAnd + PartialEq<<T as BitAnd>::Output>, <T as BitAnd>::Output: PartialEq<T> {
-    fn fmt(&self, fmt: &mut Formatter) -> std::fmt::Result {
-        fmt.write_str("BitFlag")
-    }
-}
-impl<T>  PacketBuilder for BitFlag< T> where T: Default + Binary + Copy + BitAnd + PartialEq<<T as BitAnd>::Output>, <T as BitAnd>::Output: PartialEq<T> {
-    fn new() -> Self {
-        Self {
-            ..Default::default()
-        }
-    }
-    fn summary(&self) -> String {
-        self.to_string()
-    }
-}
-impl<T>  BitFlag <T> where T:Default + Binary + Copy + BitAnd + PartialEq<<T as BitAnd>::Output> + 'static, <T as BitAnd>::Output: PartialEq<T> {
-    fn make<F>(value: T) -> Option<PacketContext<Self>> where F: FlagData<T> {
-        let packet: PacketContext<Self> = Frame::create_packet();
-        let mut p = packet.get().borrow_mut();
-        p.value = value;
-        let n = size_of_val(&value) * 8;
-        for inx in 0..n {
-            if let Some(info) = F::bits(inx) {
-                match &info.1 {
-                    BitType::ABSENT(desc) => {
-                        let mask = info.0;
-                        let (line, status): (String, &str) = BitFlag::print_line(mask, value);
-                        packet.build_txt(format!("{} = {}: {}", line, *desc, status));
-                    },
-                    BitType::ONEoF(list) => {}
-                }
-            }
-        }
-        drop(p);
-        Some(packet)
-    }
-    fn print_line(mask: T, value: T) -> (String, &'static str) where T:Binary + Copy + BitAnd, <T as BitAnd>::Output: PartialEq<T> {
-        let len = size_of_val(&mask) * 8;
-        let str = format!("{:0len$b}", mask);
-        let mut str2 = str.replace("0", ".");
-        for cur in 1..len/4 {
-            str2.insert_str(len - cur * 4, " ");
-        }
-        if mask & value != mask {
-            return (str2.replace("1", "0"), "Absent");
-        }
-        (str2, "Present")
-    }
-}
 
 #[derive(Visitor3)]
 pub struct RadiotapVisitor;
