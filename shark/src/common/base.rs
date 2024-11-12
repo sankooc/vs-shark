@@ -1691,13 +1691,13 @@ fn ts_to_str(ts: u64) -> String {
 
 #[derive(Clone)]
 pub enum BitType<T> {
-    ABSENT(&'static str),
+    ABSENT(&'static str, &'static str),
     ONEoF(Vec<(T, &'static str)>)
 }
 
 pub trait FlagData<T> where T:Binary + Copy + BitAnd + PartialEq<<T as BitAnd>::Output>, <T as BitAnd>::Output: PartialEq<T> {
     fn bits(inx: usize) -> Option<(T, BitType<T>)>;
-    fn to_desc(index:usize, buffer: &mut String, word: &str, status: bool);
+    // fn to_desc(index:usize, buffer: &mut String, word: &str, status: bool);
     fn summary(title: &mut String, value: T);
     fn summary_ext(title: &mut String, desc: &str, status: bool);
 }
@@ -1733,11 +1733,15 @@ impl<T>  BitFlag <T> where T:Default + Binary + Copy + BitAnd<Output = T> + Part
             if let Some(info) = F::bits(inx) {
                 let mask = info.0;
                 match &info.1 {
-                    BitType::ABSENT(desc) => {
+                    BitType::ABSENT(succ, failed) => {
                         let (line, status) = BitFlag::print_line(mask, value);
-                        F::summary_ext(&mut p.content, *desc, status);
+                        // F::summary_ext(&mut p.content, *desc, status);
                         let mut _content = format!("{} = ", line);
-                        F::to_desc(inx, &mut _content, *desc, status);
+                        if status {
+                            _content.push_str(&succ);
+                        } else {
+                            _content.push_str(&failed);
+                        }
                         packet.build_txt(_content);
                     },
                     BitType::ONEoF(list) => {
@@ -1745,8 +1749,7 @@ impl<T>  BitFlag <T> where T:Default + Binary + Copy + BitAnd<Output = T> + Part
                         for _cur in list.iter() {
                             if _cur.0 == _val {
                                 let line = BitFlag::print_line_match(mask, _val);
-                                let mut _content = format!("{} = ", line);
-                                F::to_desc(inx, &mut _content, _cur.1, true);
+                                let mut _content = format!("{} = {}", line, _cur.1);
                                 packet.build_txt(_content);
                                 break;
                             }

@@ -157,42 +157,42 @@ impl FlagData<u8> for MCSKnown {
     fn bits(inx: usize) -> Option<(u8, BitType<u8>)> {
         match inx {
             0 => {
-                Some((0x01, BitType::ABSENT("Bandwidth")))
+                Some((0x01, BitType::ABSENT("Bandwidth Present", "Bandwidth Absent")))
             }
             1 => {
-                Some((0x02, BitType::ABSENT("MCS index")))
+                Some((0x02, BitType::ABSENT("MCS index Present", "MCS index Absent")))
             }
             2 => {
-                Some((0x04, BitType::ABSENT("Guard interval")))
+                Some((0x04, BitType::ABSENT("Guard interval Present","Guard interval Absent")))
             }
             3 => {
-                Some((0x08, BitType::ABSENT("HT format")))
+                Some((0x08, BitType::ABSENT("HT format Present","HT format Absent")))
             }
             4 => {
-                Some((0x10, BitType::ABSENT("FEC type")))
+                Some((0x10, BitType::ABSENT("FEC type Present","FEC type Absent")))
             }
             5 => {
-                Some((0x20, BitType::ABSENT("STBC known")))
+                Some((0x20, BitType::ABSENT("STBC known Present","STBC known Absent")))
             }
             6 => {
-                Some((0x40, BitType::ABSENT("Ness known")))
+                Some((0x40, BitType::ABSENT("Ness known Present","Ness known Absent")))
             }
             7 => {
-                Some((0x80, BitType::ABSENT("Ness data")))
+                Some((0x80, BitType::ABSENT("Ness data Present","Ness data Absent")))
             }
             _ => None
         }
     }
     
-    fn to_desc(_:usize, buffer: &mut String, word: &str, status: bool) {
-        buffer.push_str(word);
-        if status {
-            buffer.push_str(": Present");
-        } else {
-            buffer.push_str(": Absent");
+    // fn to_desc(_:usize, buffer: &mut String, word: &str, status: bool) {
+    //     buffer.push_str(word);
+    //     if status {
+    //         buffer.push_str(": Present");
+    //     } else {
+    //         buffer.push_str(": Absent");
 
-        }
-    }
+    //     }
+    // }
     
     fn summary(title: &mut String, value: u8) {
         title.push_str(format!("Known MCS information: {:#04x}", value).as_str());
@@ -226,18 +226,60 @@ impl FlagData<u8> for MCSFlag {
         }
     }
     
-    fn to_desc(_:usize, buffer: &mut String, word: &str, _: bool) {
-        buffer.push_str(word);
-    }
+    // fn to_desc(_:usize, buffer: &mut String, word: &str, _: bool) {
+    //     buffer.push_str(word);
+    // }
     
     fn summary(title: &mut String, value: u8) {
         title.push_str(format!("Known Flag: {:#04x}", value).as_str());
     }
     
     fn summary_ext(title: &mut String, desc: &str, status: bool) {
-        if status {
-            title.push_str(", ");
-            title.push_str(desc);
+        // if status {
+        //     title.push_str(", ");
+        //     title.push_str(desc);
+        // }
+    }
+}
+
+
+pub struct Flags;
+
+impl FlagData<u8> for Flags {
+    fn bits(inx: usize) -> Option<(u8, BitType<u8>)> {
+        match inx {
+            0 => {
+                Some((0x01, BitType::ABSENT("CFP: True", "CFP: False")))
+            }
+            1 => {
+                Some((0x02, BitType::ABSENT("preamble: long", "preamble: short")))
+            }
+            2 => {
+                Some((0x04, BitType::ABSENT("WEP: True", "WEP: False")))
+            }
+            3 => {
+                Some((0x08, BitType::ABSENT("Fragmentation: True", "Fragmentation: False")))
+            }
+            4 => {
+                Some((0x10, BitType::ABSENT("FCS at end: True","FCS at end: False")))
+            }
+            5 => {
+                Some((0x20, BitType::ABSENT("Data Pad: True", "Data Pad: False")))
+            }
+            6 => {
+                Some((0x40, BitType::ABSENT("Bad FCS: True", "Bad FCS: False")))
+            }
+            7 => {
+                Some((0x80, BitType::ABSENT("Short GI: True", "Short GI: False")))
+            }
+            _ => None
         }
+    }
+    
+    fn summary(title: &mut String, value: u8) {
+        title.push_str(format!("Flags: {:#04x}", value).as_str());
+    }
+    
+    fn summary_ext(_: &mut String, _: &str, _: bool) {
     }
 }

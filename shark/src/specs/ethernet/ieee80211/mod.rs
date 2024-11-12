@@ -22,6 +22,7 @@ pub struct Radiotap {
     revision: u8,
     pad: u8,
     length: u16,
+    flags: u8,
 }
 
 impl Display for Radiotap {
@@ -30,6 +31,9 @@ impl Display for Radiotap {
     }
 }
 impl Radiotap {
+    fn flags(&self) -> Option<PacketContext<BitFlag<u8>>> {
+        BitFlag::make::<radiotap::Flags>(self.flags)
+    }
     fn _create(reader: &Reader, packet: &PacketContext<Self>, p: &mut std::cell::RefMut<Self>, _: Option<PacketOpt>) -> Result<()> {
         let start = reader.cursor();
         p.revision = packet.build_format(reader, Reader::_read8, Some("radiotap.header.revision"), "Header revision: {}")?;
@@ -82,7 +86,8 @@ impl Radiotap {
                     packet.build_format(reader, Reader::_read64_ne, None, "MAC timestamp: {}")?;
                 },
                 Kind::Flags => {
-                    packet.build_format(reader, Reader::_read8, None, "Flags: {}")?;
+                    // packet.build_format(reader, Reader::_read8, None, "Flags: {}")?;
+                    p.flags = packet.build_packet_lazy(reader, Reader::_read8, None, Radiotap::flags)?;
                 }
                 Kind::Rate => {
                     let v = reader.read8()? as f32;
