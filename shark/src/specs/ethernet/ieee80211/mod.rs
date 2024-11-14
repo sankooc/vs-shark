@@ -128,7 +128,6 @@ impl Radiotap {
                 }
                 Kind::AntennaSignalDb => {
                     packet.build_format(reader, Reader::_read_i8, None, "Antenna signal: {} dB")?;
-                    todo!("")
                 }
                 Kind::AntennaNoiseDb => {
                     packet.build_format(reader, Reader::_read_i8, None, "Antenna noise: {} dB")?;
@@ -176,7 +175,7 @@ impl Radiotap {
                     packet.build_packet(reader, radiotap::VHT::create, None, None)?;
                 }
                 Kind::Timestamp => {
-                    todo!("")
+                    packet.build_packet(reader, radiotap::TimeStamp::create, None, None)?;
                 }
                 Kind::HeInformation => {
                     for index in 1..7 {
@@ -199,9 +198,10 @@ impl Radiotap {
                     }
                 }
                 Kind::LSIG => {
-                    let data1 = reader.read16(false)?;
-                    let data2 = reader.read16(false)?;
-                    todo!("exp")
+                    let _data1 = reader.read16(false)?;
+                    let _data2 = reader.read16(false)?;
+                }
+                Kind::TLV => {
                 }
                 _ => {
                     let _size = pre.size();

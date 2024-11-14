@@ -210,6 +210,39 @@ impl VHT {
 }
 
 #[derive(Default, Packet2)]
+pub struct TimeStamp {
+    ts: u64,
+    accuracy: u16,
+    unit_position: u8,
+    flags: u8
+}
+impl Display for TimeStamp {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        f.write_str("Timestamp")
+    }
+}
+impl TimeStamp {
+    // fn flags(&self) -> Option<PacketContext<BitFlag<u16>>> {
+    //     BitFlag::make::<AMPDUFlag>(self.flags)
+    // }
+    fn _create(reader: &Reader, packet: &PacketContext<Self>, p: &mut std::cell::RefMut<Self>, _count: Option<usize>) -> Result<()> {
+        p.ts = reader.read64(false)?;
+        p.accuracy = reader.read16(false)?;
+        p.unit_position = reader.read8()?;
+        p.flags = reader.read8()?;
+        // packet.build_format(reader, Reader::_read32_ne, None, "A-MPDU reference number: {}")?;
+        // packet.build_format(reader, Reader::_read16_ne, None, "A-MPDU flags number: {}")?;
+        // reader.read16(false)?; // crc + reserved 
+        // p.reference = packet.build_format(reader, Reader::_read16_ne, None, "A-MPDU reference number: {}")?;
+        // p.flags = packet.build_packet_lazy(reader, Reader::_read16_ne, None, AMPDU::flags)?;
+        // reader.read16(false)?;
+        Ok(())
+    }
+}
+
+
+
+#[derive(Default, Packet2)]
 pub struct AMPDU {
     reference: u16,
     flags: u16,
@@ -537,3 +570,4 @@ impl FlagData<u16> for VHTKnown {
     fn summary_ext(_: &mut String, _: &str, _: bool) {
     }
 }
+
