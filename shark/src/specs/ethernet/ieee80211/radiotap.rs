@@ -199,10 +199,10 @@ impl VHT {
         packet.build_backward(reader, 1, band_txt.into());
         
         // let mut mcs_nss:[u8; 4] = [0; 4];
-        let mcs_nss = reader.read32(false)?;
-        let coding = reader.read8()?;
-        let group_id = reader.read8()?;
-        let partial_aid = reader.read16(false)?;
+        let _mcs_nss = reader.read32(false)?;
+        let _coding = reader.read8()?;
+        let _group_id = reader.read8()?;
+        let _partial_aid = reader.read16(false)?;
 
 
         Ok(())
@@ -225,7 +225,7 @@ impl TimeStamp {
     // fn flags(&self) -> Option<PacketContext<BitFlag<u16>>> {
     //     BitFlag::make::<AMPDUFlag>(self.flags)
     // }
-    fn _create(reader: &Reader, packet: &PacketContext<Self>, p: &mut std::cell::RefMut<Self>, _count: Option<usize>) -> Result<()> {
+    fn _create(reader: &Reader, _packet: &PacketContext<Self>, p: &mut std::cell::RefMut<Self>, _count: Option<usize>) -> Result<()> {
         p.ts = reader.read64(false)?;
         p.accuracy = reader.read16(false)?;
         p.unit_position = reader.read8()?;

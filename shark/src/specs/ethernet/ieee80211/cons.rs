@@ -1,32 +1,32 @@
-fn channel_flag(inx: usize) -> &'static str {
-    match inx {
-        0 => "700 MHz spectrum",
-        1 => "800 MHz spectrum",
-        2 => "900 MHz spectrum",
-        4 => "Turbo",
-        5 => "Complementary Code Keying (CCK)",
-        6 => "Orthogonal Frequency-Division Multiplexing (OFDM)",
-        7 => "2 GHz spectrum",
-        8 => "5 GHz spectrum",
-        9 => "Passive",
-        10 => "Dynamic CCK-OFDM",
-        11 => "Gaussian Frequency Shift Keying (GFSK)",
-        12 => "GSM (900MHz)",
-        13 => "Static Turbo",
-        14 => "Half Rate Channel (10MHz Channel Width)",
-        15 => "Quarter Rate Channel (5MHz Channel Width)",
-        _ => "",
-    }
-}
+// fn channel_flag(inx: usize) -> &'static str {
+//     match inx {
+//         0 => "700 MHz spectrum",
+//         1 => "800 MHz spectrum",
+//         2 => "900 MHz spectrum",
+//         4 => "Turbo",
+//         5 => "Complementary Code Keying (CCK)",
+//         6 => "Orthogonal Frequency-Division Multiplexing (OFDM)",
+//         7 => "2 GHz spectrum",
+//         8 => "5 GHz spectrum",
+//         9 => "Passive",
+//         10 => "Dynamic CCK-OFDM",
+//         11 => "Gaussian Frequency Shift Keying (GFSK)",
+//         12 => "GSM (900MHz)",
+//         13 => "Static Turbo",
+//         14 => "Half Rate Channel (10MHz Channel Width)",
+//         15 => "Quarter Rate Channel (5MHz Channel Width)",
+//         _ => "",
+//     }
+// }
 
-pub fn get_flag_list(builder: &mut String, val: u16) {
-    for inx in 0..16 {
-        if val & 1 << inx > 0 {
-            builder.push_str(", ");
-            builder.push_str(channel_flag(inx));
-        }
-    }
-}
+// pub fn _get_flag_list(builder: &mut String, val: u16) {
+//     for inx in 0..16 {
+//         if val & 1 << inx > 0 {
+//             builder.push_str(", ");
+//             builder.push_str(channel_flag(inx));
+//         }
+//     }
+// }
 
 pub fn bit_set(val: u16, mask: u16) -> bool {
     (val & mask) == mask

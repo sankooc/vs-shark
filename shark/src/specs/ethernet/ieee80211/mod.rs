@@ -14,6 +14,7 @@ use crate::common::base::PacketBuilder;
 use crate::specs::ProtocolData;
 use crate::specs::FIELDSTATUS;
 pub mod radiotap;
+pub mod i802;
 mod cons;
 
 

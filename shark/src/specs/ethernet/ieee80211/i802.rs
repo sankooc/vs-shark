@@ -5,6 +5,7 @@ use crate::common::io::AReader;
 use crate::common::MacAddress;
 use crate::common::FIELDSTATUS;
 use crate::constants::etype_mapper;
+use crate::specs::ethernet::get_next_from_type;
 use crate::specs::ProtocolData;
 use crate::{
     common::base::{Frame, PacketBuilder, PacketContext},
@@ -13,13 +14,11 @@ use crate::{
 use anyhow::{Ok, Result};
 use std::fmt::Display;
 
-use super::get_next_from_type;
-
 #[derive(Default, Packet2, NINFO)]
 pub struct IEE80211 {
-    version: u8,
-    len: u16,
-    present: u32,
+    // version: u8,
+    // len: u16,
+    // present: u32,
     // mac_ts: [u8; 8],
     // flag: u8,
     // channel_frequency: u16,
@@ -45,16 +44,16 @@ impl IEE80211 {
         format!("Protocol: {} ({:#06x})", etype_mapper(self.ptype), self.ptype)
     }
     fn _create(reader: &Reader, packet: &PacketContext<Self>, p: &mut std::cell::RefMut<Self>, _: Option<PacketOpt>) -> Result<()> {
-        p.version = packet.build_format(reader, Reader::_read8, Some("80211.version"), "Header revision: {}")?;
-        packet.build_format(reader, Reader::_read8, Some("80211.header.pad"), "Header pad: {}")?;
-        p.len = packet.build_format(reader, Reader::_read16_ne, Some("80211.header.len"), "Header length: {}")?;
-        p.present = packet.build_format(reader, Reader::_read32_ne, Some("80211.header.present"), "Header Presend: {}")?;
-        let _len = p.len - 8;
-        packet.build_skip(reader, _len as usize);
-        let left = reader.left();
-        if left < 34 {
-            return Ok(());
-        }
+        // p.version = packet.build_format(reader, Reader::_read8, Some("80211.version"), "Header revision: {}")?;
+        // packet.build_format(reader, Reader::_read8, Some("80211.header.pad"), "Header pad: {}")?;
+        // p.len = packet.build_format(reader, Reader::_read16_ne, Some("80211.header.len"), "Header length: {}")?;
+        // p.present = packet.build_format(reader, Reader::_read32_ne, Some("80211.header.present"), "Header Presend: {}")?;
+        // let _len = p.len - 8;
+        // packet.build_skip(reader, _len as usize);
+        // let left = reader.left();
+        // if left < 34 {
+        //     return Ok(());
+        // }
         p.head = reader.read16(true)?;
         p.duration = reader.read16(true)?;
         p.receiver = Some(packet.build_format(reader, Reader::_read_mac, Some("80211.receiver.address"), "Receiver address: {}")?);

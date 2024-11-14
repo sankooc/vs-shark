@@ -44,7 +44,7 @@ pub fn execute(file_type: &FileType, link_type: u32, _: &Frame, reader: &Reader)
             }
             "ethernet"
         }
-        127 => "ieee802.11",
+        127 => "radiotap",
         113 => "ssl",
         _ => "ethernet",
     }
@@ -72,7 +72,7 @@ type SSDP = PacketContext<ssdp::SSDP>;
 type IGMP = PacketContext<igmp::IGMP>;
 type TLS = PacketContext<tls::TLS>;
 type IEEE1905A = PacketContext<ethernet::ieee1905a::IEEE1905A>;
-type IEE80211 = PacketContext<ethernet::radiotap::IEE80211>;
+type IEE80211 = PacketContext<ethernet::ieee80211::i802::IEE80211>;
 type NBNS = PacketContext<nbns::NBNS>;
 type Radiotap = PacketContext<ethernet::ieee80211::Radiotap>;
 
@@ -113,7 +113,7 @@ pub fn _parse(proto: &'static str) -> anyhow::Result<&dyn Visitor>{
         "pppoes" => &ethernet::pppoes::PPPoESSVisitor,
         "pppoed" => &ethernet::pppoes::PPPoEDVisitor,
         "ssl" => &ethernet::ssl::SSLVisitor,
-        "ieee802.11" => &ethernet::radiotap::IEE80211Visitor,
+        "802.11" => &ethernet::ieee80211::i802::IEE80211Visitor,
         "ieee1905.a" => &ethernet::ieee1905a::IEEE1905AVisitor,
         "ipv4" => &ip4::IP4Visitor,
         "ipv6" => &ip6::IP6Visitor,

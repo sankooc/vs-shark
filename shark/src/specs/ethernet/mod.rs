@@ -1,7 +1,6 @@
 pub mod ieee1905a;
 pub mod ii;
 pub mod pppoes;
-pub mod radiotap;
 pub mod ssl;
 pub mod ieee80211;
 pub mod null;
