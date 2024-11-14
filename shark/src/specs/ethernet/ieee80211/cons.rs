@@ -1,5 +1,4 @@
-
-fn channel_flag(inx: usize) -> &'static str{
+fn channel_flag(inx: usize) -> &'static str {
     match inx {
         0 => "700 MHz spectrum",
         1 => "800 MHz spectrum",
@@ -20,11 +19,11 @@ fn channel_flag(inx: usize) -> &'static str{
     }
 }
 
-pub fn get_flag_list(builder: &mut String, val: u16){
+pub fn get_flag_list(builder: &mut String, val: u16) {
     for inx in 0..16 {
-        if val & 1<<inx > 0 {
-            builder.push_str(", ");  
-            builder.push_str(channel_flag(inx));     
+        if val & 1 << inx > 0 {
+            builder.push_str(", ");
+            builder.push_str(channel_flag(inx));
         }
     }
 }
@@ -40,7 +39,7 @@ pub fn bit_set32(val: u32, mask: u32) -> bool {
 // }
 
 pub fn _get_x_channel_flag(builder: &mut String, val: u32) {
-    let mut _append = | cont: &str | {
+    let mut _append = |cont: &str| {
         builder.push_str(", ");
         builder.push_str(cont);
     };
@@ -56,7 +55,7 @@ pub fn _get_x_channel_flag(builder: &mut String, val: u32) {
     if bit_set32(val, 0x00000080) {
         _append("Channel Type 2 GHz spectrum");
     }
-    
+
     if bit_set32(val, 0x00000100) {
         _append("Channel Type 5 GHz spectrum");
     }
@@ -94,7 +93,7 @@ pub fn _get_x_channel_flag(builder: &mut String, val: u32) {
 }
 
 pub fn get_he(index: u8, builder: &mut String, val: u16) {
-    let mut _append = | cont: &str | {
+    let mut _append = |cont: &str| {
         builder.push_str(", ");
         builder.push_str(cont);
     };
@@ -152,10 +151,8 @@ pub fn get_he(index: u8, builder: &mut String, val: u16) {
             if bit_set(val, 0x8000) {
                 _append("Doppler known");
             }
-            
         }
         2 => {
-            
             if bit_set(val, 0x0001) {
                 _append("pri/sec 80 MHz known");
             }
@@ -190,7 +187,7 @@ pub fn get_he(index: u8, builder: &mut String, val: u16) {
                 _append("pri/sec 80 MHz");
             }
         }
-        3 => {           
+        3 => {
             if bit_set(val, 0x003f) {
                 _append("BSS Color");
             }
@@ -236,9 +233,9 @@ pub fn get_he(index: u8, builder: &mut String, val: u16) {
                 8 => "484-tone RU",
                 9 => "996-tone RU",
                 10 => "2x996-tone RU",
-                _ => ""
+                _ => "",
             };
-            
+
             _append(format!("data Bandwidth/RU allocation: {}", ru).as_str());
 
             let set2 = val & 0x0030;
@@ -249,7 +246,7 @@ pub fn get_he(index: u8, builder: &mut String, val: u16) {
                 _ => "reserved",
             };
             _append(format!("GI : {}", gi).as_str());
-            let set3 = (val>>6) & 0x03;
+            let set3 = (val >> 6) & 0x03;
 
             let symbol_size = match set3 {
                 0 => "unknown",
@@ -258,8 +255,8 @@ pub fn get_he(index: u8, builder: &mut String, val: u16) {
                 _ => "4x",
             };
             _append(format!("LTF symbol size: {}", symbol_size).as_str());
-            
-            let set4 = (val>>8) & 0x07;
+
+            let set4 = (val >> 8) & 0x07;
             let symbol = match set4 {
                 0 => "1x",
                 1 => "2x",
@@ -279,7 +276,6 @@ pub fn get_he(index: u8, builder: &mut String, val: u16) {
             if bit_set(val, 0x8000) {
                 _append("PE Disambiguity");
             }
-
         }
         6 => {
             if bit_set(val, 0x0001) {
@@ -291,13 +287,45 @@ pub fn get_he(index: u8, builder: &mut String, val: u16) {
             if bit_set(val, 0x7f00) {
                 _append("TXOP value");
             }
-            let set2 = (val>>15) & 0x01;
+            let set2 = (val >> 15) & 0x01;
             if set2 == 1 {
                 _append("midamble periodicity: 20");
             } else {
                 _append("midamble periodicity: 10");
-            }         
+            }
         }
-        _ =>{}
+        _ => {}
+    }
+}
+
+pub fn get_vht_bandwidth(val: u8) -> &'static str {
+    match val {
+        0 => "bandwidth: 20MHz",
+        1 => "bandwidth: 40MHz",
+        4 => "bandwidth: 80MHz",
+        11 => "bandwidth: 160MHz",
+        2 => "bandwidth: 40MHz, sideband: 20L, sideband index: 0",
+        3 => "bandwidth: 40MHz, sideband: 20U, sideband index: 1",
+        5 => "bandwidth: 80MHz, sideband: 40L, sideband index: 0",
+        6 => "bandwidth: 80MHz, sideband: 40U, sideband index: 1",
+        7 => "bandwidth: 80MHz, sideband: 20LL, sideband index: 0",
+        8 => "bandwidth: 80MHz, sideband: 20LU, sideband index: 1",
+        9 => "bandwidth: 80MHz, sideband: 20UL, sideband index: 2",
+        10 => "bandwidth: 80MHz, sideband: 20UU, sideband index: 3",
+        12 => "bandwidth: 160MHz, sideband: 80L, sideband index: 0",
+        13 => "bandwidth: 160MHz, sideband: 80U, sideband index: 1",
+        14 => "bandwidth: 160MHz, sideband: 40LL, sideband index: 0",
+        15 => "bandwidth: 160MHz, sideband: 40LU, sideband index: 1",
+        16 => "bandwidth: 160MHz, sideband: 40UL, sideband index: 2",
+        17 => "bandwidth: 160MHz, sideband: 40UU, sideband index: 3",
+        18 => "bandwidth: 160MHz, sideband: 20LLL, sideband index: 0",
+        19 => "bandwidth: 160MHz, sideband: 20LLU, sideband index: 1",
+        20 => "bandwidth: 160MHz, sideband: 20LUL, sideband index: 2",
+        21 => "bandwidth: 160MHz, sideband: 20LUU, sideband index: 3",
+        22 => "bandwidth: 160MHz, sideband: 20ULL, sideband index: 4",
+        23 => "bandwidth: 160MHz, sideband: 20ULU, sideband index: 5",
+        24 => "bandwidth: 160MHz, sideband: 20UUL, sideband index: 6",
+        25 => "bandwidth: 160MHz, sideband: 20UUU, sideband index: 7",
+        _ => "",
     }
 }

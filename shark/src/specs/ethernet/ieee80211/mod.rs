@@ -1,10 +1,10 @@
-use std::fmt::{Display, Write};
+use std::fmt::Display;
 
 use anyhow::Result;
 use cons::get_he;
 use pcap_derive::{Packet2, Visitor3, NINFO};
 use radiotap::Kind;
-use crate::common::base::{BitFlag, BitType, FlagData, PacketContext, PacketOpt};
+use crate::common::base::{BitFlag, PacketContext, PacketOpt};
 use crate::common::io::AReader;
 use crate::{
     common::base::Frame,
@@ -23,6 +23,7 @@ pub struct Radiotap {
     pad: u8,
     length: u16,
     flags: u8,
+    tx_flags: u16,
 }
 
 impl Display for Radiotap {
@@ -33,6 +34,9 @@ impl Display for Radiotap {
 impl Radiotap {
     fn flags(&self) -> Option<PacketContext<BitFlag<u8>>> {
         BitFlag::make::<radiotap::Flags>(self.flags)
+    }
+    fn tx_flags(&self) -> Option<PacketContext<BitFlag<u16>>> {
+        BitFlag::make::<radiotap::TXFlags>(self.tx_flags)
     }
     fn _create(reader: &Reader, packet: &PacketContext<Self>, p: &mut std::cell::RefMut<Self>, _: Option<PacketOpt>) -> Result<()> {
         let start = reader.cursor();
@@ -86,7 +90,6 @@ impl Radiotap {
                     packet.build_format(reader, Reader::_read64_ne, None, "MAC timestamp: {}")?;
                 },
                 Kind::Flags => {
-                    // packet.build_format(reader, Reader::_read8, None, "Flags: {}")?;
                     p.flags = packet.build_packet_lazy(reader, Reader::_read8, None, Radiotap::flags)?;
                 }
                 Kind::Rate => {
@@ -94,11 +97,12 @@ impl Radiotap {
                     packet.build_backward(reader, 1, format!("Data Rate: {:.01} Mb/s",v/2.0));
                 }
                 Kind::Channel => {
-                    packet.build_format(reader, Reader::_read16_ne, None, "Channel frequency: {}")?;
-                    let c_flag = reader.read16(false)?;
-                    let mut str = format!("Channel flags: {:#06x}", c_flag);
-                    cons::get_flag_list(&mut str, c_flag);
-                    packet.build_backward(reader, 2, str);
+                    packet.build_packet(reader, radiotap::Channel::create, None, None)?;
+                    // packet.build_format(reader, Reader::_read16_ne, None, "Channel frequency: {}")?;
+                    // let c_flag = reader.read16(false)?;
+                    // let mut str = format!("Channel flags: {:#06x}", c_flag);
+                    // cons::get_flag_list(&mut str, c_flag);
+                    // packet.build_backward(reader, 2, str);
                 }
                 Kind::FHSS => {
                     packet.build_format(reader, Reader::_read8, None, "FHSS hop set: {}")?;
@@ -140,27 +144,7 @@ impl Radiotap {
                     }
                 }
                 Kind::TxFlags => {
-                    let _start = reader.cursor();
-
-                    let _val = reader.read16(false)?;
-                    if cons::bit_set(_val, 0x0001) {
-                        packet._build(reader,_start, _start + 2, None,"Transmission failed due to excessive retries".into());
-                    }
-                    if cons::bit_set(_val, 0x0002) {
-                        packet._build(reader,_start, _start + 2, None,"Transmission used CTS-to-self protection".into());
-                    }
-                    if cons::bit_set(_val, 0x0004) {
-                        packet._build(reader,_start, _start + 2, None,"Transmission used RTS/CTS handshake".into());
-                    }
-                    if cons::bit_set(_val, 0x0008) {
-                        packet._build(reader,_start, _start + 2, None,"Transmission shall not expect an ACK frame and not retry when no ACK is received".into());
-                    }
-                    if cons::bit_set(_val, 0x0010) {
-                        packet._build(reader,_start, _start + 2, None,"Transmission includes a pre-configured sequence number that should not be changed by the driver’s TX handlers".into());
-                    }
-                    if cons::bit_set(_val, 0x0020) {
-                        packet._build(reader,_start, _start + 2, None,"Transmission should not be reordered relative to other frames that have this flag set".into());
-                    }
+                    p.tx_flags = packet.build_packet_lazy(reader, Reader::_read16_ne, None, Radiotap::tx_flags)?;
                 }
                 Kind::RTSRetries => {
                     // todo OpenBSD u16
@@ -186,15 +170,10 @@ impl Radiotap {
                     packet.build_packet(reader, radiotap::MCS::create, None, None)?;
                 }
                 Kind::AMPDUStatus => {
-                    packet.build_format(reader, Reader::_read32_ne, None, "A-MPDU reference number: {}")?;
-                    packet.build_format(reader, Reader::_read16_ne, None, "A-MPDU flags number: {}")?;
-                    reader.read16(false)?; // crc + reserved 
+                    packet.build_packet(reader, radiotap::AMPDU::create, None, None)?;
                 }
                 Kind::VHT => {
-                    let known = reader.read16(false)?;
-                    let flags = reader.read8()?;
-                    let bandwidth = reader.read8()?;
-                    todo!("")
+                    packet.build_packet(reader, radiotap::VHT::create, None, None)?;
                 }
                 Kind::Timestamp => {
                     todo!("")
