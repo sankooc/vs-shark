@@ -1,10 +1,14 @@
 use pcap_derive::{Packet2, Visitor3, NINFO};
 
+use crate::common::base::BitFlag;
+use crate::common::base::BitType;
+use crate::common::base::FlagData;
 use crate::common::base::PacketOpt;
 use crate::common::io::AReader;
 use crate::common::MacAddress;
 use crate::common::FIELDSTATUS;
 use crate::constants::etype_mapper;
+use crate::constants::ieee802_subtype_mapper;
 use crate::specs::ethernet::get_next_from_type;
 use crate::specs::ProtocolData;
 use crate::{
@@ -14,19 +18,36 @@ use crate::{
 use anyhow::{Ok, Result};
 use std::fmt::Display;
 
+pub struct Flag;
+
+impl FlagData<u8> for Flag {
+    fn bits(inx: usize) -> Option<(u8, BitType<u8>)> {
+        match inx {
+            0 => Some((0x03, BitType::ONEoF(vec![(0x00, "DS status: From DS: 0"), (0x01, "DS status: To DS: 1")]))),
+            1 => Some((0x04, BitType::ABSENT("More Fragments: More fragments follow", "More Fragments: This is the last fragment"))),
+            3 => Some((0x08, BitType::ABSENT("Retry: Frame is being retransmitted", "Retry: Frame is not being retransmitted"))),
+            4 => Some((0x10, BitType::ABSENT("PWR MGT: STA will go to sleep", "PWR MGT: STA will stay up"))),
+            5 => Some((0x20, BitType::ABSENT("More Data: Data is buffered for STA at AP", "More Data: No data buffered"))),
+            6 => Some((0x40, BitType::ABSENT("Protected flag: Data is protected", "Protected flag: Data is not protected"))),
+            7 => Some((0x80, BitType::ABSENT("+HTC/Order flag: strictly ordered", "+HTC/Order flag: Not strictly ordered"))),
+            _ => None,
+        }
+    }
+
+    fn summary(title: &mut String, value: u8) {
+        title.push_str(format!("Frame Control Field: {:#06x}", value).as_str());
+    }
+
+    fn summary_ext(_: &mut String, _: &str, _: bool) {}
+}
+
 #[derive(Default, Packet2, NINFO)]
 pub struct IEE80211 {
-    // version: u8,
-    // len: u16,
-    // present: u32,
-    // mac_ts: [u8; 8],
-    // flag: u8,
-    // channel_frequency: u16,
-    // channel_flag: u16,
-    // antenna_signal: u8,
-    // antenna_noise: u8,
-    // antenna: u8,
-    head: u16,
+    // head: u16,
+    version: u8,
+    _type: u8,
+    sub_type: u8,
+    flag: u8,
     duration: u16,
     receiver: Option<MacAddress>,
     transmitter: Option<MacAddress>,
@@ -40,21 +61,38 @@ pub struct IEE80211 {
     // organization_code: [] //Organization Code: 00:00:00 (Officially Xerox, but
 }
 impl IEE80211 {
+    fn flag(&self) -> Option<PacketContext<BitFlag<u8>>> {
+        BitFlag::make::<Flag>(self.flag)
+    }
     fn ptype_str(&self) -> String {
         format!("Protocol: {} ({:#06x})", etype_mapper(self.ptype), self.ptype)
     }
     fn _create(reader: &Reader, packet: &PacketContext<Self>, p: &mut std::cell::RefMut<Self>, _: Option<PacketOpt>) -> Result<()> {
-        // p.version = packet.build_format(reader, Reader::_read8, Some("80211.version"), "Header revision: {}")?;
-        // packet.build_format(reader, Reader::_read8, Some("80211.header.pad"), "Header pad: {}")?;
-        // p.len = packet.build_format(reader, Reader::_read16_ne, Some("80211.header.len"), "Header length: {}")?;
-        // p.present = packet.build_format(reader, Reader::_read32_ne, Some("80211.header.present"), "Header Presend: {}")?;
-        // let _len = p.len - 8;
-        // packet.build_skip(reader, _len as usize);
-        // let left = reader.left();
-        // if left < 34 {
-        //     return Ok(());
-        // }
-        p.head = reader.read16(true)?;
+        let head = reader.read8()?;
+        p.version = head & 0x03;
+        p._type = (head >> 2) & 0x03;
+        p.sub_type = head >> 4;
+        match p._type {
+            1 => {
+                p.sub_type += 16;
+            }
+            2 => {
+                p.sub_type += 32;
+            }
+            _ => {}
+        }
+        let _type_desc = match p._type {
+            0 => "Management Frame (0)",
+            1 => "Control Frame (1)",
+            2 => "Data Frame (2)",
+            _ => "Extension",
+        };
+        packet.build_backward(reader, 1, format!("Version: {}", p.version));
+        packet.build_backward(reader, 1, format!("Type: {}", _type_desc));
+        packet.build_backward(reader, 1, format!("Subtype: {}", ieee802_subtype_mapper(p.sub_type)));
+
+        p.flag = packet.build_packet_lazy(reader, Reader::_read8, None, IEE80211::flag)?;
+        // p.head = reader.read16(true)?;
         p.duration = reader.read16(true)?;
         p.receiver = Some(packet.build_format(reader, Reader::_read_mac, Some("80211.receiver.address"), "Receiver address: {}")?);
         p.transmitter = Some(packet.build_format(reader, Reader::_read_mac, Some("80211.transmitter.address"), "Transmitter address: {}")?);
@@ -67,7 +105,7 @@ impl IEE80211 {
         p.ssap = reader.read8()?;
         p.control_field = reader.read8()?;
         reader._move(3);
-        p.ptype = packet.build_lazy(reader, Reader::_read16_be, Some("80211.prorocol.type"),IEE80211::ptype_str)?;
+        p.ptype = packet.build_lazy(reader, Reader::_read16_be, Some("80211.prorocol.type"), IEE80211::ptype_str)?;
         Ok(())
     }
 }

@@ -14,6 +14,9 @@ use std::collections::HashMap;
 const DNS_TYPE_MAP = rebuild('dns_type', parseInt);
 const PPP_TYPE_MAP = rebuild('ppp_type', parseInt);
 const PPP_LCP_TYPE_MAP = rebuild('ppp_lcp_type', parseInt);
+// const IEEE802_MANAGE = rebuild('ieee802_m', parseInt);
+const IEEE802_MANAGE = rebuild('ieee802_m', (v) => parseInt(v, 16));
+// const PPP_LCP_TYPE_MAP = rebuild('ppp_lcp_type', parseInt);
 
 const buildConstants = (name, obj, fn, typed) => {
   const wk = Object.keys(obj).map((k) => {return `\t\tm.insert(${fn(k)}, "${obj[k]}");`}).join('\r\n');
@@ -37,6 +40,7 @@ const items = [
   ['tcp_option_kind', TCP_OPTION_KIND_MAP, k => parseInt(k, 10), 'u16'],
   ['dns_class', DNS_CLASS_MAP,  k => parseInt(k, 10), 'u16'],
   ['dns_type', DNS_TYPE_MAP,  k => parseInt(k, 10), 'u16'],
+  ['ieee802_subtype', IEEE802_MANAGE, k => parseInt(k, 10), 'u8'],
   ['ppp_lcp_option_type', PPP_LCP_OPTION_MAP,  k => parseInt(k, 10), 'u8'],
   ['ppp_type', PPP_TYPE_MAP,  k => parseInt(k, 10), 'u16'],
   ['ppp_lcp_type', PPP_LCP_TYPE_MAP,  k => parseInt(k, 10), 'u8'],
@@ -57,7 +61,7 @@ const items = [
   ['hash_algorithm', TLS_hash_algorithm, k => parseInt(k, 10), 'u8', 'none'],
   ['signature_algorithm', TLS_signature_algorithm, k => parseInt(k, 10), 'u8', 'none'],
 ];
-//DHCP_OPTION_TYPE
+
 const conts = items.map((item) => buildConstants(item[0]+'_map', item[1], item[2], item[3]));
 
 let _content = str + "lazy_static! {\r\n" + conts.join('')+ "}";

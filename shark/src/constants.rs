@@ -519,6 +519,53 @@ lazy_static! {
 		m.insert(65422, "XPF");
 		m
 	};
+	pub static ref ieee802_subtype_map: HashMap<u8, &'static str> = {
+		let mut m = HashMap::new();
+		m.insert(0, "Association Request");
+		m.insert(1, "Association Response");
+		m.insert(2, "Reassociation Request");
+		m.insert(3, "Reassociation Response");
+		m.insert(4, "Probe Request");
+		m.insert(5, "Probe Response");
+		m.insert(6, "Measurement Pilot");
+		m.insert(8, "Beacon frame");
+		m.insert(9, "ATIM");
+		m.insert(10, "Disassociate");
+		m.insert(11, "Authentication");
+		m.insert(12, "Deauthentication");
+		m.insert(13, "Action");
+		m.insert(14, "Action No Ack");
+		m.insert(15, "Aruba Management");
+		m.insert(18, "Trigger");
+		m.insert(19, "TWT Ack");
+		m.insert(20, "Beamforming Report Poll");
+		m.insert(21, "VHT/HE/EHT/RANGING NDP Announcement");
+		m.insert(23, "Control Wrapper");
+		m.insert(24, "802.11 Block Ack Req");
+		m.insert(25, "802.11 Block Ack");
+		m.insert(26, "Power-Save poll");
+		m.insert(27, "Request-to-send");
+		m.insert(28, "Clear-to-send");
+		m.insert(29, "Acknowledgement");
+		m.insert(30, "CF-End (Control-frame)");
+		m.insert(31, "CF-End + CF-Ack (Control-frame)");
+		m.insert(32, "Data");
+		m.insert(33, "Data + CF-Ack");
+		m.insert(34, "Data + CF-Poll");
+		m.insert(35, "Data + CF-Ack + CF-Poll");
+		m.insert(36, "Null function (No data)");
+		m.insert(37, "Acknowledgement (No data)");
+		m.insert(38, "CF-Poll (No data)");
+		m.insert(39, "CF-Ack/Poll (No data)");
+		m.insert(40, "QoS Data");
+		m.insert(41, "QoS Data + CF-Acknowledgment");
+		m.insert(42, "QoS Data + CF-Poll");
+		m.insert(43, "QoS Data + CF-Ack + CF-Poll");
+		m.insert(44, "QoS Null function (No data)");
+		m.insert(46, "QoS CF-Poll (No Data)");
+		m.insert(47, "QoS CF-Ack + CF-Poll (No data)");
+		m
+	};
 	pub static ref ppp_lcp_option_type_map: HashMap<u8, &'static str> = {
 		let mut m = HashMap::new();
 		m.insert(0, "Vendor Specific");
@@ -2426,6 +2473,9 @@ pub fn dns_class_mapper(code:u16) -> String {
   }
 pub fn dns_type_mapper(code:u16) -> String {
     (*dns_type_map.get(&code).unwrap_or(&"unknown")).into()
+  }
+pub fn ieee802_subtype_mapper(code:u8) -> String {
+    (*ieee802_subtype_map.get(&code).unwrap_or(&"unknown")).into()
   }
 pub fn ppp_lcp_option_type_mapper(code:u8) -> String {
     (*ppp_lcp_option_type_map.get(&code).unwrap_or(&"unknown")).into()

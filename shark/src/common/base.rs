@@ -1692,7 +1692,8 @@ fn ts_to_str(ts: u64) -> String {
 #[derive(Clone)]
 pub enum BitType<T> {
     ABSENT(&'static str, &'static str),
-    ONEoF(Vec<(T, &'static str)>)
+    ONEoF(Vec<(T, &'static str)>),
+    VAL(&'static str, usize, T)
 }
 
 pub trait FlagData<T> where T:Binary + Copy + BitAnd + PartialEq<<T as BitAnd>::Output>, <T as BitAnd>::Output: PartialEq<T> {
@@ -1722,7 +1723,7 @@ impl<T>  PacketBuilder for BitFlag< T> where T: Default + Binary + Copy + BitAnd
         self.to_string()
     }
 }
-impl<T>  BitFlag <T> where T:Default + Binary + Copy + BitAnd<Output = T> + PartialEq<<T as BitAnd>::Output> + 'static, <T as BitAnd>::Output: PartialEq<T> {
+impl<T>  BitFlag <T> where T:Default + Binary + Copy + std::fmt::Display + BitAnd<Output = T> + PartialEq<<T as BitAnd>::Output> + 'static + std::ops::Shr<usize, Output = T> + std::ops::Shl<usize, Output = T>, <T as BitAnd>::Output: PartialEq<T> {
     pub fn make<F>(value: T) -> Option<PacketContext<Self>> where F: FlagData<T> {
         let packet: PacketContext<Self> = Frame::create_packet();
         let mut p = packet.get().borrow_mut();
@@ -1754,6 +1755,13 @@ impl<T>  BitFlag <T> where T:Default + Binary + Copy + BitAnd<Output = T> + Part
                                 break;
                             }
                         }
+                    },
+                    BitType::VAL(prefix, offset, wid ) => {
+                        let val = (value >> *offset) & *wid;
+                        let mask = *wid << *offset;
+                        let line = BitFlag::print_line_match(mask, value);
+                        let mut _content = format!("{} = {}: {}", line,*prefix, val);
+                        packet.build_txt(_content);
                     }
                 }
             }
@@ -1761,6 +1769,23 @@ impl<T>  BitFlag <T> where T:Default + Binary + Copy + BitAnd<Output = T> + Part
         drop(p);
         Some(packet)
     }
+    // fn print_line_off(value: T, mask: T) -> String where T:Binary + Copy + BitAnd, <T as BitAnd>::Output: PartialEq<T> {
+    //     let len = size_of_val(&mask) * 8;
+    //     let str = format!("{:0len$b}", mask);
+    //     let tar = format!("{:0len$b}", value);
+    //     let mut str2 = str.replace("0", ".");
+    //     // str2 = str2.replace("1", "0");
+    //     // let mut chars2 = tar.chars();
+    //     // for cur in 0..len {
+    //     //     if '1' == chars2.nth(0).unwrap() {
+    //     //         str2.replace_range(cur..cur+1, "1");
+    //     //     }
+    //     // }
+    //     // for cur in 1..len/4 {
+    //     //     str2.insert_str(len - cur * 4, " ");
+    //     // }
+    //     // str2
+    // }
     fn print_line(mask: T, value: T) -> (String, bool) where T:Binary + Copy + BitAnd, <T as BitAnd>::Output: PartialEq<T> {
         let len = size_of_val(&mask) * 8;
         let str = format!("{:0len$b}", mask);

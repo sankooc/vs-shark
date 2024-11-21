@@ -47,7 +47,7 @@ impl crate::common::base::InfoPacket for ARP {
             if self.source_ip_address() == self.target_ip_address() {
                 format!("ARP Announcement for {}", self.source_ip_address())
             } else {
-                format!("who has {}? tell {}", self.target_ip_address(), self.source_ip_address())
+                format!("Who has {}? tell {}", self.target_ip_address(), self.source_ip_address())
             }
         } else {
             format!("{} at {}", self.target_ip_address(), self.source_ip_address())
