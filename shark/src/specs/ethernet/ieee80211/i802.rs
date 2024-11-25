@@ -10,6 +10,7 @@ use crate::common::FIELDSTATUS;
 use crate::constants::etype_mapper;
 use crate::constants::ieee802_subtype_mapper;
 use crate::specs::ethernet::get_next_from_type;
+use crate::specs::ethernet::ieee80211::mnt::Management;
 use crate::specs::ProtocolData;
 use crate::{
     common::base::{Frame, PacketBuilder, PacketContext},
@@ -17,6 +18,7 @@ use crate::{
 };
 use anyhow::{Ok, Result};
 use std::fmt::Display;
+use std::rc::Rc;
 
 pub struct Flag;
 
@@ -45,8 +47,8 @@ impl FlagData<u8> for Flag {
 pub struct IEE80211 {
     // head: u16,
     version: u8,
-    _type: u8,
-    sub_type: u8,
+    pub _type: u8,
+    pub sub_type: u8,
     flag: u8,
     duration: u16,
     receiver: Option<MacAddress>,
@@ -58,11 +60,23 @@ pub struct IEE80211 {
     ssap: u8,
     control_field: u8,
     ptype: u16,
-    // organization_code: [] //Organization Code: 00:00:00 (Officially Xerox, but
+    data: Option<Vec<u8>>, // organization_code: [] //Organization Code: 00:00:00 (Officially Xerox, but
 }
 impl IEE80211 {
     fn flag(&self) -> Option<PacketContext<BitFlag<u8>>> {
         BitFlag::make::<Flag>(self.flag)
+    }
+    /// If this is a management frame, parse the body of the frame using
+    /// Management::create. The returned PacketContext will contain the
+    /// parsed fields of the management frame. If the frame is not a
+    /// management frame, or if the frame body is not valid, this
+    /// function returns None.
+    fn management(&self) -> Option<PacketContext<Management>> {
+        if let Some(_data) = &self.data {
+            let _reader = Reader::new_raw(Rc::new(_data.clone()));
+            return Management::create(&_reader, self).ok();
+        }
+        None
     }
     fn ptype_str(&self) -> String {
         format!("Protocol: {} ({:#06x})", etype_mapper(self.ptype), self.ptype)
@@ -72,12 +86,13 @@ impl IEE80211 {
         p.version = head & 0x03;
         p._type = (head >> 2) & 0x03;
         p.sub_type = head >> 4;
-        match p._type {
+        let mut stype = p.sub_type;
+        match stype {
             1 => {
-                p.sub_type += 16;
+                stype += 16;
             }
             2 => {
-                p.sub_type += 32;
+                stype += 32;
             }
             _ => {}
         }
@@ -89,23 +104,55 @@ impl IEE80211 {
         };
         packet.build_backward(reader, 1, format!("Version: {}", p.version));
         packet.build_backward(reader, 1, format!("Type: {}", _type_desc));
-        packet.build_backward(reader, 1, format!("Subtype: {}", ieee802_subtype_mapper(p.sub_type)));
+        packet.build_backward(reader, 1, format!("Subtype: {}", ieee802_subtype_mapper(stype)));
 
         p.flag = packet.build_packet_lazy(reader, Reader::_read8, None, IEE80211::flag)?;
+        let to_ds = (p.flag & 0x01) > 0;
+        let from_ds = (p.flag & 0x02) > 0;
+        let data_protected = p.flag & 0x40 > 0;
+        
         // p.head = reader.read16(true)?;
-        p.duration = reader.read16(true)?;
-        p.receiver = Some(packet.build_format(reader, Reader::_read_mac, Some("80211.receiver.address"), "Receiver address: {}")?);
-        p.transmitter = Some(packet.build_format(reader, Reader::_read_mac, Some("80211.transmitter.address"), "Transmitter address: {}")?);
-        p.destination = Some(packet.build_format(reader, Reader::_read_mac, Some("80211.destination.address"), "Destination address: {}")?);
-        let _sq = packet.build_format(reader, Reader::_read16_ne, Some("80211.sequence.no"), "Sequence No: {}")?;
-        p.sequence = _sq >> 4;
-        p.qos = packet.build_format(reader, Reader::_read16_ne, Some("80211.qos.control"), "Qos Control: {}")?;
-
-        p.dsap = reader.read8()?;
-        p.ssap = reader.read8()?;
-        p.control_field = reader.read8()?;
-        reader._move(3);
-        p.ptype = packet.build_lazy(reader, Reader::_read16_be, Some("80211.prorocol.type"), IEE80211::ptype_str)?;
+        match p._type {
+            0 => {
+                p.duration = reader.read16(true)?;
+                p.receiver = Some(packet.build_format(reader, Reader::_read_mac, Some("80211.receiver.address"), "Receiver address: {}")?);
+                p.transmitter = Some(packet.build_format(reader, Reader::_read_mac, Some("80211.transmitter.address"), "Transmitter address: {}")?);
+                p.destination = Some(packet.build_format(reader, Reader::_read_mac, Some("80211.destination.address"), "Destination address: {}")?);
+                let _sq = packet.build_format(reader, Reader::_read16_ne, Some("80211.sequence.no"), "Sequence No: {}")?;
+                p.sequence = _sq >> 4;
+                let data = packet.build_packet_lazy(reader, Reader::_cut, None, IEE80211::management)?;
+                p.data = Some(data);
+            }
+            2 => {
+                p.duration = reader.read16(true)?;
+                p.receiver = Some(packet.build_format(reader, Reader::_read_mac, Some("80211.receiver.address"), "Receiver address: {}")?);
+                p.transmitter = Some(packet.build_format(reader, Reader::_read_mac, Some("80211.transmitter.address"), "Transmitter address: {}")?);
+                p.destination = Some(packet.build_format(reader, Reader::_read_mac, Some("80211.destination.address"), "Destination address: {}")?);
+                let _sq = packet.build_format(reader, Reader::_read16_ne, Some("80211.sequence.no"), "Sequence No: {}")?;
+                p.sequence = _sq >> 4;
+                if to_ds && from_ds {
+                    let _address4 = reader.read_mac()?;//TODO
+                }
+                p.qos = packet.build_format(reader, Reader::_read16_ne, Some("80211.qos.control"), "Qos Control: {}")?;
+                if data_protected {
+                    let mount = reader.left();
+                    reader._move(mount);
+                    packet.build_backward(reader, mount, format!("Data ({} bytes)", mount));
+                    return Ok(())
+                }
+                p.dsap = reader.read8()?;
+                p.ssap = reader.read8()?;
+                p.control_field = reader.read8()?;
+                reader._move(3);//OUI
+                p.ptype = packet.build_lazy(reader, Reader::_read16_be, Some("80211.prorocol.type"), IEE80211::ptype_str)?;
+            }
+            1 => {
+                p.duration = reader.read16(true)?;
+                p.receiver = Some(packet.build_format(reader, Reader::_read_mac, Some("80211.receiver.address"), "Receiver address: {}")?);
+                // control
+            }
+            _ => {}
+        };
         Ok(())
     }
 }

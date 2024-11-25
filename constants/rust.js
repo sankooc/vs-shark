@@ -16,6 +16,8 @@ const PPP_TYPE_MAP = rebuild('ppp_type', parseInt);
 const PPP_LCP_TYPE_MAP = rebuild('ppp_lcp_type', parseInt);
 // const IEEE802_MANAGE = rebuild('ieee802_m', parseInt);
 const IEEE802_MANAGE = rebuild('ieee802_m', (v) => parseInt(v, 16));
+const IEEE802_MANAGE_TAGS = rebuild('ieee802_tag', parseInt);
+const IEEE802_MANAGE_CAT = rebuild('ieee802_cat', parseInt);
 // const PPP_LCP_TYPE_MAP = rebuild('ppp_lcp_type', parseInt);
 
 const buildConstants = (name, obj, fn, typed) => {
@@ -41,6 +43,8 @@ const items = [
   ['dns_class', DNS_CLASS_MAP,  k => parseInt(k, 10), 'u16'],
   ['dns_type', DNS_TYPE_MAP,  k => parseInt(k, 10), 'u16'],
   ['ieee802_subtype', IEEE802_MANAGE, k => parseInt(k, 10), 'u8'],
+  ['ieee802_mnt_tags', IEEE802_MANAGE_TAGS, k => parseInt(k, 10), 'u8'],
+  ['ieee802_mnt_cat', IEEE802_MANAGE_CAT, k => parseInt(k, 10), 'u8'],
   ['ppp_lcp_option_type', PPP_LCP_OPTION_MAP,  k => parseInt(k, 10), 'u8'],
   ['ppp_type', PPP_TYPE_MAP,  k => parseInt(k, 10), 'u16'],
   ['ppp_lcp_type', PPP_LCP_TYPE_MAP,  k => parseInt(k, 10), 'u8'],
