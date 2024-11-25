@@ -11,25 +11,23 @@ use super::ProtocolData;
 use crate::common::FIELDSTATUS;
 
 fn execute(source: u16, target: u16) -> &'static str {
-    let pp = match source {
+    match source {
         53 => "dns",
         67 | 68 => "dhcp",
         5353 => "mdns",
         137 => "nbns",
         1900 => "ssdp",
-        _ => "none",
-    };
-    if pp == "none" {
-        return match target {
-            53 => "dns",
-            67 | 68 => "dhcp",
-            5353 => "mdns",
-            137 => "nbns",
-            1900 => "ssdp",
-            _ => "none",
-        };
+        _ => {
+            match target {
+                53 => "dns",
+                67 | 68 => "dhcp",
+                5353 => "mdns",
+                137 => "nbns",
+                1900 => "ssdp",
+                _ => "none",
+            }
+        },
     }
-    pp
 }
 
 #[derive(Default, Packet2, NINFO)]
