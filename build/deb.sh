@@ -11,4 +11,3 @@ Maintainer: sankooc <sankooc@163.com>
 Description: pcap/pcapng analyzer" >> release/deb/pcaps_0.0.1/DEBIAN//control
 cd release/deb
 dpkg-deb --build pcaps_0.0.1
-

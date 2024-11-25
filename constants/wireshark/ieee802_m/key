@@ -1,0 +1,43 @@
+#define MGT_ASSOC_REQ          0x00  /* association request        */
+#define MGT_ASSOC_RESP         0x01  /* association response       */
+#define MGT_REASSOC_REQ        0x02  /* reassociation request      */
+#define MGT_REASSOC_RESP       0x03  /* reassociation response     */
+#define MGT_PROBE_REQ          0x04  /* Probe request              */
+#define MGT_PROBE_RESP         0x05  /* Probe response             */
+#define MGT_MEASUREMENT_PILOT  0x06  /* Measurement Pilot          */
+#define MGT_BEACON             0x08  /* Beacon frame               */
+#define MGT_ATIM               0x09  /* ATIM                       */
+#define MGT_DISASS             0x0A  /* Disassociation             */
+#define MGT_AUTHENTICATION     0x0B  /* Authentication             */
+#define MGT_DEAUTHENTICATION   0x0C  /* Deauthentication           */
+#define MGT_ACTION             0x0D  /* Action                     */
+#define MGT_ACTION_NO_ACK      0x0E  /* Action No Ack              */
+#define MGT_ARUBA_WLAN         0x0F  /* Aruba WLAN Specific        */
+#define CTRL_TRIGGER           0x12  /* HE Trigger                     */
+#define CTRL_TACK              0x13  /* S1G TWT Ack                    */
+#define CTRL_BEAMFORM_RPT_POLL 0x14  /* Beamforming Report             */
+#define CTRL_VHT_NDP_ANNC      0x15  /* VHT NDP Announcement           */
+#define CTRL_CONTROL_WRAPPER   0x17  /* Control Wrapper                */
+#define CTRL_BLOCK_ACK_REQ     0x18  /* Block ack Request              */
+#define CTRL_BLOCK_ACK         0x19  /* Block ack                      */
+#define CTRL_PS_POLL           0x1A  /* power-save poll                */
+#define CTRL_RTS               0x1B  /* request to send                */
+#define CTRL_CTS               0x1C  /* clear to send                  */
+#define CTRL_ACKNOWLEDGEMENT   0x1D  /* acknowledgement                */
+#define CTRL_CFP_END           0x1E  /* contention-free period end     */
+#define CTRL_CFP_ENDACK        0x1F  /* contention-free period end/ack */
+#define DATA                        0x20  /* Data                       */
+#define DATA_CF_ACK                 0x21  /* Data + CF-Ack              */
+#define DATA_CF_POLL                0x22  /* Data + CF-Poll             */
+#define DATA_CF_ACK_POLL            0x23  /* Data + CF-Ack + CF-Poll    */
+#define DATA_NULL_FUNCTION          0x24  /* Null function (no data)    */
+#define DATA_CF_ACK_NOD             0x25  /* CF-Ack (no data)           */
+#define DATA_CF_POLL_NOD            0x26  /* CF-Poll (No data)          */
+#define DATA_CF_ACK_POLL_NOD        0x27  /* CF-Ack + CF-Poll (no data) */
+#define DATA_QOS_DATA               0x28  /* QoS Data                   */
+#define DATA_QOS_DATA_CF_ACK        0x29  /* QoS Data + CF-Ack        */
+#define DATA_QOS_DATA_CF_POLL       0x2A  /* QoS Data + CF-Poll      */
+#define DATA_QOS_DATA_CF_ACK_POLL   0x2B  /* QoS Data + CF-Ack + CF-Poll    */
+#define DATA_QOS_NULL               0x2C  /* QoS Null        */
+#define DATA_QOS_CF_POLL_NOD        0x2E  /* QoS CF-Poll (No Data)      */
+#define DATA_QOS_CF_ACK_POLL_NOD    0x2F  /* QoS CF-Ack + CF-Poll (No Data) */

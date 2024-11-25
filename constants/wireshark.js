@@ -6,7 +6,7 @@ export const rebuild = (key, fn) => {
   const rs = {};
   let aa = _key.split('\n');
   for (const a of aa){
-    const ars = a.trim().match(/^#define\s(\S+)\s+((0x)?[0-9,a-f]+)\s.+$/);
+    const ars = a.trim().match(/^#define\s(\S+)\s+((0x)?[0-9,a-f,A-F]+)(\s.+)?$/);
     if(!ars){
       console.log(a)
     }

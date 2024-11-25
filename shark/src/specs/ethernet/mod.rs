@@ -1,8 +1,8 @@
 pub mod ieee1905a;
 pub mod ii;
 pub mod pppoes;
-pub mod radiotap;
 pub mod ssl;
+pub mod ieee80211;
 pub mod null;
 
 pub fn get_next_from_type(ptype: u16) -> &'static str {

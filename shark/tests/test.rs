@@ -22,7 +22,7 @@ mod unit {
 
     fn _dis(inx: usize, field: &Field) {
         //assert_eq!("hello       ", format!("{:width$}", "hello", width=12));
-        println!("{:pad$}- {}", "", field.summary(), pad = inx);
+        println!("{:inx$}- {}", "", field.summary());
         let fields = field.children();
         for f in fields.iter() {
             _dis(inx + 1, f);
@@ -33,6 +33,22 @@ mod unit {
         for f in field.iter() {
             _dis(1, f);
         }
+    }
+    
+    #[test]
+    fn test_radiotap(){
+        let data: Vec<u8> = build_reader("radiotap3");
+        let reader = Reader::new_raw(Rc::new(data));
+        let (prop, _) = specs::ethernet::ieee80211::RadiotapVisitor.visit2(&reader).unwrap();
+        match &prop {
+            ProtocolData::Radiotap(el) => {
+                inspect(el); 
+            }
+            _ => {
+                assert!(false);
+            }
+        }
+        
     }
     #[test]
     fn test_ppp_lcp() {
