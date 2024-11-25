@@ -8,7 +8,7 @@ use pcap_derive::Packet;
 
 use crate::{
     common::{
-        base::{Context, Frame, FrameRefer, PacketBuilder, PacketContext, TCPDetail, TCPInfo, TCPSegment, TCPSegments},
+        base::{BitFlag, BitType, Context, FlagData, Frame, FrameRefer, PacketBuilder, PacketContext, TCPDetail, TCPInfo, TCPSegment, TCPSegments},
         io::{AReader, Reader},
         Description, MultiBlock, PortPacket, Ref2, FIELDSTATUS,
     },
@@ -16,6 +16,34 @@ use crate::{
 };
 
 use super::ProtocolData;
+
+
+struct Flag;
+
+impl FlagData<u16> for Flag {
+    fn bits(inx: usize) -> Option<(u16, BitType<u16>)> {
+        match inx {
+            0 => Some((0xfe00, BitType::ONEoF(vec![(0x0, "Reverved: Not Set")]))),
+            1 => Some((0x0100, BitType::ABSENT("Accurate ECN: set", "Accurate ECN: Not Set"))),
+            2 => Some((0x0080, BitType::ABSENT("Congestion Window Reduced: set", "Congestion Window Reduced: Not Set"))),
+            3 => Some((0x0040, BitType::ABSENT("ECN-Echo: set", "Echo: Not Set"))),
+            4 => Some((0x0020, BitType::ABSENT("Urgent: set", "Urgent: Not Set"))),
+            5 => Some((0x0010, BitType::ABSENT("Acknowledgment: set", "Acknowledgment: Not Set"))),
+            6 => Some((0x0008, BitType::ABSENT("Push: set", "Push: Not Set"))),
+            7 => Some((0x0004, BitType::ABSENT("Reset: set", "Reset: Not Set"))),
+            8 => Some((0x0002, BitType::ABSENT("Syn: set", "Syn: Not Set"))),
+            9 => Some((0x0001, BitType::ABSENT("Fin: set", "Fin: Not Set"))),
+            _ => None,
+        }
+    }
+
+    fn summary(title: &mut String, value: u16) {
+        title.push_str(format!("Flags: {:#04x}", value).as_str());
+    }
+
+    fn summary_ext(_: &mut String, _: &str, _: bool) {}
+}
+
 
 #[derive(Default)]
 pub struct TCPState {
@@ -132,6 +160,7 @@ pub struct TCP {
     pub acknowledge: u32,
     pub source_port: u16,
     pub target_port: u16,
+    flag: u16,
     head: u16,
     pub len: u16,
     pub payload_len: u16,
@@ -221,8 +250,11 @@ impl TCP {
             }
         }
     }
-    fn len_desc(&self) -> String {
-        format!("{:04b} .... = Header Length: 32 bytes ({})", self.len, self.len)
+    // fn len_desc(&self) -> String {
+    //     format!("{:04b} .... = Header Length: 32 bytes ({})", self.len, self.len)
+    // }
+    fn flag(&self) -> Option<PacketContext<BitFlag<u16>>> {
+        BitFlag::make::<Flag>(self.flag)
     }
     fn segments(&self) -> Option<PacketContext<TCPSegments>> {
         let reff = self.frame_refer.as_ref().borrow();
@@ -328,7 +360,9 @@ impl crate::common::base::Visitor for TCPVisitor {
         p.target_port = packet.build_lazy(reader, Reader::_read16_be, Some("tcp.target.port"), Description::target_port)?;
         p.sequence = packet.build_lazy(reader, Reader::_read32_be, Some("tcp.sequence"), TCP::sequence_desc)?;
         p.acknowledge = packet.build_lazy(reader, Reader::_read32_be, Some("tcp.acknowledge"), TCP::acknowledge_desc)?;
-        let head = packet.build_lazy(reader, Reader::_read16_be, Some("tcp.head.len"), TCP::len_desc)?;
+        // let head = packet.build_lazy(reader, Reader::_read16_be, Some("tcp.head.len"), TCP::len_desc)?;
+        let head= packet.build_packet_lazy(reader, Reader::_read16_be, None, TCP::flag)?;
+        p.flag = head;
         p.window = packet.build_format(reader, Reader::_read16_be, Some("tcp.window.size"), "Window: {}")?;
         p.crc = packet.build_format(reader, Reader::_read16_be, None, "Checksum: {}")?;
         p.urgent = packet.build_format(reader, Reader::_read16_be, None, "Urgent Pointer: {}")?;

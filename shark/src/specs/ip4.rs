@@ -25,7 +25,7 @@ pub fn excute(ipprototype: u8) -> &'static str {
 }
 
 
-pub struct TOSFlag;
+struct TOSFlag;
 
 impl FlagData<u8> for TOSFlag {
     fn bits(inx: usize) -> Option<(u8, BitType<u8>)> {
@@ -43,7 +43,7 @@ impl FlagData<u8> for TOSFlag {
     fn summary_ext(_: &mut String, _: &str, _: bool) {}
 }
 
-pub struct Flag;
+struct Flag;
 
 impl FlagData<u16> for Flag {
     fn bits(inx: usize) -> Option<(u16, BitType<u16>)> {
