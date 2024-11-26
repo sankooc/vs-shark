@@ -1122,20 +1122,7 @@ impl Frame {
             fields: RefCell::new(Vec::new()),
         }
     }
-    // pub fn get_tcp_map_key(&self) -> (String, bool) {
-    //     let sum = &self.summary;
-    //     let _ip = sum.ip.clone().expect("no_ip_layer");
-    //     let _tcp = sum.tcp.clone().expect("no_tcp_layer");
-    //     let refer = _ip.deref().borrow();
-    //     let tcp_refer = _tcp.deref().borrow();
-    //     Context::tcp_key(refer.deref(), tcp_refer.deref())
-    // }
-
-    // fn _create_http_request(&self) -> HttpRequestBuilder {
-    //     let (source, dest) = self.get_ip_address();
-    //     let (srp, dsp) = self.get_port();
-    //     HttpRequestBuilder::new(source, dest, srp, dsp)
-    // }
+    
     fn ipv4_collect(_ip: &Option<Ipv4Addr>, ctx: &mut Context) {
         let _map = &mut ctx.statistic.ip_type;
         if let Some(ip) = _ip {

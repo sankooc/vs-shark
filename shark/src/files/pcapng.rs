@@ -1,6 +1,6 @@
 use crate::common::base::Instance;
-use crate::common::FileType;
 use crate::common::io::{AReader, SliceReader};
+use crate::common::FileType;
 use anyhow::Result;
 
 fn parse_head(data: &[u8]) -> Result<String> {
@@ -19,7 +19,7 @@ fn parse_interface(data: &[u8]) -> Result<u16> {
     Ok(lt)
 }
 
-fn parse_enhance(instance: &mut Instance, data: &[u8]) -> Result<()>{
+fn parse_enhance(instance: &mut Instance, data: &[u8]) -> Result<()> {
     let reader = SliceReader::new(data);
     let _interface_id = reader.read32(false)?;
     let mut ts = reader.read32(false)? as u64;
