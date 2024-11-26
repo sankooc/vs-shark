@@ -17,12 +17,18 @@ use crate::{
         ProtocolData,
     },
 };
-use chrono::{DateTime, Utc};
 use enum_dispatch::enum_dispatch;
 use log::error;
 use serde_json::Error;
 use std::{
-    borrow::Borrow, cell::RefCell, cmp, collections::{HashMap, HashSet, VecDeque}, fmt::{Binary, Formatter}, net::{Ipv4Addr, Ipv6Addr}, ops::{BitAnd, Deref, DerefMut}, rc::Rc, time::{Duration, UNIX_EPOCH}
+    borrow::Borrow,
+    cell::RefCell,
+    cmp,
+    collections::{HashMap, HashSet, VecDeque},
+    fmt::{Binary, Formatter},
+    net::{Ipv4Addr, Ipv6Addr},
+    ops::{BitAnd, Deref, DerefMut},
+    rc::Rc,
 };
 
 use anyhow::{bail, Result};
@@ -34,13 +40,8 @@ use super::{
     concept::{Connect, Criteria, DNSRecord, Field, FrameInfo, HttpMessage, ListResult, TCPConversation, TLSHS},
     filter::PacketProps,
     io::SliceReader,
+    util::date_str,
 };
-
-pub fn date_str(ts: u64) -> String {
-    let d = UNIX_EPOCH + Duration::from_micros(ts);
-    let datetime = DateTime::<Utc>::from(d);
-    datetime.format("%Y-%m-%d %H:%M:%S").to_string()
-}
 
 #[enum_dispatch(ProtocolData)]
 pub trait Element {
@@ -62,7 +63,6 @@ pub trait FieldBuilder<T> {
 }
 
 pub type PacketOpt = usize;
-
 
 impl<T> PacketBuilder for MultiBlock<T> {
     fn new() -> MultiBlock<T> {
@@ -156,7 +156,13 @@ where
     where
         K: PacketBuilder,
     {
-        self.fields.borrow_mut().push(Box::new(PhantomBuilder { start: 0, size: 0, data: Rc::new(Vec::new()), render, props: None }));
+        self.fields.borrow_mut().push(Box::new(PhantomBuilder {
+            start: 0,
+            size: 0,
+            data: Rc::new(Vec::new()),
+            render,
+            props: None,
+        }));
     }
     pub fn build_skip(&self, reader: &Reader, size: usize) {
         let start = reader.cursor();
@@ -284,7 +290,10 @@ where
         }));
         Ok(rs)
     }
-    pub fn build_packet_lazy<M, K: 'static>(&self, reader: &Reader, opt: impl FnOnce(&Reader) -> Result<M>, _props: Option<&'static str>, render: fn(&T) -> Option<PacketContext<K>>) -> Result<M> where K: PacketBuilder{
+    pub fn build_packet_lazy<M, K: 'static>(&self, reader: &Reader, opt: impl FnOnce(&Reader) -> Result<M>, _props: Option<&'static str>, render: fn(&T) -> Option<PacketContext<K>>) -> Result<M>
+    where
+        K: PacketBuilder,
+    {
         let start = reader.cursor();
         let val: M = opt(reader)?;
         let end = reader.cursor();
@@ -1107,22 +1116,13 @@ impl Frame {
         PacketContext { props: None, val, fields: RefCell::new(Vec::new()) }
     }
     pub fn _create_with_props<K>(val: Ref2<K>) -> PacketContext<K> {
-        PacketContext { props: Some(RefCell::new(PacketProps::new())), val, fields: RefCell::new(Vec::new()) }
+        PacketContext {
+            props: Some(RefCell::new(PacketProps::new())),
+            val,
+            fields: RefCell::new(Vec::new()),
+        }
     }
-    // pub fn get_tcp_map_key(&self) -> (String, bool) {
-    //     let sum = &self.summary;
-    //     let _ip = sum.ip.clone().expect("no_ip_layer");
-    //     let _tcp = sum.tcp.clone().expect("no_tcp_layer");
-    //     let refer = _ip.deref().borrow();
-    //     let tcp_refer = _tcp.deref().borrow();
-    //     Context::tcp_key(refer.deref(), tcp_refer.deref())
-    // }
-
-    // fn _create_http_request(&self) -> HttpRequestBuilder {
-    //     let (source, dest) = self.get_ip_address();
-    //     let (srp, dsp) = self.get_port();
-    //     HttpRequestBuilder::new(source, dest, srp, dsp)
-    // }
+    
     fn ipv4_collect(_ip: &Option<Ipv4Addr>, ctx: &mut Context) {
         let _map = &mut ctx.statistic.ip_type;
         if let Some(ip) = _ip {
@@ -1495,6 +1495,13 @@ impl Instance {
         };
         Instance { ctx, frames: Vec::new() }
     }
+    /// parse a frame from data, save the frame to `self.frames`
+    ///
+    /// The method will parse the frame from the data, and if the frame is incomplete,
+    /// it will save the frame to `self.frames` and return the offset of the next frame.
+    /// if the frame is complete, it will save the frame to `self.frames` and return 0.
+    /// if the frame is corrupted, it will save the frame to `self.frames` and return 0.
+    ///
     pub fn create(&mut self, data: Vec<u8>, ts: u64, capture_size: u32, origin_size: u32) {
         let ctx = &mut self.ctx;
         let file_type = &ctx.info.file_type;
@@ -1595,6 +1602,19 @@ impl Instance {
         }
         info.start_time = ts;
     }
+    /// Returns a PCAPInfo object that contains some information of the capture file.
+    ///
+    /// The returned object contains the following fields:
+    ///
+    /// - `file_type`: the type of capture file, such as "PCAP" or "PCAPNG".
+    /// - `start_time`: the start time of the capture file in seconds.
+    /// - `end_time`: the end time of the capture file in seconds.
+    /// - `frame_count`: the total number of frames in the capture file.
+    /// - `dns_count`: the number of DNS packets in the capture file.
+    /// - `tcp_count`: the number of TCP conversations in the capture file.
+    /// - `http_count`: the number of HTTP requests in the capture file.
+    /// - `tls_count`: the number of TLS connections in the capture file.
+    /// - `cost`: the total time spent on parsing the capture file in milliseconds.
     pub fn pcap_info(&self) -> PCAPInfo {
         let mut _info = PCAPInfo::new();
         let ctx = self.context();
@@ -1610,6 +1630,15 @@ impl Instance {
         _info.cost = ctx.cost();
         _info
     }
+    /// Generate a line chart data for frames per second
+    ///
+    /// # Errors
+    ///
+    /// If the frames count is less than 10, it will return an error
+    ///
+    /// # Example
+    ///
+    ///
     pub fn statistic_frames(&self) -> Result<Lines> {
         let list = self.get_frames();
         if list.len() < 10 {
@@ -1687,44 +1716,63 @@ fn ts_to_str(ts: u64) -> String {
     format!("{}.{} H", _min / 60, _min % 60)
 }
 
-
-
 #[derive(Clone)]
 pub enum BitType<T> {
     ABSENT(&'static str, &'static str),
     ONEoF(Vec<(T, &'static str)>),
-    VAL(&'static str, usize, T)
+    VAL(&'static str, usize, T),
 }
 
-pub trait FlagData<T> where T:Binary + Copy + BitAnd + PartialEq<<T as BitAnd>::Output>, <T as BitAnd>::Output: PartialEq<T> {
+pub trait FlagData<T>
+where
+    T: Binary + Copy + BitAnd + PartialEq<<T as BitAnd>::Output>,
+    <T as BitAnd>::Output: PartialEq<T>,
+{
     fn bits(inx: usize) -> Option<(T, BitType<T>)>;
     // fn to_desc(index:usize, buffer: &mut String, word: &str, status: bool);
     fn summary(title: &mut String, value: T);
     fn summary_ext(title: &mut String, desc: &str, status: bool);
 }
 #[derive(Default)]
-pub struct BitFlag<T> where T:Binary + Copy + BitAnd + PartialEq<<T as BitAnd>::Output>, <T as BitAnd>::Output: PartialEq<T>  {
+pub struct BitFlag<T>
+where
+    T: Binary + Copy + BitAnd + PartialEq<<T as BitAnd>::Output>,
+    <T as BitAnd>::Output: PartialEq<T>,
+{
     value: T,
     content: String,
 }
 
-impl<T> std::fmt::Display for BitFlag<T> where T:Binary + Copy + BitAnd + PartialEq<<T as BitAnd>::Output>, <T as BitAnd>::Output: PartialEq<T> {
+impl<T> std::fmt::Display for BitFlag<T>
+where
+    T: Binary + Copy + BitAnd + PartialEq<<T as BitAnd>::Output>,
+    <T as BitAnd>::Output: PartialEq<T>,
+{
     fn fmt(&self, fmt: &mut Formatter) -> std::fmt::Result {
         fmt.write_str(self.content.as_str())
     }
 }
-impl<T>  PacketBuilder for BitFlag< T> where T: Default + Binary + Copy + BitAnd + PartialEq<<T as BitAnd>::Output>, <T as BitAnd>::Output: PartialEq<T> {
+impl<T> PacketBuilder for BitFlag<T>
+where
+    T: Default + Binary + Copy + BitAnd + PartialEq<<T as BitAnd>::Output>,
+    <T as BitAnd>::Output: PartialEq<T>,
+{
     fn new() -> Self {
-        Self {
-            ..Default::default()
-        }
+        Self { ..Default::default() }
     }
     fn summary(&self) -> String {
         self.to_string()
     }
 }
-impl<T>  BitFlag <T> where T:Default + Binary + Copy + std::fmt::Display + BitAnd<Output = T> + PartialEq<<T as BitAnd>::Output> + 'static + std::ops::Shr<usize, Output = T> + std::ops::Shl<usize, Output = T>, <T as BitAnd>::Output: PartialEq<T> {
-    pub fn make<F>(value: T) -> Option<PacketContext<Self>> where F: FlagData<T> {
+impl<T> BitFlag<T>
+where
+    T: Default + Binary + Copy + std::fmt::Display + BitAnd<Output = T> + PartialEq<<T as BitAnd>::Output> + 'static + std::ops::Shr<usize, Output = T> + std::ops::Shl<usize, Output = T>,
+    <T as BitAnd>::Output: PartialEq<T>,
+{
+    pub fn make<F>(value: T) -> Option<PacketContext<Self>>
+    where
+        F: FlagData<T>,
+    {
         let packet: PacketContext<Self> = Frame::create_packet();
         let mut p = packet.get().borrow_mut();
         p.value = value;
@@ -1744,7 +1792,7 @@ impl<T>  BitFlag <T> where T:Default + Binary + Copy + std::fmt::Display + BitAn
                             _content.push_str(&failed);
                         }
                         packet.build_txt(_content);
-                    },
+                    }
                     BitType::ONEoF(list) => {
                         let _val = value & mask;
                         for _cur in list.iter() {
@@ -1755,12 +1803,12 @@ impl<T>  BitFlag <T> where T:Default + Binary + Copy + std::fmt::Display + BitAn
                                 break;
                             }
                         }
-                    },
-                    BitType::VAL(prefix, offset, wid ) => {
+                    }
+                    BitType::VAL(prefix, offset, wid) => {
                         let val = (value >> *offset) & *wid;
                         let mask = *wid << *offset;
                         let line = BitFlag::print_line_match(mask, value);
-                        let mut _content = format!("{} = {}: {}", line,*prefix, val);
+                        let mut _content = format!("{} = {}: {}", line, *prefix, val);
                         packet.build_txt(_content);
                     }
                 }
@@ -1786,11 +1834,15 @@ impl<T>  BitFlag <T> where T:Default + Binary + Copy + std::fmt::Display + BitAn
     //     // }
     //     // str2
     // }
-    fn print_line(mask: T, value: T) -> (String, bool) where T:Binary + Copy + BitAnd, <T as BitAnd>::Output: PartialEq<T> {
+    fn print_line(mask: T, value: T) -> (String, bool)
+    where
+        T: Binary + Copy + BitAnd,
+        <T as BitAnd>::Output: PartialEq<T>,
+    {
         let len = size_of_val(&mask) * 8;
         let str = format!("{:0len$b}", mask);
         let mut str2 = str.replace("0", ".");
-        for cur in 1..len/4 {
+        for cur in 1..len / 4 {
             str2.insert_str(len - cur * 4, " ");
         }
         if mask & value != mask {
@@ -1798,7 +1850,11 @@ impl<T>  BitFlag <T> where T:Default + Binary + Copy + std::fmt::Display + BitAn
         }
         (str2, true)
     }
-    fn print_line_match(mask: T, val: T) -> String where T:Binary + Copy + BitAnd + PartialEq<<T as BitAnd>::Output>, <T as BitAnd>::Output: PartialEq<T> {
+    fn print_line_match(mask: T, val: T) -> String
+    where
+        T: Binary + Copy + BitAnd + PartialEq<<T as BitAnd>::Output>,
+        <T as BitAnd>::Output: PartialEq<T>,
+    {
         let len = size_of_val(&mask) * 8;
         let str = format!("{:0len$b}", mask);
         let tar = format!("{:0len$b}", val);
@@ -1807,10 +1863,10 @@ impl<T>  BitFlag <T> where T:Default + Binary + Copy + std::fmt::Display + BitAn
         let mut chars2 = tar.chars();
         for cur in 0..len {
             if '1' == chars2.nth(0).unwrap() {
-                str2.replace_range(cur..cur+1, "1");
+                str2.replace_range(cur..cur + 1, "1");
             }
         }
-        for cur in 1..len/4 {
+        for cur in 1..len / 4 {
             str2.insert_str(len - cur * 4, " ");
         }
         str2

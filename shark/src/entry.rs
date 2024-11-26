@@ -1,5 +1,3 @@
-// use std::time::{SystemTime, UNIX_EPOCH};
-
 use crate::files::{pcap, pcapng};
 use crate::common::io::IO;
 
@@ -7,9 +5,14 @@ use crate::common::base::Instance;
 use crate::common::DataError;
 use anyhow::{bail, Result};
 
+/// Given a byte slice, determine its type and parse it into an `Instance`.
+/// Supported types are PCAP and PCAPNG.
+///
+/// # Errors
+///
+/// This function will return an error of type `DataError::UnsupportFileType` if the given byte slice
+/// does not correspond to a supported file type.
 pub fn  load_data<'a> (data: &[u8] )->  Result<Instance>{
-  // let start = SystemTime::now().duration_since(UNIX_EPOCH);
-
   let head: &[u8] = &data[..4];
   let head_str = format!("{:x}", IO::read32(head, false)?);
   match head_str.as_str() {

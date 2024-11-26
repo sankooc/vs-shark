@@ -187,17 +187,17 @@ impl Lines {
     pub fn data(&self) -> &[LineData] {
         &self.data
     }
-    pub fn get_y(&self) -> &HashSet<String>{
+    pub fn get_y(&self) -> &HashSet<String> {
         &self.y
     }
-    pub fn get_x(&self) -> &[String]{
+    pub fn get_x(&self) -> &[String] {
         &self.x
     }
     pub fn new(x: Vec<String>, y: HashSet<String>, data: Vec<LineData>) -> Self {
         Self { x, y, data }
     }
     pub fn empty() -> Self {
-        Lines{..Default::default()}
+        Lines { ..Default::default() }
     }
     pub fn to_json(&self) -> String {
         serde_json::to_string(self).unwrap()
@@ -350,7 +350,7 @@ impl TCPConversation {
     pub fn source(&self) -> &WEndpoint {
         &self.source
     }
-    
+
     pub fn target(&self) -> &WEndpoint {
         &self.target
     }
@@ -362,7 +362,7 @@ impl TCPConversation {
     }
 }
 
-#[derive(Serialize,Default)]
+#[derive(Serialize, Default)]
 pub struct FrameInfo {
     pub index: u32,
     pub time: u32,
@@ -381,7 +381,7 @@ impl FrameInfo {
         let sum = &frame.summary;
         item.index = sum.index;
         if frame.ts > start {
-          item.time = (frame.ts - start) as u32;
+            item.time = (frame.ts - start) as u32;
         }
         item.len = frame.capture_size;
         match &sum.ip {
@@ -407,33 +407,32 @@ impl FrameInfo {
     }
 }
 
-pub struct Criteria{
-  pub criteria: String,
-  pub size: usize,
-  pub start: usize,
+pub struct Criteria {
+    pub criteria: String,
+    pub size: usize,
+    pub start: usize,
 }
 
 #[derive(Serialize)]
 pub struct ListResult<T> {
-  pub items: Vec<T>,
-  pub total: usize,
-  pub start: usize,
+    pub items: Vec<T>,
+    pub total: usize,
+    pub start: usize,
 }
 
 impl<T> ListResult<T> {
-  pub fn new(start:usize, total:usize, items: Vec<T>) -> Self{
-    Self{start, total, items}
-  }
+    pub fn new(start: usize, total: usize, items: Vec<T>) -> Self {
+        Self { start, total, items }
+    }
 }
 
 fn _convert(f_status: FIELDSTATUS) -> &'static str {
-  match f_status {
-      FIELDSTATUS::WARN => "deactive",
-      FIELDSTATUS::ERROR => "errordata",
-      _ => "info"
-  }
+    match f_status {
+        FIELDSTATUS::WARN => "deactive",
+        FIELDSTATUS::ERROR => "errordata",
+        _ => "info",
+    }
 }
-
 
 #[derive(Default, Clone, Serialize)]
 pub struct Field {
@@ -448,22 +447,10 @@ pub struct Field {
 }
 impl Field {
     pub fn new(start: usize, size: usize, data: Rc<Vec<u8>>, summary: String) -> Field {
-        Field {
-            start,
-            size,
-            data,
-            summary,
-            children: Vec::new(),
-        }
+        Field { start, size, data, summary, children: Vec::new() }
     }
     pub fn new2(summary: String, data: Rc<Vec<u8>>, vs: Vec<Field>) -> Field {
-        Field {
-            start: 0,
-            size: 0,
-            data,
-            summary,
-            children: vs,
-        }
+        Field { start: 0, size: 0, data, summary, children: vs }
     }
     pub fn new3(summary: String) -> Field {
         Field {
