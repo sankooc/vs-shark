@@ -319,7 +319,7 @@ where
         let _packet = (self.render)(t);
         if let Some(packet) = _packet {
             let sum = packet.get().borrow().summary();
-            let mut field = Field::new(self.start, self.size, Rc::new(Vec::new()), sum);
+            let mut field = Field::new(self.start, self.size, self.data.clone(), sum);
             let fields = packet.get_fields();
             field.children = fields;
             return Some(field);
