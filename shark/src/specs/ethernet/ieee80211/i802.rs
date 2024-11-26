@@ -144,7 +144,14 @@ impl IEE80211 {
                 p.ssap = reader.read8()?;
                 p.control_field = reader.read8()?;
                 reader._move(3);//OUI
-                p.ptype = packet.build_lazy(reader, Reader::_read16_be, Some("80211.prorocol.type"), IEE80211::ptype_str)?;
+                let ptype = reader.read16(true)?;
+                p.ptype = ptype;
+                match etype_mapper(ptype).as_str() {
+                    "unknown" => {}
+                    _ => {
+                        packet.build_backward(reader, 2, IEE80211::ptype_str(&p));
+                    }
+                }
             }
             1 => {
                 p.duration = reader.read16(true)?;
