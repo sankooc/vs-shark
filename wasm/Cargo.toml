@@ -18,7 +18,8 @@ wasm-bindgen = "0.2.93"
 shark = { path = "../shark" }
 
 [package.metadata.wasm-pack.profile.release]
-wasm-opt = false
+wasm-opt = ['-O', '--enable-bulk-memory']
+
 
 [dev-dependencies]
 log = "0.4.22"
