@@ -25,7 +25,7 @@ jobs:
     - name: Build
       run: make web-demo
     - name: clone
-      run: git clone -b gh https://github.com/sankooc/sankooc.github.io.git
+      run: git clone -b gh git@github.com:sankooc/sankooc.github.io.git
 
     - name: remove
       run: |
