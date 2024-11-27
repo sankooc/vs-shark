@@ -1,0 +1,44 @@
+name: Build_web_demo
+
+on:
+  push:
+    branches: [ "action" ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    permissions: write-all
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: ENV
+      run: |
+        cargo --version
+        rustc -vV
+        echo "version ${GITHUB_REF#refs/heads/release/}"
+    - run: echo "brc=$(echo ${GITHUB_REF#refs/heads/})" >> $GITHUB_ENV
+    - name: Install
+      run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+    - run: npm install -g pnpm
+    - name: Build
+      run: make web-demo
+    - name: clone
+      run: git clone -b gh git@github.com:sankooc/sankooc.github.io.git
+
+    - name: remove
+      run: |
+        ls sankooc.github.io/
+        rm -rf sankooc.github.io/pcap_tmp
+        mkdir sankooc.github.io/pcap_tmp
+    - name: copy
+      run: cp -r extension/webview/dist_web/* sankooc.github.io/pcap_tmp
+    - name: commit
+      run: |
+        cd sankooc.github.io
+        git config --global user.email "sankooc@163.com"
+        git config --global user.name "sankooc"
+        git add .
+        git commit -m "update ${{env.brc}}"
+        git push origin gh

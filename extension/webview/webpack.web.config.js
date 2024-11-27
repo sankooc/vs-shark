@@ -10,8 +10,8 @@ module.exports = {
   },
   output: {
       filename: './[name].js',
-      // path: __dirname + "/dist",
-      path: __dirname + "/../../../sankooc.github.io/pcap"
+      path: __dirname + "/dist_web",
+      // path: __dirname + "/../../../sankooc.github.io/pcap"
   },
   plugins: [
     new WorkboxPlugin.GenerateSW({
