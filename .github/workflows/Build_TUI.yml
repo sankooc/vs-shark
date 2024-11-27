@@ -1,4 +1,4 @@
-name: Rust
+name: Build_TUI
 
 on:
   push:
