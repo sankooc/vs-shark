@@ -11,6 +11,7 @@
 # production
 /build
 /sandbox
+/dist_web
 
 # misc
 .DS_Store
