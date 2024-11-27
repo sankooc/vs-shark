@@ -25,9 +25,11 @@ jobs:
     - name: Build
       run: make web-demo
     - name: clone
-      run: git clone https://github.com/sankooc/sankooc.github.io.git
+      run: git clone -b gh https://github.com/sankooc/sankooc.github.io.git
+
     - name: remove
       run: |
+        ls sankooc.github.io/
         rm -rf sankooc.github.io/pcap_tmp
         mkdir sankooc.github.io/pcap_tmp
     - name: copy
@@ -35,7 +37,7 @@ jobs:
     - name: commit
       run: |
         cd sankooc.github.io
-        git config --global user.email "sankooc@pm.me"
+        git config --global user.email "sankooc@163.com"
         git config --global user.name "sankooc"
         git add .
         git commit -m "update ${{env.brc}}"
