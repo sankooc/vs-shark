@@ -65,8 +65,8 @@ devDependencies:
     specifier: ^12.2.0
     version: 12.2.0(less@4.2.0)(webpack@5.95.0)
   rs2ts:
-    specifier: ^0.0.4
-    version: 0.0.4
+    specifier: 0.0.5
+    version: 0.0.5
   sass:
     specifier: ^1.77.6
     version: 1.80.4
@@ -4603,8 +4603,8 @@ packages:
       fsevents: 2.3.3
     dev: true
 
-  /rs2ts@0.0.4:
-    resolution: {integrity: sha512-1QjnPUAvElajzRNUJWT/YgC3JNYnxKb3J2+nh2mwNE9v83xiKFCVW4uID7zD5uzDRADhjMuHBdloEamMJduhvA==}
+  /rs2ts@0.0.5:
+    resolution: {integrity: sha512-RuXd5O2O92yzZYPImRYNl2PnM3r8Ky+Mi8aimFz//nGF1q0ea4YPuSCR9mENDEbqPOQcP5BLKcSOxDV1Z3z+Iw==}
     hasBin: true
     dependencies:
       commander: 12.1.0
