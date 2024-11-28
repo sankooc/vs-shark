@@ -1,0 +1,21 @@
+{
+    "background_color": "#000",
+    "display": "standalone",
+    "lang": "en",
+    "name": "pcapviewer",
+    "short_name": "pcapviewer",
+    "start_url": "/pcap",
+    "orientation": "portrait",
+    "icons": [
+        {
+          "src": "./icon.png",
+          "sizes": "16x16",
+          "type": "image/png"
+        },
+        {
+          "src": "./icon144.png",
+          "sizes": "144x144",
+          "type": "image/png"
+        }
+      ]
+  }
