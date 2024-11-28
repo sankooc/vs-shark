@@ -5,6 +5,7 @@ export default defineConfig({
   title: "PcapViewer",
   description: "Pcap/Pcapng analyzer",
   base: "/vs-shark/",
+  head: [['link', { rel: 'icon', href: './favicon.ico' }]],
   themeConfig: {
     // https://vitepress.dev/reference/default-theme-config
     nav: [
@@ -19,7 +20,26 @@ export default defineConfig({
           text: 'Document',
           items: [
             { text: 'Overview', link: '/pages/overview' },
-            { text: 'Quick Start', link: '/pages/getting-started' },
+            { text: 'Getting Started', link: '/pages/getting-started' },
+          ]
+        },
+        {
+          text: 'Protocol Status',
+          items: [
+            { text: 'ICMP', link: '/specs/icmp' },
+            { text: 'IEEE802/11', link: '/specs/ieee' },
+          ]
+        },
+        {
+          text: 'Specs',
+          items: [
+            { text: 'Wifi', link: '/pages/link_127.md' },
+          ]
+        },
+        {
+          text: 'RoadMap',
+          items: [
+            { text: 'Dev Plan', link: '/pages/roadmap' },
           ]
         }
       ]

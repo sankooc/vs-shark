@@ -1,6 +1,8 @@
 <p align="center">
   <img src="assets/icon.png" width="200px" alt="VS-Shark Logo">
 </p>
+<h1 align="center">Pcapviewer</h1>
+
 <p align="center">
   <a href="/">
     <img src="https://img.shields.io/github/license/sankooc/vs-shark" alt="License">
@@ -104,7 +106,7 @@ Install the **PcapViewer** extension from the [VSCode Marketplace](https://marke
 
 #### Install
 
-`cargo install --git https://github.com/sankooc/vs-shark --branch master --bin pcaps`
+Download from [Releases](https://github.com/sankooc/vs-shark/releases)
 
 #### Usage
 
