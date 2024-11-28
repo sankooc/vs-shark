@@ -10,7 +10,7 @@ export default defineConfig({
     nav: [
       { text: 'Home', link: '/' },
       { text: 'Docs', link: '/pages/overview' },
-      { text: 'Demo', link: 'https://sankooc.github.io/pcap' },
+      { text: 'Demo', link: 'https://sankooc.github.io/vs-shark/app/' },
     ],
 
     sidebar: {

@@ -48,7 +48,7 @@
 
 ### Online Demo
 
-Try out [PcapViewer](https://sankooc.github.io/pcap/) in your browser.
+Try out [PcapViewer](https://sankooc.github.io/vs-shark/app/) in your browser.
 
 
 ### Features in Action
