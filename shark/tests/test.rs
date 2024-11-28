@@ -1,40 +1,19 @@
+
+#[cfg(test)]
+mod tc;
 #[cfg(test)]
 mod unit {
     //https://wiki.wireshark.org/samplecaptures
     //https://github.com/chrissanders/packets/tree/master
     use shark::{
-        common::{base::PacketContext, concept::Field, io::Reader},
+        common::io::Reader,
         specs::{self, ProtocolData},
     };
-    use std::{fs, rc::Rc, str::from_utf8};
-    fn build_reader(name: &str) -> Vec<u8> {
-        let fname = format!("./tests/bin/{}.in", name);
-        let data: Vec<u8> = fs::read(&fname).expect("no_file");
-        let str = from_utf8(&data).expect("parse_failed");
-        let mut rs = Vec::new();
-        for i in 0..(str.len() / 2) {
-            let _str = format!("{}", &str[(i * 2)..(i * 2 + 2)]);
-            let val = u8::from_str_radix(&_str, 16).unwrap();
-            rs.push(val);
-        }
-        rs
-    }
+    use std::rc::Rc;
+    use crate::tc::{build_reader, inspect};
 
-    fn _dis(inx: usize, field: &Field) {
-        //assert_eq!("hello       ", format!("{:width$}", "hello", width=12));
-        println!("{:inx$}- {}", "", field.summary());
-        let fields = field.children();
-        for f in fields.iter() {
-            _dis(inx + 1, f);
-        }
-    }
-    fn inspect<T>(packet: &PacketContext<T>) {
-        let field = packet.get_fields();
-        for f in field.iter() {
-            _dis(1, f);
-        }
-    }
     
+
     #[test]
     fn test_radiotap(){
         let data: Vec<u8> = build_reader("radiotap3");
