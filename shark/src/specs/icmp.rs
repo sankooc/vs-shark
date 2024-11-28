@@ -121,7 +121,7 @@ impl ICMP {
 pub struct ICMPVisitor;
 
 impl ICMPVisitor {
-    fn visit2(&self, reader: &Reader) -> Result<(ProtocolData, &'static str)> {
+    pub fn visit2(&self, reader: &Reader) -> Result<(ProtocolData, &'static str)> {
         //https://book.huihoo.com/iptables-tutorial/x1078.htm
         let packet = ICMP::create(reader, None)?;
         Ok((super::ProtocolData::ICMP(packet), "none"))
