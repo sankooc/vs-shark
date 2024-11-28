@@ -18,7 +18,15 @@ jobs:
         cargo --version
         rustc -vV
         echo "version ${GITHUB_REF#refs/heads/release/}"
-    - run: echo "brc=$(echo ${GITHUB_REF#refs/heads/})" >> $GITHUB_ENV
+    - name: document
+      run: |
+        cd doc && npm install && npm run docs:build
+    - name: Upload web site
+      uses: actions/upload-artifact@v4
+      id: upload-generated-website
+      with:
+        name: website-output
+        path: doc/.vitepress/dist
     - name: Install
       run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
     - run: npm install -g pnpm
@@ -47,11 +55,17 @@ jobs:
       run: |
         rm -rf .pcap
         rm -rf pcap
+        rm -rf vs-shark
     - name: Download generated template
       uses: actions/download-artifact@v4
       with:
         name: template-output
         path: .pcap
+    - name: Download generated website
+      uses: actions/download-artifact@v4
+      with:
+        name: website-output
+        path: vs-shark
     - name: Commit and push
       run: |
         mkdir pcap
