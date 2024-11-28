@@ -6,7 +6,7 @@ hero:
   name: "PcapViewer"
   text: "Network analyzer"
   image:
-    src: ./icon_so.png
+    src: ./icon.png
   actions:
     - theme: brand
       text: VSCode Extension

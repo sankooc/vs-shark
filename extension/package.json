@@ -14,7 +14,7 @@
 	"categories": [
 		"Debuggers"
 	],
-	"icon": "icon.png",
+	"icon": "icon256.png",
 	"keywords": [
 		"pcap/pcapng",
 		"network trace",
