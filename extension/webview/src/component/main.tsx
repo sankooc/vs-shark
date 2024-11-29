@@ -5,7 +5,6 @@ import { Menu } from 'primereact/menu';
 import { ComMessage, IContextInfo, ILines, IStatistic, deserialize } from '../common';
 import Loading from './loading';
 import ErrPage from './error';
-import './icon128.png';
 import { onMessage, log, emitMessage } from '../connect';
 
 import Overview from './overview';
