@@ -58,6 +58,9 @@ export abstract class PCAPClient {
     }
     return this._cache.info;
   }
+  setStatus(status: number){
+    this.emitMessage(new ComMessage('_status', status));
+  }
   _protocols(): void {
     if (this.ready && this.ctx) {
       if (!this._cache.protocols) {
