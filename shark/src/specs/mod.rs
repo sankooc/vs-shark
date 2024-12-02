@@ -16,6 +16,7 @@ pub mod nbns;
 pub mod tcp;
 pub mod tls;
 pub mod udp;
+pub mod sip;
 pub mod error;
 use anyhow::bail;
 use enum_dispatch::enum_dispatch;
@@ -75,6 +76,7 @@ type IEEE1905A = PacketContext<ethernet::ieee1905a::IEEE1905A>;
 type IEE80211 = PacketContext<ethernet::ieee80211::i802::IEE80211>;
 type NBNS = PacketContext<nbns::NBNS>;
 type Radiotap = PacketContext<ethernet::ieee80211::Radiotap>;
+type SIP = PacketContext<sip::SIP>;
 
 #[enum_dispatch]
 #[derive(Display)]
@@ -105,6 +107,7 @@ pub enum ProtocolData {
     IEE80211,
     NBNS,
     Radiotap,
+    SIP,
 }
 
 pub fn _parse(proto: &'static str) -> anyhow::Result<&dyn Visitor>{

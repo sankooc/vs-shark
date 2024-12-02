@@ -86,7 +86,7 @@ impl HTTPVisitor {
         match method {
             Some(_method) => {
                 return match _method.as_str() {
-                    "GET" | "POST" | "PUT" | "DELETE" | "HEAD" | "CONNECT" | "OPTIONS" | "NOTIFY" | "TRACE" | "PATCH" => true,
+                    "GET" | "POST" | "PUT" | "DELETE" | "HEAD" | "CONNECT" | "OPTIONS" | "TRACE" | "PATCH" => true,
                     "HTTP/1.1" | "HTTP/1.0" => true,
                     _ => false,
                 }

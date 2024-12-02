@@ -11,11 +11,11 @@ mod tests {
     use crate::tc::{build_reader, inspect};
     #[test]
     fn test_icmp_echo(){
-        let data: Vec<u8> = build_reader("icmp_echo");
+        let data: Vec<u8> = build_reader("sip_request_ack");
         let reader = Reader::new_raw(Rc::new(data));
-        let (prop, _) = specs::icmp::ICMPVisitor.visit2(&reader).unwrap();
+        let (prop, _) = specs::sip::SIPVisitor.visit2(&reader).unwrap();
         match &prop {
-            ProtocolData::ICMP(el) => {
+            ProtocolData::SIP(el) => {
                 inspect(el); 
             }
             _ => {
