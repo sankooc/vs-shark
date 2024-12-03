@@ -1,10 +1,10 @@
 [workspace]
 resolver = "2"
 members = [
-  "shark",
-  "derive",
-  "wasm"
-, "tui"]
+  "crates/shark",
+  "crates/derive",
+  "crates/wasm"
+, "crates/tui"]
 
 [profile.release]
 panic = "unwind"

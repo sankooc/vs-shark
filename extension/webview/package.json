@@ -6,7 +6,7 @@
     "reset": "pnpm install",
     "watch": "npx webpack -c webpack.dev.config.js",
     "serve": "npx webpack serve -c webpack.dev.config.js",
-    "gen": "npx rs2ts -i ../../shark/src/common/concept.rs  -o src/gen.ts",
+    "gen": "npx rs2ts -i ../../crates/shark/src/common/concept.rs  -o src/gen.ts",
     "css": "npx sass src --no-source-map",
     "css-watch": "npx sass src --no-source-map --watch",
     "build": "npx webpack ",
@@ -23,7 +23,7 @@
     "primereact": "^10.7.0",
     "react": "^18.3.0",
     "react-dom": "^18.3.0",
-    "rshark": "file:../../wasm/pkg"
+    "rshark": "file:../../crates/wasm/pkg"
   },
   "devDependencies": {
     "@svgr/webpack": "^8.1.0",
