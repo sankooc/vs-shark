@@ -1,4 +1,5 @@
 use js_sys::Uint8Array;
+use shark::common::base::Configuration;
 // use js_sys::Uint8Array;
 use wasm_bindgen::prelude::*;
 
@@ -32,6 +33,27 @@ impl Field {
     #[wasm_bindgen(getter)]
     pub fn data(&self) -> Uint8Array {
         self.data.clone()
+    }
+}
+#[wasm_bindgen]
+pub struct Conf {
+    resolve_all: bool,
+}
+#[wasm_bindgen]
+impl Conf {
+    #[wasm_bindgen]
+    pub fn new(resolve_all: bool) -> Self {
+        Self{resolve_all}
+    }
+    #[wasm_bindgen]
+    pub fn resolve_all(&self) -> bool {
+        self.resolve_all
+    }
+}
+
+impl Into<Configuration> for Conf {
+    fn into(self) -> Configuration {
+        Configuration::new(self.resolve_all)
     }
 }
 

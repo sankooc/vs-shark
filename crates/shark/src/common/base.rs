@@ -43,6 +43,19 @@ use super::{
     util::date_str,
 };
 
+#[derive(Copy, Clone)]
+pub struct Configuration {
+    resolve_all: bool,
+}
+impl Configuration {
+    pub fn new(resolve_all: bool) -> Self {
+        Self{resolve_all}
+    }
+    pub fn resolve_all(&self) -> bool {
+        self.resolve_all
+    }
+}
+
 #[enum_dispatch(ProtocolData)]
 pub trait Element {
     fn summary(&self) -> String;
@@ -1482,7 +1495,7 @@ pub struct Instance {
     pub frames: Vec<Frame>,
 }
 impl Instance {
-    pub fn new(ftype: FileType) -> Instance {
+    pub fn new(ftype: FileType, _conf: Configuration) -> Instance {
         let ctx = Context {
             cost: 0,
             count: 1,

@@ -7,6 +7,8 @@ use std::ops::Deref;
 use js_sys::Uint8Array;
 use wasm_bindgen::prelude::*;
 
+use crate::entity::Conf;
+
 
 
 
@@ -80,11 +82,11 @@ pub struct WContext {
 #[wasm_bindgen]
 impl WContext {
     #[wasm_bindgen(constructor)]
-    pub fn new(s: &Uint8Array) -> WContext {
+    pub fn new(s: &Uint8Array, conf: Conf) -> WContext {
         let mut slice = vec![0; s.length() as usize];
         s.copy_to(&mut slice[..]);
         WContext {
-            ctx: Box::new(load_data(&slice).unwrap()),
+            ctx: Box::new(load_data(&slice, conf.into()).unwrap()),
         }
     }
     #[wasm_bindgen]
@@ -218,6 +220,6 @@ impl WContext {
 }
 
 #[wasm_bindgen]
-pub fn load(s: &Uint8Array) -> WContext {
-    WContext::new(s)
+pub fn load(s: &Uint8Array, conf: Conf) -> WContext {
+    WContext::new(s, conf)
 }

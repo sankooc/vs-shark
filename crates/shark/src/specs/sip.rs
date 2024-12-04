@@ -71,29 +71,42 @@ impl SIPRequest {
 }
 
 
-#[derive(Default, Packet)]
-struct Address {
-    prefix: &'static str,
-    line:  &'static str,
-}
-impl std::fmt::Display for Address {
-    fn fmt(&self, fmt: &mut Formatter) -> std::fmt::Result {
-        fmt.write_fmt(format_args!("{}: {}", self.prefix, self.line))
-    }
-}
-impl Address {
-    fn create(reader: &Reader, _type: &'static str, line: &'static str) -> Result<PacketContext<Self>> {
-        let packet: PacketContext<Self> = Frame::create_packet();
-        let mut p = packet.get().borrow_mut();
-        drop(p);
-        Ok(packet)
-    }
-}
+// #[derive(Default, Packet)]
+// struct Address {
+//     prefix: String,
+//     line: String
+// }
+// impl std::fmt::Display for Address {
+//     fn fmt(&self, fmt: &mut Formatter) -> std::fmt::Result {
+//         fmt.write_fmt(format_args!("{}: {}", self.prefix, self.line))
+//     }
+// }
+// impl Address {
+//     fn create(_reader: &Reader, _type: &'static str, line: String) -> Result<PacketContext<Self>> {
+//         let packet: PacketContext<Self> = Frame::create_packet();
+//         let mut p = packet.get().borrow_mut();
+//         p.line = line.clone();
+//         if let Some((_type, rest)) = line.split_once(":") {
+//             p.prefix = _type.into();
+//             if let Some((en, attr)) = rest.trim().split_once(";") {
+//                 let len = en.len();
+//                 let _url = &en[1..len-1];
+                
+//             } else {
+//                 let len = rest.len();
+//                 let _url = &rest[1..len-1];
+                
+//             }
+//         }
+//         drop(p);
+//         Ok(packet)
+//     }
+// }
 #[derive(Default, Packet2)]
 pub struct MessageHeader {
-    from: Option<Address>,
-    to: Option<Address>,
-    headers: Vec<String>,
+    // from: Option<Address>,
+    // to: Option<Address>,
+    // headers: Vec<String>,
 }
 
 impl std::fmt::Display for MessageHeader {
@@ -109,14 +122,18 @@ impl MessageHeader {
                 break;
             }
             let line = reader.read_enter()?;
-            if let Some((key, _)) = line.split_once(":") {
-                if key == "From" {
-                    // _p.from = Some(URI::create(reader, "From")?);
-                } else if key == "To" {
-                    // _p.to = Some(URI::create(reader, "To")?);
-                }
-                packet.build_backward(reader, line.len(), line);
-            }
+            packet.build_backward(reader, line.len(), line);
+            // if let Some((key, _)) = line.split_once(":") {
+                // if key == "From" {
+                //     let _read = |reader: &Reader, _: Option<PacketOpt>| Address::create(reader, "From", line);
+                //     packet.build_packet(reader, _read, None, None)?;
+                // } else if key == "To" {
+                //     // _p.to = Some(URI::create(reader, "To")?);
+                // } else {
+                //     packet.build_backward(reader, line.len(), line);
+                // }
+                // packet.build_backward(reader, line.len(), line);
+            // }
         }
         Ok(())
     }
@@ -161,7 +178,7 @@ impl std::fmt::Display for SIP {
 
 impl crate::common::base::InfoPacket for SIP {
     fn info(&self) -> String {
-        "".into()
+        format!("{}: {}", self._type, self._info)
     }
 
     fn status(&self) -> FIELDSTATUS {
@@ -176,8 +193,18 @@ impl SIP {
             Some(_method) => {
                 match _method.as_str() {
                     "INVITE" | "ACK" | "BYE" | "CANCEL" | "REGISTER" | "OPTIONS" | "SUBSCRIBE" | "NOTIFY" | "PUBLISH" | "REFER" | "UPDATE" | "INFO" | "PRACK" | "MESSAGE" => {
-                        packet.build_packet(reader, SIPRequest::create, None, None)?;
+                        _p._type = "Request";
+                        let req = packet.build_packet(reader, SIPRequest::create, None, None)?;
+                        _p._info = req.borrow().line;
+
                         packet.build_packet(reader, MessageHeader::create, None, None)?;
+                        if reader.enter_flag(0) {
+                          reader._move(2);
+                          let left = reader.left();
+                          if left > 0 {
+                            packet._build(reader, reader.cursor(), reader.left(), None,format!("Message Body: {}", left)); 
+                          }
+                        }
                         
                     }
                     // "SIP/2.0" => {},
@@ -260,9 +287,9 @@ mod test {
 
     #[test]
     fn unit() {
-        let token1 = "sip:test@10.0.2.15:5060 SIP/2.0";
-        let token2 = "sip:sip.cybercity.dk SIP/2.0";
-        let token3 = "sip:user@example.com:5060;transport=udp?subject=project&priority=urgent SIP/2.0";
+        let token1 = "sip:test@10.0.2.15:5060";
+        let token2 = "sip:sip.cybercity.dk";
+        let token3 = "sip:user@example.com:5060;transport=udp?subject=project&priority=urgent";
         println!("{:?}", parse_token(token1));
         println!("{:?}", parse_token(token2));
         println!("{:?}", parse_token(token3));

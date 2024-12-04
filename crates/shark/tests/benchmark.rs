@@ -12,9 +12,9 @@ mod unit {
 
     #[test]
     fn test_certificate() {
-        let token1 = "sip:test@10.0.2.15:5060 SIP/2.0";
-        let token2 = "sip:sip.cybercity.dk SIP/2.0";
-        let token3 = "sip:user@example.com:5060;transport=udp?subject=project&priority=urgent SIP/2.0";
+        let token1 = "sip:test@10.0.2.15:5060";
+        let token2 = "sip:sip.cybercity.dk";
+        let token3 = "sip:user@example.com:5060;transport=udp?subject=project&priority=urgent";
 
         let count = 100000;
         arch_start!("parse_each");

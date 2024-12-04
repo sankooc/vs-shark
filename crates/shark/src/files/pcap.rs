@@ -1,11 +1,11 @@
-use crate::common::base::Instance;
+use crate::common::base::{Configuration, Instance};
 use crate::common::io::{AReader, SliceReader};
 use crate::common::FileType;
 use anyhow::Result;
 
 
-pub fn parse(data: &[u8]) -> Result<Instance> {
-    let mut instance = Instance::new(FileType::PCAP);
+pub fn parse(data: &[u8], conf: Configuration) -> Result<Instance> {
+    let mut instance = Instance::new(FileType::PCAP,conf);
     let reader = SliceReader::new(data);
     let _magic = reader.read32(true)?;
     let major = reader.read16(false)?;

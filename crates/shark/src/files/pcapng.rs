@@ -1,4 +1,4 @@
-use crate::common::base::Instance;
+use crate::common::base::{Configuration, Instance};
 use crate::common::io::{AReader, SliceReader};
 use crate::common::FileType;
 use anyhow::Result;
@@ -38,8 +38,8 @@ fn parse_enhance(instance: &mut Instance, data: &[u8]) -> Result<()> {
     }));
     Ok(())
 }
-pub fn parse(data: &[u8]) -> Result<Instance> {
-    let mut instance = Instance::new(FileType::PCAPNG);
+pub fn parse(data: &[u8], conf: Configuration) -> Result<Instance> {
+    let mut instance = Instance::new(FileType::PCAPNG, conf);
     let reader = SliceReader::new(data);
 
     loop {
