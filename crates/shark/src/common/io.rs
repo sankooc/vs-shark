@@ -508,6 +508,33 @@ pub trait AReader: Clone {
         }
         None
     }
+    fn read_to_flag(&self, flag: u8, limit: usize) -> Result<String> {
+        if self.left() < limit {
+            bail!("end of stream");
+        }
+        for inx in 0..limit {
+            let a = self._get_data()[self.cursor() + inx];
+            if a == flag {
+                if let Ok(v) = from_utf8(self.slice(inx)){
+                    return Ok(v.into());
+                }
+            }
+        }
+        bail!("end of stream");
+    }
+
+    fn read_space(&self, limit: usize) -> Option<String> {
+        if self.left() < limit {
+            return None;
+        }
+        for inx in 0..limit {
+            let a = self._get_data()[self.cursor() + inx];
+            if a == 32 {
+                return from_utf8(self.slice(inx)).ok().map(|f| f.into());
+            }
+        }
+        None
+    }
     /// Reads a Type-Length-Value (TLV) encoded data from the byte stream.
     ///
     /// The function determines the length of the TLV based on the byte

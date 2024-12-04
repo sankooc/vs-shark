@@ -260,7 +260,7 @@ where
         self.fields.borrow_mut().push(Box::new(TXTPosition { start, size, data: reader.get_raw(), content, props }));
         Ok(val)
     }
-    pub fn build_packet<K, M>(&self, reader: &Reader, opt: impl Fn(&Reader, Option<M>) -> Result<PacketContext<K>>, packet_opt: Option<M>, head: Option<String>) -> Result<Ref2<K>>
+    pub fn build_packet<K, M>(&self, reader: &Reader, opt: impl FnOnce(&Reader, Option<M>) -> Result<PacketContext<K>>, packet_opt: Option<M>, head: Option<String>) -> Result<Ref2<K>>
     where
         K: PacketBuilder + 'static,
         FieldPosition<K>: FieldBuilder<T>,

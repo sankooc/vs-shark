@@ -39,10 +39,10 @@
 
 - **Protocol Support**:
   - **File Formats**: PCAP, PCAPNG
-  - **Link Layer**: Ethernet II, PPPoE, IEEE 1905.1a, SSL
+  - **Link Layer**: Ethernet II, PPPoE, IEEE 1905.1a, IEEE 802.11, SSL
   - **Network Layer**: IPv4, IPv6, ARP, RARP, ICMP, IGMP
   - **Transport Layer**: TCP, UDP
-  - **Application Layer**: TLS, HTTP, DNS, DHCP, SSDP
+  - **Application Layer**: TLS, HTTP, DNS, DHCP, SSDP, SIP
 
 ### Online Demo
 
@@ -59,7 +59,7 @@ Try out [PcapViewer](https://sankooc.github.io/vs-shark/app/) in your browser.
 
 
 <details>
-  <summary>IP Packet Overview</summary>
+  <summary>Overview</summary>
   <img src="assets/overview.png" width="80%" alt="IP Packet Overview"/>
 </details>
 
