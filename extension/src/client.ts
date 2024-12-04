@@ -1,4 +1,4 @@
-import { load, WContext, FrameInfo, Field } from 'rshark';
+import { load, WContext, FrameInfo, Field, Conf } from 'rshark';
 import { ComLog, ComMessage, IContextInfo, OverviewSource, IOverviewData, Pagination, IResult, CField, HexV } from './common';
 
 export class Statc {
@@ -41,7 +41,7 @@ export abstract class PCAPClient {
     if (!this.ctx && this.data) {
       try {
         const _start = Date.now();
-        this.ctx = load(this.data as Uint8Array);
+        this.ctx = load(this.data as Uint8Array, Conf.new(false));
         this.cost = Date.now() - _start;
         this._info();
       } catch (e) {
@@ -57,6 +57,9 @@ export abstract class PCAPClient {
       this._cache.info.cost = this.cost;
     }
     return this._cache.info;
+  }
+  setStatus(status: number){
+    this.emitMessage(new ComMessage('_status', status));
   }
   _protocols(): void {
     if (this.ready && this.ctx) {
