@@ -17,6 +17,7 @@ fn execute(source: u16, target: u16) -> &'static str {
         5353 => "mdns",
         137 => "nbns",
         1900 => "ssdp",
+        5060 | 5061 => "sip",
         _ => {
             match target {
                 53 => "dns",
@@ -24,6 +25,7 @@ fn execute(source: u16, target: u16) -> &'static str {
                 5353 => "mdns",
                 137 => "nbns",
                 1900 => "ssdp",
+                5060| 5061 => "sip",
                 _ => "none",
             }
         },

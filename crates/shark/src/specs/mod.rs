@@ -134,6 +134,7 @@ pub fn _parse(proto: &'static str) -> anyhow::Result<&dyn Visitor>{
         "dhcp" => &dhcp::DHCPVisitor,
         "loopback" => &ethernet::null::NullVisitor,
         "radiotap" => &ethernet::ieee80211::RadiotapVisitor,
+        "sip" => &sip::SIPVisitor,
         // "tls" => &tls::TLSVisitor,
         // "http" => &http::HTTPVisitor,
         _ => bail!("none"),

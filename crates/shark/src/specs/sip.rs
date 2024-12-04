@@ -70,6 +70,27 @@ impl SIPRequest {
     }
 }
 
+#[derive(Default, Packet2)]
+struct SIPResponse {
+    code: String,
+    reason: String,
+}
+
+impl std::fmt::Display for SIPResponse {
+    fn fmt(&self, fmt: &mut Formatter) -> std::fmt::Result {
+        fmt.write_fmt(format_args!("Status-Line: SIP/2.0 {} {}", self.code, self.reason))
+    }
+}
+impl SIPResponse {
+    fn _create(reader: &Reader, packet: &PacketContext<Self>, p: &mut std::cell::RefMut<Self>, _: Option<PacketOpt>) -> Result<()> {
+        reader._move(8);
+        let method_read = |reader: &Reader| reader.read_space(10).ok_or(anyhow::Error::msg("parse_error"));
+        p.code = packet.build_format(reader, method_read, None, "Status Code: {}")?;
+        reader._move(1);
+        p.reason = reader.read_enter()?;
+        Ok(())
+    }
+}
 
 // #[derive(Default, Packet)]
 // struct Address {
@@ -207,7 +228,12 @@ impl SIP {
                         }
                         
                     }
-                    // "SIP/2.0" => {},
+                    "SIP/2.0" => {
+                        _p._type = "Status";
+                        packet.build_packet(reader, SIPResponse::create, None, None)?;
+                        packet.build_packet(reader, MessageHeader::create, None, None)?;
+
+                    },
                     _ => bail!("protocol error"),
                 }
             }
