@@ -1,47 +1,8 @@
 #[cfg(test)]
 pub mod tc {
     use shark::common::filter::{PacketProps, Parser};
-    use std::cell::UnsafeCell;
-    use std::collections::HashMap;
-    use std::time::Instant;
-    
-    pub static mut _SINGLETON: UnsafeCell<Option<HashMap<&'static str, Instant>>> = UnsafeCell::new(None);
-    #[macro_export]
-    macro_rules! arch_start {
-        ($name:expr) => {{
-            unsafe {
-                if (*crate::tc::tc::_SINGLETON.get()).is_none() {
-                    *crate::tc::tc::_SINGLETON.get() = Some(HashMap::new());
-                }
-                (*crate::tc::tc::_SINGLETON.get()).as_mut().unwrap().insert($name, std::time::Instant::now());
-            }
-        }};
-    }
-
-    #[macro_export]
-    macro_rules! arch_finish {
-        ($name:expr) => {{
-            unsafe {
-                if (*crate::tc::tc::_SINGLETON.get()).is_none() {
-                    *crate::tc::tc::_SINGLETON.get() = Some(HashMap::new());
-                }
-                if let Some(start) = (*crate::tc::tc::_SINGLETON.get()).as_mut().unwrap().remove($name) {
-                    let elapsed = start.elapsed();
-                    println!("[{}] Elapsed time: {:.3} ms", $name, elapsed.as_millis());
-                } else {
-                    println!("[{}] Timer not found or already finished", $name);
-                }
-            }
-        }};
-    }
     #[test]
     fn test_filter_express() {
-        
-        // let mut grid = term_grid::Grid::new(term_grid::GridOptions {
-        //     filling:     term_grid::Filling::Spaces(1),
-        //     direction:   term_grid::Direction::LeftToRight,
-        // });
-        // grid.add(term_grid::Cell::from(*s));
         {
             let input = "tcp";
             let mut parser = Parser::new(input);

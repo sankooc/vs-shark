@@ -1,0 +1,11 @@
+[package]
+name = "benchmark"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+shark = { path = "../shark"}
+
+
+[dev-dependencies]
+prettytable-rs = "^0.10"
