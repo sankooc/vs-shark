@@ -13,8 +13,8 @@
           "type": "image/png"
         },
         {
-          "src": "./icon128.png",
-          "sizes": "128x128",
+          "src": "./icon144.png",
+          "sizes": "144x144",
           "type": "image/png"
         }
       ]
