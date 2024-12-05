@@ -27,7 +27,7 @@ export default function CommandDemo() {
     const [name, setName] = useState('');
     const [visible, setVisible] = useState(false);
     const [cl, setCl] = useState(false);
-    const [client, setClient] = useState<Client>(null);
+    // const [client, setClient] = useState<Client>(null);
     
     function add_comment() {
         let script = document.createElement('script');
@@ -43,6 +43,11 @@ export default function CommandDemo() {
     }
     useEffect(() => {
         add_comment();
+        window.onmessage = function (e) {
+            if (e.data?.type === 'ready'){
+                iframeRef.current.contentWindow.postMessage(new ComMessage('_status', -1), '*');
+            }
+        };
       }, []);
     const onFileChangeCapture = (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = e.target.files;
@@ -57,7 +62,6 @@ export default function CommandDemo() {
                 const array = new Uint8Array(arrayBuffer);
                 const client = new Client(iframeRef);
                 client.initData(array);
-                setClient(client);
                 client.ready = true;
                 try {
                     client.init();

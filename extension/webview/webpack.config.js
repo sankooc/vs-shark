@@ -5,7 +5,7 @@ module.exports = {
     output: {
         filename: './[name].js',
         path: __dirname + "/../media"
-            },
+    },
     resolve: {
         extensions: [".ts", ".tsx", ".js", ".json", ".less", ".svg"]
     },
@@ -22,6 +22,13 @@ module.exports = {
                     "style-loader",
                     "css-loader",
                 ]
+            }, {
+                test: /\.(png|jpe?g|gif)$/i,
+                use: [
+                    {
+                        loader: 'file-loader',
+                    },
+                ],
             },
         ]
     },

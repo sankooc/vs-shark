@@ -14,7 +14,7 @@
 	"categories": [
 		"Debuggers"
 	],
-	"icon": "icon.png",
+	"icon": "icon256.png",
 	"keywords": [
 		"pcap/pcapng",
 		"network trace",
@@ -64,7 +64,7 @@
 	},
 	"dependencies": {
     "lodash": "^4.17.21",
-    "rshark": "file:../wasm/node"
+    "rshark": "file:../crates/wasm/node"
   },
 	"devDependencies": {
 		"@types/mocha": "^10.0.6",

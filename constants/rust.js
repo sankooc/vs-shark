@@ -72,6 +72,6 @@ let _content = str + "lazy_static! {\r\n" + conts.join('')+ "}";
 
 _content += (items.map((item) => buildMapper(item[0], item[3], item[4])).join('\r\n'))
 
-fs.writeFileSync('../shark/src/constants.rs', _content);
+fs.writeFileSync('../crates/shark/src/constants.rs', _content);
 
 console.log('complete');

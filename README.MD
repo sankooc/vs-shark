@@ -1,9 +1,7 @@
 <p align="center">
-  <img src="assets/icon2.png" width="200px" alt="VS-Shark Logo">
+  <img src="assets/icon.png" width="200px" alt="VS-Shark Logo">
 </p>
-<p align="center">
-  <img src="https://glitch-art.vercel.app/api/simple?word=Pcapviewer&font=Black+Han+Sans" width="200px">
-</p>
+<h1 align="center">Pcapviewer</h1>
 
 <p align="center">
   <a href="/">
@@ -41,10 +39,10 @@
 
 - **Protocol Support**:
   - **File Formats**: PCAP, PCAPNG
-  - **Link Layer**: Ethernet II, PPPoE, IEEE 1905.1a, SSL
+  - **Link Layer**: Ethernet II, PPPoE, IEEE 1905.1a, IEEE 802.11, SSL
   - **Network Layer**: IPv4, IPv6, ARP, RARP, ICMP, IGMP
   - **Transport Layer**: TCP, UDP
-  - **Application Layer**: TLS, HTTP, DNS, DHCP, SSDP
+  - **Application Layer**: TLS, HTTP, DNS, DHCP, SSDP, SIP
 
 ### Online Demo
 
@@ -61,7 +59,7 @@ Try out [PcapViewer](https://sankooc.github.io/vs-shark/app/) in your browser.
 
 
 <details>
-  <summary>IP Packet Overview</summary>
+  <summary>Overview</summary>
   <img src="assets/overview.png" width="80%" alt="IP Packet Overview"/>
 </details>
 
@@ -108,7 +106,7 @@ Install the **PcapViewer** extension from the [VSCode Marketplace](https://marke
 
 #### Install
 
-`cargo install --git https://github.com/sankooc/vs-shark --branch master --bin pcaps`
+Download from [Releases](https://github.com/sankooc/vs-shark/releases)
 
 #### Usage
 

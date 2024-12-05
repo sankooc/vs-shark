@@ -22,6 +22,7 @@ import TLSComponent from './tls';
 // import _dnsRecords from '../mock/dns.json';
 import _httpRecords from '../mock/http.json';
 import { IConnect, IDNSRecord, IHttpMessage, ITCPConversation, ITLSHS } from "../gen";
+import Empty from "./loading/empty";
 // import _tlsRecords from '../mock/tls.json';
 
 
@@ -32,11 +33,6 @@ const itemRenderer = (item, options) => {
     {item.data && <Badge className="ml-auto" value={item.data} />}
   </a>
 };
-
-// framedata: ILines;
-// metadata: IContextInfo;
-// httpdata: IStatistic;
-const eventMapper = {};
 
 let _start = 0;
 const Main = () => {
@@ -72,6 +68,10 @@ const Main = () => {
         }
         case '_dns': {
           setDnsRecords(deserialize(body));
+          break;
+        }
+        case '_status': {
+          setStatus(body);
           break;
         }
         case '_tls': {
@@ -126,8 +126,10 @@ const Main = () => {
         return <TLSComponent items={tlsRecords}/>
     }
     return <Overview framedata={framedata} metadata={meta} httpdata={httpdata} />;
-  }; 
-  // console.log('main', status, select, meta);
+  };
+  if (status == -1) {
+    return <Empty/>
+  }
   if (status == 0) {
     return <Loading/>
     // return <ErrPage/>

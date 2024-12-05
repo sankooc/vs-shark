@@ -6,7 +6,7 @@ hero:
   name: "PcapViewer"
   text: "Network analyzer"
   image:
-    src: ./icon_so.png
+    src: ./icon.png
   actions:
     - theme: brand
       text: VSCode Extension
@@ -30,7 +30,7 @@ features:
     details: The tool delivers intuitive and visually-rich analysis results, simplifying the process of understanding complex packet data.
   - icon:
       src: ./terminal.png
-    title: Terminal-Based Program Support
+    title: Cli Support
     details: provide a terminal-friendly interface to perform packet analysis directly from the command line.
 ---
 

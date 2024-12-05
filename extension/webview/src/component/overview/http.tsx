@@ -15,7 +15,7 @@ function Http(props: Props) {
         {statistic.ip && <div className="ip"><BarChart items={statistic.ip} /></div>}
         {statistic.ip_type && <div className="iptype"><TypePie items={statistic.ip_type} title="IP Types" tooltip="IP Types" /></div>}
         </Card>
-        { props.meta?.http_count &&  <Card className="http-statistic-card">
+        { props.meta?.http_count > 0 &&  <Card className="http-statistic-card">
             {statistic.http_method && <Card>
                 <TypePie items={statistic.http_method} title="HTTP Method Usage" tooltip="http method" />
             </Card>}
@@ -26,7 +26,6 @@ function Http(props: Props) {
                 <TypePie items={statistic.http_type} title="Content-Type Distribution" tooltip="resp type" />
             </Card>}
         </Card>}
-        
     </>);
 }
 

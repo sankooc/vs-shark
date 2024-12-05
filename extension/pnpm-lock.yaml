@@ -9,8 +9,8 @@ dependencies:
     specifier: ^4.17.21
     version: 4.17.21
   rshark:
-    specifier: file:../wasm/node
-    version: file:../wasm/node
+    specifier: file:../crates/wasm/node
+    version: file:../crates/wasm/node
 
 devDependencies:
   '@types/mocha':
@@ -2474,7 +2474,7 @@ packages:
     engines: {node: '>=10'}
     dev: true
 
-  file:../wasm/node:
-    resolution: {directory: ../wasm/node, type: directory}
+  file:../crates/wasm/node:
+    resolution: {directory: ../crates/wasm/node, type: directory}
     name: nshark
     dev: false
