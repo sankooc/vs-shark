@@ -13,11 +13,11 @@ export default function Head(props: Props) {
                 <Card className="flex-1" key={index}>
                     <div className="flex gap-3 w-full">
                         <span className="w-4rem h-4rem border-circle inline-flex justify-content-center align-items-center text-center">
-                            <i className={item.icon} style={{ fontSize: "2.4rem", color: item.iconColor }} />
+                            <i className={item.icon} style={{ fontSize: "2rem", color: item.iconColor }} />
                         </span>
                         <div className="flex flex-column gap-1 flex-grow-1">
-                            <span className="font-bold" style={{ textAlign: "right", fontSize: "1.6rem" }}>{item.value}</span>
-                            <span className="text-secondary" style={{ textAlign: "right", fontSize: "1.5rem" }}>{item.label}</span>
+                            <span className="font-bold" style={{ textAlign: "right", fontSize: "1.2rem" }}>{item.value}</span>
+                            <span className="text-secondary" style={{ textAlign: "right", fontSize: "1.2rem" }}>{item.label}</span>
                         </div>
                     </div>
                 </Card>
