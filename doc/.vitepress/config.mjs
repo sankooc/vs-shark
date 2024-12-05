@@ -17,29 +17,35 @@ export default defineConfig({
     sidebar: {
       '/pages/': [
         {
-          text: 'Document',
+          text: '📓 Document',
           items: [
             { text: 'Overview', link: '/pages/overview' },
             { text: 'Getting Started', link: '/pages/getting-started' },
           ]
         },
         {
-          text: 'Protocol Status',
+          text: '🚧 Protocol Status',
           items: [
             { text: 'ICMP', link: '/specs/icmp' },
             { text: 'IEEE802/11', link: '/specs/ieee' },
           ]
         },
         {
-          text: 'Specs',
+          text: '🚥 Specs',
           items: [
             { text: 'Wifi', link: '/pages/link_127.md' },
           ]
         },
         {
-          text: 'RoadMap',
+          text: '📋 RoadMap',
           items: [
             { text: 'Dev Plan', link: '/pages/roadmap' },
+          ]
+        },
+        {
+          text: '📊 Benchmark',
+          items: [
+            { text: '0.3.11', link: '/pages/benchmark_0.3.1' },
           ]
         }
       ]

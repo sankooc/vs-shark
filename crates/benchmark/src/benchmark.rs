@@ -94,15 +94,16 @@ mod benchmark {
         load_data("tls.pcapng");
         load_data("wifi.pcap");
         load_data("dns.pcapng");
-        // load_data("pppoe.pcap");
-        // load_data("sip.pcap");
-        // load_data("slow.pcap");
+        load_data("pppoe.pcap");
+        load_data("sip.pcap");
+        load_data("slow.pcap");
         arch_print!("type", "times");
     }
 
     #[test]
     fn test_parse(){
-        let f = "pppoe.pcap";
+        env_logger::builder().is_test(true).try_init().unwrap();
+        let f = "slow.pcap";
         let fname = format!("../../../pcaps/{}", f);
         if let Ok(_) = fs::exists(&fname) {
             let data: Vec<u8> = fs::read(&fname).unwrap();

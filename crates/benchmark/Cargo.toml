@@ -3,9 +3,13 @@ name = "benchmark"
 version = "0.1.0"
 edition = "2021"
 
+[profile.dev]
+panic = "unwind"
+
 [dependencies]
 shark = { path = "../shark"}
 
 
 [dev-dependencies]
 prettytable-rs = "^0.10"
+env_logger = "0.11.3"
