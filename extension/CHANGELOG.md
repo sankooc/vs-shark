@@ -33,6 +33,9 @@
 
 - 0.3.11
   * support radiotap
+  
+- 0.3.12
+  * support sip
 
 - 0.4.0
 - 0.5.0

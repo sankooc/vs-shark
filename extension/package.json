@@ -59,13 +59,17 @@
 		"test": "vscode-test"
 	},
 	"vsce": {
-	  "dependencies": false,
-	  "yarn": true
+		"dependencies": false,
+		"yarn": true
+	},
+	"resolutions": {
+      "cross-spawn": "^7.0.5",
+	  "micromatch": "^4.0.8"
 	},
 	"dependencies": {
-    "lodash": "^4.17.21",
-    "rshark": "file:../crates/wasm/node"
-  },
+		"lodash": "^4.17.21",
+		"rshark": "file:../crates/wasm/node"
+	},
 	"devDependencies": {
 		"@types/mocha": "^10.0.6",
 		"@types/node": "20.x",
@@ -77,7 +81,7 @@
 		"eslint": "^8.57.0",
 		"ts-loader": "^9.5.1",
 		"typescript": "^5.4.5",
-		"webpack": "^5.92.0",
+		"webpack": "^5.94.0",
 		"webpack-cli": "^5.1.4"
 	}
 }
