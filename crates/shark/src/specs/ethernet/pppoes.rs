@@ -79,6 +79,9 @@ impl LinkControlProtocol {
                 loop {
                     packet.build_fn(reader, Reader::_read8, Some("ppp.lcp.option.type"), ppp_lcp_option_type_mapper)?;
                     let option_size = reader.read8()?;
+                    if option_size < 2 {
+                        break;
+                    }
                     if !reader._move((option_size - 2) as usize) {
                         break;
                     }
