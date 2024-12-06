@@ -1,7 +1,9 @@
 loc:
 	RUST_LOG=info wasm-pack build --target nodejs -d node
 web:
-	wasm-pack build --target web
+	rm -rf pkg && wasm-pack build --target web
+web-debug:
+	rm -rf pkg && wasm-pack build --target web --debug
 test:
 	RUST_LOG=debug RUST_BACKTRACE=full cargo test --tests -- --nocapture
 clean:

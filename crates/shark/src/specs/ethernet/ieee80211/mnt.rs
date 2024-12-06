@@ -7,7 +7,7 @@ use anyhow::{bail, Result};
 use pcap_derive::{Packet, Packet2};
 
 use crate::{
-    common::base::{Frame, PacketBuilder, PacketContext},
+    common::base::{Frame, PacketContext},
     common::io::Reader,
 };
 
@@ -56,7 +56,7 @@ impl ManagementTag {
         
         // ieee802_mnt_tags_map
         p._type = reader.read8()?;
-        p._type_str = ieee802_mnt_tags_mapper(p._type).leak();
+        p._type_str = ieee802_mnt_tags_mapper(p._type);
         packet.build_backward(reader, 1, format!("Tag Number: {} ({})", p._type_str, p._type));
         if !reader.has() {
             bail!("");

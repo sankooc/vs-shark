@@ -4,7 +4,7 @@ use quote::quote;
 fn impl_packet_macro(ast: &syn::DeriveInput) -> TokenStream {
     let name = &ast.ident;
     let gen = quote! {
-        impl PacketBuilder for #name {
+        impl crate::common::base::PacketBuilder for #name {
             fn new() -> Self {
                 Self {
                     ..Default::default()
@@ -29,7 +29,7 @@ pub fn packet2_macro_derive(input: TokenStream) -> TokenStream {
     let ast:syn::DeriveInput = syn::parse(input).unwrap();
     let name = &ast.ident;
     let gen = quote! {
-        impl PacketBuilder for #name {
+        impl crate::common::base::PacketBuilder for #name {
             fn new() -> Self {
                 Self {
                     ..Default::default()
@@ -41,7 +41,7 @@ pub fn packet2_macro_derive(input: TokenStream) -> TokenStream {
         }
         impl #name {
             pub fn create(reader: &Reader, opt: Option<PacketOpt>) -> Result<PacketContext<Self>> {
-                let packet: PacketContext<Self> = Frame::create_packet();
+                let packet: PacketContext<Self> = crate::common::base::Frame::create_packet();
                 let mut p = packet.get().borrow_mut();
                 let rs = Self::_create(reader, &packet, &mut p, opt);
                 drop(p);
@@ -58,7 +58,7 @@ pub fn proto_packet_macro_derive(input: TokenStream) -> TokenStream {
     let ast:syn::DeriveInput = syn::parse(input).unwrap();
     let name = &ast.ident;
     let gen = quote! {
-        impl PacketBuilder for #name {
+        impl crate::common::base::PacketBuilder for #name {
             fn new() -> Self {
                 Self {
                     ..Default::default()
@@ -70,7 +70,7 @@ pub fn proto_packet_macro_derive(input: TokenStream) -> TokenStream {
         }
         impl #name {
             pub fn create(reader: &Reader, opt: Option<PacketOpt>) -> Result<PacketContext<Self>> {
-                let packet: PacketContext<Self> = Frame::create_packet();
+                let packet: PacketContext<Self> = crate::common::base::Frame::create_packet();
                 let mut p = packet.get().borrow_mut();
                 let rs = Self::_create_with_props(reader, &packet, &mut p, opt);
                 drop(p);
@@ -86,7 +86,7 @@ pub fn packet3_macro_derive(input: TokenStream) -> TokenStream {
     let ast:syn::DeriveInput = syn::parse(input).unwrap();
     let name = &ast.ident;
     let gen = quote! {
-        impl PacketBuilder for #name {
+        impl crate::common::base::PacketBuilder for #name {
             fn new() -> Self {
                 Self {
                     ..Default::default()
@@ -98,7 +98,7 @@ pub fn packet3_macro_derive(input: TokenStream) -> TokenStream {
         }
         impl #name {
             pub fn create<T>(reader: &Reader, opt: Option<T>) -> Result<PacketContext<Self>> {
-                let packet: PacketContext<Self> = Frame::create_packet();
+                let packet: PacketContext<Self> = crate::common::base::Frame::create_packet();
                 let mut p = packet.get().borrow_mut();
                 let rs = Self::_create(reader, &packet, &mut p, opt);
                 drop(p);
@@ -118,8 +118,8 @@ fn impl_ninfo_macro(ast: &syn::DeriveInput) -> TokenStream {
                 self.to_string()
             }
             
-            fn status(&self) -> FIELDSTATUS {
-                FIELDSTATUS::INFO
+            fn status(&self) -> crate::common::FIELDSTATUS {
+                crate::common::FIELDSTATUS::INFO
             }
         }
     };
@@ -137,7 +137,7 @@ pub fn packet4_macro_derive(input: TokenStream) -> TokenStream {
     let ast:syn::DeriveInput = syn::parse(input).unwrap();
     let name = &ast.ident;
     let gen = quote! {
-        impl PacketBuilder for #name {
+        impl crate::common::base::PacketBuilder for #name {
             fn new() -> Self {
                 Self {
                     ..Default::default()
@@ -149,7 +149,7 @@ pub fn packet4_macro_derive(input: TokenStream) -> TokenStream {
         }
         impl #name {
             pub fn create(reader: &Reader, opt: Option<PacketOpt>) -> Result<PacketContext<Self>> {
-                let packet: PacketContext<Self> = Frame::create_packet();
+                let packet: PacketContext<Self> = crate::common::base::Frame::create_packet();
                 let mut p = packet.get().borrow_mut();
                 let rs = Self::_create(reader, &packet, &mut p, opt);
                 drop(p);
@@ -174,7 +174,7 @@ pub fn visitor2_macro_derive(input: TokenStream) -> TokenStream {
     let name = &ast.ident;
     let gen = quote! {
         impl crate::common::base::Visitor for #name {
-            fn visit(&self, frame: &mut Frame, _: &mut Context, reader: &Reader) -> Result<(ProtocolData, &'static str)> {
+            fn visit(&self, frame: &mut crate::common::base::Frame, _: &mut Context, reader: &Reader) -> Result<(ProtocolData, &'static str)> {
                 self.visit2(frame, reader)
             }
         }
@@ -188,7 +188,7 @@ pub fn visitor3_macro_derive(input: TokenStream) -> TokenStream {
     let name = &ast.ident;
     let gen = quote! {
         impl crate::common::base::Visitor for #name {
-            fn visit(&self, _: &mut Frame, _: &mut crate::common::base::Context, reader: &Reader) -> Result<(ProtocolData, &'static str)> {
+            fn visit(&self, _: &mut crate::common::base::Frame, _: &mut crate::common::base::Context, reader: &Reader) -> Result<(ProtocolData, &'static str)> {
                 self.visit2(reader)
             }
         }

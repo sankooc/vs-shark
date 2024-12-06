@@ -5,12 +5,11 @@ use crate::constants::{ppp_lcp_option_type_mapper, ppp_lcp_type_mapper, ppp_type
 use crate::specs::ProtocolData;
 use crate::{
     common::io::Reader,
-    common::base::{Frame, PacketBuilder, PacketContext},
+    common::base::PacketContext,
 };
 use crate::common::io::AReader;
 use anyhow::{Ok, Result};
 use std::fmt::Display;
-use crate::common::FIELDSTATUS;
 
 
 
@@ -56,7 +55,7 @@ impl Display for LinkControlProtocol {
     }
 }
 impl LinkControlProtocol {
-    fn _type(&self) -> String {
+    fn _type(&self) -> &'static str {
         ppp_lcp_type_mapper(self._type)
     }
     fn _type_desc(&self) -> String {

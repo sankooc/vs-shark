@@ -11,7 +11,7 @@ use pcap_derive::Packet2;
 
 use crate::common::Ref2;
 use crate::{
-    common::base::{Frame, PacketBuilder, PacketContext, PacketOpt},
+    common::base::{PacketContext, PacketOpt},
     common::io::Reader,
     constants::{tls_cipher_suites_mapper, tls_extension_mapper, tls_hs_message_type_mapper, tls_min_type_mapper},
 };
@@ -105,7 +105,8 @@ impl std::fmt::Display for Extenstion {
     }
 }
 impl Extenstion {
-    fn _type(&self) -> String {
+
+    fn _type(&self) -> &'static str {
         tls_extension_mapper(self._type)
     }
     fn _type_desc(&self) -> String {
@@ -536,7 +537,7 @@ impl HandshakeClientHello {
     }
     pub fn ciphers(&self) -> Vec<String> {
         let reff = self.ciper_suites.as_ref().borrow();
-        let list = reff.suites.iter().map(|f| tls_cipher_suites_mapper(*f)).collect::<_>();
+        let list = reff.suites.iter().map(|f| tls_cipher_suites_mapper(*f).into()).collect::<Vec<String>>();
         drop(reff);
         list
     }
@@ -576,7 +577,7 @@ pub struct HandshakeServerHello {
     extensions: Option<ExtenstionPack>,
 }
 impl HandshakeServerHello {
-    pub fn ciper_suite(&self) -> String {
+    pub fn ciper_suite(&self) -> &'static str {
         tls_cipher_suites_mapper(self.ciper_suite)
     }
     pub fn versions(&self) -> Option<String> {
@@ -727,7 +728,7 @@ impl std::fmt::Display for HandshakeProtocol {
     }
 }
 impl HandshakeProtocol {
-    fn _type(&self) -> String {
+    fn _type(&self) -> &'static str {
         tls_hs_message_type_mapper(self._type)
     }
     fn msg(&self) -> &'static str {

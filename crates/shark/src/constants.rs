@@ -1,2786 +1,2725 @@
-use lazy_static::lazy_static;
-use std::collections::HashMap;
-lazy_static! {
-	pub static ref link_type_map: HashMap<u16, &'static str> = {
-		let mut m = HashMap::new();
-		m.insert(0, "NULL");
-		m.insert(1, "ETHERNET");
-		m.insert(2, "EXP_ETHERNET");
-		m.insert(3, "AX25");
-		m.insert(4, "PRONET");
-		m.insert(5, "CHAOS");
-		m.insert(6, "IEEE802_5");
-		m.insert(7, "ARCNET_BSD");
-		m.insert(8, "SLIP");
-		m.insert(9, "PPP");
-		m.insert(10, "FDDI");
-		m.insert(32, "DLT_REDBACK_SMARTEDGE");
-		m.insert(50, "PPP_HDLC");
-		m.insert(51, "PPP_ETHER");
-		m.insert(99, "SYMANTEC_FIREWALL");
-		m.insert(100, "ATM_RFC1483");
-		m.insert(101, "RAW");
-		m.insert(104, "C_HDLC");
-		m.insert(105, "IEEE802_11");
-		m.insert(106, "ATM_CLIP");
-		m.insert(107, "FRELAY");
-		m.insert(108, "LOOP");
-		m.insert(109, "ENC");
-		m.insert(112, "NETBSD_HDLC");
-		m.insert(113, "LINUX_SLL");
-		m.insert(114, "LTALK");
-		m.insert(115, "DLT_ECONET");
-		m.insert(116, "DLT_IPFILTER");
-		m.insert(117, "PFLOG");
-		m.insert(118, "DLT_CISCO_IOS");
-		m.insert(119, "IEEE802_11_PRISM");
-		m.insert(120, "DLT_AIRONET_HEADER");
-		m.insert(122, "IP_OVER_FC");
-		m.insert(123, "SUNATM");
-		m.insert(124, "DLT_RIO");
-		m.insert(125, "DLT_PCI_EXP");
-		m.insert(126, "DLT_AURORA");
-		m.insert(127, "IEEE802_11_RADIOTAP");
-		m.insert(128, "TZSP");
-		m.insert(129, "ARCNET_LINUX");
-		m.insert(130, "JUNIPER_MLPPP");
-		m.insert(131, "JUNIPER_MLFR");
-		m.insert(132, "JUNIPER_ES");
-		m.insert(133, "JUNIPER_GGSN");
-		m.insert(134, "JUNIPER_MFR");
-		m.insert(135, "JUNIPER_ATM2");
-		m.insert(136, "JUNIPER_SERVICES");
-		m.insert(137, "JUNIPER_ATM1");
-		m.insert(138, "APPLE_IP_OVER_IEEE1394");
-		m.insert(139, "MTP2_WITH_PHDR");
-		m.insert(140, "MTP2");
-		m.insert(141, "MTP3");
-		m.insert(142, "SCCP");
-		m.insert(143, "DOCSIS");
-		m.insert(144, "LINUX_IRDA");
-		m.insert(145, "IBM_SP");
-		m.insert(146, "IBM_SN");
-		m.insert(147, "USER0_USER15");
-		m.insert(163, "IEEE802_11_AVS");
-		m.insert(164, "JUNIPER_MONITOR");
-		m.insert(165, "BACNET_MS_TP");
-		m.insert(166, "PPP_PPPD");
-		m.insert(167, "JUNIPER_PPPOE");
-		m.insert(168, "JUNIPER_PPPOE_ATM");
-		m.insert(169, "GPRS_LLC");
-		m.insert(170, "GPF_T");
-		m.insert(171, "GPF_F");
-		m.insert(172, "GCOM_T1E1");
-		m.insert(173, "GCOM_SERIAL");
-		m.insert(174, "JUNIPER_PIC_PEER");
-		m.insert(175, "ERF_ETH");
-		m.insert(176, "ERF_POS");
-		m.insert(177, "LINUX_LAPD");
-		m.insert(178, "JUNIPER_ETHER");
-		m.insert(179, "JUNIPER_PPP");
-		m.insert(180, "JUNIPER_FRELAY");
-		m.insert(181, "JUNIPER_CHDLC");
-		m.insert(182, "MFR");
-		m.insert(183, "JUNIPER_VP");
-		m.insert(184, "A429");
-		m.insert(185, "A653_ICM");
-		m.insert(186, "USB_FREEBSD");
-		m.insert(187, "BLUETOOTH_HCI_H4");
-		m.insert(188, "IEEE802_16_MAC_CPS");
-		m.insert(189, "USB_LINUX");
-		m.insert(190, "CAN20B");
-		m.insert(191, "IEEE802_15_4_LINUX");
-		m.insert(192, "PPI");
-		m.insert(193, "IEEE802_16_MAC_CPS_RADIO");
-		m.insert(194, "JUNIPER_ISM");
-		m.insert(195, "IEEE802_15_4_WITHFCS");
-		m.insert(196, "SITA");
-		m.insert(197, "ERF");
-		m.insert(198, "RAIF1");
-		m.insert(199, "IPMB_KONTRON");
-		m.insert(200, "JUNIPER_ST");
-		m.insert(201, "BLUETOOTH_HCI_H4_WITH_PHDR");
-		m.insert(202, "AX25_KISS");
-		m.insert(203, "LAPD");
-		m.insert(204, "PPP_WITH_DIR");
-		m.insert(205, "C_HDLC_WITH_DIR");
-		m.insert(206, "FRELAY_WITH_DIR");
-		m.insert(207, "LAPB_WITH_DIR");
-		m.insert(209, "IPMB_LINUX");
-		m.insert(210, "FLEXRAY");
-		m.insert(211, "MOST");
-		m.insert(212, "LIN");
-		m.insert(213, "X2E_SERIAL");
-		m.insert(214, "X2E_XORAYA");
-		m.insert(215, "IEEE802_15_4_NONASK_PHY");
-		m.insert(216, "LINUX_EVDEV");
-		m.insert(217, "GSMTAP_UM");
-		m.insert(218, "GSMTAP_ABIS");
-		m.insert(219, "MPLS");
-		m.insert(220, "USB_LINUX_MMAPPED");
-		m.insert(221, "DECT");
-		m.insert(222, "AOS");
-		m.insert(223, "WIHART");
-		m.insert(224, "FC_2");
-		m.insert(225, "FC_2_WITH_FRAME_DELIMS");
-		m.insert(226, "IPNET");
-		m.insert(227, "CAN_SOCKETCAN");
-		m.insert(228, "IPV4");
-		m.insert(229, "IPV6");
-		m.insert(230, "IEEE802_15_4_NOFCS");
-		m.insert(231, "DBUS");
-		m.insert(232, "JUNIPER_VS");
-		m.insert(233, "JUNIPER_SRX_E2E");
-		m.insert(234, "JUNIPER_FIBRECHANNEL");
-		m.insert(235, "DVB_CI");
-		m.insert(236, "MUX27010");
-		m.insert(237, "STANAG_5066_D_PDU");
-		m.insert(238, "JUNIPER_ATM_CEMIC");
-		m.insert(239, "NFLOG");
-		m.insert(240, "NETANALYZER");
-		m.insert(241, "NETANALYZER_TRANSPARENT");
-		m.insert(242, "IPOIB");
-		m.insert(243, "MPEG_2_TS");
-		m.insert(244, "NG40");
-		m.insert(245, "NFC_LLCP");
-		m.insert(246, "PFSYNC");
-		m.insert(247, "INFINIBAND");
-		m.insert(248, "SCTP");
-		m.insert(249, "USBPCAP");
-		m.insert(250, "RTAC_SERIAL");
-		m.insert(251, "BLUETOOTH_LE_LL");
-		m.insert(252, "WIRESHARK_UPPER_PDU");
-		m.insert(253, "NETLINK");
-		m.insert(254, "BLUETOOTH_LINUX_MONITOR");
-		m.insert(255, "BLUETOOTH_BREDR_BB");
-		m.insert(256, "BLUETOOTH_LE_LL_WITH_PHDR");
-		m.insert(257, "PROFIBUS_DL");
-		m.insert(258, "PKTAP");
-		m.insert(259, "EPON");
-		m.insert(260, "IPMI_HPM_2");
-		m.insert(261, "ZWAVE_R1_R2");
-		m.insert(262, "ZWAVE_R3");
-		m.insert(263, "WATTSTOPPER_DLM");
-		m.insert(264, "ISO_14443");
-		m.insert(265, "RDS");
-		m.insert(266, "USB_DARWIN");
-		m.insert(267, "OPENFLOW");
-		m.insert(268, "SDLC");
-		m.insert(269, "TI_LLN_SNIFFER");
-		m.insert(270, "LORATAP");
-		m.insert(271, "VSOCK");
-		m.insert(272, "NORDIC_BLE");
-		m.insert(273, "DOCSIS31_XRA31");
-		m.insert(274, "ETHERNET_MPACKET");
-		m.insert(275, "DISPLAYPORT_AUX");
-		m.insert(276, "LINUX_SLL2");
-		m.insert(277, "SERCOS_MONITOR");
-		m.insert(278, "OPENVIZSLA");
-		m.insert(279, "EBHSCR");
-		m.insert(280, "VPP_DISPATCH");
-		m.insert(281, "DSA_TAG_BRCM");
-		m.insert(282, "DSA_TAG_BRCM_PREPEND");
-		m.insert(283, "IEEE802_15_4_TAP");
-		m.insert(284, "DSA_TAG_DSA");
-		m.insert(285, "DSA_TAG_EDSA");
-		m.insert(286, "ELEE");
-		m.insert(287, "Z_WAVE_SERIAL");
-		m.insert(288, "USB_2_0");
-		m.insert(289, "ATSC_ALP");
-		m.insert(290, "ETW");
-		m.insert(291, "NETANALYZER_NG");
-		m.insert(292, "ZBOSS_NCP");
-		m.insert(293, "USB_2_0_LOW_SPEED");
-		m.insert(294, "USB_2_0_FULL_SPEED");
-		m.insert(295, "USB_2_0_HIGH_SPEED");
-		m.insert(296, "AUERSWALD_LOG");
-		m.insert(297, "ZWAVE_TAP");
-		m.insert(298, "SILABS_DEBUG_CHANNEL");
-		m.insert(299, "FIRA_UCI");
-		m.insert(300, "MDB");
-		m.insert(301, "DECT_NR");
-		m
-	};
-	pub static ref ip_protocol_type_map: HashMap<u16, &'static str> = {
-		let mut m = HashMap::new();
-		m.insert(0, "HOPOPT");
-		m.insert(1, "ICMP");
-		m.insert(2, "IGMP");
-		m.insert(3, "GGP");
-		m.insert(4, "IP-in-IP");
-		m.insert(5, "ST");
-		m.insert(6, "TCP");
-		m.insert(7, "CBT");
-		m.insert(8, "EGP");
-		m.insert(9, "IGP");
-		m.insert(10, "BBN-RCC-MON");
-		m.insert(11, "NVP-II");
-		m.insert(12, "PUP");
-		m.insert(13, "ARGUS");
-		m.insert(14, "EMCON");
-		m.insert(15, "XNET");
-		m.insert(16, "CHAOS");
-		m.insert(17, "UDP");
-		m.insert(18, "MUX");
-		m.insert(19, "DCN-MEAS");
-		m.insert(20, "HMP");
-		m.insert(21, "PRM");
-		m.insert(22, "XNS-IDP");
-		m.insert(23, "TRUNK-1");
-		m.insert(24, "TRUNK-2");
-		m.insert(25, "LEAF-1");
-		m.insert(26, "LEAF-2");
-		m.insert(27, "RDP");
-		m.insert(28, "IRTP");
-		m.insert(29, "ISO-TP4");
-		m.insert(30, "NETBLT");
-		m.insert(31, "MFE-NSP");
-		m.insert(32, "MERIT-INP");
-		m.insert(33, "DCCP");
-		m.insert(34, "3PC");
-		m.insert(35, "IDPR");
-		m.insert(36, "XTP");
-		m.insert(37, "DDP");
-		m.insert(38, "IDPR-CMTP");
-		m.insert(39, "TP++");
-		m.insert(40, "IL");
-		m.insert(41, "IPv6");
-		m.insert(42, "SDRP");
-		m.insert(43, "IPv6-Route");
-		m.insert(44, "IPv6-Frag");
-		m.insert(45, "IDRP");
-		m.insert(46, "RSVP");
-		m.insert(47, "GRE");
-		m.insert(48, "DSR");
-		m.insert(49, "BNA");
-		m.insert(50, "ESP");
-		m.insert(51, "AH");
-		m.insert(52, "I-NLSP");
-		m.insert(53, "SwIPe");
-		m.insert(54, "NARP");
-		m.insert(55, "MOBILE");
-		m.insert(56, "TLSP");
-		m.insert(57, "SKIP");
-		m.insert(58, "IPv6-ICMP");
-		m.insert(59, "IPv6-NoNxt");
-		m.insert(60, "IPv6-Opts");
-		m.insert(61, "Any");
-		m.insert(62, "CFTP");
-		m.insert(63, "Any");
-		m.insert(64, "SAT-EXPAK");
-		m.insert(65, "KRYPTOLAN");
-		m.insert(66, "RVD");
-		m.insert(67, "IPPC");
-		m.insert(68, "Any");
-		m.insert(69, "SAT-MON");
-		m.insert(70, "VISA");
-		m.insert(71, "IPCU");
-		m.insert(72, "CPNX");
-		m.insert(73, "CPHB");
-		m.insert(74, "WSN");
-		m.insert(75, "PVP");
-		m.insert(76, "BR-SAT-MON");
-		m.insert(77, "SUN-ND");
-		m.insert(78, "WB-MON");
-		m.insert(79, "WB-EXPAK");
-		m.insert(80, "ISO-IP");
-		m.insert(81, "VMTP");
-		m.insert(82, "SECURE-VMTP");
-		m.insert(83, "VINES");
-		m.insert(84, "TTP");
-		m.insert(85, "NSFNET-IGP");
-		m.insert(86, "DGP");
-		m.insert(87, "TCF");
-		m.insert(88, "EIGRP");
-		m.insert(89, "OSPF");
-		m.insert(90, "Sprite-RPC");
-		m.insert(91, "LARP");
-		m.insert(92, "MTP");
-		m.insert(93, "AX.25");
-		m.insert(94, "OS");
-		m.insert(95, "MICP");
-		m.insert(96, "SCC-SP");
-		m.insert(97, "ETHERIP");
-		m.insert(98, "ENCAP");
-		m.insert(99, "Any");
-		m.insert(100, "GMTP");
-		m.insert(101, "IFMP");
-		m.insert(102, "PNNI");
-		m.insert(103, "PIM");
-		m.insert(104, "ARIS");
-		m.insert(105, "SCPS");
-		m.insert(106, "QNX");
-		m.insert(107, "A/N");
-		m.insert(108, "IPComp");
-		m.insert(109, "SNP");
-		m.insert(110, "Compaq-Peer");
-		m.insert(111, "IPX-in-IP");
-		m.insert(112, "VRRP");
-		m.insert(113, "PGM");
-		m.insert(114, "Any");
-		m.insert(115, "L2TP");
-		m.insert(116, "DDX");
-		m.insert(117, "IATP");
-		m.insert(118, "STP");
-		m.insert(119, "SRP");
-		m.insert(120, "UTI");
-		m.insert(121, "SMP");
-		m.insert(122, "SM");
-		m.insert(123, "PTP");
-		m.insert(124, "IS-IS");
-		m.insert(125, "FIRE");
-		m.insert(126, "CRTP");
-		m.insert(127, "CRUDP");
-		m.insert(128, "SSCOPMCE");
-		m.insert(129, "IPLT");
-		m.insert(130, "SPS");
-		m.insert(131, "PIPE");
-		m.insert(132, "SCTP");
-		m.insert(133, "FC");
-		m.insert(134, "RSVP-E2E-IGNORE");
-		m.insert(135, "Mobility");
-		m.insert(136, "UDPLite");
-		m.insert(137, "MPLS-in-IP");
-		m.insert(138, "manet");
-		m.insert(139, "HIP");
-		m.insert(140, "Shim6");
-		m.insert(141, "WESP");
-		m.insert(142, "ROHC");
-		m.insert(143, "Ethernet");
-		m.insert(144, "AGGFRAG");
-		m.insert(145, "NSH");
-		m
-	};
-	pub static ref ssl_type_map: HashMap<u16, &'static str> = {
-		let mut m = HashMap::new();
-		m.insert(0, "Sent to us");
-		m.insert(1, "Boardcast");
-		m.insert(2, "Multicast not boardcast");
-		m.insert(3, "Send to somebody else by somebody else");
-		m.insert(4, "Send by us");
-		m
-	};
-	pub static ref etype_map: HashMap<u16, &'static str> = {
-		let mut m = HashMap::new();
-		m.insert(2048, "IPv4");
-		m.insert(2049, "X.75");
-		m.insert(2053, "X.25 Level 3");
-		m.insert(2054, "ARP");
-		m.insert(2056, "Frame Relay ARP");
-		m.insert(8947, "TRILL");
-		m.insert(8948, "L2-IS-IS");
-		m.insert(25944, "Trans Ether Bridging");
-		m.insert(25945, "Raw Frame Relay");
-		m.insert(32821, "RARP");
-		m.insert(32923, "Appletalk");
-		m.insert(33024, "802.1Q");
-		m.insert(33079, "IPX/SPX");
-		m.insert(33100, "SNMP");
-		m.insert(34525, "IPv6");
-		m.insert(34667, "TCP/IP Compression");
-		m.insert(34668, "IP Autonomous Systems");
-		m.insert(34669, "Secure Data");
-		m.insert(34824, "IEEE Std 802.3 - Ethernet Passive Optical Network (EPON)");
-		m.insert(34827, "PPP");
-		m.insert(34828, "General Switch Management Protocol (GSMP)");
-		m.insert(34887, "MPLS (multiprotocol label switching)");
-		m.insert(34888, "MPLS with upstream-assigned label");
-		m.insert(34915, "PPP over Ethernet (PPPoE) Discovery Stage");
-		m.insert(34916, "PPP over Ethernet (PPPoE) Session Stage");
-		m.insert(34958, "IEEE Std 802.1X - Port-based network access control");
-		m.insert(34984, "IEEE Std 802.1Q - Service VLAN tag identifier (S-Tag)");
-		m.insert(34999, "IEEE Std 802 - OUI Extended Ethertype");
-		m.insert(35015, "IEEE Std 802.11 - Pre-Authentication (802.11i)");
-		m.insert(35020, "IEEE Std 802.1AB - Link Layer Discovery Protocol (LLDP)");
-		m.insert(35045, "IEEE Std 802.1AE - Media Access Control Security");
-		m.insert(35061, "IEEE Std 802.1Q - Multiple VLAN Registration Protocol (MVRP)");
-		m.insert(35062, "IEEE Std 802.1Q - Multiple Multicast Registration Protocol (MMRP)");
-		m.insert(35131, "FGL");
-		m.insert(35142, "TRILL RBridge Channel");
-		m.insert(35130, "IEE 1905.1a");
-		m.insert(35085, "TDLS");
-		m
-	};
-	pub static ref tcp_option_kind_map: HashMap<u16, &'static str> = {
-		let mut m = HashMap::new();
-		m.insert(0, "End OF LIST");
-		m.insert(1, "No Operation");
-		m.insert(2, "Max segment size");
-		m.insert(3, "Window scale");
-		m.insert(4, "Selective Acknowledgement permitted");
-		m.insert(5, "Selective ACKnowledgement SACK");
-		m.insert(8, "echo of previous timestamp");
-		m.insert(28, "User Timeout Option");
-		m.insert(29, "TCP Authentication");
-		m.insert(30, "MPTCP");
-		m
-	};
-	pub static ref dns_class_map: HashMap<u16, &'static str> = {
-		let mut m = HashMap::new();
-		m.insert(1, "IN");
-		m.insert(2, "CS");
-		m.insert(3, "CH");
-		m.insert(4, "HS");
-		m
-	};
-	pub static ref dns_type_map: HashMap<u16, &'static str> = {
-		let mut m = HashMap::new();
-		m.insert(1, "A");
-		m.insert(2, "NS");
-		m.insert(3, "MD");
-		m.insert(4, "MF");
-		m.insert(5, "CNAME");
-		m.insert(6, "SOA");
-		m.insert(7, "MB");
-		m.insert(8, "MG");
-		m.insert(9, "MR");
-		m.insert(10, "NULL");
-		m.insert(11, "WKS");
-		m.insert(12, "PTR");
-		m.insert(13, "HINFO");
-		m.insert(14, "MINFO");
-		m.insert(15, "MX");
-		m.insert(16, "TXT");
-		m.insert(17, "RP");
-		m.insert(18, "AFSDB");
-		m.insert(19, "X25");
-		m.insert(20, "ISDN");
-		m.insert(21, "RT");
-		m.insert(22, "NSAP");
-		m.insert(23, "NSAP-PTR");
-		m.insert(24, "SIG");
-		m.insert(25, "KEY");
-		m.insert(26, "PX");
-		m.insert(27, "GPOS");
-		m.insert(28, "AAAA");
-		m.insert(29, "LOC");
-		m.insert(30, "NXT");
-		m.insert(31, "EID");
-		m.insert(32, "NIMLOC");
-		m.insert(33, "SRV");
-		m.insert(34, "ATMA");
-		m.insert(35, "NAPTR");
-		m.insert(36, "KX");
-		m.insert(37, "CERT");
-		m.insert(38, "A6");
-		m.insert(39, "DNAME");
-		m.insert(40, "SINK");
-		m.insert(41, "OPT");
-		m.insert(42, "APL");
-		m.insert(43, "DS");
-		m.insert(44, "SSHFP");
-		m.insert(45, "IPSECKEY");
-		m.insert(46, "RRSIG");
-		m.insert(47, "NSEC");
-		m.insert(48, "DNSKEY");
-		m.insert(49, "DHCID");
-		m.insert(50, "NSEC3");
-		m.insert(51, "NSEC3PARAM");
-		m.insert(52, "TLSA");
-		m.insert(55, "HIP");
-		m.insert(57, "RKEY");
-		m.insert(58, "TALINK");
-		m.insert(59, "CDS");
-		m.insert(60, "CDNSKEY");
-		m.insert(61, "OPENPGPKEY");
-		m.insert(62, "CSYNC");
-		m.insert(63, "ZONEMD");
-		m.insert(64, "SVCB");
-		m.insert(65, "HTTPS");
-		m.insert(99, "SPF");
-		m.insert(100, "UINFO");
-		m.insert(101, "UID");
-		m.insert(102, "GID");
-		m.insert(103, "UNSPEC");
-		m.insert(104, "NID");
-		m.insert(105, "L32");
-		m.insert(106, "L64");
-		m.insert(107, "LP");
-		m.insert(108, "EUI48");
-		m.insert(109, "EUI64");
-		m.insert(249, "TKEY");
-		m.insert(250, "TSIG");
-		m.insert(251, "IXFR");
-		m.insert(252, "AXFR");
-		m.insert(253, "MAILB");
-		m.insert(254, "MAILA");
-		m.insert(255, "ANY");
-		m.insert(256, "URI");
-		m.insert(257, "CAA");
-		m.insert(258, "AVC");
-		m.insert(259, "DOA");
-		m.insert(260, "AMTRELAY");
-		m.insert(261, "RESINFO");
-		m.insert(262, "WALLET");
-		m.insert(32768, "TA");
-		m.insert(32769, "DLV");
-		m.insert(65281, "WINS");
-		m.insert(65282, "WINS-R");
-		m.insert(65422, "XPF");
-		m
-	};
-	pub static ref ieee802_subtype_map: HashMap<u8, &'static str> = {
-		let mut m = HashMap::new();
-		m.insert(0, "Association Request");
-		m.insert(1, "Association Response");
-		m.insert(2, "Reassociation Request");
-		m.insert(3, "Reassociation Response");
-		m.insert(4, "Probe Request");
-		m.insert(5, "Probe Response");
-		m.insert(6, "Measurement Pilot");
-		m.insert(8, "Beacon frame");
-		m.insert(9, "ATIM");
-		m.insert(10, "Disassociate");
-		m.insert(11, "Authentication");
-		m.insert(12, "Deauthentication");
-		m.insert(13, "Action");
-		m.insert(14, "Action No Ack");
-		m.insert(15, "Aruba Management");
-		m.insert(18, "Trigger");
-		m.insert(19, "TWT Ack");
-		m.insert(20, "Beamforming Report Poll");
-		m.insert(21, "VHT/HE/EHT/RANGING NDP Announcement");
-		m.insert(23, "Control Wrapper");
-		m.insert(24, "802.11 Block Ack Req");
-		m.insert(25, "802.11 Block Ack");
-		m.insert(26, "Power-Save poll");
-		m.insert(27, "Request-to-send");
-		m.insert(28, "Clear-to-send");
-		m.insert(29, "Acknowledgement");
-		m.insert(30, "CF-End (Control-frame)");
-		m.insert(31, "CF-End + CF-Ack (Control-frame)");
-		m.insert(32, "Data");
-		m.insert(33, "Data + CF-Ack");
-		m.insert(34, "Data + CF-Poll");
-		m.insert(35, "Data + CF-Ack + CF-Poll");
-		m.insert(36, "Null function (No data)");
-		m.insert(37, "Acknowledgement (No data)");
-		m.insert(38, "CF-Poll (No data)");
-		m.insert(39, "CF-Ack/Poll (No data)");
-		m.insert(40, "QoS Data");
-		m.insert(41, "QoS Data + CF-Acknowledgment");
-		m.insert(42, "QoS Data + CF-Poll");
-		m.insert(43, "QoS Data + CF-Ack + CF-Poll");
-		m.insert(44, "QoS Null function (No data)");
-		m.insert(46, "QoS CF-Poll (No Data)");
-		m.insert(47, "QoS CF-Ack + CF-Poll (No data)");
-		m
-	};
-	pub static ref ieee802_mnt_tags_map: HashMap<u8, &'static str> = {
-		let mut m = HashMap::new();
-		m.insert(0, "SSID parameter set");
-		m.insert(1, "Supported Rates");
-		m.insert(2, "FH Parameter set");
-		m.insert(3, "DS Parameter set");
-		m.insert(4, "CF Parameter set");
-		m.insert(5, "Traffic Indication Map (TIM)");
-		m.insert(6, "IBSS Parameter set");
-		m.insert(7, "Country Information");
-		m.insert(8, "Hopping Pattern Parameters");
-		m.insert(9, "Hopping Pattern Table");
-		m.insert(10, "Request");
-		m.insert(11, "QBSS Load Element");
-		m.insert(12, "EDCA Parameter Set");
-		m.insert(13, "Traffic Specification");
-		m.insert(14, "Traffic Classification");
-		m.insert(15, "Schedule");
-		m.insert(16, "Challenge text");
-		m.insert(32, "Power Constraint");
-		m.insert(33, "Power Capability");
-		m.insert(34, "TPC Request");
-		m.insert(35, "TPC Report");
-		m.insert(36, "Supported Channels");
-		m.insert(37, "Channel Switch Announcement");
-		m.insert(38, "Measurement Request");
-		m.insert(39, "Measurement Report");
-		m.insert(40, "Quiet");
-		m.insert(41, "IBSS DFS");
-		m.insert(42, "ERP Information");
-		m.insert(43, "TS Delay");
-		m.insert(44, "TCLAS Processing");
-		m.insert(45, "HT Capabilities (802.11n D1.10)");
-		m.insert(46, "QoS Capability");
-		m.insert(47, "ERP Information");
-		m.insert(48, "RSN Information");
-		m.insert(50, "Extended Supported Rates");
-		m.insert(51, "AP Channel Report");
-		m.insert(52, "Neighbor Report");
-		m.insert(53, "RCPI");
-		m.insert(54, "Mobility Domain");
-		m.insert(55, "Fast BSS Transition");
-		m.insert(56, "Timeout Interval");
-		m.insert(57, "RIC Data");
-		m.insert(58, "DSE Registered Location");
-		m.insert(59, "Supported Operating Classes");
-		m.insert(60, "Extended Channel Switch Announcement");
-		m.insert(61, "HT Information (802.11n D1.10)");
-		m.insert(62, "Secondary Channel Offset (802.11n D1.10)");
-		m.insert(63, "BSS Average Access Delay");
-		m.insert(64, "Antenna");
-		m.insert(65, "RSNI");
-		m.insert(66, "Measurement Pilot Transmission");
-		m.insert(67, "BSS Available Admission Capacity");
-		m.insert(68, "BSS AC Access Delay/WAPI Parameter Set");
-		m.insert(69, "Time Advertisement");
-		m.insert(70, "RM Enabled Capabilities");
-		m.insert(71, "Multiple BSSID");
-		m.insert(72, "20/40 BSS Coexistence");
-		m.insert(73, "20/40 BSS Intolerant Channel Report");
-		m.insert(74, "Overlapping BSS Scan Parameters");
-		m.insert(75, "RIC Descriptor");
-		m.insert(76, "Management MIC");
-		m.insert(78, "Event Request");
-		m.insert(79, "Event Report");
-		m.insert(80, "Diagnostic Request");
-		m.insert(81, "Diagnostic Report");
-		m.insert(82, "Location Parameters");
-		m.insert(83, "Non Transmitted BSSID Capability");
-		m.insert(84, "SSID List");
-		m.insert(85, "Multiple BSSID Index");
-		m.insert(86, "FMS Descriptor");
-		m.insert(87, "FMS Request");
-		m.insert(88, "FMS Response");
-		m.insert(89, "QoS Traffic Capability");
-		m.insert(90, "BSS Max Idle Period");
-		m.insert(91, "TFS Request");
-		m.insert(92, "TFS Response");
-		m.insert(93, "WNM-Sleep Mode");
-		m.insert(94, "TIM Broadcast Request");
-		m.insert(95, "TIM Broadcast Response");
-		m.insert(96, "Collocated Interference Report");
-		m.insert(97, "Channel Usage");
-		m.insert(98, "Time Zone");
-		m.insert(99, "DMS Request");
-		m.insert(100, "DMS Response");
-		m.insert(101, "Link Identifier");
-		m.insert(102, "Wakeup Schedule");
-		m.insert(104, "Channel Switch Timing");
-		m.insert(105, "PTI Control");
-		m.insert(106, "PU Buffer Status");
-		m.insert(107, "Interworking");
-		m.insert(108, "Advertisement Protocol");
-		m.insert(109, "Expedited Bandwidth Request");
-		m.insert(110, "QoS Map Set");
-		m.insert(111, "Roaming Consortium");
-		m.insert(112, "Emergency Alert Identifier");
-		m.insert(113, "Mesh Configuration");
-		m.insert(114, "Mesh ID");
-		m.insert(115, "Mesh Link Metric Report");
-		m.insert(116, "Congestion Notification");
-		m.insert(117, "Mesh Peering Management");
-		m.insert(118, "Mesh Channel Switch Parameters");
-		m.insert(119, "Mesh Awake Window");
-		m.insert(120, "Beacon Timing");
-		m.insert(121, "MCCAOP Setup Request");
-		m.insert(122, "MCCAOP SETUP Reply");
-		m.insert(123, "MCCAOP Advertisement");
-		m.insert(124, "MCCAOP Teardown");
-		m.insert(125, "Gate Announcement");
-		m.insert(126, "Root Announcement");
-		m.insert(127, "Extended Capabilities");
-		m.insert(128, "Agere Proprietary");
-		m.insert(130, "Path Request");
-		m.insert(131, "Path Reply");
-		m.insert(132, "Path Error");
-		m.insert(133, "Cisco CCX1 CKIP + Device Name");
-		m.insert(136, "Cisco CCX2");
-		m.insert(137, "Proxy Update");
-		m.insert(138, "Proxy Update Confirmation");
-		m.insert(139, "Authenticated Mesh Peering Exchange");
-		m.insert(140, "MIC (Message Integrity Code)");
-		m.insert(141, "Destination URI");
-		m.insert(142, "U-APSD Coexistence");
-		m.insert(143, "Wakeup Schedule 802.11ad");
-		m.insert(144, "Extended Schedule");
-		m.insert(145, "STA Availability");
-		m.insert(146, "DMG TSPEC");
-		m.insert(147, "Next DMG ATI");
-		m.insert(148, "DMG Capabilities");
-		m.insert(149, "Cisco Unknown 95");
-		m.insert(150, "Vendor Specific");
-		m.insert(151, "DMG Operating");
-		m.insert(152, "DMG BSS Parameter Change");
-		m.insert(153, "DMG Beam Refinement");
-		m.insert(154, "Channel Measurement Feedback");
-		m.insert(157, "Awake Window");
-		m.insert(158, "Multi Band");
-		m.insert(159, "ADDBA Extension");
-		m.insert(160, "NEXTPCP List");
-		m.insert(161, "PCP Handover");
-		m.insert(162, "DMG Link Margin");
-		m.insert(163, "Switching Stream");
-		m.insert(164, "Session Transmission");
-		m.insert(165, "Dynamic Tone Pairing Report");
-		m.insert(166, "Cluster Report");
-		m.insert(167, "Relay Capabilities");
-		m.insert(168, "Relay Transfer Parameter");
-		m.insert(169, "Beamlink Maintenance");
-		m.insert(170, "Multiple MAC Sublayers");
-		m.insert(171, "U-PID");
-		m.insert(172, "DMG Link Adaption Acknowledgment");
-		m.insert(173, "Symbol Proprietary");
-		m.insert(174, "MCCAOP Advertisement Overview");
-		m.insert(175, "Quiet Period Request");
-		m.insert(177, "Quiet Period Response");
-		m.insert(182, "ECAPC Policy");
-		m.insert(183, "Cluster Time Offset");
-		m.insert(184, "Intra-Access Category Priority");
-		m.insert(185, "SCS Descriptor");
-		m.insert(190, "Antenna Sector ID");
-		m.insert(191, "VHT Capabilities");
-		m.insert(192, "VHT Operation");
-		m.insert(193, "Extended BSS Load");
-		m.insert(194, "Wide Bandwidth Channel Switch");
-		m.insert(195, "Tx Power Envelope");
-		m.insert(196, "Channel Switch Wrapper");
-		m.insert(199, "Operating Mode Notification");
-		m.insert(201, "Reduced Neighbor Report");
-		m.insert(206, "Fine Time Measurement Params");
-		m.insert(207, "S1G Open-Loop Link Margin Index");
-		m.insert(208, "RPS");
-		m.insert(209, "Page Slice");
-		m.insert(210, "AID Request");
-		m.insert(211, "AID Response");
-		m.insert(212, "Sector Operation");
-		m.insert(213, "S1G Beacon Compatibility");
-		m.insert(214, "Short Beacon Interval");
-		m.insert(215, "Change Sequence");
-		m.insert(216, "Target Wake Time");
-		m.insert(217, "S1G Capabilities");
-		m.insert(220, "Subchannel Selective Transmission");
-		m.insert(221, "Vendor Specific");
-		m.insert(222, "Authentication Control");
-		m.insert(223, "TSF Timer Accuracy");
-		m.insert(224, "S1G Relay");
-		m.insert(225, "Reachable Address");
-		m.insert(226, "S1G Relay Discovery");
-		m.insert(228, "AID Announcement");
-		m.insert(229, "PV1 Probe Response Option");
-		m.insert(230, "EL Operation");
-		m.insert(231, "Sectorized Group ID List");
-		m.insert(232, "S1G Operation");
-		m.insert(233, "Header Compression");
-		m.insert(234, "SST Operation");
-		m.insert(235, "MAD");
-		m.insert(236, "S1G Relay Activation");
-		m.insert(237, "CAG Number");
-		m.insert(239, "AP-CSN");
-		m.insert(240, "FILS Indication");
-		m.insert(241, "Differential Initial Link Setup");
-		m.insert(242, "Fragment");
-		m.insert(244, "RSN eXtension");
-		m.insert(255, "Element ID Extension");
-		m
-	};
-	pub static ref ieee802_mnt_cat_map: HashMap<u8, &'static str> = {
-		let mut m = HashMap::new();
-		m.insert(0, "Spectrum Management (SM)");
-		m.insert(1, "Quality of Service (QoS)");
-		m.insert(2, "Direct-Link Setup (DLS)");
-		m.insert(3, "Block Ack");
-		m.insert(4, "Public Action");
-		m.insert(5, "Radio Measurement");
-		m.insert(6, "Fast BSS Transition");
-		m.insert(7, "High Throughput");
-		m.insert(8, "SA Query");
-		m.insert(9, "Protected Dual of Public Action");
-		m.insert(10, "WNM");
-		m.insert(11, "Unprotected WNM");
-		m.insert(12, "TDLS");
-		m.insert(13, "MESH");
-		m.insert(14, "Multihop");
-		m.insert(15, "Self-protected");
-		m.insert(16, "DMG");
-		m.insert(17, "Management Notification");
-		m.insert(18, "Fast Session Transfer");
-		m.insert(19, "Robust AV Streaming");
-		m.insert(20, "Unprotected DMG");
-		m.insert(21, "VHT");
-		m.insert(22, "S1G");
-		m.insert(23, "Protected S1G");
-		m.insert(24, "Flow Control");
-		m.insert(25, "Control Response MCS Negotiation");
-		m.insert(26, "FILS");
-		m.insert(30, "HE");
-		m.insert(31, "Protected HE");
-		m.insert(34, "Protected FTM");
-		m.insert(36, "EHT");
-		m.insert(37, "Protected EHT");
-		m.insert(126, "Vendor-specific Protected");
-		m.insert(127, "Vendor Specific");
-		m
-	};
-	pub static ref ppp_lcp_option_type_map: HashMap<u8, &'static str> = {
-		let mut m = HashMap::new();
-		m.insert(0, "Vendor Specific");
-		m.insert(1, "Maximum Receive Unit");
-		m.insert(2, "Async Control Character Map");
-		m.insert(3, "Authentication Protocol");
-		m.insert(4, "Quality Protocol");
-		m.insert(5, "Magic Number");
-		m.insert(6, "Link Quality Monitoring");
-		m.insert(7, "Protocol Field Compression");
-		m.insert(8, "Address and Control Field Compression");
-		m.insert(9, "FCS Alternatives");
-		m.insert(10, "Self Describing Pad");
-		m.insert(11, "Numbered Mode");
-		m.insert(12, "Callback");
-		m.insert(13, "Compound Frames (Deprecated)");
-		m.insert(14, "Nominal Data Encapsulation (Deprecated)");
-		m.insert(15, "Multilink MRRU");
-		m.insert(16, "Multilink Short Sequence Number Header");
-		m.insert(17, "Multilink Endpoint Discriminator");
-		m.insert(18, "DCE Identifier");
-		m.insert(19, "Multi Link Plus Procedure");
-		m.insert(20, "Link Discriminator for BACP");
-		m.insert(21, "Authentication Option");
-		m.insert(22, "Consistent Overhead Byte Stuffing (COBS)");
-		m.insert(23, "Prefix Elision");
-		m.insert(24, "Multilink header format");
-		m.insert(25, "Internationalization");
-		m.insert(26, "Simple Data Link on SONET/SDH");
-		m
-	};
-	pub static ref ppp_type_map: HashMap<u16, &'static str> = {
-		let mut m = HashMap::new();
-		m.insert(1, "Padding Protocol");
-		m.insert(3, "ROHC small-CID");
-		m.insert(5, "ROHC large-CID");
-		m.insert(33, "Internet Protocol version 4");
-		m.insert(35, "OSI Network Layer");
-		m.insert(37, "Xerox NS IDP");
-		m.insert(39, "DECnet Phase IV");
-		m.insert(41, "Appletalk");
-		m.insert(43, "Novell IPX");
-		m.insert(45, "Van Jacobson Compressed TCP/IP");
-		m.insert(47, "Van Jacobson Uncompressed TCP/IP");
-		m.insert(49, "Bridging PDU");
-		m.insert(51, "Stream Protocol (ST-II)");
-		m.insert(53, "Banyan Vines");
-		m.insert(57, "AppleTalk EDDP");
-		m.insert(59, "AppleTalk SmartBuffered");
-		m.insert(61, "Multi-Link");
-		m.insert(63, "NETBIOS Framing");
-		m.insert(65, "Cisco Systems");
-		m.insert(67, "Ascom Timeplex");
-		m.insert(69, "Fujitsu Link Backup and Load Balancing (LBLB)");
-		m.insert(71, "DCA Remote Lan");
-		m.insert(73, "Serial Data Transport Protocol (PPP-SDTP)");
-		m.insert(75, "SNA over 802.2");
-		m.insert(77, "SNA");
-		m.insert(79, "IPv6 Header Compression ");
-		m.insert(81, "KNX Bridging Data");
-		m.insert(83, "Encryption");
-		m.insert(85, "Individual Link Encryption");
-		m.insert(87, "Internet Protocol version 6");
-		m.insert(89, "PPP Muxing");
-		m.insert(91, "Vendor-Specific Network Protocol (VSNP)");
-		m.insert(93, "TRILL Network Protocol (TNP)");
-		m.insert(97, "RTP IPHC Full Header");
-		m.insert(99, "RTP IPHC Compressed TCP");
-		m.insert(101, "RTP IPHC Compressed Non TCP");
-		m.insert(103, "RTP IPHC Compressed UDP 8");
-		m.insert(105, "RTP IPHC Compressed RTP 8");
-		m.insert(111, "Stampede Bridging");
-		m.insert(115, "MP+ Protocol");
-		m.insert(193, "NTCITS IPI");
-		m.insert(251, "Single link compression in multilink");
-		m.insert(253, "Compressed datagram");
-		m.insert(513, "802.1d Hello Packets");
-		m.insert(515, "IBM Source Routing BPDU");
-		m.insert(517, "DEC LANBridge100 Spanning Tree");
-		m.insert(519, "Cisco Discovery Protocol");
-		m.insert(521, "Netcs Twin Routing");
-		m.insert(523, "STP - Scheduled Transfer Protocol");
-		m.insert(525, "EDP - Extreme Discovery Protocol");
-		m.insert(529, "Optical Supervisory Channel Protocol (OSCP)");
-		m.insert(531, "Optical Supervisory Channel Protocol (OSCP)");
-		m.insert(561, "Luxcom");
-		m.insert(563, "Sigma Network Systems");
-		m.insert(565, "Apple Client Server Protocol");
-		m.insert(641, "MPLS Unicast");
-		m.insert(643, "MPLS Multicast");
-		m.insert(645, "IEEE p1284.4 standard - data packets");
-		m.insert(647, "ETSI TETRA Network Protocol Type 1");
-		m.insert(649, "Multichannel Flow Treatment Protocol");
-		m.insert(8291, "RTP IPHC Compressed TCP No Delta");
-		m.insert(8293, "RTP IPHC Context State");
-		m.insert(8295, "RTP IPHC Compressed UDP 16");
-		m.insert(8297, "RTP IPHC Compressed RTP 16");
-		m.insert(16385, "Cray Communications Control Protocol");
-		m.insert(16387, "CDPD Mobile Network Registration Protocol");
-		m.insert(16389, "Expand accelerator protocol");
-		m.insert(16391, "ODSICP NCP");
-		m.insert(16393, "DOCSIS DLL");
-		m.insert(16395, "Cetacean Network Detection Protocol");
-		m.insert(16417, "Stacker LZS");
-		m.insert(16419, "RefTek Protocol");
-		m.insert(16421, "Fibre Channel");
-		m.insert(16423, "EMIT Protocols");
-		m.insert(16475, "Vendor-Specific Protocol (VSP)");
-		m.insert(16477, "TRILL Link State Protocol (TLSP)");
-		m.insert(32801, "Internet Protocol Control Protocol");
-		m.insert(32803, "OSI Network Layer Control Protocol");
-		m.insert(32805, "Xerox NS IDP Control Protocol");
-		m.insert(32807, "DECnet Phase IV Control Protocol");
-		m.insert(32809, "AppleTalk Control Protocol");
-		m.insert(32811, "Novell IPX Control Protocol");
-		m.insert(32817, "Bridging NCP");
-		m.insert(32819, "Stream Protocol Control Protocol");
-		m.insert(32821, "Banyan Vines Control Protocol");
-		m.insert(32829, "Multi-Link Control Protocol");
-		m.insert(32831, "NETBIOS Framing Control Protocol");
-		m.insert(32833, "Cisco Systems Control Protocol");
-		m.insert(32835, "Ascom Timeplex");
-		m.insert(32837, "Fujitsu LBLB Control Protocol");
-		m.insert(32839, "DCA Remote Lan Network Control Protocol (RLNCP)");
-		m.insert(32841, "Serial Data Control Protocol (PPP-SDCP)");
-		m.insert(32843, "SNA over 802.2 Control Protocol");
-		m.insert(32845, "SNA Control Protocol");
-		m.insert(32847, "IP6 Header Compression Control Protocol");
-		m.insert(32849, "KNX Bridging Control Protocol");
-		m.insert(32851, "Encryption Control Protocol");
-		m.insert(32853, "Individual Link Encryption Control Protocol");
-		m.insert(32855, "IPv6 Control Protocol");
-		m.insert(32857, "PPP Muxing Control Protocol");
-		m.insert(32859, "Vendor-Specific Network Control Protocol (VSNCP)");
-		m.insert(32861, "TRILL Network Control Protocol");
-		m.insert(32879, "Stampede Bridging Control Protocol");
-		m.insert(32883, "MP+ Control Protocol");
-		m.insert(32961, "NTCITS IPI Control Protocol");
-		m.insert(33019, "Single link compression in multilink control");
-		m.insert(33021, "Compression Control Protocol");
-		m.insert(33287, "Cisco Discovery Protocol Control Protocol");
-		m.insert(33289, "Netcs Twin Routing");
-		m.insert(33291, "STP - Control Protocol");
-		m.insert(33293, "EDPCP - Extreme Discovery Protocol Control Protocol");
-		m.insert(33333, "Apple Client Server Protocol Control");
-		m.insert(33409, "MPLS Control Protocol");
-		m.insert(33413, "IEEE p1284.4 standard - Protocol Control");
-		m.insert(33415, "ETSI TETRA TNP1 Control Protocol");
-		m.insert(33417, "Multichannel Flow Treatment Protocol");
-		m.insert(49185, "Link Control Protocol");
-		m.insert(49187, "Password Authentication Protocol");
-		m.insert(49189, "Link Quality Report");
-		m.insert(49191, "Shiva Password Authentication Protocol");
-		m.insert(49193, "Callback Control Protocol (CBCP)");
-		m.insert(49195, "BACP Bandwidth Allocation Control Protocol");
-		m.insert(49197, "BAP Bandwidth Allocation Protocol");
-		m.insert(49243, "Vendor-Specific Authentication Protocol (VSAP)");
-		m.insert(49281, "Container Control Protocol");
-		m.insert(49699, "Challenge Handshake Authentication Protocol");
-		m.insert(49701, "RSA Authentication Protocol");
-		m.insert(49703, "Extensible Authentication Protocol");
-		m.insert(49705, "Mitsubishi Security Information Exchange Protocol (SIEP)");
-		m.insert(49775, "Stampede Bridging Authorization Protocol");
-		m.insert(49793, "Proprietary Authentication Protocol");
-		m.insert(49795, "Proprietary Authentication Protocol");
-		m.insert(50305, "Proprietary Node ID Authentication Protocol");
-		m
-	};
-	pub static ref ppp_lcp_type_map: HashMap<u8, &'static str> = {
-		let mut m = HashMap::new();
-		m.insert(0, "Vendor Specific");
-		m.insert(1, "Configuration Request");
-		m.insert(2, "Configuration Ack");
-		m.insert(3, "Configuration Nak");
-		m.insert(4, "Configuration Reject");
-		m.insert(5, "Termination Request");
-		m.insert(6, "Termination Ack");
-		m.insert(7, "Code Reject");
-		m.insert(8, "Protocol Reject");
-		m.insert(9, "Echo Request");
-		m.insert(10, "Echo Reply");
-		m.insert(11, "Discard Request");
-		m.insert(12, "Identification");
-		m.insert(13, "Time Remaining");
-		m
-	};
-	pub static ref arp_hardware_type_map: HashMap<u16, &'static str> = {
-		let mut m = HashMap::new();
-		m.insert(0, "Reserved");
-		m.insert(1, "Ethernet (10Mb)");
-		m.insert(2, "Experimental Ethernet (3Mb)");
-		m.insert(3, "Amateur Radio AX.25");
-		m.insert(4, "Proteon ProNET Token Ring");
-		m.insert(5, "Chaos");
-		m.insert(6, "IEEE 802 Networks");
-		m.insert(7, "ARCNET");
-		m.insert(8, "Hyperchannel");
-		m.insert(9, "Lanstar");
-		m.insert(10, "Autonet Short Address");
-		m.insert(11, "LocalTalk");
-		m.insert(12, "LocalNet (IBM PCNet or SYTEK LocalNET)");
-		m.insert(13, "Ultra link");
-		m.insert(14, "SMDS");
-		m.insert(15, "Frame Relay");
-		m.insert(16, "Asynchronous Transmission Mode (ATM)");
-		m.insert(17, "HDLC");
-		m.insert(18, "Fibre Channel");
-		m.insert(19, "Asynchronous Transmission Mode (ATM)");
-		m.insert(20, "Serial Line");
-		m.insert(21, "Asynchronous Transmission Mode (ATM)");
-		m.insert(22, "MIL-STD-188-220");
-		m.insert(23, "Metricom");
-		m.insert(24, "IEEE 1394.1995");
-		m.insert(25, "MAPOS");
-		m.insert(26, "Twinaxial");
-		m.insert(27, "EUI-64");
-		m.insert(28, "HIPARP");
-		m.insert(29, "IP and ARP over ISO 7816-3");
-		m.insert(30, "ARPSec");
-		m.insert(31, "IPsec tunnel");
-		m.insert(32, "InfiniBand (TM)");
-		m.insert(33, "CAI");
-		m.insert(34, "Wiegand Interface");
-		m.insert(35, "Pure IP");
-		m.insert(36, "HW_EXP1");
-		m.insert(37, "HFI");
-		m.insert(38, "Unified Bus (UB)");
-		m.insert(256, "HW_EXP2");
-		m.insert(257, "AEthernet");
-		m.insert(65535, "Reserved");
-		m
-	};
-	pub static ref arp_oper_type_map: HashMap<u16, &'static str> = {
-		let mut m = HashMap::new();
-		m.insert(1, "REQUEST");
-		m.insert(2, "REPLY");
-		m.insert(3, "request Reverse");
-		m.insert(4, "reply Reverse");
-		m.insert(5, "DRARP-Request");
-		m.insert(6, "DRARP-Reply");
-		m.insert(7, "DRARP-Error");
-		m.insert(8, "InARP-Request");
-		m.insert(9, "InARP-Reply");
-		m.insert(10, "ARP-NAK");
-		m.insert(11, "MARS-Request");
-		m.insert(12, "MARS-Multi");
-		m.insert(13, "MARS-MServ");
-		m.insert(14, "MARS-Join");
-		m.insert(15, "MARS-Leave");
-		m.insert(16, "MARS-NAK");
-		m.insert(17, "MARS-Unserv");
-		m.insert(18, "MARS-SJoin");
-		m.insert(19, "MARS-SLeave");
-		m.insert(20, "MARS-Grouplist-Request");
-		m.insert(21, "MARS-Grouplist-Reply");
-		m.insert(22, "MARS-Redirect-Map");
-		m.insert(23, "MAPOS-UNARP");
-		m.insert(24, "OP_EXP1");
-		m.insert(25, "OP_EXP2");
-		m
-	};
-	pub static ref icmpv6_type_map: HashMap<u16, &'static str> = {
-		let mut m = HashMap::new();
-		m.insert(1, "Destination unreachable");
-		m.insert(2, "Packet too big");
-		m.insert(3, "Time exceeded");
-		m.insert(4, "Parameter problem");
-		m.insert(127, "Reserved for expansion of ICMPv6 error messages");
-		m.insert(128, "Echo Request");
-		m.insert(129, "Echo Reply");
-		m.insert(130, "Multicast Listener Query");
-		m.insert(131, "Multicast Listener Report");
-		m.insert(132, "Multicast Listener Done");
-		m.insert(133, "Router Solicitation");
-		m.insert(134, "Router Advertisement");
-		m.insert(135, "Neighbor Solicitation");
-		m.insert(136, "Neighbor Advertisement");
-		m.insert(137, "Redirect Message");
-		m.insert(138, "Router Renumbering");
-		m.insert(139, "ICMP Node Information Query");
-		m.insert(140, "ICMP Node Information Response");
-		m.insert(141, "Inverse Neighbor Discovery Solicitation Message	");
-		m.insert(142, "Inverse Neighbor Discovery Advertisement Message");
-		m.insert(143, "Multicast Listener Discovery");
-		m.insert(144, "Home Agent Address Discovery Request Message	");
-		m.insert(145, "Home Agent Address Discovery Reply Message");
-		m.insert(146, "Mobile Prefix Solicitation");
-		m.insert(147, "Mobile Prefix Advertisement");
-		m.insert(148, "Certification Path Solicitation");
-		m.insert(149, "Certification Path Advertisement");
-		m.insert(151, "Multicast Router Advertisement");
-		m
-	};
-	pub static ref dhcp_option_type_map: HashMap<u8, &'static str> = {
-		let mut m = HashMap::new();
-		m.insert(0, "Pad");
-		m.insert(1, "Subnet");
-		m.insert(2, "Time");
-		m.insert(3, "Router");
-		m.insert(4, "Time server");
-		m.insert(5, "Name server");
-		m.insert(6, "Domain name server");
-		m.insert(7, "Log server");
-		m.insert(8, "Cookie server");
-		m.insert(9, "LPR Server");
-		m.insert(10, "Impress server");
-		m.insert(11, "Resource location server");
-		m.insert(12, "Host");
-		m.insert(13, "Boot file size");
-		m.insert(14, "Merit dump file");
-		m.insert(15, "Domain");
-		m.insert(16, "Swap server");
-		m.insert(17, "Root path");
-		m.insert(18, "Extensions path");
-		m.insert(19, "IP forwarding enable/disable");
-		m.insert(20, "Non-local source routing enable/disable");
-		m.insert(21, "Policy filter");
-		m.insert(22, "Maximum datagram reassembly size");
-		m.insert(23, "Default IP time-to-live");
-		m.insert(24, "Path MTU aging timeout");
-		m.insert(25, "Path MTU plateau table");
-		m.insert(26, "Interface MTU");
-		m.insert(27, "All subnets are local");
-		m.insert(28, "Broadcast address");
-		m.insert(29, "Perform mask discovery");
-		m.insert(30, "Mask supplier");
-		m.insert(31, "Perform router discovery");
-		m.insert(32, "Router solicitation address");
-		m.insert(33, "Static route");
-		m.insert(34, "Trailer encapsulation option");
-		m.insert(35, "ARP cache timeout");
-		m.insert(36, "Ethernet encapsulation");
-		m.insert(37, "TCP default TTL");
-		m.insert(38, "TCP keepalive interval");
-		m.insert(39, "TCP keepalive garbage");
-		m.insert(40, "Network information service domain");
-		m.insert(41, "Network information servers");
-		m.insert(42, "Network Time Protocol (NTP) servers");
-		m.insert(43, "Vendor-specific information");
-		m.insert(44, "NetBIOS over TCP/IP name server");
-		m.insert(45, "NetBIOS over TCP/IP datagram Distribution Server");
-		m.insert(46, "NetBIOS over TCP/IP node type");
-		m.insert(47, "NetBIOS over TCP/IP scope");
-		m.insert(48, "X Window System font server");
-		m.insert(49, "X Window System display manager");
-		m.insert(50, "Requested IP address");
-		m.insert(51, "IP address lease time");
-		m.insert(52, "Option overload");
-		m.insert(53, "DHCP message type");
-		m.insert(54, "Server identifier");
-		m.insert(55, "Parameter request list");
-		m.insert(56, "Message");
-		m.insert(57, "Maximum DHCP message size");
-		m.insert(58, "Renewal (T1) time value");
-		m.insert(59, "Rebinding (T2) time value");
-		m.insert(60, "Vendor class identifier");
-		m.insert(61, "Client identifier");
-		m.insert(64, "Network Information Service+ domain");
-		m.insert(65, "Network Information Service+ servers");
-		m.insert(66, "TFTP server name");
-		m.insert(67, "Bootfile name");
-		m.insert(68, "Mobile IP home agent");
-		m.insert(69, "Simple Mail Transfer Protocol (SMTP) server");
-		m.insert(70, "Post Office Protocol (POP3) server");
-		m.insert(71, "Network News Transfer Protocol (NNTP) server");
-		m.insert(72, "Default World Wide Web (WWW) server");
-		m.insert(73, "Default Finger protocol server");
-		m.insert(74, "Default Internet Relay Chat (IRC) server");
-		m.insert(75, "StreetTalk server");
-		m.insert(76, "StreetTalk Directory Assistance (STDA) server");
-		m.insert(255, "End");
-		m
-	};
-	pub static ref dhcp_type_map: HashMap<u8, &'static str> = {
-		let mut m = HashMap::new();
-		m.insert(1, "DHCPDISCOVER");
-		m.insert(2, "DHCPOFFER");
-		m.insert(3, "DHCPREQUEST");
-		m.insert(4, "DHCPDECLINE");
-		m.insert(5, "DHCPACK");
-		m.insert(6, "DHCPNAK");
-		m.insert(7, "DHCPRELEASE");
-		m.insert(8, "DHCPINFORM");
-		m.insert(9, "DHCPFORCERENEW");
-		m.insert(10, "DHCPLEASEQUERY");
-		m.insert(11, "DHCPLEASEUNASSIGNED");
-		m.insert(12, "DHCPLEASEUNKNOWN");
-		m.insert(13, "DHCPLEASEACTIVE");
-		m.insert(14, "DHCPBULKLEASEQUERY");
-		m.insert(15, "DHCPLEASEQUERYDONE");
-		m.insert(16, "DHCPACTIVELEASEQUERY");
-		m.insert(17, "DHCPLEASEQUERYSTATUS");
-		m.insert(18, "DHCPTL");
-		m
-	};
-	pub static ref igmp_type_map: HashMap<u8, &'static str> = {
-		let mut m = HashMap::new();
-		m.insert(17, "Membership Query");
-		m.insert(18, "IGMPv1 Membership Report");
-		m.insert(22, "IGMPv2 Membership Report");
-		m.insert(23, "Leave Group");
-		m.insert(34, "IGMPv3 Membership Report");
-		m
-	};
-	pub static ref tls_content_type_map: HashMap<u8, &'static str> = {
-		let mut m = HashMap::new();
-		m.insert(20, "ChangeCipherSpec");
-		m.insert(21, "Alert");
-		m.insert(22, "Handshake");
-		m.insert(23, "Application");
-		m.insert(24, "Heartbeat");
-		m
-	};
-	pub static ref tls_min_type_map: HashMap<u8, &'static str> = {
-		let mut m = HashMap::new();
-		m.insert(0, "SSL 3.0");
-		m.insert(1, "TLS 1.0");
-		m.insert(2, "TLS 1.1");
-		m.insert(3, "TLS 1.2");
-		m.insert(4, "TLS 1.3");
-		m
-	};
-	pub static ref tls_hs_message_type_map: HashMap<u8, &'static str> = {
-		let mut m = HashMap::new();
-		m.insert(0, "HelloRequest");
-		m.insert(1, "ClientHello");
-		m.insert(2, "ServerHello");
-		m.insert(3, "HELLO_VERIFY_REQUEST");
-		m.insert(4, "NewSessionTicket");
-		m.insert(5, "END_OF_EARLY_DATA");
-		m.insert(6, "HELLO_RETRY_REQUEST");
-		m.insert(8, "EncryptedExtensions");
-		m.insert(11, "Certificate");
-		m.insert(12, "ServerKeyExchange");
-		m.insert(13, "CertificateRequest");
-		m.insert(14, "ServerHelloDone");
-		m.insert(15, "CertificateVerify");
-		m.insert(16, "ClientKeyExchange");
-		m.insert(20, "Finished");
-		m.insert(21, "CERT_URL");
-		m.insert(22, "CERT_STATUS");
-		m.insert(23, "SUPPLEMENTAL_DATA");
-		m.insert(24, "KEY_UPDATE");
-		m.insert(25, "COMPRESSED_CERTIFICATE");
-		m.insert(67, "ENCRYPTED_EXTS");
-		m
-	};
-	pub static ref tls_cipher_suites_map: HashMap<u16, &'static str> = {
-		let mut m = HashMap::new();
-		m.insert(0, "TLS_NULL_WITH_NULL_NULL");
-		m.insert(255, "TLS_EMPTY_RENEGOTIATION_INFO_SCSV");
-		m.insert(1, "TLS_RSA_WITH_NULL_MD5");
-		m.insert(2, "TLS_RSA_WITH_NULL_SHA");
-		m.insert(3, "TLS_RSA_EXPORT_WITH_RC4_40_MD5");
-		m.insert(4, "TLS_RSA_WITH_RC4_128_MD5");
-		m.insert(5, "TLS_RSA_WITH_RC4_128_SHA");
-		m.insert(6, "TLS_RSA_EXPORT_WITH_RC2_CBC_40_MD5");
-		m.insert(7, "TLS_RSA_WITH_IDEA_CBC_SHA");
-		m.insert(8, "TLS_RSA_EXPORT_WITH_DES40_CBC_SHA");
-		m.insert(9, "TLS_RSA_WITH_DES_CBC_SHA");
-		m.insert(10, "TLS_RSA_WITH_3DES_EDE_CBC_SHA");
-		m.insert(11, "TLS_DH_DSS_EXPORT_WITH_DES40_CBC_SHA");
-		m.insert(12, "TLS_DH_DSS_WITH_DES_CBC_SHA");
-		m.insert(13, "TLS_DH_DSS_WITH_3DES_EDE_CBC_SHA");
-		m.insert(14, "TLS_DH_RSA_EXPORT_WITH_DES40_CBC_SHA");
-		m.insert(15, "TLS_DH_RSA_WITH_DES_CBC_SHA");
-		m.insert(16, "TLS_DH_RSA_WITH_3DES_EDE_CBC_SHA");
-		m.insert(17, "TLS_DHE_DSS_EXPORT_WITH_DES40_CBC_SHA");
-		m.insert(18, "TLS_DHE_DSS_WITH_DES_CBC_SHA");
-		m.insert(19, "TLS_DHE_DSS_WITH_3DES_EDE_CBC_SHA");
-		m.insert(20, "TLS_DHE_RSA_EXPORT_WITH_DES40_CBC_SHA");
-		m.insert(21, "TLS_DHE_RSA_WITH_DES_CBC_SHA");
-		m.insert(22, "TLS_DHE_RSA_WITH_3DES_EDE_CBC_SHA");
-		m.insert(23, "TLS_DH_anon_EXPORT_WITH_RC4_40_MD5");
-		m.insert(24, "TLS_DH_anon_WITH_RC4_128_MD5");
-		m.insert(25, "TLS_DH_anon_EXPORT_WITH_DES40_CBC_SHA");
-		m.insert(26, "TLS_DH_anon_WITH_DES_CBC_SHA");
-		m.insert(27, "TLS_DH_anon_WITH_3DES_EDE_CBC_SHA");
-		m.insert(28, "SSL_FORTEZZA_KEA_WITH_NULL_SHA");
-		m.insert(29, "SSL_FORTEZZA_KEA_WITH_FORTEZZA_CBC_SHA");
-		m.insert(30, "TLS_KRB5_WITH_DES_CBC_SHA");
-		m.insert(31, "TLS_KRB5_WITH_3DES_EDE_CBC_SHA");
-		m.insert(32, "TLS_KRB5_WITH_RC4_128_SHA");
-		m.insert(33, "TLS_KRB5_WITH_IDEA_CBC_SHA");
-		m.insert(34, "TLS_KRB5_WITH_DES_CBC_MD5");
-		m.insert(35, "TLS_KRB5_WITH_3DES_EDE_CBC_MD5");
-		m.insert(36, "TLS_KRB5_WITH_RC4_128_MD5");
-		m.insert(37, "TLS_KRB5_WITH_IDEA_CBC_MD5");
-		m.insert(38, "TLS_KRB5_EXPORT_WITH_DES_CBC_40_SHA");
-		m.insert(39, "TLS_KRB5_EXPORT_WITH_RC2_CBC_40_SHA");
-		m.insert(40, "TLS_KRB5_EXPORT_WITH_RC4_40_SHA");
-		m.insert(41, "TLS_KRB5_EXPORT_WITH_DES_CBC_40_MD5");
-		m.insert(42, "TLS_KRB5_EXPORT_WITH_RC2_CBC_40_MD5");
-		m.insert(43, "TLS_KRB5_EXPORT_WITH_RC4_40_MD5");
-		m.insert(44, "TLS_PSK_WITH_NULL_SHA");
-		m.insert(45, "TLS_DHE_PSK_WITH_NULL_SHA");
-		m.insert(46, "TLS_RSA_PSK_WITH_NULL_SHA");
-		m.insert(47, "TLS_RSA_WITH_AES_128_CBC_SHA");
-		m.insert(48, "TLS_DH_DSS_WITH_AES_128_CBC_SHA");
-		m.insert(49, "TLS_DH_RSA_WITH_AES_128_CBC_SHA");
-		m.insert(50, "TLS_DHE_DSS_WITH_AES_128_CBC_SHA");
-		m.insert(51, "TLS_DHE_RSA_WITH_AES_128_CBC_SHA");
-		m.insert(52, "TLS_DH_anon_WITH_AES_128_CBC_SHA");
-		m.insert(53, "TLS_RSA_WITH_AES_256_CBC_SHA");
-		m.insert(54, "TLS_DH_DSS_WITH_AES_256_CBC_SHA");
-		m.insert(55, "TLS_DH_RSA_WITH_AES_256_CBC_SHA");
-		m.insert(56, "TLS_DHE_DSS_WITH_AES_256_CBC_SHA");
-		m.insert(57, "TLS_DHE_RSA_WITH_AES_256_CBC_SHA");
-		m.insert(58, "TLS_DH_anon_WITH_AES_256_CBC_SHA");
-		m.insert(59, "TLS_RSA_WITH_NULL_SHA256");
-		m.insert(60, "TLS_RSA_WITH_AES_128_CBC_SHA256");
-		m.insert(61, "TLS_RSA_WITH_AES_256_CBC_SHA256");
-		m.insert(62, "TLS_DH_DSS_WITH_AES_128_CBC_SHA256");
-		m.insert(63, "TLS_DH_RSA_WITH_AES_128_CBC_SHA256");
-		m.insert(64, "TLS_DHE_DSS_WITH_AES_128_CBC_SHA256");
-		m.insert(65, "TLS_RSA_WITH_CAMELLIA_128_CBC_SHA");
-		m.insert(66, "TLS_DH_DSS_WITH_CAMELLIA_128_CBC_SHA");
-		m.insert(67, "TLS_DH_RSA_WITH_CAMELLIA_128_CBC_SHA");
-		m.insert(68, "TLS_DHE_DSS_WITH_CAMELLIA_128_CBC_SHA");
-		m.insert(69, "TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA");
-		m.insert(70, "TLS_DH_anon_WITH_CAMELLIA_128_CBC_SHA");
-		m.insert(96, "TLS_RSA_EXPORT1024_WITH_RC4_56_MD5");
-		m.insert(97, "TLS_RSA_EXPORT1024_WITH_RC2_CBC_56_MD5");
-		m.insert(98, "TLS_RSA_EXPORT1024_WITH_DES_CBC_SHA");
-		m.insert(99, "TLS_DHE_DSS_EXPORT1024_WITH_DES_CBC_SHA");
-		m.insert(100, "TLS_RSA_EXPORT1024_WITH_RC4_56_SHA");
-		m.insert(101, "TLS_DHE_DSS_EXPORT1024_WITH_RC4_56_SHA");
-		m.insert(102, "TLS_DHE_DSS_WITH_RC4_128_SHA");
-		m.insert(103, "TLS_DHE_RSA_WITH_AES_128_CBC_SHA256");
-		m.insert(104, "TLS_DH_DSS_WITH_AES_256_CBC_SHA256");
-		m.insert(105, "TLS_DH_RSA_WITH_AES_256_CBC_SHA256");
-		m.insert(106, "TLS_DHE_DSS_WITH_AES_256_CBC_SHA256");
-		m.insert(107, "TLS_DHE_RSA_WITH_AES_256_CBC_SHA256");
-		m.insert(108, "TLS_DH_anon_WITH_AES_128_CBC_SHA256");
-		m.insert(109, "TLS_DH_anon_WITH_AES_256_CBC_SHA256");
-		m.insert(128, "TLS_GOSTR341094_WITH_28147_CNT_IMIT");
-		m.insert(129, "TLS_GOSTR341001_WITH_28147_CNT_IMIT");
-		m.insert(130, "TLS_GOSTR341001_WITH_NULL_GOSTR3411");
-		m.insert(131, "TLS_GOSTR341094_WITH_NULL_GOSTR3411");
-		m.insert(132, "TLS_RSA_WITH_CAMELLIA_256_CBC_SHA");
-		m.insert(133, "TLS_DH_DSS_WITH_CAMELLIA_256_CBC_SHA");
-		m.insert(134, "TLS_DH_RSA_WITH_CAMELLIA_256_CBC_SHA");
-		m.insert(135, "TLS_DHE_DSS_WITH_CAMELLIA_256_CBC_SHA");
-		m.insert(136, "TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA");
-		m.insert(137, "TLS_DH_anon_WITH_CAMELLIA_256_CBC_SHA");
-		m.insert(138, "TLS_PSK_WITH_RC4_128_SHA");
-		m.insert(139, "TLS_PSK_WITH_3DES_EDE_CBC_SHA");
-		m.insert(140, "TLS_PSK_WITH_AES_128_CBC_SHA");
-		m.insert(141, "TLS_PSK_WITH_AES_256_CBC_SHA");
-		m.insert(142, "TLS_DHE_PSK_WITH_RC4_128_SHA");
-		m.insert(143, "TLS_DHE_PSK_WITH_3DES_EDE_CBC_SHA");
-		m.insert(144, "TLS_DHE_PSK_WITH_AES_128_CBC_SHA");
-		m.insert(145, "TLS_DHE_PSK_WITH_AES_256_CBC_SHA");
-		m.insert(146, "TLS_RSA_PSK_WITH_RC4_128_SHA");
-		m.insert(147, "TLS_RSA_PSK_WITH_3DES_EDE_CBC_SHA");
-		m.insert(148, "TLS_RSA_PSK_WITH_AES_128_CBC_SHA");
-		m.insert(149, "TLS_RSA_PSK_WITH_AES_256_CBC_SHA");
-		m.insert(150, "TLS_RSA_WITH_SEED_CBC_SHA");
-		m.insert(151, "TLS_DH_DSS_WITH_SEED_CBC_SHA");
-		m.insert(152, "TLS_DH_RSA_WITH_SEED_CBC_SHA");
-		m.insert(153, "TLS_DHE_DSS_WITH_SEED_CBC_SHA");
-		m.insert(154, "TLS_DHE_RSA_WITH_SEED_CBC_SHA");
-		m.insert(155, "TLS_DH_anon_WITH_SEED_CBC_SHA");
-		m.insert(156, "TLS_RSA_WITH_AES_128_GCM_SHA256");
-		m.insert(157, "TLS_RSA_WITH_AES_256_GCM_SHA384");
-		m.insert(158, "TLS_DHE_RSA_WITH_AES_128_GCM_SHA256");
-		m.insert(159, "TLS_DHE_RSA_WITH_AES_256_GCM_SHA384");
-		m.insert(160, "TLS_DH_RSA_WITH_AES_128_GCM_SHA256");
-		m.insert(161, "TLS_DH_RSA_WITH_AES_256_GCM_SHA384");
-		m.insert(162, "TLS_DHE_DSS_WITH_AES_128_GCM_SHA256");
-		m.insert(163, "TLS_DHE_DSS_WITH_AES_256_GCM_SHA384");
-		m.insert(164, "TLS_DH_DSS_WITH_AES_128_GCM_SHA256");
-		m.insert(165, "TLS_DH_DSS_WITH_AES_256_GCM_SHA384");
-		m.insert(166, "TLS_DH_anon_WITH_AES_128_GCM_SHA256");
-		m.insert(167, "TLS_DH_anon_WITH_AES_256_GCM_SHA384");
-		m.insert(186, "TLS_RSA_WITH_CAMELLIA_128_CBC_SHA256");
-		m.insert(187, "TLS_DH_DSS_WITH_CAMELLIA_128_CBC_SHA256");
-		m.insert(188, "TLS_DH_RSA_WITH_CAMELLIA_128_CBC_SHA256");
-		m.insert(189, "TLS_DHE_DSS_WITH_CAMELLIA_128_CBC_SHA256");
-		m.insert(190, "TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA256");
-		m.insert(191, "TLS_DH_anon_WITH_CAMELLIA_128_CBC_SHA256");
-		m.insert(22016, "TLS_EMPTY_RENEGOTIATION_INFO_SCSV");
-		m.insert(4865, "TLS_AES_128_GCM_SHA256");
-		m.insert(4866, "TLS_AES_256_GCM_SHA384");
-		m.insert(4867, "TLS_CHACHA20_POLY1305_SHA256");
-		m.insert(4868, "TLS_AES_128_CCM_SHA256");
-		m.insert(4869, "TLS_AES_128_CCM_8_SHA256");
-		m.insert(49153, "TLS_ECDH_ECDSA_WITH_NULL_SHA");
-		m.insert(49154, "TLS_ECDH_ECDSA_WITH_RC4_128_SHA");
-		m.insert(49155, "TLS_ECDH_ECDSA_WITH_3DES_EDE_CBC_SHA");
-		m.insert(49156, "TLS_ECDH_ECDSA_WITH_AES_128_CBC_SHA");
-		m.insert(49157, "TLS_ECDH_ECDSA_WITH_AES_256_CBC_SHA");
-		m.insert(49158, "TLS_ECDHE_ECDSA_WITH_NULL_SHA");
-		m.insert(49159, "TLS_ECDHE_ECDSA_WITH_RC4_128_SHA");
-		m.insert(49160, "TLS_ECDHE_ECDSA_WITH_3DES_EDE_CBC_SHA");
-		m.insert(49161, "TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA");
-		m.insert(49162, "TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA");
-		m.insert(49163, "TLS_ECDH_RSA_WITH_NULL_SHA");
-		m.insert(49164, "TLS_ECDH_RSA_WITH_RC4_128_SHA");
-		m.insert(49165, "TLS_ECDH_RSA_WITH_3DES_EDE_CBC_SHA");
-		m.insert(49166, "TLS_ECDH_RSA_WITH_AES_128_CBC_SHA");
-		m.insert(49167, "TLS_ECDH_RSA_WITH_AES_256_CBC_SHA");
-		m.insert(49168, "TLS_ECDHE_RSA_WITH_NULL_SHA");
-		m.insert(49169, "TLS_ECDHE_RSA_WITH_RC4_128_SHA");
-		m.insert(49170, "TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA");
-		m.insert(49171, "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA");
-		m.insert(49172, "TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA");
-		m.insert(49173, "TLS_ECDH_anon_WITH_NULL_SHA");
-		m.insert(49174, "TLS_ECDH_anon_WITH_RC4_128_SHA");
-		m.insert(49175, "TLS_ECDH_anon_WITH_3DES_EDE_CBC_SHA");
-		m.insert(49176, "TLS_ECDH_anon_WITH_AES_128_CBC_SHA");
-		m.insert(49177, "TLS_ECDH_anon_WITH_AES_256_CBC_SHA");
-		m.insert(49178, "TLS_SRP_SHA_WITH_3DES_EDE_CBC_SHA");
-		m.insert(49179, "TLS_SRP_SHA_RSA_WITH_3DES_EDE_CBC_SHA");
-		m.insert(49180, "TLS_SRP_SHA_DSS_WITH_3DES_EDE_CBC_SHA");
-		m.insert(49181, "TLS_SRP_SHA_WITH_AES_128_CBC_SHA");
-		m.insert(49182, "TLS_SRP_SHA_RSA_WITH_AES_128_CBC_SHA");
-		m.insert(49183, "TLS_SRP_SHA_DSS_WITH_AES_128_CBC_SHA");
-		m.insert(49184, "TLS_SRP_SHA_WITH_AES_256_CBC_SHA");
-		m.insert(49185, "TLS_SRP_SHA_RSA_WITH_AES_256_CBC_SHA");
-		m.insert(49186, "TLS_SRP_SHA_DSS_WITH_AES_256_CBC_SHA");
-		m.insert(49187, "TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256");
-		m.insert(49188, "TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384");
-		m.insert(49189, "TLS_ECDH_ECDSA_WITH_AES_128_CBC_SHA256");
-		m.insert(49190, "TLS_ECDH_ECDSA_WITH_AES_256_CBC_SHA384");
-		m.insert(49191, "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256");
-		m.insert(49192, "TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384");
-		m.insert(49193, "TLS_ECDH_RSA_WITH_AES_128_CBC_SHA256");
-		m.insert(49194, "TLS_ECDH_RSA_WITH_AES_256_CBC_SHA384");
-		m.insert(49195, "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256");
-		m.insert(49196, "TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384");
-		m.insert(49197, "TLS_ECDH_ECDSA_WITH_AES_128_GCM_SHA256");
-		m.insert(49198, "TLS_ECDH_ECDSA_WITH_AES_256_GCM_SHA384");
-		m.insert(49199, "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256");
-		m.insert(49200, "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384");
-		m.insert(49201, "TLS_ECDH_RSA_WITH_AES_128_GCM_SHA256");
-		m.insert(49202, "TLS_ECDH_RSA_WITH_AES_256_GCM_SHA384");
-		m.insert(49203, "TLS_ECDHE_PSK_WITH_RC4_128_SHA");
-		m.insert(49204, "TLS_ECDHE_PSK_WITH_3DES_EDE_CBC_SHA");
-		m.insert(49205, "TLS_ECDHE_PSK_WITH_AES_128_CBC_SHA");
-		m.insert(49206, "TLS_ECDHE_PSK_WITH_AES_256_CBC_SHA");
-		m.insert(49207, "TLS_ECDHE_PSK_WITH_AES_128_CBC_SHA256");
-		m.insert(49208, "TLS_ECDHE_PSK_WITH_AES_256_CBC_SHA384");
-		m.insert(49209, "TLS_ECDHE_PSK_WITH_NULL_SHA");
-		m.insert(49210, "TLS_ECDHE_PSK_WITH_NULL_SHA256");
-		m.insert(49211, "TLS_ECDHE_PSK_WITH_NULL_SHA384");
-		m.insert(49212, "TLS_RSA_WITH_ARIA_128_CBC_SHA256");
-		m.insert(49213, "TLS_RSA_WITH_ARIA_256_CBC_SHA384");
-		m.insert(49214, "TLS_DH_DSS_WITH_ARIA_128_CBC_SHA256");
-		m.insert(49215, "TLS_DH_DSS_WITH_ARIA_256_CBC_SHA384");
-		m.insert(49216, "TLS_DH_RSA_WITH_ARIA_128_CBC_SHA256");
-		m.insert(49217, "TLS_DH_RSA_WITH_ARIA_256_CBC_SHA384");
-		m.insert(49218, "TLS_DHE_DSS_WITH_ARIA_128_CBC_SHA256");
-		m.insert(49219, "TLS_DHE_DSS_WITH_ARIA_256_CBC_SHA384");
-		m.insert(49220, "TLS_DHE_RSA_WITH_ARIA_128_CBC_SHA256");
-		m.insert(49221, "TLS_DHE_RSA_WITH_ARIA_256_CBC_SHA384");
-		m.insert(49222, "TLS_DH_anon_WITH_ARIA_128_CBC_SHA256");
-		m.insert(49223, "TLS_DH_anon_WITH_ARIA_256_CBC_SHA384");
-		m.insert(49224, "TLS_ECDHE_ECDSA_WITH_ARIA_128_CBC_SHA256");
-		m.insert(49225, "TLS_ECDHE_ECDSA_WITH_ARIA_256_CBC_SHA384");
-		m.insert(49226, "TLS_ECDH_ECDSA_WITH_ARIA_128_CBC_SHA256");
-		m.insert(49227, "TLS_ECDH_ECDSA_WITH_ARIA_256_CBC_SHA384");
-		m.insert(49228, "TLS_ECDHE_RSA_WITH_ARIA_128_CBC_SHA256");
-		m.insert(49229, "TLS_ECDHE_RSA_WITH_ARIA_256_CBC_SHA384");
-		m.insert(49230, "TLS_ECDH_RSA_WITH_ARIA_128_CBC_SHA256");
-		m.insert(49231, "TLS_ECDH_RSA_WITH_ARIA_256_CBC_SHA384");
-		m.insert(49232, "TLS_RSA_WITH_ARIA_128_GCM_SHA256");
-		m.insert(49233, "TLS_RSA_WITH_ARIA_256_GCM_SHA384");
-		m.insert(49234, "TLS_DHE_RSA_WITH_ARIA_128_GCM_SHA256");
-		m.insert(49235, "TLS_DHE_RSA_WITH_ARIA_256_GCM_SHA384");
-		m.insert(49236, "TLS_DH_RSA_WITH_ARIA_128_GCM_SHA256");
-		m.insert(49237, "TLS_DH_RSA_WITH_ARIA_256_GCM_SHA384");
-		m.insert(49238, "TLS_DHE_DSS_WITH_ARIA_128_GCM_SHA256");
-		m.insert(49239, "TLS_DHE_DSS_WITH_ARIA_256_GCM_SHA384");
-		m.insert(49240, "TLS_DH_DSS_WITH_ARIA_128_GCM_SHA256");
-		m.insert(49241, "TLS_DH_DSS_WITH_ARIA_256_GCM_SHA384");
-		m.insert(49242, "TLS_DH_anon_WITH_ARIA_128_GCM_SHA256");
-		m.insert(49243, "TLS_DH_anon_WITH_ARIA_256_GCM_SHA384");
-		m.insert(49244, "TLS_ECDHE_ECDSA_WITH_ARIA_128_GCM_SHA256");
-		m.insert(49245, "TLS_ECDHE_ECDSA_WITH_ARIA_256_GCM_SHA384");
-		m.insert(49246, "TLS_ECDH_ECDSA_WITH_ARIA_128_GCM_SHA256");
-		m.insert(49247, "TLS_ECDH_ECDSA_WITH_ARIA_256_GCM_SHA384");
-		m.insert(49248, "TLS_ECDHE_RSA_WITH_ARIA_128_GCM_SHA256");
-		m.insert(49249, "TLS_ECDHE_RSA_WITH_ARIA_256_GCM_SHA384");
-		m.insert(49250, "TLS_ECDH_RSA_WITH_ARIA_128_GCM_SHA256");
-		m.insert(49251, "TLS_ECDH_RSA_WITH_ARIA_256_GCM_SHA384");
-		m.insert(49252, "TLS_PSK_WITH_ARIA_128_CBC_SHA256");
-		m.insert(49253, "TLS_PSK_WITH_ARIA_256_CBC_SHA384");
-		m.insert(49254, "TLS_DHE_PSK_WITH_ARIA_128_CBC_SHA256");
-		m.insert(49255, "TLS_DHE_PSK_WITH_ARIA_256_CBC_SHA384");
-		m.insert(49256, "TLS_RSA_PSK_WITH_ARIA_128_CBC_SHA256");
-		m.insert(49257, "TLS_RSA_PSK_WITH_ARIA_256_CBC_SHA384");
-		m.insert(49258, "TLS_PSK_WITH_ARIA_128_GCM_SHA256");
-		m.insert(49259, "TLS_PSK_WITH_ARIA_256_GCM_SHA384");
-		m.insert(49260, "TLS_DHE_PSK_WITH_ARIA_128_GCM_SHA256");
-		m.insert(49261, "TLS_DHE_PSK_WITH_ARIA_256_GCM_SHA384");
-		m.insert(49262, "TLS_RSA_PSK_WITH_ARIA_128_GCM_SHA256");
-		m.insert(49263, "TLS_RSA_PSK_WITH_ARIA_256_GCM_SHA384");
-		m.insert(49264, "TLS_ECDHE_PSK_WITH_ARIA_128_CBC_SHA256");
-		m.insert(49265, "TLS_ECDHE_PSK_WITH_ARIA_256_CBC_SHA384");
-		m.insert(49266, "TLS_ECDHE_ECDSA_WITH_CAMELLIA_128_CBC_SHA256");
-		m.insert(49267, "TLS_ECDHE_ECDSA_WITH_CAMELLIA_256_CBC_SHA384");
-		m.insert(49268, "TLS_ECDH_ECDSA_WITH_CAMELLIA_128_CBC_SHA256");
-		m.insert(49269, "TLS_ECDH_ECDSA_WITH_CAMELLIA_256_CBC_SHA384");
-		m.insert(49270, "TLS_ECDHE_RSA_WITH_CAMELLIA_128_CBC_SHA256");
-		m.insert(49271, "TLS_ECDHE_RSA_WITH_CAMELLIA_256_CBC_SHA384");
-		m.insert(49272, "TLS_ECDH_RSA_WITH_CAMELLIA_128_CBC_SHA256");
-		m.insert(49273, "TLS_ECDH_RSA_WITH_CAMELLIA_256_CBC_SHA384");
-		m.insert(49274, "TLS_RSA_WITH_CAMELLIA_128_GCM_SHA256");
-		m.insert(49275, "TLS_RSA_WITH_CAMELLIA_256_GCM_SHA384");
-		m.insert(49276, "TLS_DHE_RSA_WITH_CAMELLIA_128_GCM_SHA256");
-		m.insert(49277, "TLS_DHE_RSA_WITH_CAMELLIA_256_GCM_SHA384");
-		m.insert(49278, "TLS_DH_RSA_WITH_CAMELLIA_128_GCM_SHA256");
-		m.insert(49279, "TLS_DH_RSA_WITH_CAMELLIA_256_GCM_SHA384");
-		m.insert(49280, "TLS_DHE_DSS_WITH_CAMELLIA_128_GCM_SHA256");
-		m.insert(49281, "TLS_DHE_DSS_WITH_CAMELLIA_256_GCM_SHA384");
-		m.insert(49282, "TLS_DH_DSS_WITH_CAMELLIA_128_GCM_SHA256");
-		m.insert(49283, "TLS_DH_DSS_WITH_CAMELLIA_256_GCM_SHA384");
-		m.insert(49284, "TLS_DH_anon_WITH_CAMELLIA_128_GCM_SHA256");
-		m.insert(49285, "TLS_DH_anon_WITH_CAMELLIA_256_GCM_SHA384");
-		m.insert(49286, "TLS_ECDHE_ECDSA_WITH_CAMELLIA_128_GCM_SHA256");
-		m.insert(49287, "TLS_ECDHE_ECDSA_WITH_CAMELLIA_256_GCM_SHA384");
-		m.insert(49288, "TLS_ECDH_ECDSA_WITH_CAMELLIA_128_GCM_SHA256");
-		m.insert(49289, "TLS_ECDH_ECDSA_WITH_CAMELLIA_256_GCM_SHA384");
-		m.insert(49290, "TLS_ECDHE_RSA_WITH_CAMELLIA_128_GCM_SHA256");
-		m.insert(49291, "TLS_ECDHE_RSA_WITH_CAMELLIA_256_GCM_SHA384");
-		m.insert(49292, "TLS_ECDH_RSA_WITH_CAMELLIA_128_GCM_SHA256");
-		m.insert(49293, "TLS_ECDH_RSA_WITH_CAMELLIA_256_GCM_SHA384");
-		m.insert(49294, "TLS_PSK_WITH_CAMELLIA_128_GCM_SHA256");
-		m.insert(49295, "TLS_PSK_WITH_CAMELLIA_256_GCM_SHA384");
-		m.insert(49296, "TLS_DHE_PSK_WITH_CAMELLIA_128_GCM_SHA256");
-		m.insert(49297, "TLS_DHE_PSK_WITH_CAMELLIA_256_GCM_SHA384");
-		m.insert(49298, "TLS_RSA_PSK_WITH_CAMELLIA_128_GCM_SHA256");
-		m.insert(49299, "TLS_RSA_PSK_WITH_CAMELLIA_256_GCM_SHA384");
-		m.insert(49300, "TLS_PSK_WITH_CAMELLIA_128_CBC_SHA256");
-		m.insert(49301, "TLS_PSK_WITH_CAMELLIA_256_CBC_SHA384");
-		m.insert(49302, "TLS_DHE_PSK_WITH_CAMELLIA_128_CBC_SHA256");
-		m.insert(49303, "TLS_DHE_PSK_WITH_CAMELLIA_256_CBC_SHA384");
-		m.insert(49304, "TLS_RSA_PSK_WITH_CAMELLIA_128_CBC_SHA256");
-		m.insert(49305, "TLS_RSA_PSK_WITH_CAMELLIA_256_CBC_SHA384");
-		m.insert(49306, "TLS_ECDHE_PSK_WITH_CAMELLIA_128_CBC_SHA256");
-		m.insert(49307, "TLS_ECDHE_PSK_WITH_CAMELLIA_256_CBC_SHA384");
-		m.insert(49308, "TLS_RSA_WITH_AES_128_CCM");
-		m.insert(49309, "TLS_RSA_WITH_AES_256_CCM");
-		m.insert(49310, "TLS_DHE_RSA_WITH_AES_128_CCM");
-		m.insert(49311, "TLS_DHE_RSA_WITH_AES_256_CCM");
-		m.insert(49312, "TLS_RSA_WITH_AES_128_CCM_8");
-		m.insert(49313, "TLS_RSA_WITH_AES_256_CCM_8");
-		m.insert(49314, "TLS_DHE_RSA_WITH_AES_128_CCM_8");
-		m.insert(49315, "TLS_DHE_RSA_WITH_AES_256_CCM_8");
-		m.insert(49316, "TLS_PSK_WITH_AES_128_CCM");
-		m.insert(49317, "TLS_PSK_WITH_AES_256_CCM");
-		m.insert(49318, "TLS_DHE_PSK_WITH_AES_128_CCM");
-		m.insert(49319, "TLS_DHE_PSK_WITH_AES_256_CCM");
-		m.insert(49320, "TLS_PSK_WITH_AES_128_CCM_8");
-		m.insert(49321, "TLS_PSK_WITH_AES_256_CCM_8");
-		m.insert(49322, "TLS_PSK_DHE_WITH_AES_128_CCM_8");
-		m.insert(49323, "TLS_PSK_DHE_WITH_AES_256_CCM_8");
-		m.insert(49324, "TLS_ECDHE_ECDSA_WITH_AES_128_CCM");
-		m.insert(49325, "TLS_ECDHE_ECDSA_WITH_AES_256_CCM");
-		m.insert(49326, "TLS_ECDHE_ECDSA_WITH_AES_128_CCM_8");
-		m.insert(49327, "TLS_ECDHE_ECDSA_WITH_AES_256_CCM_8");
-		m.insert(52243, "TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256_OLD");
-		m.insert(52244, "TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256_OLD");
-		m.insert(52245, "TLS_DHE_RSA_WITH_CHACHA20_POLY1305_SHA256_OLD");
-		m.insert(52392, "TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256");
-		m.insert(52393, "TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256");
-		m.insert(52394, "TLS_DHE_RSA_WITH_CHACHA20_POLY1305_SHA256");
-		m.insert(52395, "TLS_PSK_WITH_CHACHA20_POLY1305_SHA256");
-		m.insert(52396, "TLS_ECDHE_PSK_WITH_CHACHA20_POLY1305_SHA256");
-		m.insert(52397, "TLS_DHE_PSK_WITH_CHACHA20_POLY1305_SHA256");
-		m.insert(52398, "TLS_RSA_PSK_WITH_CHACHA20_POLY1305_SHA256");
-		m.insert(65280, "TLS_GOSTR341094_RSA_WITH_28147_CNT_MD5");
-		m.insert(65281, "TLS_RSA_WITH_28147_CNT_GOST94");
-		m.insert(65278, "SSL_RSA_FIPS_WITH_DES_CBC_SHA");
-		m.insert(65279, "SSL_RSA_FIPS_WITH_3DES_EDE_CBC_SHA");
-		m.insert(65248, "SSL_RSA_FIPS_WITH_3DES_EDE_CBC_SHA");
-		m.insert(65249, "SSL_RSA_FIPS_WITH_DES_CBC_SHA");
-		m
-	};
-	pub static ref tls_extension_map: HashMap<u16, &'static str> = {
-		let mut m = HashMap::new();
-		m.insert(0, "server_name");
-		m.insert(1, "max_fragment_length");
-		m.insert(2, "client_certificate_url");
-		m.insert(3, "trusted_ca_keys");
-		m.insert(4, "truncated_hmac");
-		m.insert(5, "status_request");
-		m.insert(6, "user_mapping");
-		m.insert(7, "client_authz");
-		m.insert(8, "server_authz");
-		m.insert(9, "cert_type");
-		m.insert(10, "supported_groups");
-		m.insert(11, "ec_point_formats");
-		m.insert(12, "srp");
-		m.insert(13, "signature_algorithms");
-		m.insert(14, "use_srtp");
-		m.insert(15, "heartbeat");
-		m.insert(16, "application_layer_protocol_negotiation");
-		m.insert(17, "status_request_v2");
-		m.insert(18, "signed_certificate_timestamp");
-		m.insert(19, "client_certificate_type");
-		m.insert(20, "server_certificate_type");
-		m.insert(21, "padding");
-		m.insert(22, "encrypt_then_mac");
-		m.insert(23, "extended_master_secret");
-		m.insert(24, "token_binding");
-		m.insert(25, "cached_info");
-		m.insert(27, "compress_certificate");
-		m.insert(28, "record_size_limit");
-		m.insert(34, "delegated_credentials");
-		m.insert(35, "session_ticket");
-		m.insert(40, "Reserved (key_share)");
-		m.insert(41, "pre_shared_key");
-		m.insert(42, "early_data");
-		m.insert(43, "supported_versions");
-		m.insert(44, "cookie");
-		m.insert(45, "psk_key_exchange_modes");
-		m.insert(46, "Reserved (ticket_early_data_info)");
-		m.insert(47, "certificate_authorities");
-		m.insert(48, "oid_filters");
-		m.insert(49, "post_handshake_auth");
-		m.insert(50, "signature_algorithms_cert");
-		m.insert(51, "key_share");
-		m.insert(52, "transparency_info");
-		m.insert(53, "connection_id (deprecated)");
-		m.insert(54, "connection_id");
-		m.insert(55, "external_id_hash");
-		m.insert(56, "external_session_id");
-		m.insert(57, "quic_transport_parameters");
-		m.insert(58, "ticket_request");
-		m.insert(59, "dnssec_chain");
-		m.insert(2570, "Reserved (GREASE)");
-		m.insert(6682, "Reserved (GREASE)");
-		m.insert(10794, "Reserved (GREASE)");
-		m.insert(13172, "next_protocol_negotiation");
-		m.insert(14906, "Reserved (GREASE)");
-		m.insert(17513, "application_settings");
-		m.insert(19018, "Reserved (GREASE)");
-		m.insert(23130, "Reserved (GREASE)");
-		m.insert(27242, "Reserved (GREASE)");
-		m.insert(30031, "channel_id_old");
-		m.insert(30032, "channel_id");
-		m.insert(31354, "Reserved (GREASE)");
-		m.insert(35466, "Reserved (GREASE)");
-		m.insert(39578, "Reserved (GREASE)");
-		m.insert(43690, "Reserved (GREASE)");
-		m.insert(47802, "Reserved (GREASE)");
-		m.insert(51914, "Reserved (GREASE)");
-		m.insert(56026, "Reserved (GREASE)");
-		m.insert(60138, "Reserved (GREASE)");
-		m.insert(64250, "Reserved (GREASE)");
-		m.insert(65037, "encrypted_client_hello");
-		m.insert(65281, "renegotiation_info");
-		m.insert(65445, "quic_transport_parameters (drafts version)");
-		m.insert(65486, "encrypted_server_name");
-		m
-	};
-	pub static ref nbns_type_map: HashMap<u16, &'static str> = {
-		let mut m = HashMap::new();
-		m.insert(1, "A");
-		m.insert(2, "NS");
-		m.insert(10, "NULL");
-		m.insert(32, "NB");
-		m.insert(33, "NBSTAT");
-		m
-	};
-	pub static ref oid_map_map: HashMap<&'static str, &'static str> = {
-		let mut m = HashMap::new();
-		m.insert("2.6.5.2.4", "id-at-mhs-dl-submit-permissions");
-		m.insert("2.6.5.2.13", "id-at-mhs-dl-policy");
-		m.insert("2.6.5.2.16", "id-at-mhs-or-addresses-with-capabilities");
-		m.insert("2.6.5.2.19", "id-at-mhs-deliverable-classes");
-		m.insert("2.16.840.1.101.2.1.5.14", "id-at-alid");
-		m.insert("2.16.840.1.101.2.1.5.20", "id-at-janUKMs");
-		m.insert("2.16.840.1.101.2.1.5.21", "id-at-febUKMs");
-		m.insert("2.16.840.1.101.2.1.5.22", "id-at-marUKMs");
-		m.insert("2.16.840.1.101.2.1.5.23", "id-at-aprUKMs");
-		m.insert("2.16.840.1.101.2.1.5.24", "id-at-mayUKMs");
-		m.insert("2.16.840.1.101.2.1.5.25", "id-at-junUKMs");
-		m.insert("2.16.840.1.101.2.1.5.26", "id-at-julUKMs");
-		m.insert("2.16.840.1.101.2.1.5.27", "id-at-augUKMs");
-		m.insert("2.16.840.1.101.2.1.5.28", "id-at-sepUKMs");
-		m.insert("2.16.840.1.101.2.1.5.29", "id-at-octUKMs");
-		m.insert("2.16.840.1.101.2.1.5.30", "id-at-novUKMs");
-		m.insert("2.16.840.1.101.2.1.5.31", "id-at-decUKMs");
-		m.insert("2.16.840.1.101.2.2.1.46", "id-at-actionAddressees");
-		m.insert("2.16.840.1.101.2.2.1.47", "id-at-additionalAddressees");
-		m.insert("2.16.840.1.101.2.2.1.48", "id-at-additionalSecondPartyAddressees");
-		m.insert("2.16.840.1.101.2.2.1.50", "id-at-allowableOriginators");
-		m.insert("2.16.840.1.101.2.2.1.52", "id-at-community");
-		m.insert("2.16.840.1.101.2.2.1.56", "id-at-entryClassification");
-		m.insert("2.16.840.1.101.2.2.1.59", "id-at-infoAddressees");
-		m.insert("2.16.840.1.101.2.2.1.67", "id-at-nameClassification");
-		m.insert("2.16.840.1.101.2.2.1.71", "id-at-plaAddressees");
-		m.insert("2.16.840.1.101.2.2.1.76", "id-at-remarks");
-		m.insert("2.16.840.1.101.2.2.1.78", "id-at-rIClassification");
-		m.insert("2.16.840.1.101.2.2.1.79", "id-at-rIInfo");
-		m.insert("2.16.840.1.101.2.2.1.80", "id-at-secondPartyAddressees");
-		m.insert("2.16.840.1.101.2.2.1.104", "id-at-distributionCodeAction");
-		m.insert("2.16.840.1.101.2.2.1.105", "id-at-distributionCodeInfo");
-		m.insert("2.16.840.1.101.2.2.1.108", "id-at-aCPPreferredDelivery");
-		m.insert("2.16.840.1.101.2.2.1.112", "id-at-aLType");
-		m.insert("2.16.840.1.101.2.2.1.123", "id-at-onSupported");
-		m.insert("2.16.840.1.101.2.2.1.135", "id-at-aLReceiptPolicy");
-		m.insert("2.16.840.1.101.2.2.1.142", "id-at-aCPLegacyFormat");
-		m.insert("2.16.840.1.101.2.2.1.146", "id-at-aCPNetwAccessSchemaEdB");
-		m.insert("2.16.840.1.101.2.2.1.147", "id-at-aCPNetworkSchemaEdB");
-		m.insert("2.16.840.1.101.2.2.1.162", "id-at-maxMessageSize");
-		m.insert("2.16.840.1.101.2.2.1.163", "id-at-msgProtocolInfoCapability");
-		m.insert("2.16.840.1.101.2.2.1.164", "id-at-active");
-		m.insert("2.16.840.1.101.2.2.1.165", "id-at-emConCapability");
-		m.insert("2.16.840.1.101.2.2.1.166", "id-at-emConState");
-		m.insert("2.16.840.1.101.2.2.1.167", "id-at-webAccessCapability");
-		m.insert("2.16.840.1.101.2.2.1.168", "id-at-distributionExemptAction");
-		m.insert("2.16.840.1.101.2.2.1.169", "id-at-distributionExemptInfo");
-		m.insert("2.16.840.1.101.2.2.1.170", "id-at-distributionKeywordAction");
-		m.insert("2.16.840.1.101.2.2.1.171", "id-at-distributionKeywordInfo");
-		m.insert("2.16.840.1.101.2.2.1.189", "id-at-aCPNoAttachments");
-		m.insert("0.4.0.0.1.1.5.2", "id-CAP-GPRS-ReferenceNumber");
-		m.insert("0.4.0.0.1.1.2.2", "id-CAP-U-ABORT-Reason");
-		m.insert("1.3.6.1.4.1.46609.1.2", "CBRS_PAL_ZONE");
-		m.insert("1.3.6.1.4.1.46609.1.3", "CBRS_PAL_FREQUENCY");
-		m.insert("1.3.6.1.4.1.46609.1.4", "CBRS_CBSD_FCCID");
-		m.insert("1.3.6.1.4.1.46609.1.5", "CBRS_CBSD_SERIAL");
-		m.insert("1.3.6.1.4.1.46609.1.6", "CBRS_SAS/OPERATOR_administrator_FRN");
-		m.insert("1.3.6.1.4.1.46609.1.7", "CBRS_installer_CPIR-ID");
-		m.insert("1.3.6.1.4.1.46609.1.8", "CBRS_TEST");
-		m.insert("1.3.26.0.4406.0.4.2", "cdt");
-		m.insert("2.9.2.21.7.13", "BaseManagedObjectId(13)");
-		m.insert("2.9.3.2.7.1", "discriminatorId(1)");
-		m.insert("2.9.3.2.7.2", "logId(2)");
-		m.insert("2.9.3.2.7.3", "logRecordId(3)");
-		m.insert("2.9.3.2.7.4", "systemId(4)");
-		m.insert("2.9.3.2.7.5", "systemTitle(5)");
-		m.insert("2.9.3.2.7.6", "additionalInformation(6)");
-		m.insert("2.9.3.2.7.7", "additionalText(7)");
-		m.insert("2.9.3.2.7.8", "attributeIdentifierList(8)");
-		m.insert("2.9.3.2.7.9", "attributeList(9)");
-		m.insert("2.9.3.2.7.10", "attributeValueChangeDefinition(10)");
-		m.insert("2.9.3.2.7.11", "backedUpStatus(11)");
-		m.insert("2.9.3.2.7.12", "correlatedNotifications(12)");
-		m.insert("2.9.3.2.7.13", "eventTime(13)");
-		m.insert("2.9.3.2.7.14", "eventType(14)");
-		m.insert("2.9.3.2.7.15", "monitoredAttributes(15)");
-		m.insert("2.9.3.2.7.16", "notificationIdentifier(16)");
-		m.insert("2.9.3.2.7.17", "perceivedSeverity(17)");
-		m.insert("2.9.3.2.7.18", "probableCause(18)");
-		m.insert("2.9.3.2.7.19", "proposedRepairActions(19)");
-		m.insert("2.9.3.2.7.20", "relationshipChangeDefinition(20)");
-		m.insert("2.9.3.2.7.21", "securityAlarmCause(21)");
-		m.insert("2.9.3.2.7.22", "securityAlarmDetector(22)");
-		m.insert("2.9.3.2.7.23", "securityAlarmSeverity(23)");
-		m.insert("2.9.3.2.7.24", "serviceProvider(24)");
-		m.insert("2.9.3.2.7.25", "serviceUser(25)");
-		m.insert("2.9.3.2.7.26", "sourceIndicator(26)");
-		m.insert("2.9.3.2.7.27", "specificProblems(27)");
-		m.insert("2.9.3.2.7.28", "stateChangeDefinition(28)");
-		m.insert("2.9.3.2.7.29", "thresholdInfo(29)");
-		m.insert("2.9.3.2.7.30", "trendIndication(30)");
-		m.insert("2.9.3.2.7.31", "administrativeState(31)");
-		m.insert("2.9.3.2.7.32", "alarmStatus(32)");
-		m.insert("2.9.3.2.7.33", "availabilityStatus(33)");
-		m.insert("2.9.3.2.7.34", "controlStatus(34)");
-		m.insert("2.9.3.2.7.35", "operationalState(35)");
-		m.insert("2.9.3.2.7.36", "proceduralStatus(36)");
-		m.insert("2.9.3.2.7.37", "standbyStatus(37)");
-		m.insert("2.9.3.2.7.38", "unknownStatus(38)");
-		m.insert("2.9.3.2.7.39", "usageState(39)");
-		m.insert("2.9.3.2.7.40", "backUpObject(40)");
-		m.insert("2.9.3.2.7.41", "backedUpObject(41)");
-		m.insert("2.9.3.2.7.42", "member(42)");
-		m.insert("2.9.3.2.7.43", "owner(43)");
-		m.insert("2.9.3.2.7.44", "peer(44)");
-		m.insert("2.9.3.2.7.45", "primary(45)");
-		m.insert("2.9.3.2.7.46", "providerObject(46)");
-		m.insert("2.9.3.2.7.47", "secondary(47)");
-		m.insert("2.9.3.2.7.48", "userObject(48)");
-		m.insert("2.9.3.2.7.49", "activeDestination(49)");
-		m.insert("2.9.3.2.7.50", "allomorphs(50)");
-		m.insert("2.9.3.2.7.51", "backUpDestinationList(51)");
-		m.insert("2.9.3.2.7.52", "capacityAlarmThreshold(52)");
-		m.insert("2.9.3.2.7.53", "confirmedMode(53)");
-		m.insert("2.9.3.2.7.54", "currentLogSize(54)");
-		m.insert("2.9.3.2.7.55", "destination(55)");
-		m.insert("2.9.3.2.7.56", "discriminatorConstruct(56)");
-		m.insert("2.9.3.2.7.57", "intervalsOfDay(57)");
-		m.insert("2.9.3.2.7.58", "logFullAction(58)");
-		m.insert("2.9.3.2.7.59", "loggingTime(59)");
-		m.insert("2.9.3.2.7.62", "maxLogSize(62)");
-		m.insert("2.9.3.2.7.63", "nameBinding(63)");
-		m.insert("2.9.3.2.7.64", "numberOfRecords(64)");
-		m.insert("2.9.3.2.7.65", "objectClass(65)");
-		m.insert("2.9.3.2.7.66", "packages(66)");
-		m.insert("2.9.3.2.7.68", "startTime(68)");
-		m.insert("2.9.3.2.7.69", "stopTime(69)");
-		m.insert("2.9.3.2.7.70", "supportedFeatures(70)");
-		m.insert("2.9.3.2.7.71", "weekMask(71)");
-		m.insert("2.9.3.2.7.115", "lifecycleState(115)");
-		m.insert("1.2.840.113533.7.66.13", "PasswordBasedMac");
-		m.insert("1.2.640.113533.7.66.30", "id-DHBasedMac");
-		m.insert("1.3.6.1.5.5.7.4.1", "id-it-caProtEncCert");
-		m.insert("1.3.6.1.5.5.7.4.2", "id-it-signKeyPairTypes");
-		m.insert("1.3.6.1.5.5.7.4.3", "id-it-encKeyPairTypes");
-		m.insert("1.3.6.1.5.5.7.4.4", "id-it-preferredSymmAlg");
-		m.insert("1.3.6.1.5.5.7.4.5", "id-it-caKeyUpdateInfo");
-		m.insert("1.3.6.1.5.5.7.4.6", "id-it-currentCRL");
-		m.insert("1.3.6.1.5.5.7.4.7", "id-it-unsupportedOIDs");
-		m.insert("1.3.6.1.5.5.7.4.10", "id-it-keyPairParamReq");
-		m.insert("1.3.6.1.5.5.7.4.11", "id-it-keyPairParamRep");
-		m.insert("1.3.6.1.5.5.7.4.12", "id-it-revPassphrase");
-		m.insert("1.3.6.1.5.5.7.4.13", "id-it-implicitConfirm");
-		m.insert("1.3.6.1.5.5.7.4.14", "id-it-confirmWaitTime");
-		m.insert("1.3.6.1.5.5.7.4.15", "id-it-origPKIMessage");
-		m.insert("1.3.6.1.5.5.7.4.16", "id-it-suppLangTags");
-		m.insert("1.2.840.113549.1.9.16.1.6", "id-ct-contentInfo");
-		m.insert("1.2.840.113549.1.7.2", "id-signedData");
-		m.insert("1.2.840.113549.1.7.3", "id-envelopedData");
-		m.insert("1.2.840.113549.1.7.5", "id-digestedData");
-		m.insert("1.2.840.113549.1.7.6", "id-encryptedData");
-		m.insert("1.2.840.113549.1.9.16.1.2", "id-ct-authenticatedData");
-		m.insert("1.2.840.113549.1.9.16.1.9", "id-ct-compressedData");
-		m.insert("1.2.840.113549.1.9.16.1.23", "id-ct-authEnvelopedData");
-		m.insert("1.2.840.113549.1.9.3", "id-contentType");
-		m.insert("1.2.840.113549.1.9.4", "id-messageDigest");
-		m.insert("1.2.840.113549.1.9.5", "id-signingTime");
-		m.insert("1.2.840.113549.1.9.6", "id-counterSignature");
-		m.insert("2.6.1.4.18", "id-et-pkcs7");
-		m.insert("1.3.6.1.4.1.311.16.4", "ms-oe-encryption-key-preference");
-		m.insert("1.2.840.113549.1.9.15", "id-smime-capabilities");
-		m.insert("1.2.840.113549.1.9.16.2.11", "id-encryption-key-preference");
-		m.insert("1.2.840.113549.3.4", "id-alg-rc4");
-		m.insert("0.4.0.127.0.7.1.1.5.1.1.3", "ecka-eg-X963KDF-SHA256");
-		m.insert("0.4.0.127.0.7.1.1.5.1.1.4", "ecka-eg-X963KDF-SHA384");
-		m.insert("0.4.0.127.0.7.1.1.5.1.1.5", "ecka-eg-X963KDF-SHA512");
-		m.insert("2.16.840.1.101.3.4.1.5", "id-aes128-wrap");
-		m.insert("2.16.840.1.101.3.4.1.25", "id-aes192-wrap");
-		m.insert("2.16.840.1.101.3.4.1.45", "id-aes256-wrap");
-		m.insert("2.16.840.1.101.3.4.1.6", "id-aes128-GCM");
-		m.insert("2.16.840.1.101.3.4.1.26", "id-aes192-GCM");
-		m.insert("2.16.840.1.101.3.4.1.46", "id-aes256-GCM");
-		m.insert("2.16.840.1.101.3.4.1.7", "id-aes128-CCM");
-		m.insert("2.16.840.1.101.3.4.1.27", "id-aes192-CCM");
-		m.insert("2.16.840.1.101.3.4.1.44", "id-aes256-CFB");
-		m.insert("1.3.133.16.840.63.0.2", "dhSinglePass-stdDH-sha1kdf-scheme");
-		m.insert("1.3.132.1.11.0", "dhSinglePass-stdDH-sha224kdf-scheme");
-		m.insert("1.3.132.1.11.1", "dhSinglePass-stdDH-sha256kdf-scheme");
-		m.insert("1.3.132.1.11.2", "dhSinglePass-stdDH-sha384kdf-scheme");
-		m.insert("1.3.132.1.11.3", "dhSinglePass-stdDH-sha512kdf-scheme");
-		m.insert("1.3.133.16.840.63.0.3", "dhSinglePass-cofactorDH-sha1kdf-scheme");
-		m.insert("1.3.132.1.14.0", "dhSinglePass-cofactorDH-sha224kdf-scheme");
-		m.insert("1.3.132.1.14.1", "dhSinglePass-cofactorDH-sha256kdf-scheme");
-		m.insert("1.3.132.1.14.2", "dhSinglePass-cofactorDH-sha384kdf-scheme");
-		m.insert("1.3.132.1.14.3", "dhSinglePass-cofactorDH-sha512kdf-scheme");
-		m.insert("1.3.133.16.840.63.0.16", "mqvSinglePass-sha1kdf-scheme");
-		m.insert("1.3.132.1.15.0", "mqvSinglePass-sha224kdf-scheme");
-		m.insert("1.3.132.1.15.1", "mqvSinglePass-sha256kdf-scheme");
-		m.insert("1.3.132.1.15.2", "mqvSinglePass-sha384kdf-scheme");
-		m.insert("1.3.132.1.15.3", "mqvSinglePass-sha512kdf-scheme");
-		m.insert("1.2.840.113549.1.9.16.3.7", "id-alg-CMSRC2-wrap");
-		m.insert("1.2.840.113549.3.7", "des-ede3-cbc");
-		m.insert("1.2.840.113549.3.2", "rc2-cbc");
-		m.insert("2.16.840.1.113730.3.1.40", "userSMIMECertificate");
-		m.insert("1.2.840.113549.1.9.16.1.16", "id-ct-firmwarePackage");
-		m.insert("1.2.840.113549.1.9.16.2.35", "id-aa-firmwarePackageID");
-		m.insert("1.2.840.113549.1.9.16.2.36", "id-aa-targetHardwareIDs");
-		m.insert("1.2.840.113549.1.9.16.2.37", "id-aa-decryptKeyID");
-		m.insert("1.2.840.113549.1.9.16.2.38", "id-aa-implCryptoAlgs");
-		m.insert("1.2.840.113549.1.9.16.2.43", "id-aa-implCompressAlgs");
-		m.insert("1.2.840.113549.1.9.16.2.40", "id-aa-communityIdentifiers");
-		m.insert("1.2.840.113549.1.9.16.2.42", "id-aa-firmwarePackageInfo");
-		m.insert("1.2.840.113549.1.9.16.2.39", "id-aa-wrappedFirmwareKey");
-		m.insert("1.2.840.113549.1.9.16.1.17", "id-ct-firmwareLoadReceipt");
-		m.insert("1.2.840.113549.1.9.16.1.18", "id-ct-firmwareLoadError");
-		m.insert("1.3.6.1.5.5.7.8.4", "id-on-hardwareModuleName");
-		m.insert("1.2.840.113549.1.9.16.2.41", "id-aa-fwPkgMessageDigest");
-		m.insert("1.2.840.113549.1.9.16.3.6", "id-alg-CMS3DESwrap");
-		m.insert("1.2.840.113549.1.9.16.1.21", "id-ct-encKeyWithID");
-		m.insert("1.3.6.1.5.5.7.5.1.1", "id-regCtrl-regToken");
-		m.insert("1.3.6.1.5.5.7.5.1.2", "id-regCtrl-authenticator");
-		m.insert("1.3.6.1.5.5.7.5.1.3", "id-regCtrl-pkiPublicationInfo");
-		m.insert("1.3.6.1.5.5.7.5.1.4", "id-regCtrl-pkiArchiveOptions");
-		m.insert("1.3.6.1.5.5.7.5.1.5", "id-regCtrl-oldCertID");
-		m.insert("1.3.6.1.5.5.7.5.1.6", "id-regCtrl-protocolEncrKey");
-		m.insert("1.3.6.1.5.5.7.5.2.1", "id-regInfo-utf8Pairs");
-		m.insert("1.3.6.1.5.5.7.5.2.2", "id-regInfo-certReq");
-		m.insert("2.5.24.4", "id-aca-prescriptiveACI");
-		m.insert("2.5.24.5", "id-aca-entryACI");
-		m.insert("2.5.24.6", "id-aca-subentryACI");
-		m.insert("2.5.12.0", "id-doa-dseType");
-		m.insert("2.5.12.5", "id-doa-supplierKnowledge");
-		m.insert("2.5.12.6", "id-doa-consumerKnowledge");
-		m.insert("2.5.12.7", "id-doa-secondaryShadows");
-		m.insert("2.5.12.1", "id-doa-myAccessPoint");
-		m.insert("2.5.12.2", "id-doa-superiorKnowledge");
-		m.insert("2.5.12.3", "id-doa-specificKnowledge");
-		m.insert("2.5.12.4", "id-doa-nonSpecificKnowledge");
-		m.insert("2.5.12.8", "id-doa-ditBridgeKnowledge");
-		m.insert("1.2.840.113549.1.9.16.2.1", "id-aa-receiptRequest");
-		m.insert("1.2.840.113549.1.9.16.2.7", "id-aa-contentIdentifier");
-		m.insert("1.2.840.113549.1.9.16.1.1", "id-ct-receipt");
-		m.insert("1.2.840.113549.1.9.16.2.4", "id-aa-contentHint");
-		m.insert("1.2.840.113549.1.9.16.2.5", "id-aa-msgSigDigest");
-		m.insert("1.2.840.113549.1.9.16.2.10", "id-aa-contentReference");
-		m.insert("1.2.840.113549.1.9.16.2.2", "id-aa-securityLabel");
-		m.insert("1.2.840.113549.1.9.16.2.9", "id-aa-equivalentLabels");
-		m.insert("1.2.840.113549.1.9.16.2.3", "id-aa-mlExpandHistory");
-		m.insert("1.2.840.113549.1.9.16.2.12", "id-aa-signingCertificate");
-		m.insert("1.2.840.113549.1.9.16.2.47", "id-aa-signingCertificateV2");
-		m.insert("2.16.840.1.101.2.1.8.3.0", "id-restrictiveAttributes");
-		m.insert("2.16.840.1.101.2.1.8.3.1", "id-enumeratedPermissiveAttributes");
-		m.insert("2.16.840.1.101.2.1.8.3.2", "id-permissiveAttributes");
-		m.insert("2.16.840.1.101.2.1.8.3.3", "id-informativeAttributes");
-		m.insert("2.16.840.1.101.2.1.8.3.4", "id-enumeratedRestrictiveAttributes");
-		m.insert("1.0.8571.1.1", "iso-ftam(1)");
-		m.insert("1.0.8571.2.1", "ftam-pci(1)");
-		m.insert("1.3.14.5.2.2", "NIST file directory entry abstract syntax");
-		m.insert("1.0.8571.5.1", "ISO FTAM unstructured text");
-		m.insert("1.0.8571.5.3", "ISO FTAM unstructured binary");
-		m.insert("1.3.12.2.1006.53.2.1.3", "alcatel-E10-MAP-extension-PlmnContainer");
-		m.insert("0.34.0", "Nokia ISD Extension");
-		m.insert("0.34.1", "Nokia Dsd Extension");
-		m.insert("0.34.2", "Nokia Location Update Extension");
-		m.insert("0.34.4", "Nokia SS Data Extension");
-		m.insert("0.34.5", "Nokia SRI Request Extension");
-		m.insert("0.34.6", "Nokia ExtraSignalInfo Extension");
-		m.insert("0.34.7", "Nokia SRI Response Extension");
-		m.insert("0.34.10", "Nokia Cancel Location Extension");
-		m.insert("0.34.11", "Nokia ATM Extension");
-		m.insert("0.34.12", "Nokia DTM Extension");
-		m.insert("0.34.13", "Nokia NumberPorted Extension");
-		m.insert("0.34.15", "Nokia HandOver Extension");
-		m.insert("0.34.16", "Nokia ATMres Extension");
-		m.insert("0.34.17", "Nokia AbsentSubscriber Extension");
-		m.insert("0.34.18", "Nokia SriForSM Extension");
-		m.insert("0.34.19", "Nokia ReportSMDelStatt Extension");
-		m.insert("0.34.20", "Nokia Udl Extension");
-		m.insert("0.34.21", "Nokia RoamNotAllowed Extension");
-		m.insert("0.34.22", "Nokia MO-ForwardSM Extension");
-		m.insert("0.34.23", "Nokia ErrOlcmInfoTable Extension");
-		m.insert("0.34.25", "Nokia Routing Category Extension");
-		m.insert("0.34.26", "Nokia AnyTimeMod Extension");
-		m.insert("1.3.12.2.1107.3.66.1.1", "Nokia AccessTypeExt Extension");
-		m.insert("1.3.12.2.1107.3.66.1.3", "Nokia AccessSubscriptionListExt Extension");
-		m.insert("1.3.12.2.1107.3.66.1.6", "Nokia AllowedServiceData Extension");
-		m.insert("1.2.826.0.1249.58.1.0", "Ericsson ExtensionType Extension");
-		m.insert("0.4.0.1.1.1.0.0", "cs1-ssp-to-scp");
-		m.insert("1.2.840.113556.1.4.319", "LDAP_PAGED_RESULT_OID_STRING");
-		m.insert("1.2.840.113556.1.4.473", "LDAP_SERVER_SORT_OID");
-		m.insert("1.2.840.113556.1.4.474", "LDAP_SERVER_RESP_SORT_OID");
-		m.insert("1.2.840.113556.1.4.841", "LDAP_SERVER_DIRSYNC_OID");
-		m.insert("1.3.6.1.4.1.4203.1.11.1", "passwdModifyOID");
-		m.insert("1.3.6.1.1.8", "cancelRequestOID");
-		m.insert("1.3.6.1.4.1.4203.1.9.1.1", "syncRequestOID");
-		m.insert("1.3.6.1.4.1.4203.1.9.1.2", "syncStateOID");
-		m.insert("1.3.6.1.4.1.4203.1.9.1.3", "syncDoneOID");
-		m.insert("1.3.6.1.4.1.4203.1.9.1.4", "syncInfoOID");
-		m.insert("1.3.6.1.4.1.42.2.27.8.5.1", "passwordPolicy");
-		m.insert("1.3.6.1.5.5.7.1.12", "id-pe-logotype");
-		m.insert("1.3.6.1.5.5.7.20.1", "id-pe-logo-loyalty");
-		m.insert("1.3.6.1.5.5.7.20.2", "id-pe-logo-background");
-		m.insert("1.0.9506.2.3", "MMS");
-		m.insert("1.0.9506.2.1", "mms-abstract-syntax-version1(1)");
-		m.insert("1.3.6.1.5.5.7.1.25", "id-pe-mud-url");
-		m.insert("2.16.840.1.101.3.4.1.2", "id-aes128-CBC");
-		m.insert("2.16.840.1.101.3.4.1.3", "id-aes128-OFB");
-		m.insert("2.16.840.1.101.3.4.1.4", "id-aes128-CFB");
-		m.insert("2.16.840.1.101.3.4.1.22", "id-aes192-CBC");
-		m.insert("2.16.840.1.101.3.4.1.23", "id-aes192-OFB");
-		m.insert("2.16.840.1.101.3.4.1.24", "id-aes192-CFB");
-		m.insert("2.16.840.1.101.3.4.1.42", "id-aes256-CBC");
-		m.insert("2.16.840.1.101.3.4.1.43", "id-aes256-OFB");
-		m.insert("2.16.840.1.101.3.4.2.17", "id-shake128-len");
-		m.insert("2.16.840.1.101.3.4.2.18", "id-shake256-len");
-		m.insert("2.16.840.1.113719.1.9.4.1", "pa-sa");
-		m.insert("2.16.840.1.113719.1.9.4.2", "pa-rl");
-		m.insert("2.16.840.1.113730.1.1", "ns_cert_exts.cert_type");
-		m.insert("2.16.840.1.113730.1.2", "ns_cert_exts.base_url");
-		m.insert("2.16.840.1.113730.1.3", "ns_cert_exts.revocation-url");
-		m.insert("2.16.840.1.113730.1.4", "ns_cert_exts.ca-revocation-url");
-		m.insert("2.16.840.1.113730.1.7", "ns_cert_exts.cert-renewal-url");
-		m.insert("2.16.840.1.113730.1.8", "ns_cert_exts.ca-policy-url");
-		m.insert("2.16.840.1.113730.1.12", "ns_cert_exts.ssl-server-name");
-		m.insert("2.16.840.1.113730.1.13", "ns_cert_exts.comment");
-		m.insert("1.3.6.1.5.5.7.48.1.1", "id-pkix-ocsp-basic");
-		m.insert("1.3.6.1.5.5.7.48.1.2", "id-pkix-ocsp-nonce");
-		m.insert("1.3.6.1.5.5.7.48.1.3", "id-pkix-ocsp-crl");
-		m.insert("1.3.6.1.5.5.7.48.1.4", "id-pkix-ocsp-response");
-		m.insert("1.3.6.1.5.5.7.48.1.5", "id-pkix-ocsp-nocheck");
-		m.insert("1.3.6.1.5.5.7.48.1.6", "id-pkix-ocsp-archive-cutoff");
-		m.insert("1.3.6.1.5.5.7.48.1.7", "id-pkix-ocsp-service-locator");
-		m.insert("2.6.5.2.0", "id-at-mhs-maximum-content-length");
-		m.insert("2.6.5.2.1", "id-at-mhs-deliverable-content-types");
-		m.insert("2.6.5.2.2", "id-at-mhs-exclusively-acceptable-eits");
-		m.insert("2.6.5.2.3", "id-at-mhs-dl-members");
-		m.insert("2.6.5.2.6", "id-at-mhs-or-addresses");
-		m.insert("2.6.5.2.9", "id-at-mhs-supported-content-types");
-		m.insert("2.6.5.2.12", "id-at-mhs-dl-archive-service");
-		m.insert("2.6.5.2.15", "id-at-mhs-dl-subscription-service");
-		m.insert("2.6.5.2.17", "id-at-mhs-acceptable-eits");
-		m.insert("2.6.5.2.18", "id-at-mhs-unacceptable-eits");
-		m.insert("2.16.840.1.101.2.1.5.47", "id-at-aLExemptedAddressProcessor");
-		m.insert("2.16.840.1.101.2.2.1.134.1", "id-at-collective-mhs-or-addresses");
-		m.insert("2.6.4.3.80", "id-att-certificate-selectors");
-		m.insert("2.6.4.3.1", "id-att-content");
-		m.insert("2.6.4.3.3", "id-att-content-correlator");
-		m.insert("2.6.4.3.4", "id-att-content-identifier");
-		m.insert("2.6.4.3.5", "id-att-content-inetgrity-check");
-		m.insert("2.6.4.3.6", "id-att-content-length");
-		m.insert("2.6.4.3.8", "id-att-content-type");
-		m.insert("2.6.4.3.9", "id-att-conversion-with-loss-prohibited");
-		m.insert("2.6.4.3.51", "id-att-deferred-delivery-time");
-		m.insert("2.6.4.3.13", "id-att-delivery-flags");
-		m.insert("2.6.4.3.78", "id-att-dl-exempted-recipients");
-		m.insert("2.6.4.3.14", "id-att-dl-expansion-history");
-		m.insert("2.6.4.3.53", "id-att-dl-expansion-prohibited");
-		m.insert("2.6.4.3.54", "id-att-internal-trace-information");
-		m.insert("2.6.4.3.55", "id-att-latest-delivery-time");
-		m.insert("2.6.4.3.18", "id-att-message-delivery-envelope");
-		m.insert("2.6.4.3.20", "id-att-message-delivery-time");
-		m.insert("2.6.4.3.19", "id-att-message-identifier");
-		m.insert("2.6.4.3.21", "id-at-message-orgin-authentication-check");
-		m.insert("2.6.4.3.22", "id-att-message-security-label");
-		m.insert("2.6.4.3.59", "id-att-message-submission-envelope");
-		m.insert("2.6.4.3.23", "id-att-message-submission-time");
-		m.insert("2.6.4.3.24", "id-att-message-token");
-		m.insert("2.6.4.3.81", "id-att-multiple-originator-certificates");
-		m.insert("2.6.4.3.17", "id-att-originally-intended-recipient-name");
-		m.insert("2.6.4.3.62", "id-att-originating-MTA-certificate");
-		m.insert("2.6.4.3.26", "id-att-originator-certificate");
-		m.insert("2.6.4.3.27", "id-att-originator-name");
-		m.insert("2.6.4.3.63", "id-att-originator-report-request");
-		m.insert("2.6.4.3.64", "id-att-originator-return-address");
-		m.insert("2.6.4.3.28", "id-att-other-recipient-names");
-		m.insert("2.6.4.3.65", "id-att-per-message-indicators");
-		m.insert("2.6.4.3.66", "id-att-per-recipient-message-submission-fields");
-		m.insert("2.6.4.3.67", "id-att-per-recipient-probe-submission-fields");
-		m.insert("2.6.4.3.30", "id-att-per-recipient-report-delivery-fields");
-		m.insert("2.6.4.3.31", "id-att-priority");
-		m.insert("2.6.4.3.68", "id-att-probe-origin-authentication-check");
-		m.insert("2.6.4.3.69", "id-att-probe-submission-envelope");
-		m.insert("2.6.4.3.32", "id-att-proof-of-delivery-request");
-		m.insert("2.6.4.3.70", "id-att-proof-of-submission");
-		m.insert("2.6.4.3.82", "id-att-recipient-certificate");
-		m.insert("2.6.4.3.71", "id-att-recipient-names");
-		m.insert("2.6.4.3.72", "id-att-recipient-reassignment-prohibited");
-		m.insert("2.6.4.3.33", "id-at-redirection-history");
-		m.insert("2.6.4.3.34", "id-att-report-delivery-envelope");
-		m.insert("2.6.4.3.35", "id-att-reporting-DL-name");
-		m.insert("2.6.4.3.36", "id-att-reporting-MTA-certificate");
-		m.insert("2.6.4.3.37", "id-att-report-origin-authentication-check");
-		m.insert("2.6.4.3.38", "id-att-security-classification");
-		m.insert("2.6.4.3.40", "id-att-subject-submission-identifier");
-		m.insert("2.6.4.3.41", "id-att-this-recipient-name");
-		m.insert("2.6.4.3.75", "id-att-trace-information");
-		m.insert("2.6.1.7.36", "id-hat-forwarded-token");
-		m.insert("2.6.3.6.0", "id-tok-asymmetricToken");
-		m.insert("2.6.5.6.0", "id-on-mtaName");
-		m.insert("2.6.4.3.42", "id-att-ac-correlated-report-list");
-		m.insert("2.6.4.3.76", "id-att-ac-report-subject-entry");
-		m.insert("2.6.4.3.43", "id-att-ac-report-summary");
-		m.insert("2.6.4.3.44", "id-att-ac-uncorrelated-report-list");
-		m.insert("2.6.4.3.46", "id-att-auto-action-error");
-		m.insert("2.6.4.3.48", "id-att-auto-action-subject-entry");
-		m.insert("2.6.4.3.49", "id-att-auto-action-type");
-		m.insert("2.6.4.3.0", "id-att-child-sequence-numbers");
-		m.insert("2.6.4.3.10", "id-att-converted-EITs");
-		m.insert("2.6.4.3.11", "id-att-creation-time");
-		m.insert("2.6.4.3.50", "id-att-deferred-delivery-cancellation-time");
-		m.insert("2.6.4.3.52", "id-att-deletion-time");
-		m.insert("2.6.4.3.12", "id-att-delivered-EITs");
-		m.insert("2.6.4.3.16", "id-att-entry-type");
-		m.insert("2.6.4.3.57", "id-att-message-group-name");
-		m.insert("2.6.4.3.61", "id-att-ms-submission-error");
-		m.insert("2.6.4.3.25", "id-att-original-EITs");
-		m.insert("2.6.4.3.29", "id-att-parent-sequence-number");
-		m.insert("2.6.4.3.15", "id-att-retrieval-status");
-		m.insert("2.6.4.3.39", "id-att-sequence-number");
-		m.insert("2.6.4.3.79", "id-att-signature-verification-status");
-		m.insert("2.6.4.3.73", "id-att-storage-period");
-		m.insert("2.6.4.3.74", "id-att-storage-time");
-		m.insert("2.6.4.9.5", "id-ext-protected-change-credentials-capability");
-		m.insert("2.6.4.9.3", "id-ext-originator-token");
-		m.insert("2.6.4.9.4", "id-ext-protected-change-credentials");
-		m.insert("2.6.1.19.0", "id-on-absence-advice");
-		m.insert("2.6.1.19.1", "id-on-change-of-address-advice");
-		m.insert("2.6.1.17.2", "id-mst-assembly-instructions");
-		m.insert("2.6.1.5.0", "id-hex-incomplete-copy");
-		m.insert("2.6.1.5.1", "id-hex-languages");
-		m.insert("2.6.1.5.2", "id-hex-auto-submitted");
-		m.insert("2.6.1.5.3", "id-hex-body-part-signatures");
-		m.insert("2.6.1.5.4", "id-hex-ipm-security-label");
-		m.insert("2.6.1.5.5", "id-hex-authorization-time");
-		m.insert("2.6.1.5.6", "id-hex-circulation-list-recipients");
-		m.insert("2.6.1.20.0", "id-rex-circulation-list-indicator");
-		m.insert("2.6.1.5.7", "id-hex-distribution-codes");
-		m.insert("2.6.1.5.8", "id-hex-extended-subject");
-		m.insert("2.6.1.5.9", "id-hex-information-categories");
-		m.insert("2.6.1.5.10", "id-hex-manual-handling-instructions");
-		m.insert("2.6.1.5.11", "id-hex-originators-reference");
-		m.insert("2.6.1.5.12", "id-hex-precedence-policy-id");
-		m.insert("2.6.1.20.1", "id-rex-precedence");
-		m.insert("2.6.1.4.0", "id-et-ia5-text");
-		m.insert("2.6.1.11.0", "id-ep-ia5-text");
-		m.insert("2.6.1.4.2", "id-et-g3-facsimile");
-		m.insert("2.6.1.11.2", "id-ep-g3-facsimile");
-		m.insert("2.6.1.4.3", "id-et-g4-class1");
-		m.insert("2.6.1.4.4", "id-et-teletex");
-		m.insert("2.6.1.11.4", "id-ep-teletex");
-		m.insert("2.6.1.4.5", "id-et-videotex");
-		m.insert("2.6.1.11.5", "id-ep-videotex");
-		m.insert("2.6.1.4.6", "id-et-encrypted");
-		m.insert("2.6.1.11.6", "id-ep-encrypted");
-		m.insert("2.6.1.4.7", "id-et-message");
-		m.insert("2.6.1.11.7", "id-ep-message");
-		m.insert("2.6.1.4.8", "id-et-mixed-mode");
-		m.insert("2.6.1.4.9", "id-et-bilaterally-defined");
-		m.insert("2.6.1.11.11", "id-ep-general-text");
-		m.insert("2.6.1.4.11", "id-et-general-text");
-		m.insert("2.6.1.11.12", "id-ep-file-transfer");
-		m.insert("2.6.1.4.12", "id-et-file-transfer");
-		m.insert("2.6.1.11.15", "id-ep-notification");
-		m.insert("2.6.1.4.15", "id-et-notification");
-		m.insert("2.6.1.11.16", "id-ep-voice");
-		m.insert("2.6.1.4.16", "id-et-voice");
-		m.insert("2.6.1.11.17.2.6.1.10.1", "id-ep-content-p22");
-		m.insert("2.6.1.4.17.2.6.1.10.1", "id-et-content-p22");
-		m.insert("2.6.1.11.17.2.6.1.10.0", "id-ep-content-p2");
-		m.insert("2.6.1.4.17.2.6.1.10.0", "id-et-content-p2");
-		m.insert("2.6.1.11.17.1.3.26.0.4406.0.4.1", "id-ep-content-p772");
-		m.insert("2.6.1.6.0", "id-sat-ipm-entry-type");
-		m.insert("2.6.1.6.1", "id-sat-ipm-synopsis");
-		m.insert("2.6.1.6.2", "id-sat-body-parts-summary");
-		m.insert("2.6.1.7.0", "id-hat-heading");
-		m.insert("2.6.1.7.1", "id-hat-this-ipm");
-		m.insert("2.6.1.7.2", "id-hat-originator");
-		m.insert("2.6.1.7.3", "id-hat-replied-to-IPM");
-		m.insert("2.6.1.7.4", "id-hat-subject");
-		m.insert("2.6.1.7.5", "id-hat-expiry-time");
-		m.insert("2.6.1.7.6", "id-hat-reply-time");
-		m.insert("2.6.1.7.7", "id-hat-importance");
-		m.insert("2.6.1.7.8", "id-hat-sensitivity");
-		m.insert("2.6.1.7.9", "id-hat-auto-forwarded");
-		m.insert("2.6.1.7.10", "id-hat-authorizing-users");
-		m.insert("2.6.1.7.11", "id-hat-primary-recipients");
-		m.insert("2.6.1.7.12", "id-hat-copy-recipients");
-		m.insert("2.6.1.7.13", "id-hat-blind-copy-recipients");
-		m.insert("2.6.1.7.14", "id-hat-obsoleted-IPMs");
-		m.insert("2.6.1.7.15", "id-hat-related-IPMs");
-		m.insert("2.6.1.7.16", "id-hat-reply-recipients");
-		m.insert("2.6.1.7.17", "id-hat-incomplete-copy");
-		m.insert("2.6.1.7.18", "id-hat-languages");
-		m.insert("2.6.1.7.19", "id-hat-rn-requestors");
-		m.insert("2.6.1.7.20", "id-hat-nrn-requestors");
-		m.insert("2.6.1.7.21", "id-hat-reply-requestors");
-		m.insert("2.6.1.7.22", "id-hat-auto-submitted");
-		m.insert("2.6.1.7.23", "id-hat-body-part-signatures");
-		m.insert("2.6.1.7.24", "id-hat-ipm-security-label");
-		m.insert("2.6.1.7.25", "id-hat-body-part-security-label");
-		m.insert("2.6.1.7.26", "id-hat-body-part-encryption-token");
-		m.insert("2.6.1.7.27", "id-hat-authorization-time");
-		m.insert("2.6.1.7.28", "id-hat-circulation-list-recipients");
-		m.insert("2.6.1.7.29", "id-hat-distribution-codes");
-		m.insert("2.6.1.7.30", "id-hat-extended-subject");
-		m.insert("2.6.1.7.31", "id-hat-information-category");
-		m.insert("2.6.1.7.32", "id-hat-manual-handling-instructions");
-		m.insert("2.6.1.7.33", "id-hat-originators-reference");
-		m.insert("2.6.1.7.34", "id-hat-precedence-policy-id");
-		m.insert("2.6.1.7.35", "id-hat-forwarded-content-token");
-		m.insert("2.6.1.7.37", "id-hat-precedence");
-		m.insert("2.6.1.7.38", "id-hat-body-part-signature-verification-status");
-		m.insert("2.6.1.8.0", "id-bat-body");
-		m.insert("2.6.1.13.0", "id-cat-correlated-delivered-ipns");
-		m.insert("2.6.1.13.1", "id-cat-correlated-delivered-replies");
-		m.insert("2.6.1.13.2", "id-cat-delivered-ipn-summary");
-		m.insert("2.6.1.13.3", "id-cat-delivered-replies-summary");
-		m.insert("2.6.1.13.7", "id-cat-obsoleted-ipms");
-		m.insert("2.6.1.13.14", "id-cat-submitted-ipn-status");
-		m.insert("2.6.1.13.16", "id-cat-submitted-reply-status");
-		m.insert("2.6.1.13.18", "id-cat-recipient-category");
-		m.insert("2.6.1.18.0", "id-sec-ipm-security-request");
-		m.insert("2.6.1.18.1", "id-sec-security-common-fields");
-		m.insert("2.6.1.10.0", "InterPersonal Message (1984)");
-		m.insert("2.6.1.10.1", "InterPersonal Message (1988)");
-		m.insert("1.3.26.0.4406.0.2.0", "primary-precedence");
-		m.insert("1.3.26.0.4406.0.2.1", "copy-precedence");
-		m.insert("1.3.26.0.4406.0.2.2", "message-type");
-		m.insert("1.3.26.0.4406.0.2.3", "address-list-indicator");
-		m.insert("1.3.26.0.4406.0.2.4", "exempted-address");
-		m.insert("1.3.26.0.4406.0.2.5", "extended-authorisation-info");
-		m.insert("1.3.26.0.4406.0.2.6", "distribution-codes");
-		m.insert("1.3.26.0.4406.0.2.7", "handling-instructions");
-		m.insert("1.3.26.0.4406.0.2.8", "message-instructions");
-		m.insert("1.3.26.0.4406.0.2.9", "codress-message");
-		m.insert("1.3.26.0.4406.0.2.10", "originator-reference");
-		m.insert("1.3.26.0.4406.0.2.11", "other-recipients-indicator");
-		m.insert("1.3.26.0.4406.0.2.12", "pilot-forwarding-info");
-		m.insert("1.3.26.0.4406.0.2.13", "acp127-message-identifier");
-		m.insert("1.3.26.0.4406.0.2.14", "originator-plad");
-		m.insert("1.3.26.0.4406.0.2.15", "acp127-notification-request");
-		m.insert("1.3.26.0.4406.0.2.16", "acp127-notification-response");
-		m.insert("1.3.26.0.4406.0.2.17", "information-labels");
-		m.insert("1.3.26.0.4406.0.8.0", "priority-level-qualifier");
-		m.insert("2.6.1.4.17.1.3.26.0.4406.0.4.1", "id-et-content-p772");
-		m.insert("1.3.26.0.4406.0.4.1", "STANAG 4406");
-		m.insert("1.2.840.10040.4.1", "id-dsa");
-		m.insert("1.2.840.10046.2.1", "dhpublicnumber");
-		m.insert("2.16.840.1.101.2.1.1.22", "id-keyExchangeAlgorithm");
-		m.insert("1.2.840.10045.2.1", "id-ecPublicKey");
-		m.insert("1.3.132.1.12", "id-ecDH");
-		m.insert("1.2.840.10045.2.13", "id-ecMQV");
-		m.insert("1.2.840.113549.1.1.10", "id-RSASSA-PSS");
-		m.insert("1.2.840.113549.1.1.8", "id-mgf1");
-		m.insert("1.2.840.10045.1.1", "prime-field");
-		m.insert("1.2.840.113549.2.2", "md2");
-		m.insert("1.2.840.113549.2.4", "md4");
-		m.insert("1.2.840.113549.2.5", "md5");
-		m.insert("1.2.840.113549.1.1.1", "rsaEncryption");
-		m.insert("1.2.840.113549.1.1.2", "md2WithRSAEncryption");
-		m.insert("1.2.840.113549.1.1.3", "md4WithRSAEncryption");
-		m.insert("1.2.840.113549.1.1.4", "md5WithRSAEncryption");
-		m.insert("1.2.840.113549.1.1.5", "sha1WithRSAEncryption");
-		m.insert("1.2.840.113549.1.1.6", "rsaOAEPEncryptionSET");
-		m.insert("1.2.840.113549.1.1.11", "sha256WithRSAEncryption");
-		m.insert("1.2.840.113549.1.1.12", "sha384WithRSAEncryption");
-		m.insert("1.2.840.113549.1.1.13", "sha512WithRSAEncryption");
-		m.insert("1.2.840.113549.1.1.14", "sha224WithRSAEncryption");
-		m.insert("1.2.840.10045.4.1", "ecdsa-with-SHA1");
-		m.insert("1.2.156.10197.1.501", "SM2-with-SM3");
-		m.insert("1.2.840.10045.4.3.1", "ecdsa-with-SHA224");
-		m.insert("1.2.840.10045.4.3.2", "ecdsa-with-SHA256");
-		m.insert("1.2.840.10045.4.3.3", "ecdsa-with-SHA384");
-		m.insert("1.2.840.10045.4.3.4", "ecdsa-with-SHA512");
-		m.insert("2.16.840.1.101.3.4.3.1", "id-dsa-with-sha224");
-		m.insert("2.16.840.1.101.3.4.3.2", "id-dsa-with-sha256");
-		m.insert("1.2.840.113549.1.9.9", "pkcs-9-at-extendedCertificateAttributes");
-		m.insert("1.2.840.113549.1.12.10.1.1", "keyBag");
-		m.insert("1.2.840.113549.1.12.10.1.2", "pkcs8ShroudedKeyBag");
-		m.insert("1.2.840.113549.1.12.10.1.3", "certBag");
-		m.insert("1.2.840.113549.1.12.10.1.4", "secretBag");
-		m.insert("1.2.840.113549.1.12.10.1.5", "crlBag");
-		m.insert("1.2.840.113549.1.12.10.1.6", "safeContentsBag");
-		m.insert("2.16.840.1.113730.3.1.216", "pkcs-9-at-PKCS12");
-		m.insert("1.2.840.113549.1.9.25.2", "pkcs-9-at-encryptedPrivateKeyInfo");
-		m.insert("1.2.840.113549.1.12.1.1", "pbeWithSHAAnd128BitRC4");
-		m.insert("1.2.840.113549.1.12.1.2", "pbeWithSHAAnd40BitRC4");
-		m.insert("1.2.840.113549.1.12.1.3", "pbeWithSHAAnd3-KeyTripleDES-CBC");
-		m.insert("1.2.840.113549.1.12.1.4", "pbeWithSHAAnd2-KeyTripleDES-CBC");
-		m.insert("1.2.840.113549.1.12.1.5", "pbeWithSHAAnd128BitRC2-CBC");
-		m.insert("1.2.840.113549.1.12.1.6", "pbeWithSHAAnd40BitRC2-CBC");
-		m.insert("1.2.840.113549.1.5.1", "pbeWithMD2AndDES-CBC");
-		m.insert("1.2.840.113549.1.5.3", "pbeWithMD5AndDES-CBC");
-		m.insert("1.2.840.113549.1.5.4", "pbeWithMD2AndRC2-CBC");
-		m.insert("1.2.840.113549.1.5.6", "pbeWithMD5AndRC2-CBC");
-		m.insert("1.2.840.113549.1.5.10", "pbeWithSHA1AndDES-CBC");
-		m.insert("1.2.840.113549.1.5.11", "pbeWithSHA1AndRC2-CBC");
-		m.insert("1.2.840.113549.1.5.12", "id-PBKDF2");
-		m.insert("1.2.840.113549.1.5.13", "id-PBES2");
-		m.insert("1.2.840.113549.1.5.14", "id-PBMAC1");
-		m.insert("1.2.840.113549.1.9.22.1", "x509Certificate");
-		m.insert("1.3.6.1.5.2.3.1", "id-pkauthdata");
-		m.insert("1.3.6.1.5.2.3.2", "id-pkdhkeydata");
-		m.insert("1.3.6.1.5.2.2", "id-pkinit-san");
-		m.insert("1.3.6.1.5.5.7.2.1", "id-qt-cps");
-		m.insert("1.3.6.1.5.5.7.1.7", "id-pe-ipAddrBlocks");
-		m.insert("1.3.6.1.5.5.7.1.8", "id-pe-autonomousSysIds");
-		m.insert("1.3.6.1.5.5.7.1.24", "id-pe-tlsfeature");
-		m.insert("1.2.840.113549.1.9.7", "pkcs-9-at-challengePassword");
-		m.insert("1.2.840.113549.1.9.14", "pkcs-9-at-extensionRequest");
-		m.insert("1.3.6.1.5.5.7.1.1", "id-pe-authorityInfoAccess");
-		m.insert("1.3.6.1.5.5.7.48.1", "id-ad-ocsp");
-		m.insert("1.3.6.1.5.5.7.48.2", "id-ad-caIssuers");
-		m.insert("1.3.6.1.5.5.7.3.1", "id-kp-serverAuth");
-		m.insert("1.3.6.1.5.5.7.3.2", "id-kp-clientAuth");
-		m.insert("1.3.6.1.5.5.7.3.3", "id-kp-codeSigning");
-		m.insert("1.3.6.1.5.5.7.3.4", "id-kp-emailProtection");
-		m.insert("1.3.6.1.5.5.7.3.5", "id-kp-ip-kp-ipsecEndSystem");
-		m.insert("1.3.6.1.5.5.7.3.6", "id-kp-ipsecTunnel");
-		m.insert("1.3.6.1.5.5.7.3.7", "id-kp-ipsecUser");
-		m.insert("1.3.6.1.5.5.7.3.8", "id-kp-timeStamping");
-		m.insert("1.3.6.1.5.5.7.3.9", "OCSPSigning");
-		m.insert("1.3.6.1.4.1.311.10.12.1", "id-ms-any-application-policy");
-		m.insert("1.3.6.1.4.1.311.10.3.1", "id-ms-kp-ctl-usage-signing");
-		m.insert("1.3.6.1.4.1.311.10.3.2", "id-ms-kp-time-stamp-signing");
-		m.insert("1.3.6.1.4.1.311.10.3.4", "id-ms-kp-efs");
-		m.insert("1.3.6.1.4.1.311.10.3.4.1", "id-ms-efs-recovery");
-		m.insert("1.3.6.1.4.1.311.10.3.5", "id-ms-whql-crypto");
-		m.insert("1.3.6.1.4.1.311.10.3.6", "id-ms-nt5-crypto");
-		m.insert("1.3.6.1.4.1.311.10.3.7", "id-ms-oem-whql-crypto");
-		m.insert("1.3.6.1.4.1.311.10.3.8", "id-ms-embedded-nt-crypto");
-		m.insert("1.3.6.1.4.1.311.10.3.9", "id-ms-root-list-signer");
-		m.insert("1.3.6.1.4.1.311.10.3.10", "id-ms-kp-qualified-subordination");
-		m.insert("1.3.6.1.4.1.311.10.3.11", "id-ms-kp-key-recovery");
-		m.insert("1.3.6.1.4.1.311.10.3.12", "id-ms-kp-document-signing");
-		m.insert("1.3.6.1.4.1.311.10.3.13", "id-ms-kp-lifetime-signing");
-		m.insert("1.3.6.1.4.1.311.10.5.1", "id-ms-drm");
-		m.insert("1.3.6.1.4.1.311.10.6.1", "id-ms-licenses");
-		m.insert("1.3.6.1.4.1.311.10.6.2", "id-ms-license-server");
-		m.insert("1.3.6.1.4.1.311.20.1", "id-ms-auto-enroll-ctl-usage");
-		m.insert("1.3.6.1.4.1.311.20.2.1", "id-ms-enrollment-agent");
-		m.insert("1.3.6.1.4.1.311.20.2.2", "id-ms-kp-smartcard-logon");
-		m.insert("1.3.6.1.4.1.311.21.5", "id-ms-kp-ca-exchange");
-		m.insert("1.3.6.1.4.1.311.21.6", "id-ms-kp-key-recovery-agent");
-		m.insert("1.3.6.1.4.1.311.21.19", "id-ms-ds-email-replication");
-		m.insert("1.3.6.1.5.5.8.2.2", "id-ms-ipsec-kp-ike-intermediate");
-		m.insert("1.3.6.1.5.5.7.2.2", "id-qt-unotice");
-		m.insert("1.3.6.1.5.5.7.1.6", "id-pe-aaControls");
-		m.insert("1.3.6.1.5.5.7.1.10", "id-pe-ac-proxying");
-		m.insert("1.3.6.1.5.5.7.10.1", "id-aca-authenticationInfo");
-		m.insert("1.3.6.1.5.5.7.10.2", "id-aca-accessIdentity");
-		m.insert("1.3.6.1.5.5.7.10.3", "id-aca-chargingIdentity");
-		m.insert("1.3.6.1.5.5.7.10.4", "id-aca-group");
-		m.insert("2.5.1.5.55", "id-at-clearance");
-		m.insert("2.5.4.55", "id-at-clearance");
-		m.insert("2.5.4.72", "id-at-role");
-		m.insert("2.5.29.55", "id-ce-targetInformation");
-		m.insert("1.3.6.1.5.5.7.1.14", "id-pe-proxyCertInfo");
-		m.insert("1.3.6.1.5.5.7.1.2", "id-pe-biometricInfo");
-		m.insert("1.3.6.1.5.5.7.1.3", "id-pe-qcStatements");
-		m.insert("1.3.6.1.5.5.7.11.1", "id-qcs-pkixQCSyntax-v1");
-		m.insert("1.3.6.1.5.5.7.11.2", "id-qcs-pkixQCSyntax-v2");
-		m.insert("1.3.6.1.5.5.7.8.5", "id-on-xmppAddr");
-		m.insert("1.3.6.1.5.5.7.9.1", "pkcs-9-at-dateOfBirth");
-		m.insert("1.3.6.1.5.5.7.9.2", "pkcs-9-at-placeOfBirth");
-		m.insert("1.3.6.1.5.5.7.9.3", "pkcs-9-at-gender");
-		m.insert("1.3.6.1.5.5.7.9.4", "pkcs-9-at-countryOfCitizenship");
-		m.insert("1.3.6.1.5.5.7.9.5", "pkcs-9-at-countryOfResidence");
-		m.insert("1.3.6.1.5.5.7.8.7", "id-on-dnsSRV");
-		m.insert("1.2.840.113549.1.9.16.2.14", "id-aa-timeStampToken");
-		m.insert("1.2.840.113549.1.9.16.1.4", "id-ct-TSTInfo");
-		m.insert("0.0.20.124.0.1", "Generic Conference Control");
-		m.insert("0.0.17.773.1.1.1", "id-as-dialogue");
-		m.insert("0.0.17.773.1.2.1", "id-as-uniDialogue");
-		m.insert("2.23.133.1", "tcg-tcpaSpecVersion");
-		m.insert("2.23.133.2.11", "tcg-at-tpmProtectionProfile");
-		m.insert("2.23.133.2.12", "tcg-at-tpmSecurityTarget");
-		m.insert("2.23.133.2.13", "tcg-at-tbbProtectionProfile");
-		m.insert("2.23.133.2.14", "tcg-at-tbbSecurityTarget");
-		m.insert("2.23.133.2.16", "tcg-at-tpmSpecification");
-		m.insert("2.23.133.2.17", "tcg-at-tcgPlatformSpecification");
-		m.insert("2.23.133.2.18", "tcg-at-tpmSecurityAssertions");
-		m.insert("2.23.133.2.19", "tcg-at-tbbSecurityAssertions");
-		m.insert("2.23.133.6.2", "tcg-ce-relevantCredentials");
-		m.insert("2.23.133.6.3", "tcg-ce-relevantManifests");
-		m.insert("2.23.133.6.4", "tcg-ce-virtualPlatformAttestationService");
-		m.insert("2.23.133.6.5", "tcg-ce-migrationControllerAttestationService");
-		m.insert("2.23.133.6.6", "tcg-ce-migrationControllerRegistrationService");
-		m.insert("2.23.133.6.7", "tcg-ce-virtualPlatformBackupService");
-		m.insert("1.3.6.1.5.5.7.3.35", "id-kp-bundleSecurity");
-		m.insert("1.3.6.1.5.5.7.8.11", "id-on-bundleEID");
-		m.insert("1.3.6.1.4.1.11129.2.4.2", "SignedCertificateTimestampList");
-		m.insert("1.3.6.1.4.1.11129.2.4.5", "SignedCertificateTimestampList");
-		m.insert("1.3.6.1.5.5.7.1.13", "id-pe-wlanSSID");
-		m.insert("1.3.6.1.5.5.7.10.6", "id-aca-wlanSSID");
-		m.insert("2.5.4.36", "id-at-userCertificate");
-		m.insert("2.5.4.37", "id-at-cAcertificate");
-		m.insert("2.5.4.38", "id-at-authorityRevocationList");
-		m.insert("2.5.4.39", "id-at-certificateRevocationList");
-		m.insert("2.5.4.40", "id-at-crossCertificatePair");
-		m.insert("2.5.4.53", "id-at-deltaRevocationList");
-		m.insert("2.5.4.58", "id-at-attributeCertificate");
-		m.insert("2.5.4.59", "id-at-attributeCertificateRevocationList");
-		m.insert("0.9.2342.19200300.100.1.1", "id-userid");
-		m.insert("1.3.14.3.2.2", "md4WithRSA");
-		m.insert("1.3.14.3.2.3", "md5WithRSA");
-		m.insert("1.3.14.3.2.4", "md4WithRSAEncryption");
-		m.insert("1.3.14.3.2.6", "desECB");
-		m.insert("1.3.14.3.2.11", "rsaSignature");
-		m.insert("1.3.14.3.2.14", "mdc2WithRSASignature");
-		m.insert("1.3.14.3.2.15", "shaWithRSASignature");
-		m.insert("1.3.14.3.2.16", "dhWithCommonModulus");
-		m.insert("1.3.14.3.2.17", "desEDE");
-		m.insert("1.3.14.3.2.18", "sha");
-		m.insert("1.3.14.3.2.19", "mdc-2");
-		m.insert("1.3.14.3.2.20", "dsaCommon");
-		m.insert("1.3.14.3.2.21", "dsaCommonWithSHA");
-		m.insert("1.3.14.3.2.22", "rsaKeyTransport");
-		m.insert("1.3.14.3.2.23", "keyed-hash-seal");
-		m.insert("1.3.14.3.2.24", "md2WithRSASignature");
-		m.insert("1.3.14.3.2.25", "md5WithRSASignature");
-		m.insert("1.3.14.3.2.26", "SHA-1");
-		m.insert("1.3.14.3.2.27", "dsaWithSHA1");
-		m.insert("1.3.14.3.2.28", "dsaWithCommonSHA1");
-		m.insert("1.3.14.3.2.29", "sha-1WithRSAEncryption");
-		m.insert("2.5.29.3", "id-ce-certificatePolicies");
-		m.insert("2.5.29.9", "id-ce-subjectDirectoryAttributes");
-		m.insert("2.5.29.14", "id-ce-subjectKeyIdentifier");
-		m.insert("2.5.29.15", "id-ce-keyUsage");
-		m.insert("2.5.29.16", "id-ce-privateKeyUsagePeriod");
-		m.insert("2.5.29.17", "id-ce-subjectAltName");
-		m.insert("2.5.29.18", "id-ce-issuerAltName");
-		m.insert("2.5.29.19", "id-ce-basicConstraints");
-		m.insert("2.5.29.20", "id-ce-cRLNumber");
-		m.insert("2.5.29.21", "id-ce-reasonCode");
-		m.insert("2.5.29.23", "id-ce-instructionCode");
-		m.insert("2.5.29.27", "id-ce-deltaCRLIndicator");
-		m.insert("2.5.29.28", "id-ce-issuingDistributionPoint");
-		m.insert("2.5.29.29", "id-ce-certificateIssuer");
-		m.insert("2.5.29.30", "id-ce-nameConstraints");
-		m.insert("2.5.29.31", "id-ce-cRLDistributionPoints");
-		m.insert("2.5.29.32", "id-ce-certificatePolicies");
-		m.insert("2.5.29.33", "id-ce-policyMappings");
-		m.insert("2.5.29.35", "id-ce-authorityKeyIdentifier");
-		m.insert("2.5.29.36", "id-ce-policyConstraints");
-		m.insert("2.5.29.37", "id-ce-extKeyUsage");
-		m.insert("2.5.29.40", "id-ce-cRLStreamIdentifier");
-		m.insert("2.5.29.44", "id-ce-cRLScope");
-		m.insert("2.5.29.45", "id-ce-statusReferrals");
-		m.insert("2.5.29.46", "id-ce-freshestCRL");
-		m.insert("2.5.29.47", "id-ce-orderedList");
-		m.insert("2.5.29.53", "id-ce-deltaInfo");
-		m.insert("2.5.29.54", "id-ce-inhibitAnyPolicy");
-		m.insert("2.5.29.58", "id-ce-toBeRevoked");
-		m.insert("2.5.29.59", "id-ce-RevokedGroups");
-		m.insert("2.5.29.60", "id-ce-expiredCertsOnCRL");
-		m.insert("2.5.29.61", "id-ce-aAissuingDistributionPoint");
-		m.insert("1.3.6.1.5.5.7.1.34", "id-pe-nftype");
-		m.insert("2.5.13.35", "id-mr-certificateMatch");
-		m.insert("2.5.13.36", "id-mr-certificatePairExactMatch");
-		m.insert("2.5.13.37", "id-mr-certificatePairMatch");
-		m.insert("2.5.13.38", "id-mr-certificateListExactMatch");
-		m.insert("2.5.13.39", "id-mr-certificateListMatch");
-		m.insert("2.5.13.62", "id-mr-pkiPathMatch");
-		m.insert("2.5.13.65", "id-mr-enhancedCertificateMatch");
-		m.insert("1.3.6.1.4.1.311.21.7", "id-ms-certificate-template");
-		m.insert("1.3.6.1.4.1.311.21.10", "id-ms-application-certificate-policies");
-		m.insert("1.3.6.1.4.1.311.25.2", "id-ms-ntds-ca-security");
-		m.insert("1.3.6.1.4.1.311.25.2.1", "id-ms-ntds-object-sid");
-		m.insert("1.2.840.113533.7.65.0", "id-ce-entrustVersionInfo");
-		m.insert("2.5.29.24", "id-ce-invalidityDate");
-		m.insert("2.5.29.51", "id-ce-baseUpdateTime");
-		m.insert("2.5.4.1", "id-at-aliasedEntryName");
-		m.insert("2.5.4.31", "id-at-member");
-		m.insert("2.5.4.32", "id-at-owner");
-		m.insert("2.5.4.33", "id-at-roleOccupant");
-		m.insert("2.5.4.34", "id-at-seeAlso");
-		m.insert("2.5.4.49", "id-at-distinguishedName");
-		m.insert("2.5.18.3", "id-oa-creatorsName");
-		m.insert("2.5.18.4", "id-oa-modifiersName");
-		m.insert("2.5.18.6", "id-oa-subtreeSpecification");
-		m.insert("2.5.18.10", "id-oa-subschemaSubentry");
-		m.insert("2.5.18.11", "id-oa-accessControlSubentry");
-		m.insert("2.5.18.12", "id-oa-collectiveAttributeSubentry");
-		m.insert("2.5.18.13", "id-oa-contextDefaultSubentry");
-		m.insert("2.5.18.17", "id-oa-hierarchyLevel");
-		m.insert("2.5.18.18", "iid-oa-hierarchyBelow");
-		m.insert("2.6.5.2.5", "id-at-mhs-message-store-dn");
-		m.insert("2.6.5.2.14", "id-at-mhs-dl-related-lists");
-		m.insert("2.16.840.1.101.2.2.1.3", "id-at-alternateRecipient");
-		m.insert("2.16.840.1.101.2.2.1.4", "id-at-associatedOrganization");
-		m.insert("2.16.840.1.101.2.2.1.6", "id-at-associatedPLA");
-		m.insert("2.16.840.1.101.2.2.1.49", "id-at-aliasPointer");
-		m.insert("2.16.840.1.101.2.2.1.61", "id-at-listPointer");
-		m.insert("2.16.840.1.101.2.2.1.110", "id-at-administrator");
-		m.insert("2.16.840.1.101.2.2.1.111", "id-at-aigsExpanded");
-		m.insert("2.16.840.1.101.2.2.1.113", "id-at-associatedAL");
-		m.insert("2.16.840.1.101.2.2.1.114", "id-at-copyMember");
-		m.insert("2.16.840.1.101.2.2.1.117", "id-at-guard");
-		m.insert("2.16.840.1.101.2.2.1.121", "id-at-networkDN");
-		m.insert("2.16.840.1.101.2.2.1.138", "id-at-plasServed");
-		m.insert("2.16.840.1.101.2.2.1.139", "id-at-deployed");
-		m.insert("2.16.840.1.101.2.2.1.140", "id-at-garrison");
-		m.insert("2.16.840.1.101.2.2.1.184", "id-at-aCPDutyOfficer");
-		m.insert("2.16.840.1.101.2.2.1.188", "id-at-primaryMember");
-		m.insert("2.5.4.0", "id-at-objectClass");
-		m.insert("2.5.4.2", "id-at-knowledgeInformation");
-		m.insert("2.5.4.3", "id-at-commonName");
-		m.insert("2.5.4.4", "id-at-surname");
-		m.insert("2.5.4.5", "id-at-serialNumber");
-		m.insert("2.5.4.6", "id-at-countryName");
-		m.insert("2.5.4.7", "id-at-localityName");
-		m.insert("2.5.4.7.1", "id-at-collectiveLocalityName");
-		m.insert("2.5.4.8", "id-at-stateOrProvinceName");
-		m.insert("2.5.4.8.1", "id-at-collectiveStateOrProvinceName");
-		m.insert("2.5.4.9", "id-at-streetAddress");
-		m.insert("2.5.4.9.1", "id-at-collectiveStreetAddress");
-		m.insert("2.5.4.10.1", "id-at-collectiveOrganizationName");
-		m.insert("2.5.4.10", "id-at-organizationName");
-		m.insert("2.5.4.11", "id-at-organizationalUnitName");
-		m.insert("2.5.4.11.1", "id-at-collectiveOrganizationalUnitName");
-		m.insert("2.5.4.12", "id-at-title");
-		m.insert("2.5.4.13", "id-at-description");
-		m.insert("2.5.4.14", "id-at-searchGuide");
-		m.insert("2.5.4.15", "id-at-businessCategory");
-		m.insert("2.5.4.16", "id-at-postalAddress");
-		m.insert("2.5.4.17", "id-at-postalCode");
-		m.insert("2.5.4.17.1", "id-at-collectivePostalCode");
-		m.insert("2.5.4.18", "id-at-postOfficeBox");
-		m.insert("2.5.4.18.1", "id-at-collectivePostOfficeBox");
-		m.insert("2.5.4.19", "id-at-physicalDeliveryOfficeName");
-		m.insert("2.5.4.19.1", "id-at-collectivePhysicalDeliveryOfficeName");
-		m.insert("2.5.4.20", "id-at-telephoneNumber");
-		m.insert("2.5.4.20.1", "id-at-collectiveTelephoneNumber");
-		m.insert("2.5.4.21", "id-at-telexNumber");
-		m.insert("2.5.4.21.1", "id-at-collectiveTelexNumber");
-		m.insert("2.5.4.23", "id-at-facsimileTelephoneNumber");
-		m.insert("2.5.4.23.1", "id-at-collectiveFacsimileTelephoneNumber");
-		m.insert("2.5.4.24", "id-at-x121Address");
-		m.insert("2.5.4.25", "id-at-internationalISDNNumber");
-		m.insert("2.5.4.25.1", "id-at-collectiveInternationalISDNNumber");
-		m.insert("2.5.4.26", "id-at-registeredAddress");
-		m.insert("2.5.4.27", "id-at-destinationIndicator");
-		m.insert("2.5.4.28", "id-at-preferredDeliveryMethod");
-		m.insert("2.5.4.29", "id-at-presentationAddress");
-		m.insert("2.5.4.30", "id-at-supportedApplicationContext");
-		m.insert("2.5.4.35", "id-at-userPassword");
-		m.insert("2.5.4.41", "id-at-name");
-		m.insert("2.5.4.42", "id-at-givenName");
-		m.insert("2.5.4.43", "id-at-initials");
-		m.insert("2.5.4.44", "id-at-generationQualifier");
-		m.insert("2.5.4.45", "id-at-uniqueIdedntifier");
-		m.insert("2.5.4.46", "id-at-dnQualifier");
-		m.insert("2.5.4.47", "id-at-enhancedSearchGuide");
-		m.insert("2.5.4.48", "id-at-protocolInformation");
-		m.insert("2.5.4.50", "id-at-uniqueMember");
-		m.insert("2.5.4.51", "id-at-houseIdentifier");
-		m.insert("2.5.4.52", "id-at-supportedAlgorithms");
-		m.insert("2.5.4.54", "id-at-dmdName");
-		m.insert("2.5.4.56", "id-at-defaultDirQop");
-		m.insert("2.5.4.65", "id-at-pseudonym");
-		m.insert("2.5.4.66", "id-at-communuicationsService");
-		m.insert("2.5.4.67", "id-at-communuicationsNetwork");
-		m.insert("2.5.4.97", "id-at-organizationIdentifier");
-		m.insert("2.5.13.8", "id-mr-numericStringMatch");
-		m.insert("2.5.13.11", "id-mr-caseIgnoreListMatch");
-		m.insert("2.5.13.16", "id-mr-bitStringMatch");
-		m.insert("2.5.13.26", "id-mr-uTCTimeOrderingMatch");
-		m.insert("2.5.18.1", "id-oa-createTimeStamp");
-		m.insert("2.5.18.2", "id-oa-modifyTimeStamp");
-		m.insert("2.5.18.5", "id-oa-administrativeRole");
-		m.insert("2.5.18.7", "id-oa-collectiveExclusions");
-		m.insert("2.5.18.8", "id-oa-subschemaTimeStamp");
-		m.insert("2.5.18.9", "id-oa-hasSubordinates");
-		m.insert("2.5.24.1", "id-aca-accessControlScheme");
-		m.insert("2.6.5.2.8", "id-at-mhs-supported-automatic-actions");
-		m.insert("2.6.5.2.10", "id-at-mhs-supported-attributes");
-		m.insert("2.6.5.2.11", "id-at-mhs-supported-matching-rules");
-		m.insert("2.16.840.1.101.2.2.1.45", "id-at-releaseAuthorityName");
-		m.insert("2.16.840.1.101.2.2.1.51", "id-at-cognizantAuthority");
-		m.insert("2.16.840.1.101.2.2.1.53", "id-at-accountingCode");
-		m.insert("2.16.840.1.101.2.2.1.54", "id-at-dualRoute");
-		m.insert("2.16.840.1.101.2.2.1.55", "id-at-effectiveDate");
-		m.insert("2.16.840.1.101.2.2.1.57", "id-at-expirationDate");
-		m.insert("2.16.840.1.101.2.2.1.58", "id-at-hostOrgACP127");
-		m.insert("2.16.840.1.101.2.2.1.60", "id-at-lastRecapDate");
-		m.insert("2.16.840.1.101.2.2.1.62", "id-at-lmf");
-		m.insert("2.16.840.1.101.2.2.1.63", "id-at-longTitle");
-		m.insert("2.16.840.1.101.2.2.1.64", "id-at-minimize");
-		m.insert("2.16.840.1.101.2.2.1.65", "id-at-minimizeOverride");
-		m.insert("2.16.840.1.101.2.2.1.68", "id-at-nationality");
-		m.insert("2.16.840.1.101.2.2.1.68.1", "id-at-collectiveNationality");
-		m.insert("2.16.840.1.101.2.2.1.69", "id-at-transferStation");
-		m.insert("2.16.840.1.101.2.2.1.70", "id-at-plaNameACP127");
-		m.insert("2.16.840.1.101.2.2.1.72", "id-at-plaReplace");
-		m.insert("2.16.840.1.101.2.2.1.73", "id-at-primarySpellingACP127");
-		m.insert("2.16.840.1.101.2.2.1.74", "id-at-publish");
-		m.insert("2.16.840.1.101.2.2.1.75", "id-at-recapDueDate");
-		m.insert("2.16.840.1.101.2.2.1.77", "id-at-rI");
-		m.insert("2.16.840.1.101.2.2.1.81", "id-at-section");
-		m.insert("2.16.840.1.101.2.2.1.82", "id-at-serviceOrAgency");
-		m.insert("2.16.840.1.101.2.2.1.83", "id-at-sHD");
-		m.insert("2.16.840.1.101.2.2.1.84", "id-at-shortTitle");
-		m.insert("2.16.840.1.101.2.2.1.85", "id-at-sigad");
-		m.insert("2.16.840.1.101.2.2.1.86", "id-at-spot");
-		m.insert("2.16.840.1.101.2.2.1.87", "id-at-tARE");
-		m.insert("2.16.840.1.101.2.2.1.94", "id-at-aCPMobileTelephoneNumber");
-		m.insert("2.16.840.1.101.2.2.1.95", "id-at-aCPPagerTelephoneNumber");
-		m.insert("2.16.840.1.101.2.2.1.96", "id-at-tCC");
-		m.insert("2.16.840.1.101.2.2.1.97", "id-at-tRC");
-		m.insert("2.16.840.1.101.2.2.1.106", "id-at-accessCodes");
-		m.insert("2.16.840.1.101.2.2.1.107", "id-at-accessSchema");
-		m.insert("2.16.840.1.101.2.2.1.109", "id-at-aCPTelephoneFaxNumber");
-		m.insert("2.16.840.1.101.2.2.1.115", "id-at-gatewayType");
-		m.insert("2.16.840.1.101.2.2.1.116", "id-at-ghpType");
-		m.insert("2.16.840.1.101.2.2.1.118", "id-at-mailDomains");
-		m.insert("2.16.840.1.101.2.2.1.119", "id-at-militaryFacsimileNumber");
-		m.insert("2.16.840.1.101.2.2.1.119.1", "id-at-collectiveMilitaryFacsimileNumber");
-		m.insert("2.16.840.1.101.2.2.1.120", "id-at-militaryTelephoneNumber");
-		m.insert("2.16.840.1.101.2.2.1.120.1", "id-at-collectiveMilitaryTelephoneNumber");
-		m.insert("2.16.840.1.101.2.2.1.122", "id-at-networkSchema");
-		m.insert("2.16.840.1.101.2.2.1.124", "id-at-operationName");
-		m.insert("2.16.840.1.101.2.2.1.125", "id-at-positionNumber");
-		m.insert("2.16.840.1.101.2.2.1.126", "id-at-proprietaryMailboxes");
-		m.insert("2.16.840.1.101.2.2.1.127", "id-at-secureFacsimileNumber");
-		m.insert("2.16.840.1.101.2.2.1.127.1", "id-at-collectiveSecureFacsimileNumber");
-		m.insert("2.16.840.1.101.2.2.1.128", "id-at-secureTelephoneNumber");
-		m.insert("2.16.840.1.101.2.2.1.128.1", "id-at-collectiveSecureTelephoneNumber");
-		m.insert("2.16.840.1.101.2.2.1.129", "id-at-serviceNumber");
-		m.insert("2.16.840.1.101.2.2.1.133", "id-at-rank");
-		m.insert("2.16.840.1.101.2.2.1.143", "id-at-adminConversion");
-		m.insert("2.16.840.1.101.2.2.1.144", "id-at-tCCG");
-		m.insert("2.16.840.1.101.2.2.1.145", "id-at-usdConversion");
-		m.insert("2.16.840.1.101.2.2.1.158", "id-at-aCPRoleInformation");
-		m.insert("2.16.840.1.101.2.2.1.159", "id-at-coalitionGrade");
-		m.insert("2.16.840.1.101.2.2.1.160", "id-at-militaryIPPhoneNumber");
-		m.insert("2.16.840.1.101.2.2.1.161", "id-at-fileTypeInfoCapability");
-		m.insert("2.16.840.1.101.2.2.1.172", "id-at-aCPFunctionalDescription");
-		m.insert("2.16.840.1.101.2.2.1.173", "id-at-alternatePLAName");
-		m.insert("2.16.840.1.101.2.2.1.174", "id-at-aCPEntryCreationDate");
-		m.insert("2.16.840.1.101.2.2.1.175", "id-at-aCPEntryModificationDate");
-		m.insert("2.16.840.1.101.2.2.1.176", "id-at-aCPEntryType");
-		m.insert("2.16.840.1.101.2.2.1.177", "id-at-aCPEntryUniqueId");
-		m.insert("2.16.840.1.101.2.2.1.178", "id-at-aCPCitizenship");
-		m.insert("2.16.840.1.101.2.2.1.179", "id-at-aCPEID");
-		m.insert("2.16.840.1.101.2.2.1.180", "id-at-aCPCOI");
-		m.insert("2.16.840.1.101.2.2.1.181", "id-at-aCPPublishTo");
-		m.insert("2.16.840.1.101.2.2.1.182", "id-at-aCPSvcApps");
-		m.insert("2.16.840.1.101.2.2.1.183", "id-at-aCPDirectionsTo");
-		m.insert("2.16.840.1.101.2.2.1.185", "id-at-aCPLatitude");
-		m.insert("2.16.840.1.101.2.2.1.186", "id-at-aCPLocationMap");
-		m.insert("2.16.840.1.101.2.2.1.187", "id-at-aCPLongitude");
-		m.insert("1.2.840.113549.1.9.1", "pkcs-9-at-emailAddress");
-		m.insert("1.2.840.113549.1.9.8", "pkcs-9-at-unstructuredAddress");
-		m.insert("1.2.840.113549.1.9.13", "pkcs-9-at-signingDescription");
-		m.insert("1.2.840.113549.1.9.20", "pkcs-9-at-friendlyName");
-		m.insert("1.2.840.113549.1.9.21", "pkcs-9-at-localKeyId");
-		m.insert("1.2.840.113549.1.9.25.3", "pkcs-9-at-randomNonce");
-		m.insert("1.2.840.113549.1.9.25.4", "pkcs-9-at-sequenceNumber");
-		m.insert("0.9.2342.19200300.100.1.25", "dc");
-		m.insert("2.16.840.1.113730.3.1.1", "carLicense");
-		m.insert("2.16.840.1.113730.3.1.2", "departmentNumber");
-		m.insert("2.16.840.1.113730.3.1.3", "employeeNumber");
-		m.insert("2.16.840.1.113730.3.1.4", "employeeType");
-		m.insert("2.16.840.1.113730.3.1.39", "preferredLanguage");
-		m.insert("2.16.840.1.113730.3.1.241", "displayName");
-		m.insert("1.3.6.1.4.1.311.20.2", "id-ms-certificate-template-name");
-		m.insert("1.3.6.1.4.1.311.20.2.3", "id-ms-user-principal-name");
-		m.insert("1.3.6.1.4.1.311.17.1", "id-ms-local-machine-keyset");
-		m.insert("1.3.6.1.4.1.311.21.1", "id-ms-ca-version");
-		m.insert("1.3.6.1.4.1.311.21.2", "id-ms-previous-cert-hash");
-		m.insert("1.3.6.1.4.1.311.21.3", "id-ms-virtual-base");
-		m.insert("1.3.6.1.4.1.311.21.4", "id-ms-next-publish");
-		m.insert("1.2.826.0.1063.7.0.0.0", "unknown-UK-organisation-defined-extension");
-		m.insert("1.2.826.0.1004.10.1.1", "nexor-originating-ua");
-		m.insert("2.6.1.6.3", "id-sat-ipm-auto-discarded");
-		m.insert("1.3.6.1.1.16.4", "entryUUID");
-		m.insert("1.3.6.1.4.1.311.60.2.1.1", "jurisdictionOfIncorporationLocalityName");
-		m.insert("1.3.6.1.4.1.311.60.2.1.2", "jurisdictionOfIncorporationStateOrProvinceName");
-		m.insert("1.3.6.1.4.1.311.60.2.1.3", "jurisdictionOfIncorporationCountryName");
-		m.insert("1.2.840.10003.5.100", "Explain-record");
-		m.insert("1.2.840.10003.5.101", "Sutrs-record");
-		m.insert("1.2.840.10003.5.102", "OPAC-record");
-		m.insert("1.2.840.10003.5.103", "Summary-record");
-		m.insert("1.2.840.10003.5.105", "GRS-1-record");
-		m.insert("1.2.840.10003.5.106", "ESTaskPackage");
-		m.insert("1.2.840.10003.4.2", "diag-1");
-		m.insert("1.2.840.10003.8.1", "Prompt-1");
-		m.insert("1.2.840.10003.8.2", "DES-1");
-		m.insert("1.2.840.10003.8.3", "KRB-1");
-		m.insert("1.2.840.10003.10.1", "SearchResult-1");
-		m.insert("1.2.840.10003.10.1000.17.1", "OCLC-UserInfo-1");
-		m.insert("2.23.133.2.1", "tcg-at-tpmManufacturer");
-		m.insert("2.23.133.2.2", "tcg-at-tpmModel");
-		m.insert("2.23.133.2.3", "tcg-at-tpmVersion");
-		m.insert("2.23.133.2.4", "tcg-at-platformManufacturer");
-		m.insert("2.23.133.2.5", "tcg-at-platformModel");
-		m.insert("2.23.133.2.6", "tcg-at-platformVersion");
-		m.insert("2.23.133.2.15", "tcg-at-tpmIdLabel");
-		m.insert("1.2.840.10003.5.10", "MARC21");
-		m
-	};
-	pub static ref ec_points_type_map: HashMap<u8, &'static str> = {
-		let mut m = HashMap::new();
-		m.insert(0, "uncompressed");
-		m.insert(1, "ansiX962_compressed_prime");
-		m.insert(2, "ansiX962_compressed_char2");
-		m
-	};
-	pub static ref hash_algorithm_map: HashMap<u8, &'static str> = {
-		let mut m = HashMap::new();
-		m.insert(0, "None");
-		m.insert(1, "MD5");
-		m.insert(2, "SHA1");
-		m.insert(3, "SHA224");
-		m.insert(4, "SHA256");
-		m.insert(5, "SHA384");
-		m.insert(6, "SHA512");
-		m
-	};
-	pub static ref signature_algorithm_map: HashMap<u8, &'static str> = {
-		let mut m = HashMap::new();
-		m.insert(0, "Anonymous");
-		m.insert(1, "RSA");
-		m.insert(2, "DSA");
-		m.insert(3, "ECDSA");
-		m
-	};
-}pub fn link_type_mapper(code:u16) -> String {
-    (*link_type_map.get(&code).unwrap_or(&"unknown")).into()
-  }
-pub fn ip_protocol_type_mapper(code:u16) -> String {
-    (*ip_protocol_type_map.get(&code).unwrap_or(&"unknown")).into()
-  }
-pub fn ssl_type_mapper(code:u16) -> String {
-    (*ssl_type_map.get(&code).unwrap_or(&"unknown")).into()
-  }
-pub fn etype_mapper(code:u16) -> String {
-    (*etype_map.get(&code).unwrap_or(&"unknown")).into()
-  }
-pub fn tcp_option_kind_mapper(code:u16) -> String {
-    (*tcp_option_kind_map.get(&code).unwrap_or(&"unknown")).into()
-  }
-pub fn dns_class_mapper(code:u16) -> String {
-    (*dns_class_map.get(&code).unwrap_or(&"unknown")).into()
-  }
-pub fn dns_type_mapper(code:u16) -> String {
-    (*dns_type_map.get(&code).unwrap_or(&"unknown")).into()
-  }
-pub fn ieee802_subtype_mapper(code:u8) -> String {
-    (*ieee802_subtype_map.get(&code).unwrap_or(&"unknown")).into()
-  }
-pub fn ieee802_mnt_tags_mapper(code:u8) -> String {
-    (*ieee802_mnt_tags_map.get(&code).unwrap_or(&"unknown")).into()
-  }
-pub fn ieee802_mnt_cat_mapper(code:u8) -> String {
-    (*ieee802_mnt_cat_map.get(&code).unwrap_or(&"unknown")).into()
-  }
-pub fn ppp_lcp_option_type_mapper(code:u8) -> String {
-    (*ppp_lcp_option_type_map.get(&code).unwrap_or(&"unknown")).into()
-  }
-pub fn ppp_type_mapper(code:u16) -> String {
-    (*ppp_type_map.get(&code).unwrap_or(&"unknown")).into()
-  }
-pub fn ppp_lcp_type_mapper(code:u8) -> String {
-    (*ppp_lcp_type_map.get(&code).unwrap_or(&"unknown")).into()
-  }
-pub fn arp_hardware_type_mapper(code:u16) -> String {
-    (*arp_hardware_type_map.get(&code).unwrap_or(&"unknown")).into()
-  }
-pub fn arp_oper_type_mapper(code:u16) -> String {
-    (*arp_oper_type_map.get(&code).unwrap_or(&"unknown")).into()
-  }
-pub fn icmpv6_type_mapper(code:u16) -> String {
-    (*icmpv6_type_map.get(&code).unwrap_or(&"unknown")).into()
-  }
-pub fn dhcp_option_type_mapper(code:u8) -> String {
-    (*dhcp_option_type_map.get(&code).unwrap_or(&"unknown")).into()
-  }
-pub fn dhcp_type_mapper(code:u8) -> String {
-    (*dhcp_type_map.get(&code).unwrap_or(&"unknown")).into()
-  }
-pub fn igmp_type_mapper(code:u8) -> String {
-    (*igmp_type_map.get(&code).unwrap_or(&"unknown")).into()
-  }
-pub fn tls_content_type_mapper(code:u8) -> String {
-    (*tls_content_type_map.get(&code).unwrap_or(&"unknown")).into()
-  }
-pub fn tls_min_type_mapper(code:u8) -> String {
-    (*tls_min_type_map.get(&code).unwrap_or(&"unknown")).into()
-  }
-pub fn tls_hs_message_type_mapper(code:u8) -> String {
-    (*tls_hs_message_type_map.get(&code).unwrap_or(&"unknown")).into()
-  }
-pub fn tls_cipher_suites_mapper(code:u16) -> String {
-    (*tls_cipher_suites_map.get(&code).unwrap_or(&"Reserved (GREASE)")).into()
-  }
-pub fn tls_extension_mapper(code:u16) -> String {
-    (*tls_extension_map.get(&code).unwrap_or(&"unknown")).into()
-  }
-pub fn nbns_type_mapper(code:u16) -> String {
-    (*nbns_type_map.get(&code).unwrap_or(&"unknown")).into()
-  }
-pub fn oid_map_mapper(code:&'static str) -> String {
-    (*oid_map_map.get(&code).unwrap_or(&"unknown")).into()
-  }
-pub fn ec_points_type_mapper(code:u8) -> String {
-    (*ec_points_type_map.get(&code).unwrap_or(&"NULL")).into()
-  }
-pub fn hash_algorithm_mapper(code:u8) -> String {
-    (*hash_algorithm_map.get(&code).unwrap_or(&"none")).into()
-  }
-pub fn signature_algorithm_mapper(code:u8) -> String {
-    (*signature_algorithm_map.get(&code).unwrap_or(&"none")).into()
-  }
+pub fn link_type_mapper(code: u16) -> &'static str {
+	match code {
+		0 => "NULL",
+		1 => "ETHERNET",
+		2 => "EXP_ETHERNET",
+		3 => "AX25",
+		4 => "PRONET",
+		5 => "CHAOS",
+		6 => "IEEE802_5",
+		7 => "ARCNET_BSD",
+		8 => "SLIP",
+		9 => "PPP",
+		10 => "FDDI",
+		32 => "DLT_REDBACK_SMARTEDGE",
+		50 => "PPP_HDLC",
+		51 => "PPP_ETHER",
+		99 => "SYMANTEC_FIREWALL",
+		100 => "ATM_RFC1483",
+		101 => "RAW",
+		104 => "C_HDLC",
+		105 => "IEEE802_11",
+		106 => "ATM_CLIP",
+		107 => "FRELAY",
+		108 => "LOOP",
+		109 => "ENC",
+		112 => "NETBSD_HDLC",
+		113 => "LINUX_SLL",
+		114 => "LTALK",
+		115 => "DLT_ECONET",
+		116 => "DLT_IPFILTER",
+		117 => "PFLOG",
+		118 => "DLT_CISCO_IOS",
+		119 => "IEEE802_11_PRISM",
+		120 => "DLT_AIRONET_HEADER",
+		122 => "IP_OVER_FC",
+		123 => "SUNATM",
+		124 => "DLT_RIO",
+		125 => "DLT_PCI_EXP",
+		126 => "DLT_AURORA",
+		127 => "IEEE802_11_RADIOTAP",
+		128 => "TZSP",
+		129 => "ARCNET_LINUX",
+		130 => "JUNIPER_MLPPP",
+		131 => "JUNIPER_MLFR",
+		132 => "JUNIPER_ES",
+		133 => "JUNIPER_GGSN",
+		134 => "JUNIPER_MFR",
+		135 => "JUNIPER_ATM2",
+		136 => "JUNIPER_SERVICES",
+		137 => "JUNIPER_ATM1",
+		138 => "APPLE_IP_OVER_IEEE1394",
+		139 => "MTP2_WITH_PHDR",
+		140 => "MTP2",
+		141 => "MTP3",
+		142 => "SCCP",
+		143 => "DOCSIS",
+		144 => "LINUX_IRDA",
+		145 => "IBM_SP",
+		146 => "IBM_SN",
+		147 => "USER0_USER15",
+		163 => "IEEE802_11_AVS",
+		164 => "JUNIPER_MONITOR",
+		165 => "BACNET_MS_TP",
+		166 => "PPP_PPPD",
+		167 => "JUNIPER_PPPOE",
+		168 => "JUNIPER_PPPOE_ATM",
+		169 => "GPRS_LLC",
+		170 => "GPF_T",
+		171 => "GPF_F",
+		172 => "GCOM_T1E1",
+		173 => "GCOM_SERIAL",
+		174 => "JUNIPER_PIC_PEER",
+		175 => "ERF_ETH",
+		176 => "ERF_POS",
+		177 => "LINUX_LAPD",
+		178 => "JUNIPER_ETHER",
+		179 => "JUNIPER_PPP",
+		180 => "JUNIPER_FRELAY",
+		181 => "JUNIPER_CHDLC",
+		182 => "MFR",
+		183 => "JUNIPER_VP",
+		184 => "A429",
+		185 => "A653_ICM",
+		186 => "USB_FREEBSD",
+		187 => "BLUETOOTH_HCI_H4",
+		188 => "IEEE802_16_MAC_CPS",
+		189 => "USB_LINUX",
+		190 => "CAN20B",
+		191 => "IEEE802_15_4_LINUX",
+		192 => "PPI",
+		193 => "IEEE802_16_MAC_CPS_RADIO",
+		194 => "JUNIPER_ISM",
+		195 => "IEEE802_15_4_WITHFCS",
+		196 => "SITA",
+		197 => "ERF",
+		198 => "RAIF1",
+		199 => "IPMB_KONTRON",
+		200 => "JUNIPER_ST",
+		201 => "BLUETOOTH_HCI_H4_WITH_PHDR",
+		202 => "AX25_KISS",
+		203 => "LAPD",
+		204 => "PPP_WITH_DIR",
+		205 => "C_HDLC_WITH_DIR",
+		206 => "FRELAY_WITH_DIR",
+		207 => "LAPB_WITH_DIR",
+		209 => "IPMB_LINUX",
+		210 => "FLEXRAY",
+		211 => "MOST",
+		212 => "LIN",
+		213 => "X2E_SERIAL",
+		214 => "X2E_XORAYA",
+		215 => "IEEE802_15_4_NONASK_PHY",
+		216 => "LINUX_EVDEV",
+		217 => "GSMTAP_UM",
+		218 => "GSMTAP_ABIS",
+		219 => "MPLS",
+		220 => "USB_LINUX_MMAPPED",
+		221 => "DECT",
+		222 => "AOS",
+		223 => "WIHART",
+		224 => "FC_2",
+		225 => "FC_2_WITH_FRAME_DELIMS",
+		226 => "IPNET",
+		227 => "CAN_SOCKETCAN",
+		228 => "IPV4",
+		229 => "IPV6",
+		230 => "IEEE802_15_4_NOFCS",
+		231 => "DBUS",
+		232 => "JUNIPER_VS",
+		233 => "JUNIPER_SRX_E2E",
+		234 => "JUNIPER_FIBRECHANNEL",
+		235 => "DVB_CI",
+		236 => "MUX27010",
+		237 => "STANAG_5066_D_PDU",
+		238 => "JUNIPER_ATM_CEMIC",
+		239 => "NFLOG",
+		240 => "NETANALYZER",
+		241 => "NETANALYZER_TRANSPARENT",
+		242 => "IPOIB",
+		243 => "MPEG_2_TS",
+		244 => "NG40",
+		245 => "NFC_LLCP",
+		246 => "PFSYNC",
+		247 => "INFINIBAND",
+		248 => "SCTP",
+		249 => "USBPCAP",
+		250 => "RTAC_SERIAL",
+		251 => "BLUETOOTH_LE_LL",
+		252 => "WIRESHARK_UPPER_PDU",
+		253 => "NETLINK",
+		254 => "BLUETOOTH_LINUX_MONITOR",
+		255 => "BLUETOOTH_BREDR_BB",
+		256 => "BLUETOOTH_LE_LL_WITH_PHDR",
+		257 => "PROFIBUS_DL",
+		258 => "PKTAP",
+		259 => "EPON",
+		260 => "IPMI_HPM_2",
+		261 => "ZWAVE_R1_R2",
+		262 => "ZWAVE_R3",
+		263 => "WATTSTOPPER_DLM",
+		264 => "ISO_14443",
+		265 => "RDS",
+		266 => "USB_DARWIN",
+		267 => "OPENFLOW",
+		268 => "SDLC",
+		269 => "TI_LLN_SNIFFER",
+		270 => "LORATAP",
+		271 => "VSOCK",
+		272 => "NORDIC_BLE",
+		273 => "DOCSIS31_XRA31",
+		274 => "ETHERNET_MPACKET",
+		275 => "DISPLAYPORT_AUX",
+		276 => "LINUX_SLL2",
+		277 => "SERCOS_MONITOR",
+		278 => "OPENVIZSLA",
+		279 => "EBHSCR",
+		280 => "VPP_DISPATCH",
+		281 => "DSA_TAG_BRCM",
+		282 => "DSA_TAG_BRCM_PREPEND",
+		283 => "IEEE802_15_4_TAP",
+		284 => "DSA_TAG_DSA",
+		285 => "DSA_TAG_EDSA",
+		286 => "ELEE",
+		287 => "Z_WAVE_SERIAL",
+		288 => "USB_2_0",
+		289 => "ATSC_ALP",
+		290 => "ETW",
+		291 => "NETANALYZER_NG",
+		292 => "ZBOSS_NCP",
+		293 => "USB_2_0_LOW_SPEED",
+		294 => "USB_2_0_FULL_SPEED",
+		295 => "USB_2_0_HIGH_SPEED",
+		296 => "AUERSWALD_LOG",
+		297 => "ZWAVE_TAP",
+		298 => "SILABS_DEBUG_CHANNEL",
+		299 => "FIRA_UCI",
+		300 => "MDB",
+		301 => "DECT_NR",
+		_ => "Unknown",
+	}
+}
+pub fn ip_protocol_type_mapper(code: u16) -> &'static str {
+	match code {
+		0 => "HOPOPT",
+		1 => "ICMP",
+		2 => "IGMP",
+		3 => "GGP",
+		4 => "IP-in-IP",
+		5 => "ST",
+		6 => "TCP",
+		7 => "CBT",
+		8 => "EGP",
+		9 => "IGP",
+		10 => "BBN-RCC-MON",
+		11 => "NVP-II",
+		12 => "PUP",
+		13 => "ARGUS",
+		14 => "EMCON",
+		15 => "XNET",
+		16 => "CHAOS",
+		17 => "UDP",
+		18 => "MUX",
+		19 => "DCN-MEAS",
+		20 => "HMP",
+		21 => "PRM",
+		22 => "XNS-IDP",
+		23 => "TRUNK-1",
+		24 => "TRUNK-2",
+		25 => "LEAF-1",
+		26 => "LEAF-2",
+		27 => "RDP",
+		28 => "IRTP",
+		29 => "ISO-TP4",
+		30 => "NETBLT",
+		31 => "MFE-NSP",
+		32 => "MERIT-INP",
+		33 => "DCCP",
+		34 => "3PC",
+		35 => "IDPR",
+		36 => "XTP",
+		37 => "DDP",
+		38 => "IDPR-CMTP",
+		39 => "TP++",
+		40 => "IL",
+		41 => "IPv6",
+		42 => "SDRP",
+		43 => "IPv6-Route",
+		44 => "IPv6-Frag",
+		45 => "IDRP",
+		46 => "RSVP",
+		47 => "GRE",
+		48 => "DSR",
+		49 => "BNA",
+		50 => "ESP",
+		51 => "AH",
+		52 => "I-NLSP",
+		53 => "SwIPe",
+		54 => "NARP",
+		55 => "MOBILE",
+		56 => "TLSP",
+		57 => "SKIP",
+		58 => "IPv6-ICMP",
+		59 => "IPv6-NoNxt",
+		60 => "IPv6-Opts",
+		61 => "Any",
+		62 => "CFTP",
+		63 => "Any",
+		64 => "SAT-EXPAK",
+		65 => "KRYPTOLAN",
+		66 => "RVD",
+		67 => "IPPC",
+		68 => "Any",
+		69 => "SAT-MON",
+		70 => "VISA",
+		71 => "IPCU",
+		72 => "CPNX",
+		73 => "CPHB",
+		74 => "WSN",
+		75 => "PVP",
+		76 => "BR-SAT-MON",
+		77 => "SUN-ND",
+		78 => "WB-MON",
+		79 => "WB-EXPAK",
+		80 => "ISO-IP",
+		81 => "VMTP",
+		82 => "SECURE-VMTP",
+		83 => "VINES",
+		84 => "TTP",
+		85 => "NSFNET-IGP",
+		86 => "DGP",
+		87 => "TCF",
+		88 => "EIGRP",
+		89 => "OSPF",
+		90 => "Sprite-RPC",
+		91 => "LARP",
+		92 => "MTP",
+		93 => "AX.25",
+		94 => "OS",
+		95 => "MICP",
+		96 => "SCC-SP",
+		97 => "ETHERIP",
+		98 => "ENCAP",
+		99 => "Any",
+		100 => "GMTP",
+		101 => "IFMP",
+		102 => "PNNI",
+		103 => "PIM",
+		104 => "ARIS",
+		105 => "SCPS",
+		106 => "QNX",
+		107 => "A/N",
+		108 => "IPComp",
+		109 => "SNP",
+		110 => "Compaq-Peer",
+		111 => "IPX-in-IP",
+		112 => "VRRP",
+		113 => "PGM",
+		114 => "Any",
+		115 => "L2TP",
+		116 => "DDX",
+		117 => "IATP",
+		118 => "STP",
+		119 => "SRP",
+		120 => "UTI",
+		121 => "SMP",
+		122 => "SM",
+		123 => "PTP",
+		124 => "IS-IS",
+		125 => "FIRE",
+		126 => "CRTP",
+		127 => "CRUDP",
+		128 => "SSCOPMCE",
+		129 => "IPLT",
+		130 => "SPS",
+		131 => "PIPE",
+		132 => "SCTP",
+		133 => "FC",
+		134 => "RSVP-E2E-IGNORE",
+		135 => "Mobility",
+		136 => "UDPLite",
+		137 => "MPLS-in-IP",
+		138 => "manet",
+		139 => "HIP",
+		140 => "Shim6",
+		141 => "WESP",
+		142 => "ROHC",
+		143 => "Ethernet",
+		144 => "AGGFRAG",
+		145 => "NSH",
+		_ => "Unknown",
+	}
+}
+pub fn ssl_type_mapper(code: u16) -> &'static str {
+	match code {
+		0 => "Sent to us",
+		1 => "Boardcast",
+		2 => "Multicast not boardcast",
+		3 => "Send to somebody else by somebody else",
+		4 => "Send by us",
+		_ => "Unknown",
+	}
+}
+pub fn etype_mapper(code: u16) -> &'static str {
+	match code {
+		2048 => "IPv4",
+		2049 => "X.75",
+		2053 => "X.25 Level 3",
+		2054 => "ARP",
+		2056 => "Frame Relay ARP",
+		8947 => "TRILL",
+		8948 => "L2-IS-IS",
+		25944 => "Trans Ether Bridging",
+		25945 => "Raw Frame Relay",
+		32821 => "RARP",
+		32923 => "Appletalk",
+		33024 => "802.1Q",
+		33079 => "IPX/SPX",
+		33100 => "SNMP",
+		34525 => "IPv6",
+		34667 => "TCP/IP Compression",
+		34668 => "IP Autonomous Systems",
+		34669 => "Secure Data",
+		34824 => "IEEE Std 802.3 - Ethernet Passive Optical Network (EPON)",
+		34827 => "PPP",
+		34828 => "General Switch Management Protocol (GSMP)",
+		34887 => "MPLS (multiprotocol label switching)",
+		34888 => "MPLS with upstream-assigned label",
+		34915 => "PPP over Ethernet (PPPoE) Discovery Stage",
+		34916 => "PPP over Ethernet (PPPoE) Session Stage",
+		34958 => "IEEE Std 802.1X - Port-based network access control",
+		34984 => "IEEE Std 802.1Q - Service VLAN tag identifier (S-Tag)",
+		34999 => "IEEE Std 802 - OUI Extended Ethertype",
+		35015 => "IEEE Std 802.11 - Pre-Authentication (802.11i)",
+		35020 => "IEEE Std 802.1AB - Link Layer Discovery Protocol (LLDP)",
+		35045 => "IEEE Std 802.1AE - Media Access Control Security",
+		35061 => "IEEE Std 802.1Q - Multiple VLAN Registration Protocol (MVRP)",
+		35062 => "IEEE Std 802.1Q - Multiple Multicast Registration Protocol (MMRP)",
+		35131 => "FGL",
+		35142 => "TRILL RBridge Channel",
+		35130 => "IEE 1905.1a",
+		35085 => "TDLS",
+		_ => "Unknown",
+	}
+}
+pub fn tcp_option_kind_mapper(code: u16) -> &'static str {
+	match code {
+		0 => "End OF LIST",
+		1 => "No Operation",
+		2 => "Max segment size",
+		3 => "Window scale",
+		4 => "Selective Acknowledgement permitted",
+		5 => "Selective ACKnowledgement SACK",
+		8 => "echo of previous timestamp",
+		28 => "User Timeout Option",
+		29 => "TCP Authentication",
+		30 => "MPTCP",
+		_ => "Unknown",
+	}
+}
+pub fn dns_class_mapper(code: u16) -> &'static str {
+	match code {
+		1 => "IN",
+		2 => "CS",
+		3 => "CH",
+		4 => "HS",
+		_ => "Unknown",
+	}
+}
+pub fn dns_type_mapper(code: u16) -> &'static str {
+	match code {
+		1 => "A",
+		2 => "NS",
+		3 => "MD",
+		4 => "MF",
+		5 => "CNAME",
+		6 => "SOA",
+		7 => "MB",
+		8 => "MG",
+		9 => "MR",
+		10 => "NULL",
+		11 => "WKS",
+		12 => "PTR",
+		13 => "HINFO",
+		14 => "MINFO",
+		15 => "MX",
+		16 => "TXT",
+		17 => "RP",
+		18 => "AFSDB",
+		19 => "X25",
+		20 => "ISDN",
+		21 => "RT",
+		22 => "NSAP",
+		23 => "NSAP-PTR",
+		24 => "SIG",
+		25 => "KEY",
+		26 => "PX",
+		27 => "GPOS",
+		28 => "AAAA",
+		29 => "LOC",
+		30 => "NXT",
+		31 => "EID",
+		32 => "NIMLOC",
+		33 => "SRV",
+		34 => "ATMA",
+		35 => "NAPTR",
+		36 => "KX",
+		37 => "CERT",
+		38 => "A6",
+		39 => "DNAME",
+		40 => "SINK",
+		41 => "OPT",
+		42 => "APL",
+		43 => "DS",
+		44 => "SSHFP",
+		45 => "IPSECKEY",
+		46 => "RRSIG",
+		47 => "NSEC",
+		48 => "DNSKEY",
+		49 => "DHCID",
+		50 => "NSEC3",
+		51 => "NSEC3PARAM",
+		52 => "TLSA",
+		55 => "HIP",
+		57 => "RKEY",
+		58 => "TALINK",
+		59 => "CDS",
+		60 => "CDNSKEY",
+		61 => "OPENPGPKEY",
+		62 => "CSYNC",
+		63 => "ZONEMD",
+		64 => "SVCB",
+		65 => "HTTPS",
+		99 => "SPF",
+		100 => "UINFO",
+		101 => "UID",
+		102 => "GID",
+		103 => "UNSPEC",
+		104 => "NID",
+		105 => "L32",
+		106 => "L64",
+		107 => "LP",
+		108 => "EUI48",
+		109 => "EUI64",
+		249 => "TKEY",
+		250 => "TSIG",
+		251 => "IXFR",
+		252 => "AXFR",
+		253 => "MAILB",
+		254 => "MAILA",
+		255 => "ANY",
+		256 => "URI",
+		257 => "CAA",
+		258 => "AVC",
+		259 => "DOA",
+		260 => "AMTRELAY",
+		261 => "RESINFO",
+		262 => "WALLET",
+		32768 => "TA",
+		32769 => "DLV",
+		65281 => "WINS",
+		65282 => "WINS-R",
+		65422 => "XPF",
+		_ => "Unknown",
+	}
+}
+pub fn ieee802_subtype_mapper(code: u8) -> &'static str {
+	match code {
+		0 => "Association Request",
+		1 => "Association Response",
+		2 => "Reassociation Request",
+		3 => "Reassociation Response",
+		4 => "Probe Request",
+		5 => "Probe Response",
+		6 => "Measurement Pilot",
+		8 => "Beacon frame",
+		9 => "ATIM",
+		10 => "Disassociate",
+		11 => "Authentication",
+		12 => "Deauthentication",
+		13 => "Action",
+		14 => "Action No Ack",
+		15 => "Aruba Management",
+		18 => "Trigger",
+		19 => "TWT Ack",
+		20 => "Beamforming Report Poll",
+		21 => "VHT/HE/EHT/RANGING NDP Announcement",
+		23 => "Control Wrapper",
+		24 => "802.11 Block Ack Req",
+		25 => "802.11 Block Ack",
+		26 => "Power-Save poll",
+		27 => "Request-to-send",
+		28 => "Clear-to-send",
+		29 => "Acknowledgement",
+		30 => "CF-End (Control-frame)",
+		31 => "CF-End + CF-Ack (Control-frame)",
+		32 => "Data",
+		33 => "Data + CF-Ack",
+		34 => "Data + CF-Poll",
+		35 => "Data + CF-Ack + CF-Poll",
+		36 => "Null function (No data)",
+		37 => "Acknowledgement (No data)",
+		38 => "CF-Poll (No data)",
+		39 => "CF-Ack/Poll (No data)",
+		40 => "QoS Data",
+		41 => "QoS Data + CF-Acknowledgment",
+		42 => "QoS Data + CF-Poll",
+		43 => "QoS Data + CF-Ack + CF-Poll",
+		44 => "QoS Null function (No data)",
+		46 => "QoS CF-Poll (No Data)",
+		47 => "QoS CF-Ack + CF-Poll (No data)",
+		_ => "Unknown",
+	}
+}
+pub fn ieee802_mnt_tags_mapper(code: u8) -> &'static str {
+	match code {
+		0 => "SSID parameter set",
+		1 => "Supported Rates",
+		2 => "FH Parameter set",
+		3 => "DS Parameter set",
+		4 => "CF Parameter set",
+		5 => "Traffic Indication Map (TIM)",
+		6 => "IBSS Parameter set",
+		7 => "Country Information",
+		8 => "Hopping Pattern Parameters",
+		9 => "Hopping Pattern Table",
+		10 => "Request",
+		11 => "QBSS Load Element",
+		12 => "EDCA Parameter Set",
+		13 => "Traffic Specification",
+		14 => "Traffic Classification",
+		15 => "Schedule",
+		16 => "Challenge text",
+		32 => "Power Constraint",
+		33 => "Power Capability",
+		34 => "TPC Request",
+		35 => "TPC Report",
+		36 => "Supported Channels",
+		37 => "Channel Switch Announcement",
+		38 => "Measurement Request",
+		39 => "Measurement Report",
+		40 => "Quiet",
+		41 => "IBSS DFS",
+		42 => "ERP Information",
+		43 => "TS Delay",
+		44 => "TCLAS Processing",
+		45 => "HT Capabilities (802.11n D1.10)",
+		46 => "QoS Capability",
+		47 => "ERP Information",
+		48 => "RSN Information",
+		50 => "Extended Supported Rates",
+		51 => "AP Channel Report",
+		52 => "Neighbor Report",
+		53 => "RCPI",
+		54 => "Mobility Domain",
+		55 => "Fast BSS Transition",
+		56 => "Timeout Interval",
+		57 => "RIC Data",
+		58 => "DSE Registered Location",
+		59 => "Supported Operating Classes",
+		60 => "Extended Channel Switch Announcement",
+		61 => "HT Information (802.11n D1.10)",
+		62 => "Secondary Channel Offset (802.11n D1.10)",
+		63 => "BSS Average Access Delay",
+		64 => "Antenna",
+		65 => "RSNI",
+		66 => "Measurement Pilot Transmission",
+		67 => "BSS Available Admission Capacity",
+		68 => "BSS AC Access Delay/WAPI Parameter Set",
+		69 => "Time Advertisement",
+		70 => "RM Enabled Capabilities",
+		71 => "Multiple BSSID",
+		72 => "20/40 BSS Coexistence",
+		73 => "20/40 BSS Intolerant Channel Report",
+		74 => "Overlapping BSS Scan Parameters",
+		75 => "RIC Descriptor",
+		76 => "Management MIC",
+		78 => "Event Request",
+		79 => "Event Report",
+		80 => "Diagnostic Request",
+		81 => "Diagnostic Report",
+		82 => "Location Parameters",
+		83 => "Non Transmitted BSSID Capability",
+		84 => "SSID List",
+		85 => "Multiple BSSID Index",
+		86 => "FMS Descriptor",
+		87 => "FMS Request",
+		88 => "FMS Response",
+		89 => "QoS Traffic Capability",
+		90 => "BSS Max Idle Period",
+		91 => "TFS Request",
+		92 => "TFS Response",
+		93 => "WNM-Sleep Mode",
+		94 => "TIM Broadcast Request",
+		95 => "TIM Broadcast Response",
+		96 => "Collocated Interference Report",
+		97 => "Channel Usage",
+		98 => "Time Zone",
+		99 => "DMS Request",
+		100 => "DMS Response",
+		101 => "Link Identifier",
+		102 => "Wakeup Schedule",
+		104 => "Channel Switch Timing",
+		105 => "PTI Control",
+		106 => "PU Buffer Status",
+		107 => "Interworking",
+		108 => "Advertisement Protocol",
+		109 => "Expedited Bandwidth Request",
+		110 => "QoS Map Set",
+		111 => "Roaming Consortium",
+		112 => "Emergency Alert Identifier",
+		113 => "Mesh Configuration",
+		114 => "Mesh ID",
+		115 => "Mesh Link Metric Report",
+		116 => "Congestion Notification",
+		117 => "Mesh Peering Management",
+		118 => "Mesh Channel Switch Parameters",
+		119 => "Mesh Awake Window",
+		120 => "Beacon Timing",
+		121 => "MCCAOP Setup Request",
+		122 => "MCCAOP SETUP Reply",
+		123 => "MCCAOP Advertisement",
+		124 => "MCCAOP Teardown",
+		125 => "Gate Announcement",
+		126 => "Root Announcement",
+		127 => "Extended Capabilities",
+		128 => "Agere Proprietary",
+		130 => "Path Request",
+		131 => "Path Reply",
+		132 => "Path Error",
+		133 => "Cisco CCX1 CKIP + Device Name",
+		136 => "Cisco CCX2",
+		137 => "Proxy Update",
+		138 => "Proxy Update Confirmation",
+		139 => "Authenticated Mesh Peering Exchange",
+		140 => "MIC (Message Integrity Code)",
+		141 => "Destination URI",
+		142 => "U-APSD Coexistence",
+		143 => "Wakeup Schedule 802.11ad",
+		144 => "Extended Schedule",
+		145 => "STA Availability",
+		146 => "DMG TSPEC",
+		147 => "Next DMG ATI",
+		148 => "DMG Capabilities",
+		149 => "Cisco Unknown 95",
+		150 => "Vendor Specific",
+		151 => "DMG Operating",
+		152 => "DMG BSS Parameter Change",
+		153 => "DMG Beam Refinement",
+		154 => "Channel Measurement Feedback",
+		157 => "Awake Window",
+		158 => "Multi Band",
+		159 => "ADDBA Extension",
+		160 => "NEXTPCP List",
+		161 => "PCP Handover",
+		162 => "DMG Link Margin",
+		163 => "Switching Stream",
+		164 => "Session Transmission",
+		165 => "Dynamic Tone Pairing Report",
+		166 => "Cluster Report",
+		167 => "Relay Capabilities",
+		168 => "Relay Transfer Parameter",
+		169 => "Beamlink Maintenance",
+		170 => "Multiple MAC Sublayers",
+		171 => "U-PID",
+		172 => "DMG Link Adaption Acknowledgment",
+		173 => "Symbol Proprietary",
+		174 => "MCCAOP Advertisement Overview",
+		175 => "Quiet Period Request",
+		177 => "Quiet Period Response",
+		182 => "ECAPC Policy",
+		183 => "Cluster Time Offset",
+		184 => "Intra-Access Category Priority",
+		185 => "SCS Descriptor",
+		190 => "Antenna Sector ID",
+		191 => "VHT Capabilities",
+		192 => "VHT Operation",
+		193 => "Extended BSS Load",
+		194 => "Wide Bandwidth Channel Switch",
+		195 => "Tx Power Envelope",
+		196 => "Channel Switch Wrapper",
+		199 => "Operating Mode Notification",
+		201 => "Reduced Neighbor Report",
+		206 => "Fine Time Measurement Params",
+		207 => "S1G Open-Loop Link Margin Index",
+		208 => "RPS",
+		209 => "Page Slice",
+		210 => "AID Request",
+		211 => "AID Response",
+		212 => "Sector Operation",
+		213 => "S1G Beacon Compatibility",
+		214 => "Short Beacon Interval",
+		215 => "Change Sequence",
+		216 => "Target Wake Time",
+		217 => "S1G Capabilities",
+		220 => "Subchannel Selective Transmission",
+		221 => "Vendor Specific",
+		222 => "Authentication Control",
+		223 => "TSF Timer Accuracy",
+		224 => "S1G Relay",
+		225 => "Reachable Address",
+		226 => "S1G Relay Discovery",
+		228 => "AID Announcement",
+		229 => "PV1 Probe Response Option",
+		230 => "EL Operation",
+		231 => "Sectorized Group ID List",
+		232 => "S1G Operation",
+		233 => "Header Compression",
+		234 => "SST Operation",
+		235 => "MAD",
+		236 => "S1G Relay Activation",
+		237 => "CAG Number",
+		239 => "AP-CSN",
+		240 => "FILS Indication",
+		241 => "Differential Initial Link Setup",
+		242 => "Fragment",
+		244 => "RSN eXtension",
+		255 => "Element ID Extension",
+		_ => "Unknown",
+	}
+}
+pub fn ieee802_mnt_cat_mapper(code: u8) -> &'static str {
+	match code {
+		0 => "Spectrum Management (SM)",
+		1 => "Quality of Service (QoS)",
+		2 => "Direct-Link Setup (DLS)",
+		3 => "Block Ack",
+		4 => "Public Action",
+		5 => "Radio Measurement",
+		6 => "Fast BSS Transition",
+		7 => "High Throughput",
+		8 => "SA Query",
+		9 => "Protected Dual of Public Action",
+		10 => "WNM",
+		11 => "Unprotected WNM",
+		12 => "TDLS",
+		13 => "MESH",
+		14 => "Multihop",
+		15 => "Self-protected",
+		16 => "DMG",
+		17 => "Management Notification",
+		18 => "Fast Session Transfer",
+		19 => "Robust AV Streaming",
+		20 => "Unprotected DMG",
+		21 => "VHT",
+		22 => "S1G",
+		23 => "Protected S1G",
+		24 => "Flow Control",
+		25 => "Control Response MCS Negotiation",
+		26 => "FILS",
+		30 => "HE",
+		31 => "Protected HE",
+		34 => "Protected FTM",
+		36 => "EHT",
+		37 => "Protected EHT",
+		126 => "Vendor-specific Protected",
+		127 => "Vendor Specific",
+		_ => "Unknown",
+	}
+}
+pub fn ppp_lcp_option_type_mapper(code: u8) -> &'static str {
+	match code {
+		0 => "Vendor Specific",
+		1 => "Maximum Receive Unit",
+		2 => "Async Control Character Map",
+		3 => "Authentication Protocol",
+		4 => "Quality Protocol",
+		5 => "Magic Number",
+		6 => "Link Quality Monitoring",
+		7 => "Protocol Field Compression",
+		8 => "Address and Control Field Compression",
+		9 => "FCS Alternatives",
+		10 => "Self Describing Pad",
+		11 => "Numbered Mode",
+		12 => "Callback",
+		13 => "Compound Frames (Deprecated)",
+		14 => "Nominal Data Encapsulation (Deprecated)",
+		15 => "Multilink MRRU",
+		16 => "Multilink Short Sequence Number Header",
+		17 => "Multilink Endpoint Discriminator",
+		18 => "DCE Identifier",
+		19 => "Multi Link Plus Procedure",
+		20 => "Link Discriminator for BACP",
+		21 => "Authentication Option",
+		22 => "Consistent Overhead Byte Stuffing (COBS)",
+		23 => "Prefix Elision",
+		24 => "Multilink header format",
+		25 => "Internationalization",
+		26 => "Simple Data Link on SONET/SDH",
+		_ => "Unknown",
+	}
+}
+pub fn ppp_type_mapper(code: u16) -> &'static str {
+	match code {
+		1 => "Padding Protocol",
+		3 => "ROHC small-CID",
+		5 => "ROHC large-CID",
+		33 => "Internet Protocol version 4",
+		35 => "OSI Network Layer",
+		37 => "Xerox NS IDP",
+		39 => "DECnet Phase IV",
+		41 => "Appletalk",
+		43 => "Novell IPX",
+		45 => "Van Jacobson Compressed TCP/IP",
+		47 => "Van Jacobson Uncompressed TCP/IP",
+		49 => "Bridging PDU",
+		51 => "Stream Protocol (ST-II)",
+		53 => "Banyan Vines",
+		57 => "AppleTalk EDDP",
+		59 => "AppleTalk SmartBuffered",
+		61 => "Multi-Link",
+		63 => "NETBIOS Framing",
+		65 => "Cisco Systems",
+		67 => "Ascom Timeplex",
+		69 => "Fujitsu Link Backup and Load Balancing (LBLB)",
+		71 => "DCA Remote Lan",
+		73 => "Serial Data Transport Protocol (PPP-SDTP)",
+		75 => "SNA over 802.2",
+		77 => "SNA",
+		79 => "IPv6 Header Compression ",
+		81 => "KNX Bridging Data",
+		83 => "Encryption",
+		85 => "Individual Link Encryption",
+		87 => "Internet Protocol version 6",
+		89 => "PPP Muxing",
+		91 => "Vendor-Specific Network Protocol (VSNP)",
+		93 => "TRILL Network Protocol (TNP)",
+		97 => "RTP IPHC Full Header",
+		99 => "RTP IPHC Compressed TCP",
+		101 => "RTP IPHC Compressed Non TCP",
+		103 => "RTP IPHC Compressed UDP 8",
+		105 => "RTP IPHC Compressed RTP 8",
+		111 => "Stampede Bridging",
+		115 => "MP+ Protocol",
+		193 => "NTCITS IPI",
+		251 => "Single link compression in multilink",
+		253 => "Compressed datagram",
+		513 => "802.1d Hello Packets",
+		515 => "IBM Source Routing BPDU",
+		517 => "DEC LANBridge100 Spanning Tree",
+		519 => "Cisco Discovery Protocol",
+		521 => "Netcs Twin Routing",
+		523 => "STP - Scheduled Transfer Protocol",
+		525 => "EDP - Extreme Discovery Protocol",
+		529 => "Optical Supervisory Channel Protocol (OSCP)",
+		531 => "Optical Supervisory Channel Protocol (OSCP)",
+		561 => "Luxcom",
+		563 => "Sigma Network Systems",
+		565 => "Apple Client Server Protocol",
+		641 => "MPLS Unicast",
+		643 => "MPLS Multicast",
+		645 => "IEEE p1284.4 standard - data packets",
+		647 => "ETSI TETRA Network Protocol Type 1",
+		649 => "Multichannel Flow Treatment Protocol",
+		8291 => "RTP IPHC Compressed TCP No Delta",
+		8293 => "RTP IPHC Context State",
+		8295 => "RTP IPHC Compressed UDP 16",
+		8297 => "RTP IPHC Compressed RTP 16",
+		16385 => "Cray Communications Control Protocol",
+		16387 => "CDPD Mobile Network Registration Protocol",
+		16389 => "Expand accelerator protocol",
+		16391 => "ODSICP NCP",
+		16393 => "DOCSIS DLL",
+		16395 => "Cetacean Network Detection Protocol",
+		16417 => "Stacker LZS",
+		16419 => "RefTek Protocol",
+		16421 => "Fibre Channel",
+		16423 => "EMIT Protocols",
+		16475 => "Vendor-Specific Protocol (VSP)",
+		16477 => "TRILL Link State Protocol (TLSP)",
+		32801 => "Internet Protocol Control Protocol",
+		32803 => "OSI Network Layer Control Protocol",
+		32805 => "Xerox NS IDP Control Protocol",
+		32807 => "DECnet Phase IV Control Protocol",
+		32809 => "AppleTalk Control Protocol",
+		32811 => "Novell IPX Control Protocol",
+		32817 => "Bridging NCP",
+		32819 => "Stream Protocol Control Protocol",
+		32821 => "Banyan Vines Control Protocol",
+		32829 => "Multi-Link Control Protocol",
+		32831 => "NETBIOS Framing Control Protocol",
+		32833 => "Cisco Systems Control Protocol",
+		32835 => "Ascom Timeplex",
+		32837 => "Fujitsu LBLB Control Protocol",
+		32839 => "DCA Remote Lan Network Control Protocol (RLNCP)",
+		32841 => "Serial Data Control Protocol (PPP-SDCP)",
+		32843 => "SNA over 802.2 Control Protocol",
+		32845 => "SNA Control Protocol",
+		32847 => "IP6 Header Compression Control Protocol",
+		32849 => "KNX Bridging Control Protocol",
+		32851 => "Encryption Control Protocol",
+		32853 => "Individual Link Encryption Control Protocol",
+		32855 => "IPv6 Control Protocol",
+		32857 => "PPP Muxing Control Protocol",
+		32859 => "Vendor-Specific Network Control Protocol (VSNCP)",
+		32861 => "TRILL Network Control Protocol",
+		32879 => "Stampede Bridging Control Protocol",
+		32883 => "MP+ Control Protocol",
+		32961 => "NTCITS IPI Control Protocol",
+		33019 => "Single link compression in multilink control",
+		33021 => "Compression Control Protocol",
+		33287 => "Cisco Discovery Protocol Control Protocol",
+		33289 => "Netcs Twin Routing",
+		33291 => "STP - Control Protocol",
+		33293 => "EDPCP - Extreme Discovery Protocol Control Protocol",
+		33333 => "Apple Client Server Protocol Control",
+		33409 => "MPLS Control Protocol",
+		33413 => "IEEE p1284.4 standard - Protocol Control",
+		33415 => "ETSI TETRA TNP1 Control Protocol",
+		33417 => "Multichannel Flow Treatment Protocol",
+		49185 => "Link Control Protocol",
+		49187 => "Password Authentication Protocol",
+		49189 => "Link Quality Report",
+		49191 => "Shiva Password Authentication Protocol",
+		49193 => "Callback Control Protocol (CBCP)",
+		49195 => "BACP Bandwidth Allocation Control Protocol",
+		49197 => "BAP Bandwidth Allocation Protocol",
+		49243 => "Vendor-Specific Authentication Protocol (VSAP)",
+		49281 => "Container Control Protocol",
+		49699 => "Challenge Handshake Authentication Protocol",
+		49701 => "RSA Authentication Protocol",
+		49703 => "Extensible Authentication Protocol",
+		49705 => "Mitsubishi Security Information Exchange Protocol (SIEP)",
+		49775 => "Stampede Bridging Authorization Protocol",
+		49793 => "Proprietary Authentication Protocol",
+		49795 => "Proprietary Authentication Protocol",
+		50305 => "Proprietary Node ID Authentication Protocol",
+		_ => "Unknown",
+	}
+}
+pub fn ppp_lcp_type_mapper(code: u8) -> &'static str {
+	match code {
+		0 => "Vendor Specific",
+		1 => "Configuration Request",
+		2 => "Configuration Ack",
+		3 => "Configuration Nak",
+		4 => "Configuration Reject",
+		5 => "Termination Request",
+		6 => "Termination Ack",
+		7 => "Code Reject",
+		8 => "Protocol Reject",
+		9 => "Echo Request",
+		10 => "Echo Reply",
+		11 => "Discard Request",
+		12 => "Identification",
+		13 => "Time Remaining",
+		_ => "Unknown",
+	}
+}
+pub fn arp_hardware_type_mapper(code: u16) -> &'static str {
+	match code {
+		0 => "Reserved",
+		1 => "Ethernet (10Mb)",
+		2 => "Experimental Ethernet (3Mb)",
+		3 => "Amateur Radio AX.25",
+		4 => "Proteon ProNET Token Ring",
+		5 => "Chaos",
+		6 => "IEEE 802 Networks",
+		7 => "ARCNET",
+		8 => "Hyperchannel",
+		9 => "Lanstar",
+		10 => "Autonet Short Address",
+		11 => "LocalTalk",
+		12 => "LocalNet (IBM PCNet or SYTEK LocalNET)",
+		13 => "Ultra link",
+		14 => "SMDS",
+		15 => "Frame Relay",
+		16 => "Asynchronous Transmission Mode (ATM)",
+		17 => "HDLC",
+		18 => "Fibre Channel",
+		19 => "Asynchronous Transmission Mode (ATM)",
+		20 => "Serial Line",
+		21 => "Asynchronous Transmission Mode (ATM)",
+		22 => "MIL-STD-188-220",
+		23 => "Metricom",
+		24 => "IEEE 1394.1995",
+		25 => "MAPOS",
+		26 => "Twinaxial",
+		27 => "EUI-64",
+		28 => "HIPARP",
+		29 => "IP and ARP over ISO 7816-3",
+		30 => "ARPSec",
+		31 => "IPsec tunnel",
+		32 => "InfiniBand (TM)",
+		33 => "CAI",
+		34 => "Wiegand Interface",
+		35 => "Pure IP",
+		36 => "HW_EXP1",
+		37 => "HFI",
+		38 => "Unified Bus (UB)",
+		256 => "HW_EXP2",
+		257 => "AEthernet",
+		65535 => "Reserved",
+		_ => "Unknown",
+	}
+}
+pub fn arp_oper_type_mapper(code: u16) -> &'static str {
+	match code {
+		1 => "REQUEST",
+		2 => "REPLY",
+		3 => "request Reverse",
+		4 => "reply Reverse",
+		5 => "DRARP-Request",
+		6 => "DRARP-Reply",
+		7 => "DRARP-Error",
+		8 => "InARP-Request",
+		9 => "InARP-Reply",
+		10 => "ARP-NAK",
+		11 => "MARS-Request",
+		12 => "MARS-Multi",
+		13 => "MARS-MServ",
+		14 => "MARS-Join",
+		15 => "MARS-Leave",
+		16 => "MARS-NAK",
+		17 => "MARS-Unserv",
+		18 => "MARS-SJoin",
+		19 => "MARS-SLeave",
+		20 => "MARS-Grouplist-Request",
+		21 => "MARS-Grouplist-Reply",
+		22 => "MARS-Redirect-Map",
+		23 => "MAPOS-UNARP",
+		24 => "OP_EXP1",
+		25 => "OP_EXP2",
+		_ => "Unknown",
+	}
+}
+pub fn icmpv6_type_mapper(code: u16) -> &'static str {
+	match code {
+		1 => "Destination unreachable",
+		2 => "Packet too big",
+		3 => "Time exceeded",
+		4 => "Parameter problem",
+		127 => "Reserved for expansion of ICMPv6 error messages",
+		128 => "Echo Request",
+		129 => "Echo Reply",
+		130 => "Multicast Listener Query",
+		131 => "Multicast Listener Report",
+		132 => "Multicast Listener Done",
+		133 => "Router Solicitation",
+		134 => "Router Advertisement",
+		135 => "Neighbor Solicitation",
+		136 => "Neighbor Advertisement",
+		137 => "Redirect Message",
+		138 => "Router Renumbering",
+		139 => "ICMP Node Information Query",
+		140 => "ICMP Node Information Response",
+		141 => "Inverse Neighbor Discovery Solicitation Message	",
+		142 => "Inverse Neighbor Discovery Advertisement Message",
+		143 => "Multicast Listener Discovery",
+		144 => "Home Agent Address Discovery Request Message	",
+		145 => "Home Agent Address Discovery Reply Message",
+		146 => "Mobile Prefix Solicitation",
+		147 => "Mobile Prefix Advertisement",
+		148 => "Certification Path Solicitation",
+		149 => "Certification Path Advertisement",
+		151 => "Multicast Router Advertisement",
+		_ => "Unknown",
+	}
+}
+pub fn dhcp_option_type_mapper(code: u8) -> &'static str {
+	match code {
+		0 => "Pad",
+		1 => "Subnet",
+		2 => "Time",
+		3 => "Router",
+		4 => "Time server",
+		5 => "Name server",
+		6 => "Domain name server",
+		7 => "Log server",
+		8 => "Cookie server",
+		9 => "LPR Server",
+		10 => "Impress server",
+		11 => "Resource location server",
+		12 => "Host",
+		13 => "Boot file size",
+		14 => "Merit dump file",
+		15 => "Domain",
+		16 => "Swap server",
+		17 => "Root path",
+		18 => "Extensions path",
+		19 => "IP forwarding enable/disable",
+		20 => "Non-local source routing enable/disable",
+		21 => "Policy filter",
+		22 => "Maximum datagram reassembly size",
+		23 => "Default IP time-to-live",
+		24 => "Path MTU aging timeout",
+		25 => "Path MTU plateau table",
+		26 => "Interface MTU",
+		27 => "All subnets are local",
+		28 => "Broadcast address",
+		29 => "Perform mask discovery",
+		30 => "Mask supplier",
+		31 => "Perform router discovery",
+		32 => "Router solicitation address",
+		33 => "Static route",
+		34 => "Trailer encapsulation option",
+		35 => "ARP cache timeout",
+		36 => "Ethernet encapsulation",
+		37 => "TCP default TTL",
+		38 => "TCP keepalive interval",
+		39 => "TCP keepalive garbage",
+		40 => "Network information service domain",
+		41 => "Network information servers",
+		42 => "Network Time Protocol (NTP) servers",
+		43 => "Vendor-specific information",
+		44 => "NetBIOS over TCP/IP name server",
+		45 => "NetBIOS over TCP/IP datagram Distribution Server",
+		46 => "NetBIOS over TCP/IP node type",
+		47 => "NetBIOS over TCP/IP scope",
+		48 => "X Window System font server",
+		49 => "X Window System display manager",
+		50 => "Requested IP address",
+		51 => "IP address lease time",
+		52 => "Option overload",
+		53 => "DHCP message type",
+		54 => "Server identifier",
+		55 => "Parameter request list",
+		56 => "Message",
+		57 => "Maximum DHCP message size",
+		58 => "Renewal (T1) time value",
+		59 => "Rebinding (T2) time value",
+		60 => "Vendor class identifier",
+		61 => "Client identifier",
+		64 => "Network Information Service+ domain",
+		65 => "Network Information Service+ servers",
+		66 => "TFTP server name",
+		67 => "Bootfile name",
+		68 => "Mobile IP home agent",
+		69 => "Simple Mail Transfer Protocol (SMTP) server",
+		70 => "Post Office Protocol (POP3) server",
+		71 => "Network News Transfer Protocol (NNTP) server",
+		72 => "Default World Wide Web (WWW) server",
+		73 => "Default Finger protocol server",
+		74 => "Default Internet Relay Chat (IRC) server",
+		75 => "StreetTalk server",
+		76 => "StreetTalk Directory Assistance (STDA) server",
+		255 => "End",
+		_ => "Unknown",
+	}
+}
+pub fn dhcp_type_mapper(code: u8) -> &'static str {
+	match code {
+		1 => "DHCPDISCOVER",
+		2 => "DHCPOFFER",
+		3 => "DHCPREQUEST",
+		4 => "DHCPDECLINE",
+		5 => "DHCPACK",
+		6 => "DHCPNAK",
+		7 => "DHCPRELEASE",
+		8 => "DHCPINFORM",
+		9 => "DHCPFORCERENEW",
+		10 => "DHCPLEASEQUERY",
+		11 => "DHCPLEASEUNASSIGNED",
+		12 => "DHCPLEASEUNKNOWN",
+		13 => "DHCPLEASEACTIVE",
+		14 => "DHCPBULKLEASEQUERY",
+		15 => "DHCPLEASEQUERYDONE",
+		16 => "DHCPACTIVELEASEQUERY",
+		17 => "DHCPLEASEQUERYSTATUS",
+		18 => "DHCPTL",
+		_ => "Unknown",
+	}
+}
+pub fn igmp_type_mapper(code: u8) -> &'static str {
+	match code {
+		17 => "Membership Query",
+		18 => "IGMPv1 Membership Report",
+		22 => "IGMPv2 Membership Report",
+		23 => "Leave Group",
+		34 => "IGMPv3 Membership Report",
+		_ => "Unknown",
+	}
+}
+pub fn tls_content_type_mapper(code: u8) -> &'static str {
+	match code {
+		20 => "ChangeCipherSpec",
+		21 => "Alert",
+		22 => "Handshake",
+		23 => "Application",
+		24 => "Heartbeat",
+		_ => "Unknown",
+	}
+}
+pub fn tls_min_type_mapper(code: u8) -> &'static str {
+	match code {
+		0 => "SSL 3.0",
+		1 => "TLS 1.0",
+		2 => "TLS 1.1",
+		3 => "TLS 1.2",
+		4 => "TLS 1.3",
+		_ => "Unknown",
+	}
+}
+pub fn tls_hs_message_type_mapper(code: u8) -> &'static str {
+	match code {
+		0 => "HelloRequest",
+		1 => "ClientHello",
+		2 => "ServerHello",
+		3 => "HELLO_VERIFY_REQUEST",
+		4 => "NewSessionTicket",
+		5 => "END_OF_EARLY_DATA",
+		6 => "HELLO_RETRY_REQUEST",
+		8 => "EncryptedExtensions",
+		11 => "Certificate",
+		12 => "ServerKeyExchange",
+		13 => "CertificateRequest",
+		14 => "ServerHelloDone",
+		15 => "CertificateVerify",
+		16 => "ClientKeyExchange",
+		20 => "Finished",
+		21 => "CERT_URL",
+		22 => "CERT_STATUS",
+		23 => "SUPPLEMENTAL_DATA",
+		24 => "KEY_UPDATE",
+		25 => "COMPRESSED_CERTIFICATE",
+		67 => "ENCRYPTED_EXTS",
+		_ => "Unknown",
+	}
+}
+pub fn tls_cipher_suites_mapper(code: u16) -> &'static str {
+	match code {
+		0 => "TLS_NULL_WITH_NULL_NULL",
+		255 => "TLS_EMPTY_RENEGOTIATION_INFO_SCSV",
+		1 => "TLS_RSA_WITH_NULL_MD5",
+		2 => "TLS_RSA_WITH_NULL_SHA",
+		3 => "TLS_RSA_EXPORT_WITH_RC4_40_MD5",
+		4 => "TLS_RSA_WITH_RC4_128_MD5",
+		5 => "TLS_RSA_WITH_RC4_128_SHA",
+		6 => "TLS_RSA_EXPORT_WITH_RC2_CBC_40_MD5",
+		7 => "TLS_RSA_WITH_IDEA_CBC_SHA",
+		8 => "TLS_RSA_EXPORT_WITH_DES40_CBC_SHA",
+		9 => "TLS_RSA_WITH_DES_CBC_SHA",
+		10 => "TLS_RSA_WITH_3DES_EDE_CBC_SHA",
+		11 => "TLS_DH_DSS_EXPORT_WITH_DES40_CBC_SHA",
+		12 => "TLS_DH_DSS_WITH_DES_CBC_SHA",
+		13 => "TLS_DH_DSS_WITH_3DES_EDE_CBC_SHA",
+		14 => "TLS_DH_RSA_EXPORT_WITH_DES40_CBC_SHA",
+		15 => "TLS_DH_RSA_WITH_DES_CBC_SHA",
+		16 => "TLS_DH_RSA_WITH_3DES_EDE_CBC_SHA",
+		17 => "TLS_DHE_DSS_EXPORT_WITH_DES40_CBC_SHA",
+		18 => "TLS_DHE_DSS_WITH_DES_CBC_SHA",
+		19 => "TLS_DHE_DSS_WITH_3DES_EDE_CBC_SHA",
+		20 => "TLS_DHE_RSA_EXPORT_WITH_DES40_CBC_SHA",
+		21 => "TLS_DHE_RSA_WITH_DES_CBC_SHA",
+		22 => "TLS_DHE_RSA_WITH_3DES_EDE_CBC_SHA",
+		23 => "TLS_DH_anon_EXPORT_WITH_RC4_40_MD5",
+		24 => "TLS_DH_anon_WITH_RC4_128_MD5",
+		25 => "TLS_DH_anon_EXPORT_WITH_DES40_CBC_SHA",
+		26 => "TLS_DH_anon_WITH_DES_CBC_SHA",
+		27 => "TLS_DH_anon_WITH_3DES_EDE_CBC_SHA",
+		28 => "SSL_FORTEZZA_KEA_WITH_NULL_SHA",
+		29 => "SSL_FORTEZZA_KEA_WITH_FORTEZZA_CBC_SHA",
+		30 => "TLS_KRB5_WITH_DES_CBC_SHA",
+		31 => "TLS_KRB5_WITH_3DES_EDE_CBC_SHA",
+		32 => "TLS_KRB5_WITH_RC4_128_SHA",
+		33 => "TLS_KRB5_WITH_IDEA_CBC_SHA",
+		34 => "TLS_KRB5_WITH_DES_CBC_MD5",
+		35 => "TLS_KRB5_WITH_3DES_EDE_CBC_MD5",
+		36 => "TLS_KRB5_WITH_RC4_128_MD5",
+		37 => "TLS_KRB5_WITH_IDEA_CBC_MD5",
+		38 => "TLS_KRB5_EXPORT_WITH_DES_CBC_40_SHA",
+		39 => "TLS_KRB5_EXPORT_WITH_RC2_CBC_40_SHA",
+		40 => "TLS_KRB5_EXPORT_WITH_RC4_40_SHA",
+		41 => "TLS_KRB5_EXPORT_WITH_DES_CBC_40_MD5",
+		42 => "TLS_KRB5_EXPORT_WITH_RC2_CBC_40_MD5",
+		43 => "TLS_KRB5_EXPORT_WITH_RC4_40_MD5",
+		44 => "TLS_PSK_WITH_NULL_SHA",
+		45 => "TLS_DHE_PSK_WITH_NULL_SHA",
+		46 => "TLS_RSA_PSK_WITH_NULL_SHA",
+		47 => "TLS_RSA_WITH_AES_128_CBC_SHA",
+		48 => "TLS_DH_DSS_WITH_AES_128_CBC_SHA",
+		49 => "TLS_DH_RSA_WITH_AES_128_CBC_SHA",
+		50 => "TLS_DHE_DSS_WITH_AES_128_CBC_SHA",
+		51 => "TLS_DHE_RSA_WITH_AES_128_CBC_SHA",
+		52 => "TLS_DH_anon_WITH_AES_128_CBC_SHA",
+		53 => "TLS_RSA_WITH_AES_256_CBC_SHA",
+		54 => "TLS_DH_DSS_WITH_AES_256_CBC_SHA",
+		55 => "TLS_DH_RSA_WITH_AES_256_CBC_SHA",
+		56 => "TLS_DHE_DSS_WITH_AES_256_CBC_SHA",
+		57 => "TLS_DHE_RSA_WITH_AES_256_CBC_SHA",
+		58 => "TLS_DH_anon_WITH_AES_256_CBC_SHA",
+		59 => "TLS_RSA_WITH_NULL_SHA256",
+		60 => "TLS_RSA_WITH_AES_128_CBC_SHA256",
+		61 => "TLS_RSA_WITH_AES_256_CBC_SHA256",
+		62 => "TLS_DH_DSS_WITH_AES_128_CBC_SHA256",
+		63 => "TLS_DH_RSA_WITH_AES_128_CBC_SHA256",
+		64 => "TLS_DHE_DSS_WITH_AES_128_CBC_SHA256",
+		65 => "TLS_RSA_WITH_CAMELLIA_128_CBC_SHA",
+		66 => "TLS_DH_DSS_WITH_CAMELLIA_128_CBC_SHA",
+		67 => "TLS_DH_RSA_WITH_CAMELLIA_128_CBC_SHA",
+		68 => "TLS_DHE_DSS_WITH_CAMELLIA_128_CBC_SHA",
+		69 => "TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA",
+		70 => "TLS_DH_anon_WITH_CAMELLIA_128_CBC_SHA",
+		96 => "TLS_RSA_EXPORT1024_WITH_RC4_56_MD5",
+		97 => "TLS_RSA_EXPORT1024_WITH_RC2_CBC_56_MD5",
+		98 => "TLS_RSA_EXPORT1024_WITH_DES_CBC_SHA",
+		99 => "TLS_DHE_DSS_EXPORT1024_WITH_DES_CBC_SHA",
+		100 => "TLS_RSA_EXPORT1024_WITH_RC4_56_SHA",
+		101 => "TLS_DHE_DSS_EXPORT1024_WITH_RC4_56_SHA",
+		102 => "TLS_DHE_DSS_WITH_RC4_128_SHA",
+		103 => "TLS_DHE_RSA_WITH_AES_128_CBC_SHA256",
+		104 => "TLS_DH_DSS_WITH_AES_256_CBC_SHA256",
+		105 => "TLS_DH_RSA_WITH_AES_256_CBC_SHA256",
+		106 => "TLS_DHE_DSS_WITH_AES_256_CBC_SHA256",
+		107 => "TLS_DHE_RSA_WITH_AES_256_CBC_SHA256",
+		108 => "TLS_DH_anon_WITH_AES_128_CBC_SHA256",
+		109 => "TLS_DH_anon_WITH_AES_256_CBC_SHA256",
+		128 => "TLS_GOSTR341094_WITH_28147_CNT_IMIT",
+		129 => "TLS_GOSTR341001_WITH_28147_CNT_IMIT",
+		130 => "TLS_GOSTR341001_WITH_NULL_GOSTR3411",
+		131 => "TLS_GOSTR341094_WITH_NULL_GOSTR3411",
+		132 => "TLS_RSA_WITH_CAMELLIA_256_CBC_SHA",
+		133 => "TLS_DH_DSS_WITH_CAMELLIA_256_CBC_SHA",
+		134 => "TLS_DH_RSA_WITH_CAMELLIA_256_CBC_SHA",
+		135 => "TLS_DHE_DSS_WITH_CAMELLIA_256_CBC_SHA",
+		136 => "TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA",
+		137 => "TLS_DH_anon_WITH_CAMELLIA_256_CBC_SHA",
+		138 => "TLS_PSK_WITH_RC4_128_SHA",
+		139 => "TLS_PSK_WITH_3DES_EDE_CBC_SHA",
+		140 => "TLS_PSK_WITH_AES_128_CBC_SHA",
+		141 => "TLS_PSK_WITH_AES_256_CBC_SHA",
+		142 => "TLS_DHE_PSK_WITH_RC4_128_SHA",
+		143 => "TLS_DHE_PSK_WITH_3DES_EDE_CBC_SHA",
+		144 => "TLS_DHE_PSK_WITH_AES_128_CBC_SHA",
+		145 => "TLS_DHE_PSK_WITH_AES_256_CBC_SHA",
+		146 => "TLS_RSA_PSK_WITH_RC4_128_SHA",
+		147 => "TLS_RSA_PSK_WITH_3DES_EDE_CBC_SHA",
+		148 => "TLS_RSA_PSK_WITH_AES_128_CBC_SHA",
+		149 => "TLS_RSA_PSK_WITH_AES_256_CBC_SHA",
+		150 => "TLS_RSA_WITH_SEED_CBC_SHA",
+		151 => "TLS_DH_DSS_WITH_SEED_CBC_SHA",
+		152 => "TLS_DH_RSA_WITH_SEED_CBC_SHA",
+		153 => "TLS_DHE_DSS_WITH_SEED_CBC_SHA",
+		154 => "TLS_DHE_RSA_WITH_SEED_CBC_SHA",
+		155 => "TLS_DH_anon_WITH_SEED_CBC_SHA",
+		156 => "TLS_RSA_WITH_AES_128_GCM_SHA256",
+		157 => "TLS_RSA_WITH_AES_256_GCM_SHA384",
+		158 => "TLS_DHE_RSA_WITH_AES_128_GCM_SHA256",
+		159 => "TLS_DHE_RSA_WITH_AES_256_GCM_SHA384",
+		160 => "TLS_DH_RSA_WITH_AES_128_GCM_SHA256",
+		161 => "TLS_DH_RSA_WITH_AES_256_GCM_SHA384",
+		162 => "TLS_DHE_DSS_WITH_AES_128_GCM_SHA256",
+		163 => "TLS_DHE_DSS_WITH_AES_256_GCM_SHA384",
+		164 => "TLS_DH_DSS_WITH_AES_128_GCM_SHA256",
+		165 => "TLS_DH_DSS_WITH_AES_256_GCM_SHA384",
+		166 => "TLS_DH_anon_WITH_AES_128_GCM_SHA256",
+		167 => "TLS_DH_anon_WITH_AES_256_GCM_SHA384",
+		186 => "TLS_RSA_WITH_CAMELLIA_128_CBC_SHA256",
+		187 => "TLS_DH_DSS_WITH_CAMELLIA_128_CBC_SHA256",
+		188 => "TLS_DH_RSA_WITH_CAMELLIA_128_CBC_SHA256",
+		189 => "TLS_DHE_DSS_WITH_CAMELLIA_128_CBC_SHA256",
+		190 => "TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA256",
+		191 => "TLS_DH_anon_WITH_CAMELLIA_128_CBC_SHA256",
+		22016 => "TLS_EMPTY_RENEGOTIATION_INFO_SCSV",
+		4865 => "TLS_AES_128_GCM_SHA256",
+		4866 => "TLS_AES_256_GCM_SHA384",
+		4867 => "TLS_CHACHA20_POLY1305_SHA256",
+		4868 => "TLS_AES_128_CCM_SHA256",
+		4869 => "TLS_AES_128_CCM_8_SHA256",
+		49153 => "TLS_ECDH_ECDSA_WITH_NULL_SHA",
+		49154 => "TLS_ECDH_ECDSA_WITH_RC4_128_SHA",
+		49155 => "TLS_ECDH_ECDSA_WITH_3DES_EDE_CBC_SHA",
+		49156 => "TLS_ECDH_ECDSA_WITH_AES_128_CBC_SHA",
+		49157 => "TLS_ECDH_ECDSA_WITH_AES_256_CBC_SHA",
+		49158 => "TLS_ECDHE_ECDSA_WITH_NULL_SHA",
+		49159 => "TLS_ECDHE_ECDSA_WITH_RC4_128_SHA",
+		49160 => "TLS_ECDHE_ECDSA_WITH_3DES_EDE_CBC_SHA",
+		49161 => "TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA",
+		49162 => "TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA",
+		49163 => "TLS_ECDH_RSA_WITH_NULL_SHA",
+		49164 => "TLS_ECDH_RSA_WITH_RC4_128_SHA",
+		49165 => "TLS_ECDH_RSA_WITH_3DES_EDE_CBC_SHA",
+		49166 => "TLS_ECDH_RSA_WITH_AES_128_CBC_SHA",
+		49167 => "TLS_ECDH_RSA_WITH_AES_256_CBC_SHA",
+		49168 => "TLS_ECDHE_RSA_WITH_NULL_SHA",
+		49169 => "TLS_ECDHE_RSA_WITH_RC4_128_SHA",
+		49170 => "TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA",
+		49171 => "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA",
+		49172 => "TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA",
+		49173 => "TLS_ECDH_anon_WITH_NULL_SHA",
+		49174 => "TLS_ECDH_anon_WITH_RC4_128_SHA",
+		49175 => "TLS_ECDH_anon_WITH_3DES_EDE_CBC_SHA",
+		49176 => "TLS_ECDH_anon_WITH_AES_128_CBC_SHA",
+		49177 => "TLS_ECDH_anon_WITH_AES_256_CBC_SHA",
+		49178 => "TLS_SRP_SHA_WITH_3DES_EDE_CBC_SHA",
+		49179 => "TLS_SRP_SHA_RSA_WITH_3DES_EDE_CBC_SHA",
+		49180 => "TLS_SRP_SHA_DSS_WITH_3DES_EDE_CBC_SHA",
+		49181 => "TLS_SRP_SHA_WITH_AES_128_CBC_SHA",
+		49182 => "TLS_SRP_SHA_RSA_WITH_AES_128_CBC_SHA",
+		49183 => "TLS_SRP_SHA_DSS_WITH_AES_128_CBC_SHA",
+		49184 => "TLS_SRP_SHA_WITH_AES_256_CBC_SHA",
+		49185 => "TLS_SRP_SHA_RSA_WITH_AES_256_CBC_SHA",
+		49186 => "TLS_SRP_SHA_DSS_WITH_AES_256_CBC_SHA",
+		49187 => "TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256",
+		49188 => "TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384",
+		49189 => "TLS_ECDH_ECDSA_WITH_AES_128_CBC_SHA256",
+		49190 => "TLS_ECDH_ECDSA_WITH_AES_256_CBC_SHA384",
+		49191 => "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256",
+		49192 => "TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384",
+		49193 => "TLS_ECDH_RSA_WITH_AES_128_CBC_SHA256",
+		49194 => "TLS_ECDH_RSA_WITH_AES_256_CBC_SHA384",
+		49195 => "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256",
+		49196 => "TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384",
+		49197 => "TLS_ECDH_ECDSA_WITH_AES_128_GCM_SHA256",
+		49198 => "TLS_ECDH_ECDSA_WITH_AES_256_GCM_SHA384",
+		49199 => "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",
+		49200 => "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384",
+		49201 => "TLS_ECDH_RSA_WITH_AES_128_GCM_SHA256",
+		49202 => "TLS_ECDH_RSA_WITH_AES_256_GCM_SHA384",
+		49203 => "TLS_ECDHE_PSK_WITH_RC4_128_SHA",
+		49204 => "TLS_ECDHE_PSK_WITH_3DES_EDE_CBC_SHA",
+		49205 => "TLS_ECDHE_PSK_WITH_AES_128_CBC_SHA",
+		49206 => "TLS_ECDHE_PSK_WITH_AES_256_CBC_SHA",
+		49207 => "TLS_ECDHE_PSK_WITH_AES_128_CBC_SHA256",
+		49208 => "TLS_ECDHE_PSK_WITH_AES_256_CBC_SHA384",
+		49209 => "TLS_ECDHE_PSK_WITH_NULL_SHA",
+		49210 => "TLS_ECDHE_PSK_WITH_NULL_SHA256",
+		49211 => "TLS_ECDHE_PSK_WITH_NULL_SHA384",
+		49212 => "TLS_RSA_WITH_ARIA_128_CBC_SHA256",
+		49213 => "TLS_RSA_WITH_ARIA_256_CBC_SHA384",
+		49214 => "TLS_DH_DSS_WITH_ARIA_128_CBC_SHA256",
+		49215 => "TLS_DH_DSS_WITH_ARIA_256_CBC_SHA384",
+		49216 => "TLS_DH_RSA_WITH_ARIA_128_CBC_SHA256",
+		49217 => "TLS_DH_RSA_WITH_ARIA_256_CBC_SHA384",
+		49218 => "TLS_DHE_DSS_WITH_ARIA_128_CBC_SHA256",
+		49219 => "TLS_DHE_DSS_WITH_ARIA_256_CBC_SHA384",
+		49220 => "TLS_DHE_RSA_WITH_ARIA_128_CBC_SHA256",
+		49221 => "TLS_DHE_RSA_WITH_ARIA_256_CBC_SHA384",
+		49222 => "TLS_DH_anon_WITH_ARIA_128_CBC_SHA256",
+		49223 => "TLS_DH_anon_WITH_ARIA_256_CBC_SHA384",
+		49224 => "TLS_ECDHE_ECDSA_WITH_ARIA_128_CBC_SHA256",
+		49225 => "TLS_ECDHE_ECDSA_WITH_ARIA_256_CBC_SHA384",
+		49226 => "TLS_ECDH_ECDSA_WITH_ARIA_128_CBC_SHA256",
+		49227 => "TLS_ECDH_ECDSA_WITH_ARIA_256_CBC_SHA384",
+		49228 => "TLS_ECDHE_RSA_WITH_ARIA_128_CBC_SHA256",
+		49229 => "TLS_ECDHE_RSA_WITH_ARIA_256_CBC_SHA384",
+		49230 => "TLS_ECDH_RSA_WITH_ARIA_128_CBC_SHA256",
+		49231 => "TLS_ECDH_RSA_WITH_ARIA_256_CBC_SHA384",
+		49232 => "TLS_RSA_WITH_ARIA_128_GCM_SHA256",
+		49233 => "TLS_RSA_WITH_ARIA_256_GCM_SHA384",
+		49234 => "TLS_DHE_RSA_WITH_ARIA_128_GCM_SHA256",
+		49235 => "TLS_DHE_RSA_WITH_ARIA_256_GCM_SHA384",
+		49236 => "TLS_DH_RSA_WITH_ARIA_128_GCM_SHA256",
+		49237 => "TLS_DH_RSA_WITH_ARIA_256_GCM_SHA384",
+		49238 => "TLS_DHE_DSS_WITH_ARIA_128_GCM_SHA256",
+		49239 => "TLS_DHE_DSS_WITH_ARIA_256_GCM_SHA384",
+		49240 => "TLS_DH_DSS_WITH_ARIA_128_GCM_SHA256",
+		49241 => "TLS_DH_DSS_WITH_ARIA_256_GCM_SHA384",
+		49242 => "TLS_DH_anon_WITH_ARIA_128_GCM_SHA256",
+		49243 => "TLS_DH_anon_WITH_ARIA_256_GCM_SHA384",
+		49244 => "TLS_ECDHE_ECDSA_WITH_ARIA_128_GCM_SHA256",
+		49245 => "TLS_ECDHE_ECDSA_WITH_ARIA_256_GCM_SHA384",
+		49246 => "TLS_ECDH_ECDSA_WITH_ARIA_128_GCM_SHA256",
+		49247 => "TLS_ECDH_ECDSA_WITH_ARIA_256_GCM_SHA384",
+		49248 => "TLS_ECDHE_RSA_WITH_ARIA_128_GCM_SHA256",
+		49249 => "TLS_ECDHE_RSA_WITH_ARIA_256_GCM_SHA384",
+		49250 => "TLS_ECDH_RSA_WITH_ARIA_128_GCM_SHA256",
+		49251 => "TLS_ECDH_RSA_WITH_ARIA_256_GCM_SHA384",
+		49252 => "TLS_PSK_WITH_ARIA_128_CBC_SHA256",
+		49253 => "TLS_PSK_WITH_ARIA_256_CBC_SHA384",
+		49254 => "TLS_DHE_PSK_WITH_ARIA_128_CBC_SHA256",
+		49255 => "TLS_DHE_PSK_WITH_ARIA_256_CBC_SHA384",
+		49256 => "TLS_RSA_PSK_WITH_ARIA_128_CBC_SHA256",
+		49257 => "TLS_RSA_PSK_WITH_ARIA_256_CBC_SHA384",
+		49258 => "TLS_PSK_WITH_ARIA_128_GCM_SHA256",
+		49259 => "TLS_PSK_WITH_ARIA_256_GCM_SHA384",
+		49260 => "TLS_DHE_PSK_WITH_ARIA_128_GCM_SHA256",
+		49261 => "TLS_DHE_PSK_WITH_ARIA_256_GCM_SHA384",
+		49262 => "TLS_RSA_PSK_WITH_ARIA_128_GCM_SHA256",
+		49263 => "TLS_RSA_PSK_WITH_ARIA_256_GCM_SHA384",
+		49264 => "TLS_ECDHE_PSK_WITH_ARIA_128_CBC_SHA256",
+		49265 => "TLS_ECDHE_PSK_WITH_ARIA_256_CBC_SHA384",
+		49266 => "TLS_ECDHE_ECDSA_WITH_CAMELLIA_128_CBC_SHA256",
+		49267 => "TLS_ECDHE_ECDSA_WITH_CAMELLIA_256_CBC_SHA384",
+		49268 => "TLS_ECDH_ECDSA_WITH_CAMELLIA_128_CBC_SHA256",
+		49269 => "TLS_ECDH_ECDSA_WITH_CAMELLIA_256_CBC_SHA384",
+		49270 => "TLS_ECDHE_RSA_WITH_CAMELLIA_128_CBC_SHA256",
+		49271 => "TLS_ECDHE_RSA_WITH_CAMELLIA_256_CBC_SHA384",
+		49272 => "TLS_ECDH_RSA_WITH_CAMELLIA_128_CBC_SHA256",
+		49273 => "TLS_ECDH_RSA_WITH_CAMELLIA_256_CBC_SHA384",
+		49274 => "TLS_RSA_WITH_CAMELLIA_128_GCM_SHA256",
+		49275 => "TLS_RSA_WITH_CAMELLIA_256_GCM_SHA384",
+		49276 => "TLS_DHE_RSA_WITH_CAMELLIA_128_GCM_SHA256",
+		49277 => "TLS_DHE_RSA_WITH_CAMELLIA_256_GCM_SHA384",
+		49278 => "TLS_DH_RSA_WITH_CAMELLIA_128_GCM_SHA256",
+		49279 => "TLS_DH_RSA_WITH_CAMELLIA_256_GCM_SHA384",
+		49280 => "TLS_DHE_DSS_WITH_CAMELLIA_128_GCM_SHA256",
+		49281 => "TLS_DHE_DSS_WITH_CAMELLIA_256_GCM_SHA384",
+		49282 => "TLS_DH_DSS_WITH_CAMELLIA_128_GCM_SHA256",
+		49283 => "TLS_DH_DSS_WITH_CAMELLIA_256_GCM_SHA384",
+		49284 => "TLS_DH_anon_WITH_CAMELLIA_128_GCM_SHA256",
+		49285 => "TLS_DH_anon_WITH_CAMELLIA_256_GCM_SHA384",
+		49286 => "TLS_ECDHE_ECDSA_WITH_CAMELLIA_128_GCM_SHA256",
+		49287 => "TLS_ECDHE_ECDSA_WITH_CAMELLIA_256_GCM_SHA384",
+		49288 => "TLS_ECDH_ECDSA_WITH_CAMELLIA_128_GCM_SHA256",
+		49289 => "TLS_ECDH_ECDSA_WITH_CAMELLIA_256_GCM_SHA384",
+		49290 => "TLS_ECDHE_RSA_WITH_CAMELLIA_128_GCM_SHA256",
+		49291 => "TLS_ECDHE_RSA_WITH_CAMELLIA_256_GCM_SHA384",
+		49292 => "TLS_ECDH_RSA_WITH_CAMELLIA_128_GCM_SHA256",
+		49293 => "TLS_ECDH_RSA_WITH_CAMELLIA_256_GCM_SHA384",
+		49294 => "TLS_PSK_WITH_CAMELLIA_128_GCM_SHA256",
+		49295 => "TLS_PSK_WITH_CAMELLIA_256_GCM_SHA384",
+		49296 => "TLS_DHE_PSK_WITH_CAMELLIA_128_GCM_SHA256",
+		49297 => "TLS_DHE_PSK_WITH_CAMELLIA_256_GCM_SHA384",
+		49298 => "TLS_RSA_PSK_WITH_CAMELLIA_128_GCM_SHA256",
+		49299 => "TLS_RSA_PSK_WITH_CAMELLIA_256_GCM_SHA384",
+		49300 => "TLS_PSK_WITH_CAMELLIA_128_CBC_SHA256",
+		49301 => "TLS_PSK_WITH_CAMELLIA_256_CBC_SHA384",
+		49302 => "TLS_DHE_PSK_WITH_CAMELLIA_128_CBC_SHA256",
+		49303 => "TLS_DHE_PSK_WITH_CAMELLIA_256_CBC_SHA384",
+		49304 => "TLS_RSA_PSK_WITH_CAMELLIA_128_CBC_SHA256",
+		49305 => "TLS_RSA_PSK_WITH_CAMELLIA_256_CBC_SHA384",
+		49306 => "TLS_ECDHE_PSK_WITH_CAMELLIA_128_CBC_SHA256",
+		49307 => "TLS_ECDHE_PSK_WITH_CAMELLIA_256_CBC_SHA384",
+		49308 => "TLS_RSA_WITH_AES_128_CCM",
+		49309 => "TLS_RSA_WITH_AES_256_CCM",
+		49310 => "TLS_DHE_RSA_WITH_AES_128_CCM",
+		49311 => "TLS_DHE_RSA_WITH_AES_256_CCM",
+		49312 => "TLS_RSA_WITH_AES_128_CCM_8",
+		49313 => "TLS_RSA_WITH_AES_256_CCM_8",
+		49314 => "TLS_DHE_RSA_WITH_AES_128_CCM_8",
+		49315 => "TLS_DHE_RSA_WITH_AES_256_CCM_8",
+		49316 => "TLS_PSK_WITH_AES_128_CCM",
+		49317 => "TLS_PSK_WITH_AES_256_CCM",
+		49318 => "TLS_DHE_PSK_WITH_AES_128_CCM",
+		49319 => "TLS_DHE_PSK_WITH_AES_256_CCM",
+		49320 => "TLS_PSK_WITH_AES_128_CCM_8",
+		49321 => "TLS_PSK_WITH_AES_256_CCM_8",
+		49322 => "TLS_PSK_DHE_WITH_AES_128_CCM_8",
+		49323 => "TLS_PSK_DHE_WITH_AES_256_CCM_8",
+		49324 => "TLS_ECDHE_ECDSA_WITH_AES_128_CCM",
+		49325 => "TLS_ECDHE_ECDSA_WITH_AES_256_CCM",
+		49326 => "TLS_ECDHE_ECDSA_WITH_AES_128_CCM_8",
+		49327 => "TLS_ECDHE_ECDSA_WITH_AES_256_CCM_8",
+		52243 => "TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256_OLD",
+		52244 => "TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256_OLD",
+		52245 => "TLS_DHE_RSA_WITH_CHACHA20_POLY1305_SHA256_OLD",
+		52392 => "TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256",
+		52393 => "TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256",
+		52394 => "TLS_DHE_RSA_WITH_CHACHA20_POLY1305_SHA256",
+		52395 => "TLS_PSK_WITH_CHACHA20_POLY1305_SHA256",
+		52396 => "TLS_ECDHE_PSK_WITH_CHACHA20_POLY1305_SHA256",
+		52397 => "TLS_DHE_PSK_WITH_CHACHA20_POLY1305_SHA256",
+		52398 => "TLS_RSA_PSK_WITH_CHACHA20_POLY1305_SHA256",
+		65280 => "TLS_GOSTR341094_RSA_WITH_28147_CNT_MD5",
+		65281 => "TLS_RSA_WITH_28147_CNT_GOST94",
+		65278 => "SSL_RSA_FIPS_WITH_DES_CBC_SHA",
+		65279 => "SSL_RSA_FIPS_WITH_3DES_EDE_CBC_SHA",
+		65248 => "SSL_RSA_FIPS_WITH_3DES_EDE_CBC_SHA",
+		65249 => "SSL_RSA_FIPS_WITH_DES_CBC_SHA",
+		_ => "Reserved (GREASE)",
+	}
+}
+pub fn tls_extension_mapper(code: u16) -> &'static str {
+	match code {
+		0 => "server_name",
+		1 => "max_fragment_length",
+		2 => "client_certificate_url",
+		3 => "trusted_ca_keys",
+		4 => "truncated_hmac",
+		5 => "status_request",
+		6 => "user_mapping",
+		7 => "client_authz",
+		8 => "server_authz",
+		9 => "cert_type",
+		10 => "supported_groups",
+		11 => "ec_point_formats",
+		12 => "srp",
+		13 => "signature_algorithms",
+		14 => "use_srtp",
+		15 => "heartbeat",
+		16 => "application_layer_protocol_negotiation",
+		17 => "status_request_v2",
+		18 => "signed_certificate_timestamp",
+		19 => "client_certificate_type",
+		20 => "server_certificate_type",
+		21 => "padding",
+		22 => "encrypt_then_mac",
+		23 => "extended_master_secret",
+		24 => "token_binding",
+		25 => "cached_info",
+		27 => "compress_certificate",
+		28 => "record_size_limit",
+		34 => "delegated_credentials",
+		35 => "session_ticket",
+		40 => "Reserved (key_share)",
+		41 => "pre_shared_key",
+		42 => "early_data",
+		43 => "supported_versions",
+		44 => "cookie",
+		45 => "psk_key_exchange_modes",
+		46 => "Reserved (ticket_early_data_info)",
+		47 => "certificate_authorities",
+		48 => "oid_filters",
+		49 => "post_handshake_auth",
+		50 => "signature_algorithms_cert",
+		51 => "key_share",
+		52 => "transparency_info",
+		53 => "connection_id (deprecated)",
+		54 => "connection_id",
+		55 => "external_id_hash",
+		56 => "external_session_id",
+		57 => "quic_transport_parameters",
+		58 => "ticket_request",
+		59 => "dnssec_chain",
+		2570 => "Reserved (GREASE)",
+		6682 => "Reserved (GREASE)",
+		10794 => "Reserved (GREASE)",
+		13172 => "next_protocol_negotiation",
+		14906 => "Reserved (GREASE)",
+		17513 => "application_settings",
+		19018 => "Reserved (GREASE)",
+		23130 => "Reserved (GREASE)",
+		27242 => "Reserved (GREASE)",
+		30031 => "channel_id_old",
+		30032 => "channel_id",
+		31354 => "Reserved (GREASE)",
+		35466 => "Reserved (GREASE)",
+		39578 => "Reserved (GREASE)",
+		43690 => "Reserved (GREASE)",
+		47802 => "Reserved (GREASE)",
+		51914 => "Reserved (GREASE)",
+		56026 => "Reserved (GREASE)",
+		60138 => "Reserved (GREASE)",
+		64250 => "Reserved (GREASE)",
+		65037 => "encrypted_client_hello",
+		65281 => "renegotiation_info",
+		65445 => "quic_transport_parameters (drafts version)",
+		65486 => "encrypted_server_name",
+		_ => "Unknown",
+	}
+}
+pub fn nbns_type_mapper(code: u16) -> &'static str {
+	match code {
+		1 => "A",
+		2 => "NS",
+		10 => "NULL",
+		32 => "NB",
+		33 => "NBSTAT",
+		_ => "Unknown",
+	}
+}
+pub fn oid_map_mapper(code: &str) -> &'static str {
+	match code {
+		"2.6.5.2.4" => "id-at-mhs-dl-submit-permissions",
+		"2.6.5.2.13" => "id-at-mhs-dl-policy",
+		"2.6.5.2.16" => "id-at-mhs-or-addresses-with-capabilities",
+		"2.6.5.2.19" => "id-at-mhs-deliverable-classes",
+		"2.16.840.1.101.2.1.5.14" => "id-at-alid",
+		"2.16.840.1.101.2.1.5.20" => "id-at-janUKMs",
+		"2.16.840.1.101.2.1.5.21" => "id-at-febUKMs",
+		"2.16.840.1.101.2.1.5.22" => "id-at-marUKMs",
+		"2.16.840.1.101.2.1.5.23" => "id-at-aprUKMs",
+		"2.16.840.1.101.2.1.5.24" => "id-at-mayUKMs",
+		"2.16.840.1.101.2.1.5.25" => "id-at-junUKMs",
+		"2.16.840.1.101.2.1.5.26" => "id-at-julUKMs",
+		"2.16.840.1.101.2.1.5.27" => "id-at-augUKMs",
+		"2.16.840.1.101.2.1.5.28" => "id-at-sepUKMs",
+		"2.16.840.1.101.2.1.5.29" => "id-at-octUKMs",
+		"2.16.840.1.101.2.1.5.30" => "id-at-novUKMs",
+		"2.16.840.1.101.2.1.5.31" => "id-at-decUKMs",
+		"2.16.840.1.101.2.2.1.46" => "id-at-actionAddressees",
+		"2.16.840.1.101.2.2.1.47" => "id-at-additionalAddressees",
+		"2.16.840.1.101.2.2.1.48" => "id-at-additionalSecondPartyAddressees",
+		"2.16.840.1.101.2.2.1.50" => "id-at-allowableOriginators",
+		"2.16.840.1.101.2.2.1.52" => "id-at-community",
+		"2.16.840.1.101.2.2.1.56" => "id-at-entryClassification",
+		"2.16.840.1.101.2.2.1.59" => "id-at-infoAddressees",
+		"2.16.840.1.101.2.2.1.67" => "id-at-nameClassification",
+		"2.16.840.1.101.2.2.1.71" => "id-at-plaAddressees",
+		"2.16.840.1.101.2.2.1.76" => "id-at-remarks",
+		"2.16.840.1.101.2.2.1.78" => "id-at-rIClassification",
+		"2.16.840.1.101.2.2.1.79" => "id-at-rIInfo",
+		"2.16.840.1.101.2.2.1.80" => "id-at-secondPartyAddressees",
+		"2.16.840.1.101.2.2.1.104" => "id-at-distributionCodeAction",
+		"2.16.840.1.101.2.2.1.105" => "id-at-distributionCodeInfo",
+		"2.16.840.1.101.2.2.1.108" => "id-at-aCPPreferredDelivery",
+		"2.16.840.1.101.2.2.1.112" => "id-at-aLType",
+		"2.16.840.1.101.2.2.1.123" => "id-at-onSupported",
+		"2.16.840.1.101.2.2.1.135" => "id-at-aLReceiptPolicy",
+		"2.16.840.1.101.2.2.1.142" => "id-at-aCPLegacyFormat",
+		"2.16.840.1.101.2.2.1.146" => "id-at-aCPNetwAccessSchemaEdB",
+		"2.16.840.1.101.2.2.1.147" => "id-at-aCPNetworkSchemaEdB",
+		"2.16.840.1.101.2.2.1.162" => "id-at-maxMessageSize",
+		"2.16.840.1.101.2.2.1.163" => "id-at-msgProtocolInfoCapability",
+		"2.16.840.1.101.2.2.1.164" => "id-at-active",
+		"2.16.840.1.101.2.2.1.165" => "id-at-emConCapability",
+		"2.16.840.1.101.2.2.1.166" => "id-at-emConState",
+		"2.16.840.1.101.2.2.1.167" => "id-at-webAccessCapability",
+		"2.16.840.1.101.2.2.1.168" => "id-at-distributionExemptAction",
+		"2.16.840.1.101.2.2.1.169" => "id-at-distributionExemptInfo",
+		"2.16.840.1.101.2.2.1.170" => "id-at-distributionKeywordAction",
+		"2.16.840.1.101.2.2.1.171" => "id-at-distributionKeywordInfo",
+		"2.16.840.1.101.2.2.1.189" => "id-at-aCPNoAttachments",
+		"0.4.0.0.1.1.5.2" => "id-CAP-GPRS-ReferenceNumber",
+		"0.4.0.0.1.1.2.2" => "id-CAP-U-ABORT-Reason",
+		"1.3.6.1.4.1.46609.1.2" => "CBRS_PAL_ZONE",
+		"1.3.6.1.4.1.46609.1.3" => "CBRS_PAL_FREQUENCY",
+		"1.3.6.1.4.1.46609.1.4" => "CBRS_CBSD_FCCID",
+		"1.3.6.1.4.1.46609.1.5" => "CBRS_CBSD_SERIAL",
+		"1.3.6.1.4.1.46609.1.6" => "CBRS_SAS/OPERATOR_administrator_FRN",
+		"1.3.6.1.4.1.46609.1.7" => "CBRS_installer_CPIR-ID",
+		"1.3.6.1.4.1.46609.1.8" => "CBRS_TEST",
+		"1.3.26.0.4406.0.4.2" => "cdt",
+		"2.9.2.21.7.13" => "BaseManagedObjectId(13)",
+		"2.9.3.2.7.1" => "discriminatorId(1)",
+		"2.9.3.2.7.2" => "logId(2)",
+		"2.9.3.2.7.3" => "logRecordId(3)",
+		"2.9.3.2.7.4" => "systemId(4)",
+		"2.9.3.2.7.5" => "systemTitle(5)",
+		"2.9.3.2.7.6" => "additionalInformation(6)",
+		"2.9.3.2.7.7" => "additionalText(7)",
+		"2.9.3.2.7.8" => "attributeIdentifierList(8)",
+		"2.9.3.2.7.9" => "attributeList(9)",
+		"2.9.3.2.7.10" => "attributeValueChangeDefinition(10)",
+		"2.9.3.2.7.11" => "backedUpStatus(11)",
+		"2.9.3.2.7.12" => "correlatedNotifications(12)",
+		"2.9.3.2.7.13" => "eventTime(13)",
+		"2.9.3.2.7.14" => "eventType(14)",
+		"2.9.3.2.7.15" => "monitoredAttributes(15)",
+		"2.9.3.2.7.16" => "notificationIdentifier(16)",
+		"2.9.3.2.7.17" => "perceivedSeverity(17)",
+		"2.9.3.2.7.18" => "probableCause(18)",
+		"2.9.3.2.7.19" => "proposedRepairActions(19)",
+		"2.9.3.2.7.20" => "relationshipChangeDefinition(20)",
+		"2.9.3.2.7.21" => "securityAlarmCause(21)",
+		"2.9.3.2.7.22" => "securityAlarmDetector(22)",
+		"2.9.3.2.7.23" => "securityAlarmSeverity(23)",
+		"2.9.3.2.7.24" => "serviceProvider(24)",
+		"2.9.3.2.7.25" => "serviceUser(25)",
+		"2.9.3.2.7.26" => "sourceIndicator(26)",
+		"2.9.3.2.7.27" => "specificProblems(27)",
+		"2.9.3.2.7.28" => "stateChangeDefinition(28)",
+		"2.9.3.2.7.29" => "thresholdInfo(29)",
+		"2.9.3.2.7.30" => "trendIndication(30)",
+		"2.9.3.2.7.31" => "administrativeState(31)",
+		"2.9.3.2.7.32" => "alarmStatus(32)",
+		"2.9.3.2.7.33" => "availabilityStatus(33)",
+		"2.9.3.2.7.34" => "controlStatus(34)",
+		"2.9.3.2.7.35" => "operationalState(35)",
+		"2.9.3.2.7.36" => "proceduralStatus(36)",
+		"2.9.3.2.7.37" => "standbyStatus(37)",
+		"2.9.3.2.7.38" => "unknownStatus(38)",
+		"2.9.3.2.7.39" => "usageState(39)",
+		"2.9.3.2.7.40" => "backUpObject(40)",
+		"2.9.3.2.7.41" => "backedUpObject(41)",
+		"2.9.3.2.7.42" => "member(42)",
+		"2.9.3.2.7.43" => "owner(43)",
+		"2.9.3.2.7.44" => "peer(44)",
+		"2.9.3.2.7.45" => "primary(45)",
+		"2.9.3.2.7.46" => "providerObject(46)",
+		"2.9.3.2.7.47" => "secondary(47)",
+		"2.9.3.2.7.48" => "userObject(48)",
+		"2.9.3.2.7.49" => "activeDestination(49)",
+		"2.9.3.2.7.50" => "allomorphs(50)",
+		"2.9.3.2.7.51" => "backUpDestinationList(51)",
+		"2.9.3.2.7.52" => "capacityAlarmThreshold(52)",
+		"2.9.3.2.7.53" => "confirmedMode(53)",
+		"2.9.3.2.7.54" => "currentLogSize(54)",
+		"2.9.3.2.7.55" => "destination(55)",
+		"2.9.3.2.7.56" => "discriminatorConstruct(56)",
+		"2.9.3.2.7.57" => "intervalsOfDay(57)",
+		"2.9.3.2.7.58" => "logFullAction(58)",
+		"2.9.3.2.7.59" => "loggingTime(59)",
+		"2.9.3.2.7.62" => "maxLogSize(62)",
+		"2.9.3.2.7.63" => "nameBinding(63)",
+		"2.9.3.2.7.64" => "numberOfRecords(64)",
+		"2.9.3.2.7.65" => "objectClass(65)",
+		"2.9.3.2.7.66" => "packages(66)",
+		"2.9.3.2.7.68" => "startTime(68)",
+		"2.9.3.2.7.69" => "stopTime(69)",
+		"2.9.3.2.7.70" => "supportedFeatures(70)",
+		"2.9.3.2.7.71" => "weekMask(71)",
+		"2.9.3.2.7.115" => "lifecycleState(115)",
+		"1.2.840.113533.7.66.13" => "PasswordBasedMac",
+		"1.2.640.113533.7.66.30" => "id-DHBasedMac",
+		"1.3.6.1.5.5.7.4.1" => "id-it-caProtEncCert",
+		"1.3.6.1.5.5.7.4.2" => "id-it-signKeyPairTypes",
+		"1.3.6.1.5.5.7.4.3" => "id-it-encKeyPairTypes",
+		"1.3.6.1.5.5.7.4.4" => "id-it-preferredSymmAlg",
+		"1.3.6.1.5.5.7.4.5" => "id-it-caKeyUpdateInfo",
+		"1.3.6.1.5.5.7.4.6" => "id-it-currentCRL",
+		"1.3.6.1.5.5.7.4.7" => "id-it-unsupportedOIDs",
+		"1.3.6.1.5.5.7.4.10" => "id-it-keyPairParamReq",
+		"1.3.6.1.5.5.7.4.11" => "id-it-keyPairParamRep",
+		"1.3.6.1.5.5.7.4.12" => "id-it-revPassphrase",
+		"1.3.6.1.5.5.7.4.13" => "id-it-implicitConfirm",
+		"1.3.6.1.5.5.7.4.14" => "id-it-confirmWaitTime",
+		"1.3.6.1.5.5.7.4.15" => "id-it-origPKIMessage",
+		"1.3.6.1.5.5.7.4.16" => "id-it-suppLangTags",
+		"1.2.840.113549.1.9.16.1.6" => "id-ct-contentInfo",
+		"1.2.840.113549.1.7.2" => "id-signedData",
+		"1.2.840.113549.1.7.3" => "id-envelopedData",
+		"1.2.840.113549.1.7.5" => "id-digestedData",
+		"1.2.840.113549.1.7.6" => "id-encryptedData",
+		"1.2.840.113549.1.9.16.1.2" => "id-ct-authenticatedData",
+		"1.2.840.113549.1.9.16.1.9" => "id-ct-compressedData",
+		"1.2.840.113549.1.9.16.1.23" => "id-ct-authEnvelopedData",
+		"1.2.840.113549.1.9.3" => "id-contentType",
+		"1.2.840.113549.1.9.4" => "id-messageDigest",
+		"1.2.840.113549.1.9.5" => "id-signingTime",
+		"1.2.840.113549.1.9.6" => "id-counterSignature",
+		"2.6.1.4.18" => "id-et-pkcs7",
+		"1.3.6.1.4.1.311.16.4" => "ms-oe-encryption-key-preference",
+		"1.2.840.113549.1.9.15" => "id-smime-capabilities",
+		"1.2.840.113549.1.9.16.2.11" => "id-encryption-key-preference",
+		"1.2.840.113549.3.4" => "id-alg-rc4",
+		"0.4.0.127.0.7.1.1.5.1.1.3" => "ecka-eg-X963KDF-SHA256",
+		"0.4.0.127.0.7.1.1.5.1.1.4" => "ecka-eg-X963KDF-SHA384",
+		"0.4.0.127.0.7.1.1.5.1.1.5" => "ecka-eg-X963KDF-SHA512",
+		"2.16.840.1.101.3.4.1.5" => "id-aes128-wrap",
+		"2.16.840.1.101.3.4.1.25" => "id-aes192-wrap",
+		"2.16.840.1.101.3.4.1.45" => "id-aes256-wrap",
+		"2.16.840.1.101.3.4.1.6" => "id-aes128-GCM",
+		"2.16.840.1.101.3.4.1.26" => "id-aes192-GCM",
+		"2.16.840.1.101.3.4.1.46" => "id-aes256-GCM",
+		"2.16.840.1.101.3.4.1.7" => "id-aes128-CCM",
+		"2.16.840.1.101.3.4.1.27" => "id-aes192-CCM",
+		"2.16.840.1.101.3.4.1.44" => "id-aes256-CFB",
+		"1.3.133.16.840.63.0.2" => "dhSinglePass-stdDH-sha1kdf-scheme",
+		"1.3.132.1.11.0" => "dhSinglePass-stdDH-sha224kdf-scheme",
+		"1.3.132.1.11.1" => "dhSinglePass-stdDH-sha256kdf-scheme",
+		"1.3.132.1.11.2" => "dhSinglePass-stdDH-sha384kdf-scheme",
+		"1.3.132.1.11.3" => "dhSinglePass-stdDH-sha512kdf-scheme",
+		"1.3.133.16.840.63.0.3" => "dhSinglePass-cofactorDH-sha1kdf-scheme",
+		"1.3.132.1.14.0" => "dhSinglePass-cofactorDH-sha224kdf-scheme",
+		"1.3.132.1.14.1" => "dhSinglePass-cofactorDH-sha256kdf-scheme",
+		"1.3.132.1.14.2" => "dhSinglePass-cofactorDH-sha384kdf-scheme",
+		"1.3.132.1.14.3" => "dhSinglePass-cofactorDH-sha512kdf-scheme",
+		"1.3.133.16.840.63.0.16" => "mqvSinglePass-sha1kdf-scheme",
+		"1.3.132.1.15.0" => "mqvSinglePass-sha224kdf-scheme",
+		"1.3.132.1.15.1" => "mqvSinglePass-sha256kdf-scheme",
+		"1.3.132.1.15.2" => "mqvSinglePass-sha384kdf-scheme",
+		"1.3.132.1.15.3" => "mqvSinglePass-sha512kdf-scheme",
+		"1.2.840.113549.1.9.16.3.7" => "id-alg-CMSRC2-wrap",
+		"1.2.840.113549.3.7" => "des-ede3-cbc",
+		"1.2.840.113549.3.2" => "rc2-cbc",
+		"2.16.840.1.113730.3.1.40" => "userSMIMECertificate",
+		"1.2.840.113549.1.9.16.1.16" => "id-ct-firmwarePackage",
+		"1.2.840.113549.1.9.16.2.35" => "id-aa-firmwarePackageID",
+		"1.2.840.113549.1.9.16.2.36" => "id-aa-targetHardwareIDs",
+		"1.2.840.113549.1.9.16.2.37" => "id-aa-decryptKeyID",
+		"1.2.840.113549.1.9.16.2.38" => "id-aa-implCryptoAlgs",
+		"1.2.840.113549.1.9.16.2.43" => "id-aa-implCompressAlgs",
+		"1.2.840.113549.1.9.16.2.40" => "id-aa-communityIdentifiers",
+		"1.2.840.113549.1.9.16.2.42" => "id-aa-firmwarePackageInfo",
+		"1.2.840.113549.1.9.16.2.39" => "id-aa-wrappedFirmwareKey",
+		"1.2.840.113549.1.9.16.1.17" => "id-ct-firmwareLoadReceipt",
+		"1.2.840.113549.1.9.16.1.18" => "id-ct-firmwareLoadError",
+		"1.3.6.1.5.5.7.8.4" => "id-on-hardwareModuleName",
+		"1.2.840.113549.1.9.16.2.41" => "id-aa-fwPkgMessageDigest",
+		"1.2.840.113549.1.9.16.3.6" => "id-alg-CMS3DESwrap",
+		"1.2.840.113549.1.9.16.1.21" => "id-ct-encKeyWithID",
+		"1.3.6.1.5.5.7.5.1.1" => "id-regCtrl-regToken",
+		"1.3.6.1.5.5.7.5.1.2" => "id-regCtrl-authenticator",
+		"1.3.6.1.5.5.7.5.1.3" => "id-regCtrl-pkiPublicationInfo",
+		"1.3.6.1.5.5.7.5.1.4" => "id-regCtrl-pkiArchiveOptions",
+		"1.3.6.1.5.5.7.5.1.5" => "id-regCtrl-oldCertID",
+		"1.3.6.1.5.5.7.5.1.6" => "id-regCtrl-protocolEncrKey",
+		"1.3.6.1.5.5.7.5.2.1" => "id-regInfo-utf8Pairs",
+		"1.3.6.1.5.5.7.5.2.2" => "id-regInfo-certReq",
+		"2.5.24.4" => "id-aca-prescriptiveACI",
+		"2.5.24.5" => "id-aca-entryACI",
+		"2.5.24.6" => "id-aca-subentryACI",
+		"2.5.12.0" => "id-doa-dseType",
+		"2.5.12.5" => "id-doa-supplierKnowledge",
+		"2.5.12.6" => "id-doa-consumerKnowledge",
+		"2.5.12.7" => "id-doa-secondaryShadows",
+		"2.5.12.1" => "id-doa-myAccessPoint",
+		"2.5.12.2" => "id-doa-superiorKnowledge",
+		"2.5.12.3" => "id-doa-specificKnowledge",
+		"2.5.12.4" => "id-doa-nonSpecificKnowledge",
+		"2.5.12.8" => "id-doa-ditBridgeKnowledge",
+		"1.2.840.113549.1.9.16.2.1" => "id-aa-receiptRequest",
+		"1.2.840.113549.1.9.16.2.7" => "id-aa-contentIdentifier",
+		"1.2.840.113549.1.9.16.1.1" => "id-ct-receipt",
+		"1.2.840.113549.1.9.16.2.4" => "id-aa-contentHint",
+		"1.2.840.113549.1.9.16.2.5" => "id-aa-msgSigDigest",
+		"1.2.840.113549.1.9.16.2.10" => "id-aa-contentReference",
+		"1.2.840.113549.1.9.16.2.2" => "id-aa-securityLabel",
+		"1.2.840.113549.1.9.16.2.9" => "id-aa-equivalentLabels",
+		"1.2.840.113549.1.9.16.2.3" => "id-aa-mlExpandHistory",
+		"1.2.840.113549.1.9.16.2.12" => "id-aa-signingCertificate",
+		"1.2.840.113549.1.9.16.2.47" => "id-aa-signingCertificateV2",
+		"2.16.840.1.101.2.1.8.3.0" => "id-restrictiveAttributes",
+		"2.16.840.1.101.2.1.8.3.1" => "id-enumeratedPermissiveAttributes",
+		"2.16.840.1.101.2.1.8.3.2" => "id-permissiveAttributes",
+		"2.16.840.1.101.2.1.8.3.3" => "id-informativeAttributes",
+		"2.16.840.1.101.2.1.8.3.4" => "id-enumeratedRestrictiveAttributes",
+		"1.0.8571.1.1" => "iso-ftam(1)",
+		"1.0.8571.2.1" => "ftam-pci(1)",
+		"1.3.14.5.2.2" => "NIST file directory entry abstract syntax",
+		"1.0.8571.5.1" => "ISO FTAM unstructured text",
+		"1.0.8571.5.3" => "ISO FTAM unstructured binary",
+		"1.3.12.2.1006.53.2.1.3" => "alcatel-E10-MAP-extension-PlmnContainer",
+		"0.34.0" => "Nokia ISD Extension",
+		"0.34.1" => "Nokia Dsd Extension",
+		"0.34.2" => "Nokia Location Update Extension",
+		"0.34.4" => "Nokia SS Data Extension",
+		"0.34.5" => "Nokia SRI Request Extension",
+		"0.34.6" => "Nokia ExtraSignalInfo Extension",
+		"0.34.7" => "Nokia SRI Response Extension",
+		"0.34.10" => "Nokia Cancel Location Extension",
+		"0.34.11" => "Nokia ATM Extension",
+		"0.34.12" => "Nokia DTM Extension",
+		"0.34.13" => "Nokia NumberPorted Extension",
+		"0.34.15" => "Nokia HandOver Extension",
+		"0.34.16" => "Nokia ATMres Extension",
+		"0.34.17" => "Nokia AbsentSubscriber Extension",
+		"0.34.18" => "Nokia SriForSM Extension",
+		"0.34.19" => "Nokia ReportSMDelStatt Extension",
+		"0.34.20" => "Nokia Udl Extension",
+		"0.34.21" => "Nokia RoamNotAllowed Extension",
+		"0.34.22" => "Nokia MO-ForwardSM Extension",
+		"0.34.23" => "Nokia ErrOlcmInfoTable Extension",
+		"0.34.25" => "Nokia Routing Category Extension",
+		"0.34.26" => "Nokia AnyTimeMod Extension",
+		"1.3.12.2.1107.3.66.1.1" => "Nokia AccessTypeExt Extension",
+		"1.3.12.2.1107.3.66.1.3" => "Nokia AccessSubscriptionListExt Extension",
+		"1.3.12.2.1107.3.66.1.6" => "Nokia AllowedServiceData Extension",
+		"1.2.826.0.1249.58.1.0" => "Ericsson ExtensionType Extension",
+		"0.4.0.1.1.1.0.0" => "cs1-ssp-to-scp",
+		"1.2.840.113556.1.4.319" => "LDAP_PAGED_RESULT_OID_STRING",
+		"1.2.840.113556.1.4.473" => "LDAP_SERVER_SORT_OID",
+		"1.2.840.113556.1.4.474" => "LDAP_SERVER_RESP_SORT_OID",
+		"1.2.840.113556.1.4.841" => "LDAP_SERVER_DIRSYNC_OID",
+		"1.3.6.1.4.1.4203.1.11.1" => "passwdModifyOID",
+		"1.3.6.1.1.8" => "cancelRequestOID",
+		"1.3.6.1.4.1.4203.1.9.1.1" => "syncRequestOID",
+		"1.3.6.1.4.1.4203.1.9.1.2" => "syncStateOID",
+		"1.3.6.1.4.1.4203.1.9.1.3" => "syncDoneOID",
+		"1.3.6.1.4.1.4203.1.9.1.4" => "syncInfoOID",
+		"1.3.6.1.4.1.42.2.27.8.5.1" => "passwordPolicy",
+		"1.3.6.1.5.5.7.1.12" => "id-pe-logotype",
+		"1.3.6.1.5.5.7.20.1" => "id-pe-logo-loyalty",
+		"1.3.6.1.5.5.7.20.2" => "id-pe-logo-background",
+		"1.0.9506.2.3" => "MMS",
+		"1.0.9506.2.1" => "mms-abstract-syntax-version1(1)",
+		"1.3.6.1.5.5.7.1.25" => "id-pe-mud-url",
+		"2.16.840.1.101.3.4.1.2" => "id-aes128-CBC",
+		"2.16.840.1.101.3.4.1.3" => "id-aes128-OFB",
+		"2.16.840.1.101.3.4.1.4" => "id-aes128-CFB",
+		"2.16.840.1.101.3.4.1.22" => "id-aes192-CBC",
+		"2.16.840.1.101.3.4.1.23" => "id-aes192-OFB",
+		"2.16.840.1.101.3.4.1.24" => "id-aes192-CFB",
+		"2.16.840.1.101.3.4.1.42" => "id-aes256-CBC",
+		"2.16.840.1.101.3.4.1.43" => "id-aes256-OFB",
+		"2.16.840.1.101.3.4.2.17" => "id-shake128-len",
+		"2.16.840.1.101.3.4.2.18" => "id-shake256-len",
+		"2.16.840.1.113719.1.9.4.1" => "pa-sa",
+		"2.16.840.1.113719.1.9.4.2" => "pa-rl",
+		"2.16.840.1.113730.1.1" => "ns_cert_exts.cert_type",
+		"2.16.840.1.113730.1.2" => "ns_cert_exts.base_url",
+		"2.16.840.1.113730.1.3" => "ns_cert_exts.revocation-url",
+		"2.16.840.1.113730.1.4" => "ns_cert_exts.ca-revocation-url",
+		"2.16.840.1.113730.1.7" => "ns_cert_exts.cert-renewal-url",
+		"2.16.840.1.113730.1.8" => "ns_cert_exts.ca-policy-url",
+		"2.16.840.1.113730.1.12" => "ns_cert_exts.ssl-server-name",
+		"2.16.840.1.113730.1.13" => "ns_cert_exts.comment",
+		"1.3.6.1.5.5.7.48.1.1" => "id-pkix-ocsp-basic",
+		"1.3.6.1.5.5.7.48.1.2" => "id-pkix-ocsp-nonce",
+		"1.3.6.1.5.5.7.48.1.3" => "id-pkix-ocsp-crl",
+		"1.3.6.1.5.5.7.48.1.4" => "id-pkix-ocsp-response",
+		"1.3.6.1.5.5.7.48.1.5" => "id-pkix-ocsp-nocheck",
+		"1.3.6.1.5.5.7.48.1.6" => "id-pkix-ocsp-archive-cutoff",
+		"1.3.6.1.5.5.7.48.1.7" => "id-pkix-ocsp-service-locator",
+		"2.6.5.2.0" => "id-at-mhs-maximum-content-length",
+		"2.6.5.2.1" => "id-at-mhs-deliverable-content-types",
+		"2.6.5.2.2" => "id-at-mhs-exclusively-acceptable-eits",
+		"2.6.5.2.3" => "id-at-mhs-dl-members",
+		"2.6.5.2.6" => "id-at-mhs-or-addresses",
+		"2.6.5.2.9" => "id-at-mhs-supported-content-types",
+		"2.6.5.2.12" => "id-at-mhs-dl-archive-service",
+		"2.6.5.2.15" => "id-at-mhs-dl-subscription-service",
+		"2.6.5.2.17" => "id-at-mhs-acceptable-eits",
+		"2.6.5.2.18" => "id-at-mhs-unacceptable-eits",
+		"2.16.840.1.101.2.1.5.47" => "id-at-aLExemptedAddressProcessor",
+		"2.16.840.1.101.2.2.1.134.1" => "id-at-collective-mhs-or-addresses",
+		"2.6.4.3.80" => "id-att-certificate-selectors",
+		"2.6.4.3.1" => "id-att-content",
+		"2.6.4.3.3" => "id-att-content-correlator",
+		"2.6.4.3.4" => "id-att-content-identifier",
+		"2.6.4.3.5" => "id-att-content-inetgrity-check",
+		"2.6.4.3.6" => "id-att-content-length",
+		"2.6.4.3.8" => "id-att-content-type",
+		"2.6.4.3.9" => "id-att-conversion-with-loss-prohibited",
+		"2.6.4.3.51" => "id-att-deferred-delivery-time",
+		"2.6.4.3.13" => "id-att-delivery-flags",
+		"2.6.4.3.78" => "id-att-dl-exempted-recipients",
+		"2.6.4.3.14" => "id-att-dl-expansion-history",
+		"2.6.4.3.53" => "id-att-dl-expansion-prohibited",
+		"2.6.4.3.54" => "id-att-internal-trace-information",
+		"2.6.4.3.55" => "id-att-latest-delivery-time",
+		"2.6.4.3.18" => "id-att-message-delivery-envelope",
+		"2.6.4.3.20" => "id-att-message-delivery-time",
+		"2.6.4.3.19" => "id-att-message-identifier",
+		"2.6.4.3.21" => "id-at-message-orgin-authentication-check",
+		"2.6.4.3.22" => "id-att-message-security-label",
+		"2.6.4.3.59" => "id-att-message-submission-envelope",
+		"2.6.4.3.23" => "id-att-message-submission-time",
+		"2.6.4.3.24" => "id-att-message-token",
+		"2.6.4.3.81" => "id-att-multiple-originator-certificates",
+		"2.6.4.3.17" => "id-att-originally-intended-recipient-name",
+		"2.6.4.3.62" => "id-att-originating-MTA-certificate",
+		"2.6.4.3.26" => "id-att-originator-certificate",
+		"2.6.4.3.27" => "id-att-originator-name",
+		"2.6.4.3.63" => "id-att-originator-report-request",
+		"2.6.4.3.64" => "id-att-originator-return-address",
+		"2.6.4.3.28" => "id-att-other-recipient-names",
+		"2.6.4.3.65" => "id-att-per-message-indicators",
+		"2.6.4.3.66" => "id-att-per-recipient-message-submission-fields",
+		"2.6.4.3.67" => "id-att-per-recipient-probe-submission-fields",
+		"2.6.4.3.30" => "id-att-per-recipient-report-delivery-fields",
+		"2.6.4.3.31" => "id-att-priority",
+		"2.6.4.3.68" => "id-att-probe-origin-authentication-check",
+		"2.6.4.3.69" => "id-att-probe-submission-envelope",
+		"2.6.4.3.32" => "id-att-proof-of-delivery-request",
+		"2.6.4.3.70" => "id-att-proof-of-submission",
+		"2.6.4.3.82" => "id-att-recipient-certificate",
+		"2.6.4.3.71" => "id-att-recipient-names",
+		"2.6.4.3.72" => "id-att-recipient-reassignment-prohibited",
+		"2.6.4.3.33" => "id-at-redirection-history",
+		"2.6.4.3.34" => "id-att-report-delivery-envelope",
+		"2.6.4.3.35" => "id-att-reporting-DL-name",
+		"2.6.4.3.36" => "id-att-reporting-MTA-certificate",
+		"2.6.4.3.37" => "id-att-report-origin-authentication-check",
+		"2.6.4.3.38" => "id-att-security-classification",
+		"2.6.4.3.40" => "id-att-subject-submission-identifier",
+		"2.6.4.3.41" => "id-att-this-recipient-name",
+		"2.6.4.3.75" => "id-att-trace-information",
+		"2.6.1.7.36" => "id-hat-forwarded-token",
+		"2.6.3.6.0" => "id-tok-asymmetricToken",
+		"2.6.5.6.0" => "id-on-mtaName",
+		"2.6.4.3.42" => "id-att-ac-correlated-report-list",
+		"2.6.4.3.76" => "id-att-ac-report-subject-entry",
+		"2.6.4.3.43" => "id-att-ac-report-summary",
+		"2.6.4.3.44" => "id-att-ac-uncorrelated-report-list",
+		"2.6.4.3.46" => "id-att-auto-action-error",
+		"2.6.4.3.48" => "id-att-auto-action-subject-entry",
+		"2.6.4.3.49" => "id-att-auto-action-type",
+		"2.6.4.3.0" => "id-att-child-sequence-numbers",
+		"2.6.4.3.10" => "id-att-converted-EITs",
+		"2.6.4.3.11" => "id-att-creation-time",
+		"2.6.4.3.50" => "id-att-deferred-delivery-cancellation-time",
+		"2.6.4.3.52" => "id-att-deletion-time",
+		"2.6.4.3.12" => "id-att-delivered-EITs",
+		"2.6.4.3.16" => "id-att-entry-type",
+		"2.6.4.3.57" => "id-att-message-group-name",
+		"2.6.4.3.61" => "id-att-ms-submission-error",
+		"2.6.4.3.25" => "id-att-original-EITs",
+		"2.6.4.3.29" => "id-att-parent-sequence-number",
+		"2.6.4.3.15" => "id-att-retrieval-status",
+		"2.6.4.3.39" => "id-att-sequence-number",
+		"2.6.4.3.79" => "id-att-signature-verification-status",
+		"2.6.4.3.73" => "id-att-storage-period",
+		"2.6.4.3.74" => "id-att-storage-time",
+		"2.6.4.9.5" => "id-ext-protected-change-credentials-capability",
+		"2.6.4.9.3" => "id-ext-originator-token",
+		"2.6.4.9.4" => "id-ext-protected-change-credentials",
+		"2.6.1.19.0" => "id-on-absence-advice",
+		"2.6.1.19.1" => "id-on-change-of-address-advice",
+		"2.6.1.17.2" => "id-mst-assembly-instructions",
+		"2.6.1.5.0" => "id-hex-incomplete-copy",
+		"2.6.1.5.1" => "id-hex-languages",
+		"2.6.1.5.2" => "id-hex-auto-submitted",
+		"2.6.1.5.3" => "id-hex-body-part-signatures",
+		"2.6.1.5.4" => "id-hex-ipm-security-label",
+		"2.6.1.5.5" => "id-hex-authorization-time",
+		"2.6.1.5.6" => "id-hex-circulation-list-recipients",
+		"2.6.1.20.0" => "id-rex-circulation-list-indicator",
+		"2.6.1.5.7" => "id-hex-distribution-codes",
+		"2.6.1.5.8" => "id-hex-extended-subject",
+		"2.6.1.5.9" => "id-hex-information-categories",
+		"2.6.1.5.10" => "id-hex-manual-handling-instructions",
+		"2.6.1.5.11" => "id-hex-originators-reference",
+		"2.6.1.5.12" => "id-hex-precedence-policy-id",
+		"2.6.1.20.1" => "id-rex-precedence",
+		"2.6.1.4.0" => "id-et-ia5-text",
+		"2.6.1.11.0" => "id-ep-ia5-text",
+		"2.6.1.4.2" => "id-et-g3-facsimile",
+		"2.6.1.11.2" => "id-ep-g3-facsimile",
+		"2.6.1.4.3" => "id-et-g4-class1",
+		"2.6.1.4.4" => "id-et-teletex",
+		"2.6.1.11.4" => "id-ep-teletex",
+		"2.6.1.4.5" => "id-et-videotex",
+		"2.6.1.11.5" => "id-ep-videotex",
+		"2.6.1.4.6" => "id-et-encrypted",
+		"2.6.1.11.6" => "id-ep-encrypted",
+		"2.6.1.4.7" => "id-et-message",
+		"2.6.1.11.7" => "id-ep-message",
+		"2.6.1.4.8" => "id-et-mixed-mode",
+		"2.6.1.4.9" => "id-et-bilaterally-defined",
+		"2.6.1.11.11" => "id-ep-general-text",
+		"2.6.1.4.11" => "id-et-general-text",
+		"2.6.1.11.12" => "id-ep-file-transfer",
+		"2.6.1.4.12" => "id-et-file-transfer",
+		"2.6.1.11.15" => "id-ep-notification",
+		"2.6.1.4.15" => "id-et-notification",
+		"2.6.1.11.16" => "id-ep-voice",
+		"2.6.1.4.16" => "id-et-voice",
+		"2.6.1.11.17.2.6.1.10.1" => "id-ep-content-p22",
+		"2.6.1.4.17.2.6.1.10.1" => "id-et-content-p22",
+		"2.6.1.11.17.2.6.1.10.0" => "id-ep-content-p2",
+		"2.6.1.4.17.2.6.1.10.0" => "id-et-content-p2",
+		"2.6.1.11.17.1.3.26.0.4406.0.4.1" => "id-ep-content-p772",
+		"2.6.1.6.0" => "id-sat-ipm-entry-type",
+		"2.6.1.6.1" => "id-sat-ipm-synopsis",
+		"2.6.1.6.2" => "id-sat-body-parts-summary",
+		"2.6.1.7.0" => "id-hat-heading",
+		"2.6.1.7.1" => "id-hat-this-ipm",
+		"2.6.1.7.2" => "id-hat-originator",
+		"2.6.1.7.3" => "id-hat-replied-to-IPM",
+		"2.6.1.7.4" => "id-hat-subject",
+		"2.6.1.7.5" => "id-hat-expiry-time",
+		"2.6.1.7.6" => "id-hat-reply-time",
+		"2.6.1.7.7" => "id-hat-importance",
+		"2.6.1.7.8" => "id-hat-sensitivity",
+		"2.6.1.7.9" => "id-hat-auto-forwarded",
+		"2.6.1.7.10" => "id-hat-authorizing-users",
+		"2.6.1.7.11" => "id-hat-primary-recipients",
+		"2.6.1.7.12" => "id-hat-copy-recipients",
+		"2.6.1.7.13" => "id-hat-blind-copy-recipients",
+		"2.6.1.7.14" => "id-hat-obsoleted-IPMs",
+		"2.6.1.7.15" => "id-hat-related-IPMs",
+		"2.6.1.7.16" => "id-hat-reply-recipients",
+		"2.6.1.7.17" => "id-hat-incomplete-copy",
+		"2.6.1.7.18" => "id-hat-languages",
+		"2.6.1.7.19" => "id-hat-rn-requestors",
+		"2.6.1.7.20" => "id-hat-nrn-requestors",
+		"2.6.1.7.21" => "id-hat-reply-requestors",
+		"2.6.1.7.22" => "id-hat-auto-submitted",
+		"2.6.1.7.23" => "id-hat-body-part-signatures",
+		"2.6.1.7.24" => "id-hat-ipm-security-label",
+		"2.6.1.7.25" => "id-hat-body-part-security-label",
+		"2.6.1.7.26" => "id-hat-body-part-encryption-token",
+		"2.6.1.7.27" => "id-hat-authorization-time",
+		"2.6.1.7.28" => "id-hat-circulation-list-recipients",
+		"2.6.1.7.29" => "id-hat-distribution-codes",
+		"2.6.1.7.30" => "id-hat-extended-subject",
+		"2.6.1.7.31" => "id-hat-information-category",
+		"2.6.1.7.32" => "id-hat-manual-handling-instructions",
+		"2.6.1.7.33" => "id-hat-originators-reference",
+		"2.6.1.7.34" => "id-hat-precedence-policy-id",
+		"2.6.1.7.35" => "id-hat-forwarded-content-token",
+		"2.6.1.7.37" => "id-hat-precedence",
+		"2.6.1.7.38" => "id-hat-body-part-signature-verification-status",
+		"2.6.1.8.0" => "id-bat-body",
+		"2.6.1.13.0" => "id-cat-correlated-delivered-ipns",
+		"2.6.1.13.1" => "id-cat-correlated-delivered-replies",
+		"2.6.1.13.2" => "id-cat-delivered-ipn-summary",
+		"2.6.1.13.3" => "id-cat-delivered-replies-summary",
+		"2.6.1.13.7" => "id-cat-obsoleted-ipms",
+		"2.6.1.13.14" => "id-cat-submitted-ipn-status",
+		"2.6.1.13.16" => "id-cat-submitted-reply-status",
+		"2.6.1.13.18" => "id-cat-recipient-category",
+		"2.6.1.18.0" => "id-sec-ipm-security-request",
+		"2.6.1.18.1" => "id-sec-security-common-fields",
+		"2.6.1.10.0" => "InterPersonal Message (1984)",
+		"2.6.1.10.1" => "InterPersonal Message (1988)",
+		"1.3.26.0.4406.0.2.0" => "primary-precedence",
+		"1.3.26.0.4406.0.2.1" => "copy-precedence",
+		"1.3.26.0.4406.0.2.2" => "message-type",
+		"1.3.26.0.4406.0.2.3" => "address-list-indicator",
+		"1.3.26.0.4406.0.2.4" => "exempted-address",
+		"1.3.26.0.4406.0.2.5" => "extended-authorisation-info",
+		"1.3.26.0.4406.0.2.6" => "distribution-codes",
+		"1.3.26.0.4406.0.2.7" => "handling-instructions",
+		"1.3.26.0.4406.0.2.8" => "message-instructions",
+		"1.3.26.0.4406.0.2.9" => "codress-message",
+		"1.3.26.0.4406.0.2.10" => "originator-reference",
+		"1.3.26.0.4406.0.2.11" => "other-recipients-indicator",
+		"1.3.26.0.4406.0.2.12" => "pilot-forwarding-info",
+		"1.3.26.0.4406.0.2.13" => "acp127-message-identifier",
+		"1.3.26.0.4406.0.2.14" => "originator-plad",
+		"1.3.26.0.4406.0.2.15" => "acp127-notification-request",
+		"1.3.26.0.4406.0.2.16" => "acp127-notification-response",
+		"1.3.26.0.4406.0.2.17" => "information-labels",
+		"1.3.26.0.4406.0.8.0" => "priority-level-qualifier",
+		"2.6.1.4.17.1.3.26.0.4406.0.4.1" => "id-et-content-p772",
+		"1.3.26.0.4406.0.4.1" => "STANAG 4406",
+		"1.2.840.10040.4.1" => "id-dsa",
+		"1.2.840.10046.2.1" => "dhpublicnumber",
+		"2.16.840.1.101.2.1.1.22" => "id-keyExchangeAlgorithm",
+		"1.2.840.10045.2.1" => "id-ecPublicKey",
+		"1.3.132.1.12" => "id-ecDH",
+		"1.2.840.10045.2.13" => "id-ecMQV",
+		"1.2.840.113549.1.1.10" => "id-RSASSA-PSS",
+		"1.2.840.113549.1.1.8" => "id-mgf1",
+		"1.2.840.10045.1.1" => "prime-field",
+		"1.2.840.113549.2.2" => "md2",
+		"1.2.840.113549.2.4" => "md4",
+		"1.2.840.113549.2.5" => "md5",
+		"1.2.840.113549.1.1.1" => "rsaEncryption",
+		"1.2.840.113549.1.1.2" => "md2WithRSAEncryption",
+		"1.2.840.113549.1.1.3" => "md4WithRSAEncryption",
+		"1.2.840.113549.1.1.4" => "md5WithRSAEncryption",
+		"1.2.840.113549.1.1.5" => "sha1WithRSAEncryption",
+		"1.2.840.113549.1.1.6" => "rsaOAEPEncryptionSET",
+		"1.2.840.113549.1.1.11" => "sha256WithRSAEncryption",
+		"1.2.840.113549.1.1.12" => "sha384WithRSAEncryption",
+		"1.2.840.113549.1.1.13" => "sha512WithRSAEncryption",
+		"1.2.840.113549.1.1.14" => "sha224WithRSAEncryption",
+		"1.2.840.10045.4.1" => "ecdsa-with-SHA1",
+		"1.2.156.10197.1.501" => "SM2-with-SM3",
+		"1.2.840.10045.4.3.1" => "ecdsa-with-SHA224",
+		"1.2.840.10045.4.3.2" => "ecdsa-with-SHA256",
+		"1.2.840.10045.4.3.3" => "ecdsa-with-SHA384",
+		"1.2.840.10045.4.3.4" => "ecdsa-with-SHA512",
+		"2.16.840.1.101.3.4.3.1" => "id-dsa-with-sha224",
+		"2.16.840.1.101.3.4.3.2" => "id-dsa-with-sha256",
+		"1.2.840.113549.1.9.9" => "pkcs-9-at-extendedCertificateAttributes",
+		"1.2.840.113549.1.12.10.1.1" => "keyBag",
+		"1.2.840.113549.1.12.10.1.2" => "pkcs8ShroudedKeyBag",
+		"1.2.840.113549.1.12.10.1.3" => "certBag",
+		"1.2.840.113549.1.12.10.1.4" => "secretBag",
+		"1.2.840.113549.1.12.10.1.5" => "crlBag",
+		"1.2.840.113549.1.12.10.1.6" => "safeContentsBag",
+		"2.16.840.1.113730.3.1.216" => "pkcs-9-at-PKCS12",
+		"1.2.840.113549.1.9.25.2" => "pkcs-9-at-encryptedPrivateKeyInfo",
+		"1.2.840.113549.1.12.1.1" => "pbeWithSHAAnd128BitRC4",
+		"1.2.840.113549.1.12.1.2" => "pbeWithSHAAnd40BitRC4",
+		"1.2.840.113549.1.12.1.3" => "pbeWithSHAAnd3-KeyTripleDES-CBC",
+		"1.2.840.113549.1.12.1.4" => "pbeWithSHAAnd2-KeyTripleDES-CBC",
+		"1.2.840.113549.1.12.1.5" => "pbeWithSHAAnd128BitRC2-CBC",
+		"1.2.840.113549.1.12.1.6" => "pbeWithSHAAnd40BitRC2-CBC",
+		"1.2.840.113549.1.5.1" => "pbeWithMD2AndDES-CBC",
+		"1.2.840.113549.1.5.3" => "pbeWithMD5AndDES-CBC",
+		"1.2.840.113549.1.5.4" => "pbeWithMD2AndRC2-CBC",
+		"1.2.840.113549.1.5.6" => "pbeWithMD5AndRC2-CBC",
+		"1.2.840.113549.1.5.10" => "pbeWithSHA1AndDES-CBC",
+		"1.2.840.113549.1.5.11" => "pbeWithSHA1AndRC2-CBC",
+		"1.2.840.113549.1.5.12" => "id-PBKDF2",
+		"1.2.840.113549.1.5.13" => "id-PBES2",
+		"1.2.840.113549.1.5.14" => "id-PBMAC1",
+		"1.2.840.113549.1.9.22.1" => "x509Certificate",
+		"1.3.6.1.5.2.3.1" => "id-pkauthdata",
+		"1.3.6.1.5.2.3.2" => "id-pkdhkeydata",
+		"1.3.6.1.5.2.2" => "id-pkinit-san",
+		"1.3.6.1.5.5.7.2.1" => "id-qt-cps",
+		"1.3.6.1.5.5.7.1.7" => "id-pe-ipAddrBlocks",
+		"1.3.6.1.5.5.7.1.8" => "id-pe-autonomousSysIds",
+		"1.3.6.1.5.5.7.1.24" => "id-pe-tlsfeature",
+		"1.2.840.113549.1.9.7" => "pkcs-9-at-challengePassword",
+		"1.2.840.113549.1.9.14" => "pkcs-9-at-extensionRequest",
+		"1.3.6.1.5.5.7.1.1" => "id-pe-authorityInfoAccess",
+		"1.3.6.1.5.5.7.48.1" => "id-ad-ocsp",
+		"1.3.6.1.5.5.7.48.2" => "id-ad-caIssuers",
+		"1.3.6.1.5.5.7.3.1" => "id-kp-serverAuth",
+		"1.3.6.1.5.5.7.3.2" => "id-kp-clientAuth",
+		"1.3.6.1.5.5.7.3.3" => "id-kp-codeSigning",
+		"1.3.6.1.5.5.7.3.4" => "id-kp-emailProtection",
+		"1.3.6.1.5.5.7.3.5" => "id-kp-ip-kp-ipsecEndSystem",
+		"1.3.6.1.5.5.7.3.6" => "id-kp-ipsecTunnel",
+		"1.3.6.1.5.5.7.3.7" => "id-kp-ipsecUser",
+		"1.3.6.1.5.5.7.3.8" => "id-kp-timeStamping",
+		"1.3.6.1.5.5.7.3.9" => "OCSPSigning",
+		"1.3.6.1.4.1.311.10.12.1" => "id-ms-any-application-policy",
+		"1.3.6.1.4.1.311.10.3.1" => "id-ms-kp-ctl-usage-signing",
+		"1.3.6.1.4.1.311.10.3.2" => "id-ms-kp-time-stamp-signing",
+		"1.3.6.1.4.1.311.10.3.4" => "id-ms-kp-efs",
+		"1.3.6.1.4.1.311.10.3.4.1" => "id-ms-efs-recovery",
+		"1.3.6.1.4.1.311.10.3.5" => "id-ms-whql-crypto",
+		"1.3.6.1.4.1.311.10.3.6" => "id-ms-nt5-crypto",
+		"1.3.6.1.4.1.311.10.3.7" => "id-ms-oem-whql-crypto",
+		"1.3.6.1.4.1.311.10.3.8" => "id-ms-embedded-nt-crypto",
+		"1.3.6.1.4.1.311.10.3.9" => "id-ms-root-list-signer",
+		"1.3.6.1.4.1.311.10.3.10" => "id-ms-kp-qualified-subordination",
+		"1.3.6.1.4.1.311.10.3.11" => "id-ms-kp-key-recovery",
+		"1.3.6.1.4.1.311.10.3.12" => "id-ms-kp-document-signing",
+		"1.3.6.1.4.1.311.10.3.13" => "id-ms-kp-lifetime-signing",
+		"1.3.6.1.4.1.311.10.5.1" => "id-ms-drm",
+		"1.3.6.1.4.1.311.10.6.1" => "id-ms-licenses",
+		"1.3.6.1.4.1.311.10.6.2" => "id-ms-license-server",
+		"1.3.6.1.4.1.311.20.1" => "id-ms-auto-enroll-ctl-usage",
+		"1.3.6.1.4.1.311.20.2.1" => "id-ms-enrollment-agent",
+		"1.3.6.1.4.1.311.20.2.2" => "id-ms-kp-smartcard-logon",
+		"1.3.6.1.4.1.311.21.5" => "id-ms-kp-ca-exchange",
+		"1.3.6.1.4.1.311.21.6" => "id-ms-kp-key-recovery-agent",
+		"1.3.6.1.4.1.311.21.19" => "id-ms-ds-email-replication",
+		"1.3.6.1.5.5.8.2.2" => "id-ms-ipsec-kp-ike-intermediate",
+		"1.3.6.1.5.5.7.2.2" => "id-qt-unotice",
+		"1.3.6.1.5.5.7.1.6" => "id-pe-aaControls",
+		"1.3.6.1.5.5.7.1.10" => "id-pe-ac-proxying",
+		"1.3.6.1.5.5.7.10.1" => "id-aca-authenticationInfo",
+		"1.3.6.1.5.5.7.10.2" => "id-aca-accessIdentity",
+		"1.3.6.1.5.5.7.10.3" => "id-aca-chargingIdentity",
+		"1.3.6.1.5.5.7.10.4" => "id-aca-group",
+		"2.5.1.5.55" => "id-at-clearance",
+		"2.5.4.55" => "id-at-clearance",
+		"2.5.4.72" => "id-at-role",
+		"2.5.29.55" => "id-ce-targetInformation",
+		"1.3.6.1.5.5.7.1.14" => "id-pe-proxyCertInfo",
+		"1.3.6.1.5.5.7.1.2" => "id-pe-biometricInfo",
+		"1.3.6.1.5.5.7.1.3" => "id-pe-qcStatements",
+		"1.3.6.1.5.5.7.11.1" => "id-qcs-pkixQCSyntax-v1",
+		"1.3.6.1.5.5.7.11.2" => "id-qcs-pkixQCSyntax-v2",
+		"1.3.6.1.5.5.7.8.5" => "id-on-xmppAddr",
+		"1.3.6.1.5.5.7.9.1" => "pkcs-9-at-dateOfBirth",
+		"1.3.6.1.5.5.7.9.2" => "pkcs-9-at-placeOfBirth",
+		"1.3.6.1.5.5.7.9.3" => "pkcs-9-at-gender",
+		"1.3.6.1.5.5.7.9.4" => "pkcs-9-at-countryOfCitizenship",
+		"1.3.6.1.5.5.7.9.5" => "pkcs-9-at-countryOfResidence",
+		"1.3.6.1.5.5.7.8.7" => "id-on-dnsSRV",
+		"1.2.840.113549.1.9.16.2.14" => "id-aa-timeStampToken",
+		"1.2.840.113549.1.9.16.1.4" => "id-ct-TSTInfo",
+		"0.0.20.124.0.1" => "Generic Conference Control",
+		"0.0.17.773.1.1.1" => "id-as-dialogue",
+		"0.0.17.773.1.2.1" => "id-as-uniDialogue",
+		"2.23.133.1" => "tcg-tcpaSpecVersion",
+		"2.23.133.2.11" => "tcg-at-tpmProtectionProfile",
+		"2.23.133.2.12" => "tcg-at-tpmSecurityTarget",
+		"2.23.133.2.13" => "tcg-at-tbbProtectionProfile",
+		"2.23.133.2.14" => "tcg-at-tbbSecurityTarget",
+		"2.23.133.2.16" => "tcg-at-tpmSpecification",
+		"2.23.133.2.17" => "tcg-at-tcgPlatformSpecification",
+		"2.23.133.2.18" => "tcg-at-tpmSecurityAssertions",
+		"2.23.133.2.19" => "tcg-at-tbbSecurityAssertions",
+		"2.23.133.6.2" => "tcg-ce-relevantCredentials",
+		"2.23.133.6.3" => "tcg-ce-relevantManifests",
+		"2.23.133.6.4" => "tcg-ce-virtualPlatformAttestationService",
+		"2.23.133.6.5" => "tcg-ce-migrationControllerAttestationService",
+		"2.23.133.6.6" => "tcg-ce-migrationControllerRegistrationService",
+		"2.23.133.6.7" => "tcg-ce-virtualPlatformBackupService",
+		"1.3.6.1.5.5.7.3.35" => "id-kp-bundleSecurity",
+		"1.3.6.1.5.5.7.8.11" => "id-on-bundleEID",
+		"1.3.6.1.4.1.11129.2.4.2" => "SignedCertificateTimestampList",
+		"1.3.6.1.4.1.11129.2.4.5" => "SignedCertificateTimestampList",
+		"1.3.6.1.5.5.7.1.13" => "id-pe-wlanSSID",
+		"1.3.6.1.5.5.7.10.6" => "id-aca-wlanSSID",
+		"2.5.4.36" => "id-at-userCertificate",
+		"2.5.4.37" => "id-at-cAcertificate",
+		"2.5.4.38" => "id-at-authorityRevocationList",
+		"2.5.4.39" => "id-at-certificateRevocationList",
+		"2.5.4.40" => "id-at-crossCertificatePair",
+		"2.5.4.53" => "id-at-deltaRevocationList",
+		"2.5.4.58" => "id-at-attributeCertificate",
+		"2.5.4.59" => "id-at-attributeCertificateRevocationList",
+		"0.9.2342.19200300.100.1.1" => "id-userid",
+		"1.3.14.3.2.2" => "md4WithRSA",
+		"1.3.14.3.2.3" => "md5WithRSA",
+		"1.3.14.3.2.4" => "md4WithRSAEncryption",
+		"1.3.14.3.2.6" => "desECB",
+		"1.3.14.3.2.11" => "rsaSignature",
+		"1.3.14.3.2.14" => "mdc2WithRSASignature",
+		"1.3.14.3.2.15" => "shaWithRSASignature",
+		"1.3.14.3.2.16" => "dhWithCommonModulus",
+		"1.3.14.3.2.17" => "desEDE",
+		"1.3.14.3.2.18" => "sha",
+		"1.3.14.3.2.19" => "mdc-2",
+		"1.3.14.3.2.20" => "dsaCommon",
+		"1.3.14.3.2.21" => "dsaCommonWithSHA",
+		"1.3.14.3.2.22" => "rsaKeyTransport",
+		"1.3.14.3.2.23" => "keyed-hash-seal",
+		"1.3.14.3.2.24" => "md2WithRSASignature",
+		"1.3.14.3.2.25" => "md5WithRSASignature",
+		"1.3.14.3.2.26" => "SHA-1",
+		"1.3.14.3.2.27" => "dsaWithSHA1",
+		"1.3.14.3.2.28" => "dsaWithCommonSHA1",
+		"1.3.14.3.2.29" => "sha-1WithRSAEncryption",
+		"2.5.29.3" => "id-ce-certificatePolicies",
+		"2.5.29.9" => "id-ce-subjectDirectoryAttributes",
+		"2.5.29.14" => "id-ce-subjectKeyIdentifier",
+		"2.5.29.15" => "id-ce-keyUsage",
+		"2.5.29.16" => "id-ce-privateKeyUsagePeriod",
+		"2.5.29.17" => "id-ce-subjectAltName",
+		"2.5.29.18" => "id-ce-issuerAltName",
+		"2.5.29.19" => "id-ce-basicConstraints",
+		"2.5.29.20" => "id-ce-cRLNumber",
+		"2.5.29.21" => "id-ce-reasonCode",
+		"2.5.29.23" => "id-ce-instructionCode",
+		"2.5.29.27" => "id-ce-deltaCRLIndicator",
+		"2.5.29.28" => "id-ce-issuingDistributionPoint",
+		"2.5.29.29" => "id-ce-certificateIssuer",
+		"2.5.29.30" => "id-ce-nameConstraints",
+		"2.5.29.31" => "id-ce-cRLDistributionPoints",
+		"2.5.29.32" => "id-ce-certificatePolicies",
+		"2.5.29.33" => "id-ce-policyMappings",
+		"2.5.29.35" => "id-ce-authorityKeyIdentifier",
+		"2.5.29.36" => "id-ce-policyConstraints",
+		"2.5.29.37" => "id-ce-extKeyUsage",
+		"2.5.29.40" => "id-ce-cRLStreamIdentifier",
+		"2.5.29.44" => "id-ce-cRLScope",
+		"2.5.29.45" => "id-ce-statusReferrals",
+		"2.5.29.46" => "id-ce-freshestCRL",
+		"2.5.29.47" => "id-ce-orderedList",
+		"2.5.29.53" => "id-ce-deltaInfo",
+		"2.5.29.54" => "id-ce-inhibitAnyPolicy",
+		"2.5.29.58" => "id-ce-toBeRevoked",
+		"2.5.29.59" => "id-ce-RevokedGroups",
+		"2.5.29.60" => "id-ce-expiredCertsOnCRL",
+		"2.5.29.61" => "id-ce-aAissuingDistributionPoint",
+		"1.3.6.1.5.5.7.1.34" => "id-pe-nftype",
+		"2.5.13.35" => "id-mr-certificateMatch",
+		"2.5.13.36" => "id-mr-certificatePairExactMatch",
+		"2.5.13.37" => "id-mr-certificatePairMatch",
+		"2.5.13.38" => "id-mr-certificateListExactMatch",
+		"2.5.13.39" => "id-mr-certificateListMatch",
+		"2.5.13.62" => "id-mr-pkiPathMatch",
+		"2.5.13.65" => "id-mr-enhancedCertificateMatch",
+		"1.3.6.1.4.1.311.21.7" => "id-ms-certificate-template",
+		"1.3.6.1.4.1.311.21.10" => "id-ms-application-certificate-policies",
+		"1.3.6.1.4.1.311.25.2" => "id-ms-ntds-ca-security",
+		"1.3.6.1.4.1.311.25.2.1" => "id-ms-ntds-object-sid",
+		"1.2.840.113533.7.65.0" => "id-ce-entrustVersionInfo",
+		"2.5.29.24" => "id-ce-invalidityDate",
+		"2.5.29.51" => "id-ce-baseUpdateTime",
+		"2.5.4.1" => "id-at-aliasedEntryName",
+		"2.5.4.31" => "id-at-member",
+		"2.5.4.32" => "id-at-owner",
+		"2.5.4.33" => "id-at-roleOccupant",
+		"2.5.4.34" => "id-at-seeAlso",
+		"2.5.4.49" => "id-at-distinguishedName",
+		"2.5.18.3" => "id-oa-creatorsName",
+		"2.5.18.4" => "id-oa-modifiersName",
+		"2.5.18.6" => "id-oa-subtreeSpecification",
+		"2.5.18.10" => "id-oa-subschemaSubentry",
+		"2.5.18.11" => "id-oa-accessControlSubentry",
+		"2.5.18.12" => "id-oa-collectiveAttributeSubentry",
+		"2.5.18.13" => "id-oa-contextDefaultSubentry",
+		"2.5.18.17" => "id-oa-hierarchyLevel",
+		"2.5.18.18" => "iid-oa-hierarchyBelow",
+		"2.6.5.2.5" => "id-at-mhs-message-store-dn",
+		"2.6.5.2.14" => "id-at-mhs-dl-related-lists",
+		"2.16.840.1.101.2.2.1.3" => "id-at-alternateRecipient",
+		"2.16.840.1.101.2.2.1.4" => "id-at-associatedOrganization",
+		"2.16.840.1.101.2.2.1.6" => "id-at-associatedPLA",
+		"2.16.840.1.101.2.2.1.49" => "id-at-aliasPointer",
+		"2.16.840.1.101.2.2.1.61" => "id-at-listPointer",
+		"2.16.840.1.101.2.2.1.110" => "id-at-administrator",
+		"2.16.840.1.101.2.2.1.111" => "id-at-aigsExpanded",
+		"2.16.840.1.101.2.2.1.113" => "id-at-associatedAL",
+		"2.16.840.1.101.2.2.1.114" => "id-at-copyMember",
+		"2.16.840.1.101.2.2.1.117" => "id-at-guard",
+		"2.16.840.1.101.2.2.1.121" => "id-at-networkDN",
+		"2.16.840.1.101.2.2.1.138" => "id-at-plasServed",
+		"2.16.840.1.101.2.2.1.139" => "id-at-deployed",
+		"2.16.840.1.101.2.2.1.140" => "id-at-garrison",
+		"2.16.840.1.101.2.2.1.184" => "id-at-aCPDutyOfficer",
+		"2.16.840.1.101.2.2.1.188" => "id-at-primaryMember",
+		"2.5.4.0" => "id-at-objectClass",
+		"2.5.4.2" => "id-at-knowledgeInformation",
+		"2.5.4.3" => "id-at-commonName",
+		"2.5.4.4" => "id-at-surname",
+		"2.5.4.5" => "id-at-serialNumber",
+		"2.5.4.6" => "id-at-countryName",
+		"2.5.4.7" => "id-at-localityName",
+		"2.5.4.7.1" => "id-at-collectiveLocalityName",
+		"2.5.4.8" => "id-at-stateOrProvinceName",
+		"2.5.4.8.1" => "id-at-collectiveStateOrProvinceName",
+		"2.5.4.9" => "id-at-streetAddress",
+		"2.5.4.9.1" => "id-at-collectiveStreetAddress",
+		"2.5.4.10.1" => "id-at-collectiveOrganizationName",
+		"2.5.4.10" => "id-at-organizationName",
+		"2.5.4.11" => "id-at-organizationalUnitName",
+		"2.5.4.11.1" => "id-at-collectiveOrganizationalUnitName",
+		"2.5.4.12" => "id-at-title",
+		"2.5.4.13" => "id-at-description",
+		"2.5.4.14" => "id-at-searchGuide",
+		"2.5.4.15" => "id-at-businessCategory",
+		"2.5.4.16" => "id-at-postalAddress",
+		"2.5.4.17" => "id-at-postalCode",
+		"2.5.4.17.1" => "id-at-collectivePostalCode",
+		"2.5.4.18" => "id-at-postOfficeBox",
+		"2.5.4.18.1" => "id-at-collectivePostOfficeBox",
+		"2.5.4.19" => "id-at-physicalDeliveryOfficeName",
+		"2.5.4.19.1" => "id-at-collectivePhysicalDeliveryOfficeName",
+		"2.5.4.20" => "id-at-telephoneNumber",
+		"2.5.4.20.1" => "id-at-collectiveTelephoneNumber",
+		"2.5.4.21" => "id-at-telexNumber",
+		"2.5.4.21.1" => "id-at-collectiveTelexNumber",
+		"2.5.4.23" => "id-at-facsimileTelephoneNumber",
+		"2.5.4.23.1" => "id-at-collectiveFacsimileTelephoneNumber",
+		"2.5.4.24" => "id-at-x121Address",
+		"2.5.4.25" => "id-at-internationalISDNNumber",
+		"2.5.4.25.1" => "id-at-collectiveInternationalISDNNumber",
+		"2.5.4.26" => "id-at-registeredAddress",
+		"2.5.4.27" => "id-at-destinationIndicator",
+		"2.5.4.28" => "id-at-preferredDeliveryMethod",
+		"2.5.4.29" => "id-at-presentationAddress",
+		"2.5.4.30" => "id-at-supportedApplicationContext",
+		"2.5.4.35" => "id-at-userPassword",
+		"2.5.4.41" => "id-at-name",
+		"2.5.4.42" => "id-at-givenName",
+		"2.5.4.43" => "id-at-initials",
+		"2.5.4.44" => "id-at-generationQualifier",
+		"2.5.4.45" => "id-at-uniqueIdedntifier",
+		"2.5.4.46" => "id-at-dnQualifier",
+		"2.5.4.47" => "id-at-enhancedSearchGuide",
+		"2.5.4.48" => "id-at-protocolInformation",
+		"2.5.4.50" => "id-at-uniqueMember",
+		"2.5.4.51" => "id-at-houseIdentifier",
+		"2.5.4.52" => "id-at-supportedAlgorithms",
+		"2.5.4.54" => "id-at-dmdName",
+		"2.5.4.56" => "id-at-defaultDirQop",
+		"2.5.4.65" => "id-at-pseudonym",
+		"2.5.4.66" => "id-at-communuicationsService",
+		"2.5.4.67" => "id-at-communuicationsNetwork",
+		"2.5.4.97" => "id-at-organizationIdentifier",
+		"2.5.13.8" => "id-mr-numericStringMatch",
+		"2.5.13.11" => "id-mr-caseIgnoreListMatch",
+		"2.5.13.16" => "id-mr-bitStringMatch",
+		"2.5.13.26" => "id-mr-uTCTimeOrderingMatch",
+		"2.5.18.1" => "id-oa-createTimeStamp",
+		"2.5.18.2" => "id-oa-modifyTimeStamp",
+		"2.5.18.5" => "id-oa-administrativeRole",
+		"2.5.18.7" => "id-oa-collectiveExclusions",
+		"2.5.18.8" => "id-oa-subschemaTimeStamp",
+		"2.5.18.9" => "id-oa-hasSubordinates",
+		"2.5.24.1" => "id-aca-accessControlScheme",
+		"2.6.5.2.8" => "id-at-mhs-supported-automatic-actions",
+		"2.6.5.2.10" => "id-at-mhs-supported-attributes",
+		"2.6.5.2.11" => "id-at-mhs-supported-matching-rules",
+		"2.16.840.1.101.2.2.1.45" => "id-at-releaseAuthorityName",
+		"2.16.840.1.101.2.2.1.51" => "id-at-cognizantAuthority",
+		"2.16.840.1.101.2.2.1.53" => "id-at-accountingCode",
+		"2.16.840.1.101.2.2.1.54" => "id-at-dualRoute",
+		"2.16.840.1.101.2.2.1.55" => "id-at-effectiveDate",
+		"2.16.840.1.101.2.2.1.57" => "id-at-expirationDate",
+		"2.16.840.1.101.2.2.1.58" => "id-at-hostOrgACP127",
+		"2.16.840.1.101.2.2.1.60" => "id-at-lastRecapDate",
+		"2.16.840.1.101.2.2.1.62" => "id-at-lmf",
+		"2.16.840.1.101.2.2.1.63" => "id-at-longTitle",
+		"2.16.840.1.101.2.2.1.64" => "id-at-minimize",
+		"2.16.840.1.101.2.2.1.65" => "id-at-minimizeOverride",
+		"2.16.840.1.101.2.2.1.68" => "id-at-nationality",
+		"2.16.840.1.101.2.2.1.68.1" => "id-at-collectiveNationality",
+		"2.16.840.1.101.2.2.1.69" => "id-at-transferStation",
+		"2.16.840.1.101.2.2.1.70" => "id-at-plaNameACP127",
+		"2.16.840.1.101.2.2.1.72" => "id-at-plaReplace",
+		"2.16.840.1.101.2.2.1.73" => "id-at-primarySpellingACP127",
+		"2.16.840.1.101.2.2.1.74" => "id-at-publish",
+		"2.16.840.1.101.2.2.1.75" => "id-at-recapDueDate",
+		"2.16.840.1.101.2.2.1.77" => "id-at-rI",
+		"2.16.840.1.101.2.2.1.81" => "id-at-section",
+		"2.16.840.1.101.2.2.1.82" => "id-at-serviceOrAgency",
+		"2.16.840.1.101.2.2.1.83" => "id-at-sHD",
+		"2.16.840.1.101.2.2.1.84" => "id-at-shortTitle",
+		"2.16.840.1.101.2.2.1.85" => "id-at-sigad",
+		"2.16.840.1.101.2.2.1.86" => "id-at-spot",
+		"2.16.840.1.101.2.2.1.87" => "id-at-tARE",
+		"2.16.840.1.101.2.2.1.94" => "id-at-aCPMobileTelephoneNumber",
+		"2.16.840.1.101.2.2.1.95" => "id-at-aCPPagerTelephoneNumber",
+		"2.16.840.1.101.2.2.1.96" => "id-at-tCC",
+		"2.16.840.1.101.2.2.1.97" => "id-at-tRC",
+		"2.16.840.1.101.2.2.1.106" => "id-at-accessCodes",
+		"2.16.840.1.101.2.2.1.107" => "id-at-accessSchema",
+		"2.16.840.1.101.2.2.1.109" => "id-at-aCPTelephoneFaxNumber",
+		"2.16.840.1.101.2.2.1.115" => "id-at-gatewayType",
+		"2.16.840.1.101.2.2.1.116" => "id-at-ghpType",
+		"2.16.840.1.101.2.2.1.118" => "id-at-mailDomains",
+		"2.16.840.1.101.2.2.1.119" => "id-at-militaryFacsimileNumber",
+		"2.16.840.1.101.2.2.1.119.1" => "id-at-collectiveMilitaryFacsimileNumber",
+		"2.16.840.1.101.2.2.1.120" => "id-at-militaryTelephoneNumber",
+		"2.16.840.1.101.2.2.1.120.1" => "id-at-collectiveMilitaryTelephoneNumber",
+		"2.16.840.1.101.2.2.1.122" => "id-at-networkSchema",
+		"2.16.840.1.101.2.2.1.124" => "id-at-operationName",
+		"2.16.840.1.101.2.2.1.125" => "id-at-positionNumber",
+		"2.16.840.1.101.2.2.1.126" => "id-at-proprietaryMailboxes",
+		"2.16.840.1.101.2.2.1.127" => "id-at-secureFacsimileNumber",
+		"2.16.840.1.101.2.2.1.127.1" => "id-at-collectiveSecureFacsimileNumber",
+		"2.16.840.1.101.2.2.1.128" => "id-at-secureTelephoneNumber",
+		"2.16.840.1.101.2.2.1.128.1" => "id-at-collectiveSecureTelephoneNumber",
+		"2.16.840.1.101.2.2.1.129" => "id-at-serviceNumber",
+		"2.16.840.1.101.2.2.1.133" => "id-at-rank",
+		"2.16.840.1.101.2.2.1.143" => "id-at-adminConversion",
+		"2.16.840.1.101.2.2.1.144" => "id-at-tCCG",
+		"2.16.840.1.101.2.2.1.145" => "id-at-usdConversion",
+		"2.16.840.1.101.2.2.1.158" => "id-at-aCPRoleInformation",
+		"2.16.840.1.101.2.2.1.159" => "id-at-coalitionGrade",
+		"2.16.840.1.101.2.2.1.160" => "id-at-militaryIPPhoneNumber",
+		"2.16.840.1.101.2.2.1.161" => "id-at-fileTypeInfoCapability",
+		"2.16.840.1.101.2.2.1.172" => "id-at-aCPFunctionalDescription",
+		"2.16.840.1.101.2.2.1.173" => "id-at-alternatePLAName",
+		"2.16.840.1.101.2.2.1.174" => "id-at-aCPEntryCreationDate",
+		"2.16.840.1.101.2.2.1.175" => "id-at-aCPEntryModificationDate",
+		"2.16.840.1.101.2.2.1.176" => "id-at-aCPEntryType",
+		"2.16.840.1.101.2.2.1.177" => "id-at-aCPEntryUniqueId",
+		"2.16.840.1.101.2.2.1.178" => "id-at-aCPCitizenship",
+		"2.16.840.1.101.2.2.1.179" => "id-at-aCPEID",
+		"2.16.840.1.101.2.2.1.180" => "id-at-aCPCOI",
+		"2.16.840.1.101.2.2.1.181" => "id-at-aCPPublishTo",
+		"2.16.840.1.101.2.2.1.182" => "id-at-aCPSvcApps",
+		"2.16.840.1.101.2.2.1.183" => "id-at-aCPDirectionsTo",
+		"2.16.840.1.101.2.2.1.185" => "id-at-aCPLatitude",
+		"2.16.840.1.101.2.2.1.186" => "id-at-aCPLocationMap",
+		"2.16.840.1.101.2.2.1.187" => "id-at-aCPLongitude",
+		"1.2.840.113549.1.9.1" => "pkcs-9-at-emailAddress",
+		"1.2.840.113549.1.9.8" => "pkcs-9-at-unstructuredAddress",
+		"1.2.840.113549.1.9.13" => "pkcs-9-at-signingDescription",
+		"1.2.840.113549.1.9.20" => "pkcs-9-at-friendlyName",
+		"1.2.840.113549.1.9.21" => "pkcs-9-at-localKeyId",
+		"1.2.840.113549.1.9.25.3" => "pkcs-9-at-randomNonce",
+		"1.2.840.113549.1.9.25.4" => "pkcs-9-at-sequenceNumber",
+		"0.9.2342.19200300.100.1.25" => "dc",
+		"2.16.840.1.113730.3.1.1" => "carLicense",
+		"2.16.840.1.113730.3.1.2" => "departmentNumber",
+		"2.16.840.1.113730.3.1.3" => "employeeNumber",
+		"2.16.840.1.113730.3.1.4" => "employeeType",
+		"2.16.840.1.113730.3.1.39" => "preferredLanguage",
+		"2.16.840.1.113730.3.1.241" => "displayName",
+		"1.3.6.1.4.1.311.20.2" => "id-ms-certificate-template-name",
+		"1.3.6.1.4.1.311.20.2.3" => "id-ms-user-principal-name",
+		"1.3.6.1.4.1.311.17.1" => "id-ms-local-machine-keyset",
+		"1.3.6.1.4.1.311.21.1" => "id-ms-ca-version",
+		"1.3.6.1.4.1.311.21.2" => "id-ms-previous-cert-hash",
+		"1.3.6.1.4.1.311.21.3" => "id-ms-virtual-base",
+		"1.3.6.1.4.1.311.21.4" => "id-ms-next-publish",
+		"1.2.826.0.1063.7.0.0.0" => "unknown-UK-organisation-defined-extension",
+		"1.2.826.0.1004.10.1.1" => "nexor-originating-ua",
+		"2.6.1.6.3" => "id-sat-ipm-auto-discarded",
+		"1.3.6.1.1.16.4" => "entryUUID",
+		"1.3.6.1.4.1.311.60.2.1.1" => "jurisdictionOfIncorporationLocalityName",
+		"1.3.6.1.4.1.311.60.2.1.2" => "jurisdictionOfIncorporationStateOrProvinceName",
+		"1.3.6.1.4.1.311.60.2.1.3" => "jurisdictionOfIncorporationCountryName",
+		"1.2.840.10003.5.100" => "Explain-record",
+		"1.2.840.10003.5.101" => "Sutrs-record",
+		"1.2.840.10003.5.102" => "OPAC-record",
+		"1.2.840.10003.5.103" => "Summary-record",
+		"1.2.840.10003.5.105" => "GRS-1-record",
+		"1.2.840.10003.5.106" => "ESTaskPackage",
+		"1.2.840.10003.4.2" => "diag-1",
+		"1.2.840.10003.8.1" => "Prompt-1",
+		"1.2.840.10003.8.2" => "DES-1",
+		"1.2.840.10003.8.3" => "KRB-1",
+		"1.2.840.10003.10.1" => "SearchResult-1",
+		"1.2.840.10003.10.1000.17.1" => "OCLC-UserInfo-1",
+		"2.23.133.2.1" => "tcg-at-tpmManufacturer",
+		"2.23.133.2.2" => "tcg-at-tpmModel",
+		"2.23.133.2.3" => "tcg-at-tpmVersion",
+		"2.23.133.2.4" => "tcg-at-platformManufacturer",
+		"2.23.133.2.5" => "tcg-at-platformModel",
+		"2.23.133.2.6" => "tcg-at-platformVersion",
+		"2.23.133.2.15" => "tcg-at-tpmIdLabel",
+		"1.2.840.10003.5.10" => "MARC21",
+		_ => "Unknown",
+	}
+}
+pub fn ec_points_type_mapper(code: u8) -> &'static str {
+	match code {
+		0 => "uncompressed",
+		1 => "ansiX962_compressed_prime",
+		2 => "ansiX962_compressed_char2",
+		_ => "NULL",
+	}
+}
+pub fn hash_algorithm_mapper(code: u8) -> &'static str {
+	match code {
+		0 => "None",
+		1 => "MD5",
+		2 => "SHA1",
+		3 => "SHA224",
+		4 => "SHA256",
+		5 => "SHA384",
+		6 => "SHA512",
+		_ => "none",
+	}
+}
+pub fn signature_algorithm_mapper(code: u8) -> &'static str {
+	match code {
+		0 => "Anonymous",
+		1 => "RSA",
+		2 => "DSA",
+		3 => "ECDSA",
+		_ => "none",
+	}
+}

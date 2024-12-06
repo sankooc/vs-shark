@@ -4,7 +4,7 @@ use super::ProtocolData;
 use crate::cache::{add_sip_url, get_sip_url};
 use crate::common::io::{AReader, Reader};
 use crate::{
-    common::base::{Frame, PacketBuilder, PacketContext, PacketOpt},
+    common::base::{Frame, PacketContext, PacketOpt},
     common::FIELDSTATUS,
 };
 use anyhow::{bail, Result};

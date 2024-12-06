@@ -8,7 +8,7 @@ use pcap_derive::Packet;
 
 use crate::{
     common::{
-        base::{BitFlag, BitType, Context, FlagData, Frame, FrameRefer, PacketBuilder, PacketContext, TCPDetail, TCPInfo, TCPSegment, TCPSegments},
+        base::{BitFlag, BitType, Context, FlagData, Frame, FrameRefer, PacketContext, TCPDetail, TCPInfo, TCPSegment, TCPSegments},
         io::{AReader, Reader},
         Description, MultiBlock, PortPacket, Ref2, FIELDSTATUS,
     },

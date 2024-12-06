@@ -111,13 +111,7 @@ impl<T> PacketContext<T> {
         rs
     }
 }
-fn _convert(f_status: FIELDSTATUS) -> &'static str {
-    match f_status {
-        FIELDSTATUS::WARN => "deactive",
-        FIELDSTATUS::ERROR => "errordata",
-        _ => "info",
-    }
-}
+
 impl<T> Element for PacketContext<T>
 where
     T: PacketBuilder + InfoPacket,
@@ -255,9 +249,10 @@ where
         Ok(val)
     }
 
-    pub fn build_fn<K>(&self, reader: &Reader, opt: impl FnOnce(&Reader) -> Result<K>, key: Option<&'static str>, mapper: impl Fn(K) -> String) -> Result<K>
+    pub fn build_fn<K, P>(&self, reader: &Reader, opt: impl FnOnce(&Reader) -> Result<K>, key: Option<&'static str>, mapper: impl Fn(K)-> P) -> Result<K>
     where
         K: Clone + ToString,
+        P: Into<String>,
     {
         let start = reader.cursor();
         let val: K = opt(reader)?;
@@ -269,7 +264,7 @@ where
             self.set(k, v.clone());
             props = Some((k, v.leak()));
         }
-        let content = mapper(val.clone());
+        let content = mapper(val.clone()).into();
         self.fields.borrow_mut().push(Box::new(TXTPosition { start, size, data: reader.get_raw(), content, props }));
         Ok(val)
     }
@@ -444,9 +439,9 @@ impl<T> FieldBuilder<T> for TXTPosition {
 
 pub trait DomainService {
     fn name(&self) -> String;
-    fn _type(&self) -> String;
+    fn _type(&self) -> &'static str;
     fn proto(&self) -> String;
-    fn class(&self) -> String;
+    fn class(&self) -> &'static str;
     fn content(&self) -> String;
     fn ttl(&self) -> u32;
 }
@@ -1453,7 +1448,7 @@ impl Context {
                         let _ch: &HandshakeServerHello = _hs.as_ref();
                         rs.source = format!("{}:{}", ep2.host, ep2.port);
                         rs.target = format!("{}:{}", ep1.host, ep1.port);
-                        rs.used_cipher = _ch.ciper_suite();
+                        rs.used_cipher = _ch.ciper_suite().into();
 
                         if let Some(versions) = _ch.versions() {
                             rs.used_version = versions.into();

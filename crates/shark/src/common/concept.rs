@@ -9,7 +9,7 @@ use crate::specs::http::{HttpType, Request, Response, HTTP};
 
 use super::{
     base::{Context, DomainService, Element, Endpoint, Frame},
-    Ref2, FIELDSTATUS,
+    Ref2,
 };
 
 #[derive(Default)]
@@ -284,9 +284,9 @@ impl DNSRecord {
         DNSRecord {
             // from: tcp.
             name: data.name(),
-            _type: data._type(),
+            _type: data._type().into(),
             proto: data.proto(),
-            class: data.class(),
+            class: data.class().into(),
             content: data.content(),
             ttl: data.ttl(),
         }
@@ -397,8 +397,7 @@ impl FrameInfo {
         item.status = "info".into();
         match frame.eles.last() {
             Some(ele) => {
-                // ele.status();
-                item.status = _convert(ele.status()).into();
+                item.status = ele.status().into();
             }
             _ => {}
         }
@@ -423,14 +422,6 @@ pub struct ListResult<T> {
 impl<T> ListResult<T> {
     pub fn new(start: usize, total: usize, items: Vec<T>) -> Self {
         Self { start, total, items }
-    }
-}
-
-fn _convert(f_status: FIELDSTATUS) -> &'static str {
-    match f_status {
-        FIELDSTATUS::WARN => "deactive",
-        FIELDSTATUS::ERROR => "errordata",
-        _ => "info",
     }
 }
 

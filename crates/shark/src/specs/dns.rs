@@ -6,12 +6,11 @@ use anyhow::Result;
 use pcap_derive::Visitor3;
 use pcap_derive::{Packet, Packet2, NINFO};
 
-use crate::common::base::{DomainService, Frame, PacketBuilder, PacketContext, PacketOpt};
+use crate::common::base::{DomainService, Frame, PacketContext, PacketOpt};
 use crate::common::io::AReader;
 use crate::common::io::Reader;
 use crate::common::MultiBlock;
 use crate::common::Ref2;
-use crate::common::FIELDSTATUS;
 use crate::constants::{dns_class_mapper, dns_type_mapper};
 
 use super::ProtocolData;
@@ -252,7 +251,7 @@ impl DomainService for RecordResource {
         self.name.clone()
     }
 
-    fn _type(&self) -> String {
+    fn _type(&self) -> &'static str {
         dns_type_mapper(self._type)
     }
 
@@ -268,7 +267,7 @@ impl DomainService for RecordResource {
         self.ttl
     }
 
-    fn class(&self) -> String {
+    fn class(&self) -> &'static str {
         dns_class_mapper(self.class)
     }
 }

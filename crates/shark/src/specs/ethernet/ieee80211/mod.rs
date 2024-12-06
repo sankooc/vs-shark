@@ -6,13 +6,10 @@ use pcap_derive::{Packet2, Visitor3, NINFO};
 use radiotap::Kind;
 use crate::common::base::{BitFlag, PacketContext, PacketOpt};
 use crate::common::io::AReader;
-use crate::{
-    common::base::Frame,
-    common::io::Reader,
-};
-use crate::common::base::PacketBuilder;
+use crate::
+    common::io::Reader
+;
 use crate::specs::ProtocolData;
-use crate::specs::FIELDSTATUS;
 pub mod radiotap;
 pub mod i802;
 mod cons;

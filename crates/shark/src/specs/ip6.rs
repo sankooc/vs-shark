@@ -3,9 +3,8 @@ use std::{fmt::Formatter, net::Ipv6Addr};
 use anyhow::Result;
 use pcap_derive::{Packet2, Visitor3, NINFO};
 
-use crate::common::FIELDSTATUS;
 use crate::{
-    common::base::{Frame, PacketBuilder, PacketContext, PacketOpt},
+    common::base::{PacketContext, PacketOpt},
     common::{
         io::{AReader, Reader},
         Description, IPPacket, TtypePacket,

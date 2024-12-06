@@ -4,12 +4,11 @@ use crate::common::base::PacketOpt;
 use crate::specs::ProtocolData;
 use crate::{
     common::io::Reader,
-    common::base::{Frame, PacketBuilder, PacketContext},
+    common::base::PacketContext,
 };
 use crate::common::io::AReader;
 use anyhow::{Ok, Result};
 use std::fmt::Display;
-use crate::common::FIELDSTATUS;
 
 #[derive(Default, Packet2, NINFO)]
 pub struct IEEE1905A {

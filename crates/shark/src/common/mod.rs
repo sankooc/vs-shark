@@ -164,3 +164,13 @@ pub enum FIELDSTATUS {
     WARN,
     ERROR,
 }
+
+impl Into<String> for FIELDSTATUS {
+    fn into(self) -> String {
+        match self {
+            FIELDSTATUS::INFO => "info".to_string(),
+            FIELDSTATUS::WARN => "deactive".to_string(),
+            FIELDSTATUS::ERROR => "errordata".to_string(),
+        }
+    }
+}

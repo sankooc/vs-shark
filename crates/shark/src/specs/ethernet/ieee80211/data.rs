@@ -3,7 +3,7 @@ use std::fmt::Display;
 use anyhow::Result;
 use pcap_derive::Packet;
 
-use crate::common::{base::{Frame, PacketContext},base::PacketBuilder, io::Reader};
+use crate::common::{base::{Frame, PacketContext},io::Reader};
 
 use super::i802::IEE80211;
 

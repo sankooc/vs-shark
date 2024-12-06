@@ -3,7 +3,7 @@ use std::fmt::Formatter;
 use super::ProtocolData;
 use crate::common::io::Reader;
 use crate::{
-    common::base::{Frame, PacketBuilder, PacketContext, PacketOpt},
+    common::base::{PacketContext, PacketOpt},
     common::{IPPacket, MacAddress, FIELDSTATUS},
     constants::{arp_hardware_type_mapper, arp_oper_type_mapper, etype_mapper},
 };
@@ -68,11 +68,11 @@ impl RARP {
     fn operation_type_desc(&self) -> String {
         format!("Opcode: {} ({})", self._operation_type(), self.operation)
     }
-    fn _hardware_type(&self) -> String {
+    fn _hardware_type(&self) -> &'static str {
         arp_hardware_type_mapper(self.hardware_type)
     }
 
-    fn _operation_type(&self) -> String {
+    fn _operation_type(&self) -> &'static str {
         arp_oper_type_mapper(self.operation)
     }
     fn _create(reader: &Reader, packet: &PacketContext<Self>, p: &mut std::cell::RefMut<Self>, _: Option<PacketOpt>) -> Result<()> {
