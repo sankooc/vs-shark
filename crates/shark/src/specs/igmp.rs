@@ -4,7 +4,7 @@ use anyhow::Result;
 use pcap_derive::{Packet, Visitor3};
 
 use crate::{
-    common::base::{Frame, PacketBuilder, PacketContext},
+    common::base::{Frame, PacketContext},
     common::{io::Reader, FIELDSTATUS},
     constants::igmp_type_mapper,
 };

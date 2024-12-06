@@ -1,12 +1,11 @@
 use std::fmt::Formatter;
 
-use crate::common::FIELDSTATUS;
 use anyhow::Result;
 use pcap_derive::{Packet, Packet2, Visitor3, NINFO};
 
 use crate::common::io::AReader;
 use crate::{
-    common::base::{Frame, PacketBuilder, PacketContext, PacketOpt},
+    common::base::{Frame, PacketContext, PacketOpt},
     common::io::Reader,
     constants::icmpv6_type_mapper,
 };

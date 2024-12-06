@@ -5,12 +5,11 @@ use crate::common::io::AReader;
 use crate::specs::ProtocolData;
 use crate::{
     common::io::Reader,
-    common::base::{Frame, PacketBuilder, PacketContext},
+    common::base::PacketContext,
 };
 use std::fmt::Display;
 use anyhow::{Ok, Result};
 
-use crate::common::FIELDSTATUS;
 
 #[derive(Default, Packet2, NINFO)]
 pub struct NULL {

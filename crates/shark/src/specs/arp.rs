@@ -3,14 +3,13 @@ use std::fmt::Formatter;
 use super::ProtocolData;
 use crate::common::io::Reader;
 use crate::{
-    common::base::{Frame, PacketBuilder, PacketContext, PacketOpt},
+    common::base::{PacketContext, PacketOpt},
     common::{IPPacket, MacAddress, FIELDSTATUS},
     constants::{arp_hardware_type_mapper, arp_oper_type_mapper, etype_mapper},
 };
 use anyhow::Result;
 use pcap_derive::{Packet2, Visitor3};
 use std::net::Ipv4Addr;
-
 #[derive(Default, Packet2)]
 pub struct ARP {
     hardware_type: u16,

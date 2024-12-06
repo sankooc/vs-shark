@@ -5,7 +5,7 @@ use pcap_derive::{Packet, Visitor3};
 
 use crate::common::io::Reader;
 use crate::{
-    common::base::{Frame, PacketBuilder, PacketContext},
+    common::base::{Frame, PacketContext},
     common::{io::AReader, MacAddress, Ref2, FIELDSTATUS},
     constants::{arp_hardware_type_mapper, dhcp_option_type_mapper, dhcp_type_mapper},
 };

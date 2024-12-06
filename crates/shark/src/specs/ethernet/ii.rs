@@ -2,11 +2,10 @@ use pcap_derive::{Packet2, Visitor3, NINFO};
 
 use crate::common::base::PacketOpt;
 use crate::common::io::AReader;
-use crate::common::FIELDSTATUS;
 use crate::common::{Description, MacAddress, MacPacket, PtypePacket, DEF_EMPTY_MAC};
 use crate::specs::ProtocolData;
 use crate::{
-    common::base::{Frame, PacketBuilder, PacketContext},
+    common::base::PacketContext,
     common::io::Reader,
 };
 use anyhow::{Ok, Result};

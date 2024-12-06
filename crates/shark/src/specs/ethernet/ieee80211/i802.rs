@@ -6,14 +6,13 @@ use crate::common::base::FlagData;
 use crate::common::base::PacketOpt;
 use crate::common::io::AReader;
 use crate::common::MacAddress;
-use crate::common::FIELDSTATUS;
 use crate::constants::etype_mapper;
 use crate::constants::ieee802_subtype_mapper;
 use crate::specs::ethernet::get_next_from_type;
 use crate::specs::ethernet::ieee80211::mnt::Management;
 use crate::specs::ProtocolData;
 use crate::{
-    common::base::{Frame, PacketBuilder, PacketContext},
+    common::base::PacketContext,
     common::io::Reader,
 };
 use anyhow::{Ok, Result};

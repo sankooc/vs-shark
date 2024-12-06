@@ -7,7 +7,7 @@ use anyhow::{bail, Result};
 use pcap_derive::{Packet, Packet2};
 
 use crate::{
-    common::base::{Frame, PacketBuilder, PacketContext},
+    common::base::{Frame, PacketContext},
     common::io::Reader,
 };
 

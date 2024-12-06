@@ -2,13 +2,12 @@ use std::fmt::Formatter;
 use std::net::Ipv4Addr;
 
 use crate::common::base::{BitFlag, BitType, FlagData};
-use crate::common::FIELDSTATUS;
 use anyhow::{bail, Result};
 use pcap_derive::{Packet2, Visitor3, NINFO};
 
 use crate::common::io::AReader;
 use crate::{
-    common::base::{Frame, PacketBuilder, PacketContext, PacketOpt},
+    common::base::{PacketContext, PacketOpt},
     common::{io::Reader, Description, IPPacket, TtypePacket},
 };
 

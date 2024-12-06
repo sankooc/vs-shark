@@ -3,12 +3,11 @@
 //https://blog.csdn.net/CodingMen/article/details/105056639
 use std::fmt::{Display, Formatter};
 
-use crate::common::FIELDSTATUS;
 use anyhow::Result;
 use pcap_derive::{Packet2, Visitor3, NINFO};
 
 use crate::{
-    common::base::{Frame, PacketBuilder, PacketContext, PacketOpt},
+    common::base::{PacketContext, PacketOpt},
     common::{io::Reader, MultiBlock},
     constants::{dns_class_mapper, nbns_type_mapper},
 };

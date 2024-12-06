@@ -5,10 +5,9 @@ use pcap_derive::{Packet2, Visitor3, NINFO};
 
 use crate::common::io::{AReader, Reader};
 use crate::common::{Description, PlayloadPacket, PortPacket};
-use crate::common::base::{Frame, PacketContext, PacketOpt, PacketBuilder};
+use crate::common::base::{Frame, PacketContext, PacketOpt};
 use super::ProtocolData;
 
-use crate::common::FIELDSTATUS;
 
 fn execute(source: u16, target: u16) -> &'static str {
     match source {

@@ -3,7 +3,7 @@ use std::{fmt::Formatter, rc::Rc};
 use pcap_derive::Packet;
 
 use crate::common::{
-        base::{Frame, PacketBuilder, PacketContext}, io::{AReader, Reader}, Ref2, FIELDSTATUS
+        base::{Frame, PacketContext}, io::{AReader, Reader}, Ref2, FIELDSTATUS
     };
 use anyhow::Result;
 

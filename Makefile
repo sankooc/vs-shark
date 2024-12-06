@@ -2,6 +2,8 @@ pre:
 	cd constants && node rust.js
 wasm: pre
 	cd crates/wasm && make web
+wasm-debug:
+	cd crates/wasm && make web-debug
 web-demo: wasm
 	cd extension/webview && rm -rf dist_web && npm run reset && npm run gen && npm run css && npm run build-web
 view: wasm

@@ -111,13 +111,7 @@ impl<T> PacketContext<T> {
         rs
     }
 }
-fn _convert(f_status: FIELDSTATUS) -> &'static str {
-    match f_status {
-        FIELDSTATUS::WARN => "deactive",
-        FIELDSTATUS::ERROR => "errordata",
-        _ => "info",
-    }
-}
+
 impl<T> Element for PacketContext<T>
 where
     T: PacketBuilder + InfoPacket,

@@ -12,7 +12,7 @@ use super::ProtocolData;
 use crate::{
     common::io::Reader,
     constants::{tls_content_type_mapper, tls_min_type_mapper},
-    common::base::{ Frame, PacketBuilder, PacketContext, PacketOpt},
+    common::base::{ Frame, PacketContext, PacketOpt},
 };
 
 #[derive(Default, Packet)]

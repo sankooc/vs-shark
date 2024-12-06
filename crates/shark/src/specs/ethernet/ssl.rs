@@ -6,14 +6,13 @@ use crate::common::{MacAddress, DEF_EMPTY_MAC};
 use crate::constants::{etype_mapper, link_type_mapper, ssl_type_mapper};
 use crate::specs::ProtocolData;
 use crate::{
-    common::base::{Frame, PacketBuilder, PacketContext},
+    common::base::PacketContext,
     common::io::Reader,
 };
 use anyhow::{Ok, Result};
 use std::fmt::Display;
 
 use super::get_next_from_type;
-use crate::common::FIELDSTATUS;
 
 #[derive(Default, Packet2, NINFO)]
 pub struct SSL {
