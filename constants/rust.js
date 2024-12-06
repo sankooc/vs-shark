@@ -60,18 +60,37 @@ const items = [
   ['tls_cipher_suites', TLS_CIPHER_SUITES_MAP, k => parseInt(k, 16), 'u16', 'Reserved (GREASE)'],
   ['tls_extension', TLS_EXTENSION_MAP, k => parseInt(k, 10), 'u16'],
   ['nbns_type', NBNS_TYPE_MAP, k => parseInt(k, 10), 'u16'],
-  ['oid_map', oid_map, k => `"${k}"`, "&'static str"],
+  ['oid_map', oid_map, k => `"${k}"`, "&str"],
   ['ec_points_type', EC_POINTS_MAP, k => parseInt(k, 10), 'u8', 'NULL'],
   ['hash_algorithm', TLS_hash_algorithm, k => parseInt(k, 10), 'u8', 'none'],
   ['signature_algorithm', TLS_signature_algorithm, k => parseInt(k, 10), 'u8', 'none'],
 ];
 
-const conts = items.map((item) => buildConstants(item[0]+'_map', item[1], item[2], item[3]));
+// const conts = items.map((item) => buildConstants(item[0]+'_map', item[1], item[2], item[3]));
 
-let _content = str + "lazy_static! {\r\n" + conts.join('')+ "}";
+// let _content = str + "lazy_static! {\r\n" + conts.join('')+ "}";
 
-_content += (items.map((item) => buildMapper(item[0], item[3], item[4])).join('\r\n'))
+// _content += (items.map((item) => buildMapper(item[0], item[3], item[4])).join('\r\n'))
 
-fs.writeFileSync('../crates/shark/src/constants.rs', _content);
+const create_case = (mapper, parser) => {
+  return Object.keys(mapper).map((k) => {
+    return `\t\t${parser(k)} => "${mapper[k]}",`
+  }).join('\r\n')
+}
+
+const create_fn = (name, mapper, parser, type, def="Unknown") => {
+    return `pub fn ${name}_mapper(code: ${type}) -> &'static str {
+\tmatch code {
+${create_case(mapper, parser)}
+\t\t_ => "${def}",
+\t}
+}`
+}
+
+const code = items.map((item) => create_fn(item[0], item[1], item[2], item[3], item[4])).join('\r\n');
+
+// console.log(code);
+
+fs.writeFileSync('../crates/shark/src/constants.rs', code);
 
 console.log('complete');

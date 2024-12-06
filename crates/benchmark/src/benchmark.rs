@@ -4,10 +4,13 @@ static mut _SINGLETON: UnsafeCell<Option<HashMap<&'static str, Instant>>> = Unsa
 static mut _SET: UnsafeCell<Vec<Benchmark>> = UnsafeCell::new(Vec::new());
 
 struct Benchmark {
+    #[allow(dead_code)]
     name: &'static str,
+    #[allow(dead_code)]
     time: u128,
 }
 impl Benchmark {
+    #[allow(dead_code)]
     fn new(name: &'static str, time: u128) -> Self {
         Self { name, time }
     }
