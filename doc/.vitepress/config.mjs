@@ -37,9 +37,9 @@ export default defineConfig({
           ]
         },
         {
-          text: '📋 RoadMap',
+          text: '⭐️ RoadMap',
           items: [
-            { text: 'Dev Plan', link: '/pages/roadmap' },
+            { text: 'Plan', link: '/pages/roadmap' },
           ]
         },
         {
