@@ -13,7 +13,6 @@ crate-type = ["lib"]
 
 [dependencies]
 chrono = "0.4.38"
-lazy_static = "1.5.0"
 log = "0.4.22"
 pcap_derive = { path = "../derive" }
 thiserror = "1.0.63"

@@ -868,7 +868,6 @@ dependencies = [
  "chrono",
  "enum_dispatch",
  "env_logger",
- "lazy_static",
  "log",
  "pcap_derive",
  "serde",

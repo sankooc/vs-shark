@@ -56,7 +56,7 @@ impl Display for LinkControlProtocol {
     }
 }
 impl LinkControlProtocol {
-    fn _type(&self) -> String {
+    fn _type(&self) -> &'static str {
         ppp_lcp_type_mapper(self._type)
     }
     fn _type_desc(&self) -> String {

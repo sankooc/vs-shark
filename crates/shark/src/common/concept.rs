@@ -284,9 +284,9 @@ impl DNSRecord {
         DNSRecord {
             // from: tcp.
             name: data.name(),
-            _type: data._type(),
+            _type: data._type().into(),
             proto: data.proto(),
-            class: data.class(),
+            class: data.class().into(),
             content: data.content(),
             ttl: data.ttl(),
         }

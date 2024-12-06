@@ -252,7 +252,7 @@ impl DomainService for RecordResource {
         self.name.clone()
     }
 
-    fn _type(&self) -> String {
+    fn _type(&self) -> &'static str {
         dns_type_mapper(self._type)
     }
 
@@ -268,7 +268,7 @@ impl DomainService for RecordResource {
         self.ttl
     }
 
-    fn class(&self) -> String {
+    fn class(&self) -> &'static str {
         dns_class_mapper(self.class)
     }
 }

@@ -45,20 +45,20 @@ impl crate::common::base::InfoPacket for DHCP {
     }
 }
 impl DHCP {
-    fn _type(&self) -> String {
+    fn _type(&self) -> &'static str {
         DHCP::dhcp_type(self._type)
     }
     fn op(&self) -> String {
         format!("Message type: {} ({})", self._type, self.op)
     }
-    fn hardware_type(&self) -> String {
+    fn hardware_type(&self) -> &'static str {
         arp_hardware_type_mapper(self.hardware_type as u16)
     }
     fn hardware_type_desc(&self) -> String {
         format!("Hardware type: {} ({:#04x})", self.hardware_type(), self.hardware_type)
     }
 
-    fn dhcp_type(code: u8) -> String {
+    fn dhcp_type(code: u8) -> &'static str {
         dhcp_type_mapper(code)
     }
     fn dhcp_message_type_desc(code: u8) -> String {
@@ -73,7 +73,7 @@ struct DHCPOption {
     extension: DHCPExtention,
 }
 impl DHCPOption {
-    fn _type(&self) -> String {
+    fn _type(&self) -> &'static str {
         dhcp_option_type_mapper(self.code)
     }
 }

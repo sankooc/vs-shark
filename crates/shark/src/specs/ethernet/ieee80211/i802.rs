@@ -146,7 +146,7 @@ impl IEE80211 {
                 reader._move(3);//OUI
                 let ptype = reader.read16(true)?;
                 p.ptype = ptype;
-                match etype_mapper(ptype).as_str() {
+                match etype_mapper(ptype) {
                     "unknown" => {}
                     _ => {
                         packet.build_backward(reader, 2, IEE80211::ptype_str(&p));

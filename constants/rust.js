@@ -6,10 +6,6 @@ import { rebuild } from './wireshark.js';
 
 import { oid_map } from './wireshark/oid/dump.js';
 
-const str = `use lazy_static::lazy_static;
-use std::collections::HashMap;
-`;
-
 
 const DNS_TYPE_MAP = rebuild('dns_type', parseInt);
 const PPP_TYPE_MAP = rebuild('ppp_type', parseInt);
@@ -20,19 +16,6 @@ const IEEE802_MANAGE_TAGS = rebuild('ieee802_tag', parseInt);
 const IEEE802_MANAGE_CAT = rebuild('ieee802_cat', parseInt);
 // const PPP_LCP_TYPE_MAP = rebuild('ppp_lcp_type', parseInt);
 
-const buildConstants = (name, obj, fn, typed) => {
-  const wk = Object.keys(obj).map((k) => {return `\t\tm.insert(${fn(k)}, "${obj[k]}");`}).join('\r\n');
-  return `\tpub static ref ${name}: HashMap<${typed}, &'static str> = {\r\n\t\tlet mut m = HashMap::new();
-${wk}\r\n\t\tm
-\t};\r\n`;
-};
-
-const buildMapper = (name, typed, _def) => {
-  const def = _def || "unknown";
-  return `pub fn ${name}_mapper(code:${typed}) -> String {
-    (*${name}_map.get(&code).unwrap_or(&"${def}")).into()
-  }`;
-}
 
 const items = [
   ['link_type', linktypeMap, k => parseInt(k, 10), 'u16'],
@@ -65,12 +48,6 @@ const items = [
   ['hash_algorithm', TLS_hash_algorithm, k => parseInt(k, 10), 'u8', 'none'],
   ['signature_algorithm', TLS_signature_algorithm, k => parseInt(k, 10), 'u8', 'none'],
 ];
-
-// const conts = items.map((item) => buildConstants(item[0]+'_map', item[1], item[2], item[3]));
-
-// let _content = str + "lazy_static! {\r\n" + conts.join('')+ "}";
-
-// _content += (items.map((item) => buildMapper(item[0], item[3], item[4])).join('\r\n'))
 
 const create_case = (mapper, parser) => {
   return Object.keys(mapper).map((k) => {

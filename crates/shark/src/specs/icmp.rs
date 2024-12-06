@@ -140,7 +140,7 @@ impl std::fmt::Display for ICMP6 {
     }
 }
 impl ICMP6 {
-    fn _type(&self) -> String {
+    fn _type(&self) -> &'static str {
         icmpv6_type_mapper(self._type as u16)
     }
     fn type_desc(&self) -> String {

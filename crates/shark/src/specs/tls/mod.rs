@@ -24,7 +24,7 @@ impl crate::common::base::InfoPacket for TLS {
         let len = self.records.len();
         if len > 0 {
             let one = self.records.get(0).unwrap();
-            one.borrow()._type()
+            one.borrow()._type().into()
         } else {
             String::from("TLS segment")
         }
@@ -47,13 +47,13 @@ const TLS_ALERT_DESC: &str = "Encrypted Alert";
 const TLS_APPLICATION: &str = "Encrypted Application Data";
 const TLS_HEARTBEAT: &str = "Encrypted HEARTBEAT";
 impl TLSRecord {
-    fn _type(&self) -> String {
+    fn _type(&self) -> &'static str {
         tls_content_type_mapper(self._type)
     }
     fn _type_desc(&self) -> String {
         format!("Content Type: {} ({})", self._type(), self._type)
     }
-    fn version(&self) -> String {
+    fn version(&self) -> &'static str {
         tls_min_type_mapper(self.min)
     }
     fn version_desc(&self) -> String {
