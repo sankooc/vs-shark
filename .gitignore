@@ -1,9 +1,6 @@
-temp/
-built/
-dist/
 node_modules/
 sandbox/
-.vscode/
+/.vscode/
 *lock.json
 extension/media/
 
