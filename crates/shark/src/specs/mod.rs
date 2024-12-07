@@ -110,7 +110,7 @@ pub enum ProtocolData {
     SIP,
 }
 
-pub fn _parse(proto: &'static str) -> anyhow::Result<&dyn Visitor>{
+pub fn _parse(proto: &'static str) -> anyhow::Result<&'static dyn Visitor>{
     let rs:&dyn Visitor = match proto {
         "ethernet" => &ethernet::ii::EthernetVisitor,
         "pppoes" => &ethernet::pppoes::PPPoESSVisitor,

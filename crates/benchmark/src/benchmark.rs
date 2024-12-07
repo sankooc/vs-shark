@@ -1,72 +1,61 @@
-use std::{cell::UnsafeCell, collections::HashMap, time::Instant};
+use std::collections::HashMap;
+use std::sync::RwLock;
+use std::time::Instant;
+use once_cell::sync::Lazy;
 
-static mut _SINGLETON: UnsafeCell<Option<HashMap<&'static str, Instant>>> = UnsafeCell::new(None);
-static mut _SET: UnsafeCell<Vec<Benchmark>> = UnsafeCell::new(Vec::new());
+#[warn(dead_code)]
+static _SET: Lazy<RwLock<Vec<Benchmark>>> = Lazy::new(|| RwLock::new(Vec::new()));
 
+static _SINGLETON: Lazy<RwLock<HashMap<&'static str, Instant>>> = Lazy::new(|| RwLock::new(HashMap::new()));
+
+#[allow(dead_code)]
 struct Benchmark {
-    #[allow(dead_code)]
     name: &'static str,
-    #[allow(dead_code)]
     time: u128,
 }
+
 impl Benchmark {
     #[allow(dead_code)]
     fn new(name: &'static str, time: u128) -> Self {
         Self { name, time }
     }
 }
-
 #[macro_export]
 macro_rules! arch_start {
     ($name:expr) => {{
-        unsafe {
-            if (*crate::benchmark::_SINGLETON.get()).is_none() {
-                *crate::benchmark::_SINGLETON.get() = Some(HashMap::new());
-            }
-            (*crate::benchmark::_SINGLETON.get()).as_mut().unwrap().insert($name, std::time::Instant::now());
-        }
+        crate::benchmark::_SINGLETON.write().unwrap().insert($name, std::time::Instant::now());
     }};
 }
 
 #[macro_export]
 macro_rules! arch_finish {
     ($name:expr) => {{
-        unsafe {
-            if (*crate::benchmark::_SINGLETON.get()).is_none() {
-                *crate::benchmark::_SINGLETON.get() = Some(HashMap::new());
-            }
-            if let Some(start) = (*crate::benchmark::_SINGLETON.get()).as_mut().unwrap().remove($name) {
-                (*crate::benchmark::_SET.get()).push(crate::benchmark::Benchmark::new($name, start.elapsed().as_millis()));
-                // let elapsed = start.elapsed();
-                // println!("[{}] Elapsed time: {:.3} ms", $name, elapsed.as_millis());
-            } else {
-                println!("[{}] Timer not found or already finished", $name);
-            }
+        if let Some(start) = crate::benchmark::_SINGLETON.write().unwrap().remove($name) {
+            crate::benchmark::_SET.write().unwrap().push(crate::benchmark::Benchmark::new($name, start.elapsed().as_millis()));
+        } else {
+            println!("[{}] Timer not found or already finished", $name);
         }
     }};
 }
+
 #[macro_export]
 macro_rules! arch_print {
     ($($vals:expr),+) => {
-        unsafe {
-            let mut table = prettytable::Table::new();
-            let mut header:Vec<prettytable::Cell> = vec![$($vals),+].iter().map(|v| prettytable::Cell::new(v)).collect();
-            header.push(prettytable::Cell::new("Elapsed"));
-            table.add_row(prettytable::Row::new(header));
-            for b in (*crate::benchmark::_SET.get()).iter() {
-                let mut list = b.name.split("#").map(|f| prettytable::Cell::new(f)).collect::<Vec<_>>();
-                list.push(prettytable::Cell::new(format!("{}ms", b.time).as_str()));
-                table.add_row(prettytable::Row::new(list));
-            }
-            table.printstd();
-
+        let mut table = prettytable::Table::new();
+        let mut header:Vec<prettytable::Cell> = vec![$($vals),+].iter().map(|v| prettytable::Cell::new(v)).collect();
+        header.push(prettytable::Cell::new("Elapsed"));
+        table.add_row(prettytable::Row::new(header));
+        for b in crate::benchmark::_SET.read().unwrap().iter() {
+            let mut list = b.name.split("#").map(|f| prettytable::Cell::new(f)).collect::<Vec<_>>();
+            list.push(prettytable::Cell::new(format!("{}ms", b.time).as_str()));
+            table.add_row(prettytable::Row::new(list));
         }
+        table.printstd();
+
     };
     () => {{
-        unsafe {
-            for b in (*crate::benchmark::_SET.get()).iter() {
-                println!("[{}] Elapsed time: {:.3} ms", b.name, b.time);
-            }
+        for b in crate::benchmark::_SET.read().unwrap().iter() {
+            println!("[{}] Elapsed time: {:.3} ms", b.name, b.time);
         }
     }};
 }
@@ -74,7 +63,7 @@ macro_rules! arch_print {
 #[cfg(test)]
 mod benchmark {
 
-    use std::{collections::HashMap, fs};
+    use std::fs;
 
     use shark::{common::base::Configuration, specs::sip::{parse_token, parse_token_with_cache}};
 
@@ -97,16 +86,16 @@ mod benchmark {
         load_data("tls.pcapng");
         load_data("wifi.pcap");
         load_data("dns.pcapng");
-        load_data("pppoe.pcap");
-        load_data("sip.pcap");
-        load_data("slow.pcap");
+        // load_data("pppoe.pcap");
+        // load_data("sip.pcap");
+        // load_data("slow.pcap");
         arch_print!("type", "times");
     }
 
     #[test]
     fn test_parse(){
         env_logger::builder().is_test(true).try_init().unwrap();
-        let f = "slow.pcap";
+        let f = "http.pcap";
         let fname = format!("../../../pcaps/{}", f);
         if let Ok(_) = fs::exists(&fname) {
             let data: Vec<u8> = fs::read(&fname).unwrap();

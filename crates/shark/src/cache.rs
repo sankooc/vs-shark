@@ -1,41 +1,31 @@
-use std::{cell::UnsafeCell, collections::HashMap};
+use std::collections::HashMap;
+use std::cell::UnsafeCell;
 
 use crate::specs::sip::SIPURI;
-
-static mut SINGLETON: UnsafeCell<Option<HashMap<&'static str, SIPURI>>> = UnsafeCell::new(None);
-static mut _CONFIG: UnsafeCell<Option<HashMap<&'static str, bool>>> = UnsafeCell::new(None);
-
-
-
-pub fn get_config(key: &'static str) -> bool {
-    unsafe {
-        if (*_CONFIG.get()).is_none() {
-            *_CONFIG.get() = Some(HashMap::new());
-        }
-        *(*_CONFIG.get()).as_mut().unwrap().get(key).unwrap_or(&true)
-    }
-
+struct Singleton {
+    inner: UnsafeCell<Option<HashMap<&'static str, SIPURI>>>,
 }
-pub fn set_config(key: &'static str, value: bool) {
-    unsafe {
-        if (*_CONFIG.get()).is_none() {
-            *_CONFIG.get() = Some(HashMap::new());
-        }
-        (*_CONFIG.get()).as_mut().unwrap().insert(key, value);
-    }
-}
+
+unsafe impl Sync for Singleton {}
+
+static SINGLETON: Singleton = Singleton {
+    inner: UnsafeCell::new(None),
+};
+
 fn get_sip_singleton() -> &'static mut HashMap<&'static str, SIPURI> {
     unsafe {
-        if (*SINGLETON.get()).is_none() {
-            *SINGLETON.get() = Some(HashMap::new());
+        let inner = &mut *SINGLETON.inner.get();
+        if inner.is_none() {
+            *inner = Some(HashMap::new()); // 初始化 HashMap
         }
-        (*SINGLETON.get()).as_mut().unwrap()
+        inner.as_mut().unwrap()
     }
 }
 
 pub fn get_sip_url(line: &str) -> Option<&SIPURI> {
-    get_sip_singleton().get(line)
+     get_sip_singleton().get(line) 
 }
+
 pub fn add_sip_url(line: &'static str, data: SIPURI) {
-    get_sip_singleton().insert(line, data);
+     get_sip_singleton().insert(line, data);
 }

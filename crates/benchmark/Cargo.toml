@@ -3,11 +3,9 @@ name = "benchmark"
 version = "0.1.0"
 edition = "2021"
 
-[profile.dev]
-panic = "unwind"
-
 [dependencies]
 shark = { path = "../shark"}
+once_cell.workspace = true
 
 
 [dev-dependencies]

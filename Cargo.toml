@@ -8,3 +8,6 @@ members = [
 
 [profile.release]
 panic = "unwind"
+
+[workspace.dependencies]
+once_cell = "1.20.2"

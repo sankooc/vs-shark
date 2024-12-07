@@ -269,7 +269,7 @@ impl SIPURI {
 }
 
 
-pub fn parse_token_with_cache(line: &'static str) -> &SIPURI{
+pub fn parse_token_with_cache(line: &'static str) -> &'static SIPURI{
     if let Some(data) = get_sip_url(line) {
         return data;
     } else {
