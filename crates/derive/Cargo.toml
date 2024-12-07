@@ -11,5 +11,5 @@ name = "test"
 path = "test/progress.rs"
 
 [dependencies]
-syn = "2.0"
-quote = "1.0"
+syn.workspace = true
+quote.workspace = true
