@@ -36,11 +36,13 @@ export default defineConfig({
             { text: 'Wifi', link: '/pages/link_127.md' },
           ]
         },
+        // {
+        //   text: '⭐️ RoadMap',
+        //   link: '/pages/roadmap'
+        // },
         {
-          text: '⭐️ RoadMap',
-          items: [
-            { text: 'Plan', link: '/pages/roadmap' },
-          ]
+          text: '⚓ Changelog',
+          link: '/pages/CHANGELOG'
         },
         {
           text: '📊 Benchmark',

@@ -1,6 +1,8 @@
 pre:
 	cd constants && node rust.js
-wasm: pre
+web-site:
+	cp extension/CHANGELOG.md doc/pages/
+wasm: pre web-site
 	cd crates/wasm && make web
 wasm-debug:
 	cd crates/wasm && make web-debug
