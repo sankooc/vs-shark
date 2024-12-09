@@ -8,6 +8,7 @@
 		"type": "git",
 		"url": "https://github.com/sankooc/vs-shark/tree/master/extension"
 	},
+	"homepage": "https://sankooc.github.io/vs-shark",
 	"engines": {
 		"vscode": "^1.86.2"
 	},

@@ -63,7 +63,7 @@ macro_rules! arch_print {
 #[cfg(test)]
 mod benchmark {
 
-    use std::fs;
+    use std::{cell::{Cell, RefCell}, fs};
 
     use shark::{common::base::Configuration, specs::sip::{parse_token, parse_token_with_cache}};
 
@@ -131,5 +131,42 @@ mod benchmark {
         }
         arch_finish!("mapping");
         arch_print!();
+    }
+    #[test]
+    fn test_mut(){
+        struct A {
+            count: Cell<usize>
+        }
+        struct MutA {
+            count: usize
+        }
+        let times = 10000000;
+        arch_start!("refcell");
+        let a = RefCell::new(A { count: Cell::new(0) });
+        for i in 0..times {
+            let reff = a.borrow_mut();
+            reff.count.set(i);
+            drop(reff)
+        }
+        arch_finish!("refcell");
+
+        
+        arch_start!("cell");
+        let a = A { count: Cell::new(0) };
+        for i in 0..times {
+            a.count.set(i);
+        }
+        arch_finish!("cell");
+        
+        arch_start!("mut");
+        let mut a = MutA { count: 0 };
+        for i in 0..times {
+            a.count = i;
+        }
+        arch_finish!("mut");
+
+        arch_print!()
+
+
     }
 }
