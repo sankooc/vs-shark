@@ -132,7 +132,7 @@ pub fn to_oid(slice: &[u8]) -> String {
 //     }
 // }
 
-pub trait SEQUENCE {
+pub trait SEQUENCE: Sized {
     fn decode(&mut self, packet: &PacketContext<Self>, reader: &Reader, len: usize) -> Result<()> {
         let (_type, _len) = TLV::decode(reader, len)?;
         self._decode(packet, reader, _len)
@@ -166,7 +166,7 @@ pub trait SEQUENCE {
     }
 }
 
-pub trait BITSTRING {
+pub trait BITSTRING: Sized {
     fn decode(&mut self, packet: &PacketContext<Self>, reader: &Reader, len: usize) -> Result<()> {
         let (_type, _len) = TLV::decode(reader, len)?;
         self._decode(packet, reader, _len)
@@ -181,7 +181,7 @@ pub trait BITSTRING {
     fn parsed(&mut self, packet: &PacketContext<Self>, val: String);
 }
 
-pub trait INT {
+pub trait INT: Sized {
     fn _decode(&mut self, packet: &PacketContext<Self>, reader: &Reader, len: usize) -> Result<()> {
         let slice = reader.slice(len);
         let str = format!("{:#x?}", slice);

@@ -175,7 +175,7 @@ pub fn content_len(_http: Ref2<HTTP>, body: Vec<u8>) ->Result<ProtocolData> {
     if let ProtocolData::HTTP(packet) = &rs {
         let len = body.len();
         let content = Rc::new(body);
-        let reader = Reader::new_raw(content.clone());
+        let reader = Reader::new(content.clone());
         packet._build(&reader, 0, len, None, format!("File Data: {} bytes", len));
         let mut reff = _http.as_ref().borrow_mut();
         reff.len = len;

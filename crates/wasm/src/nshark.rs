@@ -83,10 +83,11 @@ pub struct WContext {
 impl WContext {
     #[wasm_bindgen(constructor)]
     pub fn new(s: &Uint8Array, conf: Conf) -> WContext {
-        let mut slice = vec![0; s.length() as usize];
-        s.copy_to(&mut slice[..]);
+        // let mut slice = vec![0; s.length() as usize];
+        // s.copy_to(&mut slice[..]);
+        let slice = s.to_vec();
         WContext {
-            ctx: Box::new(load_data(&slice, conf.into()).unwrap()),
+            ctx: Box::new(load_data(slice, conf.into()).unwrap()),
         }
     }
     #[wasm_bindgen]

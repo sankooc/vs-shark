@@ -1,5 +1,5 @@
 
-use std::{cell::Cell, cmp, rc::Rc, str::from_utf8};
+use std::{cell::Cell, cmp, ops::Range, rc::Rc, str::from_utf8};
 
 use anyhow::{bail, Result};
 
@@ -57,40 +57,89 @@ impl AReader for SliceReader<'_> {
         return self.cursor.get();
     }
     fn _set(&self, cursor: usize) {
-        let len = self._get_data().len();
+        let len = self.len();
         let min = cmp::min(len, cursor);
         self.cursor.set(min);
+    }
+}
+
+
+
+#[derive(Clone)]
+pub struct DataSource {
+    data: Rc<Vec<u8>>,
+    range: Range<usize>,
+}
+
+impl DataSource {
+    pub fn new(data:Rc<Vec<u8>>) -> Self{
+        let len = data.len();
+        Self{data, range: 0..len}
+    }
+    pub fn slice(&self, range: Range<usize>) -> Self{
+        let start = cmp::min(range.start + self.range.start, self.range.end);
+        let end = cmp::min(range.end + self.range.start, self.range.end);
+        Self{data: self.data.clone(), range: start..end}
+    }
+    pub fn data(&self) -> Rc<Vec<u8>>{
+        let _data = self.data_ref();
+        Rc::new(_data.to_vec())
+    }
+    pub fn data_ref(&self) -> &[u8] {
+        &self.data[self.range.clone()]
+    }
+    pub fn empty() -> Self{
+        Self{data: Rc::new(Vec::new()), range: 0..0}
+    }
+    pub fn renew(&self) -> Self{
+        Self::new(self.data.clone())
+    }
+    pub fn len(&self) -> usize {
+        self.range.end - self.range.start
     }
 }
 
 #[derive(Clone)]
 pub struct Reader {
-    _raw: Rc<Vec<u8>>,
     cursor: Cell<usize>,
+    source: DataSource,
 }
 
 impl AReader for Reader {
     fn _get_data(&self) -> &[u8] {
-        return self._raw.as_ref();
+        self.source.data_ref()
     }
     fn len(&self) -> usize {
-        self._get_data().len()
+        self.source.len()
     }
     fn cursor(&self) -> usize {
         return self.cursor.get();
     }
     fn _set(&self, cursor: usize) {
-        let len = self._get_data().len();
+        let len = self.len();
         let min = cmp::min(len, cursor);
         self.cursor.set(min);
     }
 }
 impl Reader {
-    pub fn get_raw(&self) -> Rc<Vec<u8>> {
-        self._raw.clone()
+    pub fn new(raw: Rc<Vec<u8>>) -> Self {
+        let source = DataSource::new(raw);
+        let cursor = Cell::new(0);
+        Self{source, cursor}
     }
-    pub fn new_raw(raw: Rc<Vec<u8>>) -> Reader {
-        Reader { _raw: raw, cursor: Cell::new(0) }
+    pub fn new_raw(raw: Vec<u8>) -> Self {
+        Self::new(Rc::new(raw))
+    }
+
+    pub fn slice_reader(&self, count: usize) -> Self {
+        let cursor = Cell::new(0);
+        let start = self.cursor();
+        let source = self.source.slice(start..start + count);
+        Self{source, cursor}
+    }
+
+    pub fn get_source(&self) -> DataSource{
+        self.source.clone()
     }
 
     pub fn _read_enter(reader: &Reader) -> Result<String> {
@@ -152,7 +201,7 @@ impl Reader {
     // }
 }
 
-pub trait AReader: Clone {
+pub trait AReader: Clone + Sized {
     /// Return a slice of the internal data.
     ///
     /// The slice is a view into the internal data, and is not cloned or copied.
@@ -163,12 +212,15 @@ pub trait AReader: Clone {
     fn len(&self) -> usize;
     fn _set(&self, cursor: usize);
 
+    fn data_refer(&self) -> Rc<Vec<u8>> {
+        Rc::new(self._get_data().to_vec())
+    }
     /// Move the reader forward by the given number of bytes, if possible.
     ///
     /// If the move is successful, true is returned. Otherwise, false is returned.
     /// The position of the reader is only changed if the move is successful.
     fn _move(&self, len: usize) -> bool {
-        let t = self._get_data().len();
+        let t = self.len();
         let c = self.cursor();
         if c + len > t {
             return false;
@@ -483,10 +535,10 @@ pub trait AReader: Clone {
     ///
     /// 
     fn left(&self) -> usize {
-        if self._get_data().len() < self.cursor() {
+        if self.len() < self.cursor() {
             return 0;
         }
-        self._get_data().len() - self.cursor()
+        self.len() - self.cursor()
     }
     /// Check if there are any bytes left to read from the stream.
     ///
@@ -494,7 +546,7 @@ pub trait AReader: Clone {
     ///
     /// 
     fn has(&self) -> bool {
-        return self.cursor() < self._get_data().len();
+        return self.cursor() < self.len();
     }
     fn _read_space(&self, limit: usize) -> Option<String> {
         if self.left() < limit {

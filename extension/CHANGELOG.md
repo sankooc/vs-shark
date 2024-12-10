@@ -37,5 +37,5 @@
 - 0.3.12
   * support sip
 
-- 0.4.0
-- 0.5.0
+- 0.3.13
+  * reduce mem-copy operation, improve 17% file-load performance

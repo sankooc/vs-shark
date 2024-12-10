@@ -75,33 +75,35 @@ mod benchmark {
             let task = format!("{}#{}", f, times).leak();
             arch_start!(task);
             for _ in 0..times {
-                let _ = shark::entry::load_data(&data, Configuration::new(false)).unwrap();
+                let _ = shark::entry::load_data(data.clone(), Configuration::new(false)).unwrap();
             }
             arch_finish!(task);
         }
     }
     #[test]
     fn load_bench() {
+        // load_data("11.pcapng");
         load_data("http.pcap");
         load_data("tls.pcapng");
         load_data("wifi.pcap");
         load_data("dns.pcapng");
-        // load_data("pppoe.pcap");
-        // load_data("sip.pcap");
-        // load_data("slow.pcap");
+        load_data("pppoe.pcap");
+        load_data("sip.pcap");
+        load_data("slow.pcap");
         arch_print!("type", "times");
     }
 
     #[test]
     fn test_parse(){
         env_logger::builder().is_test(true).try_init().unwrap();
-        let f = "http.pcap";
+        // let f = "http.pcap";
+        let f = "11.pcapng";
         let fname = format!("../../../pcaps/{}", f);
         if let Ok(_) = fs::exists(&fname) {
             let data: Vec<u8> = fs::read(&fname).unwrap();
             let task = format!("file: {}", f).leak();
             arch_start!(task);
-            let _ = shark::entry::load_data(&data, Configuration::new(false)).unwrap();
+            let _ = shark::entry::load_data(data, Configuration::new(false)).unwrap();
             arch_finish!(task);
             arch_print!();
         }
