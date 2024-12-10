@@ -2,6 +2,7 @@ use crate::common::base::{Configuration, Instance};
 use crate::common::io::{AReader, Reader, SliceReader};
 use crate::common::FileType;
 use anyhow::Result;
+// use instant::Instant;
 
 fn parse_head(data: &[u8]) -> Result<String> {
     let reader = SliceReader::new(data);
@@ -20,6 +21,7 @@ fn parse_interface(data: &[u8]) -> Result<u16> {
 }
 pub fn parse(reader: Reader, conf: Configuration) -> Result<Instance> {
     let mut instance = Instance::new(reader, FileType::PCAPNG, conf);
+    // let start = Instant::now();
     loop {
         let block_type = format!("{:#010x}", instance.reader.read32(false)?);
         let len = instance.reader.read32(false)?;
@@ -76,5 +78,7 @@ pub fn parse(reader: Reader, conf: Configuration) -> Result<Instance> {
         }
     }
     instance.flush();
+    // let elapsed = start.elapsed().as_millis() as usize;
+    // instance.ctx.cost = elapsed;
     Ok(instance)
 }

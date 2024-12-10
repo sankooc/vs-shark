@@ -2,11 +2,11 @@ use crate::common::base::{Configuration, Instance};
 use crate::common::io::{AReader, Reader};
 use crate::common::FileType;
 use anyhow::Result;
+// use instant::Instant;
 
 pub fn parse(_reader: Reader, conf: Configuration) -> Result<Instance> {
+    // let start = Instant::now();
     let mut instance = Instance::new(_reader, FileType::PCAP, conf);
-    // let reader = SliceReader::new(data);
-    // let reader = &instance.reader;
     let _magic = instance.reader.read32(true)?;
     let major = instance.reader.read16(false)?;
     let minor = instance.reader.read16(false)?;
@@ -33,5 +33,7 @@ pub fn parse(_reader: Reader, conf: Configuration) -> Result<Instance> {
         instance.reader._set(finish);
     }
     instance.flush();
+    // let elapsed = start.elapsed().as_millis() as usize;
+    // instance.ctx.cost = elapsed;
     Ok(instance)
 }
