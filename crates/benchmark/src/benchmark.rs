@@ -4,20 +4,31 @@ use std::time::Instant;
 use once_cell::sync::Lazy;
 
 #[warn(dead_code)]
-static _SET: Lazy<RwLock<Vec<Benchmark>>> = Lazy::new(|| RwLock::new(Vec::new()));
+static _SET: Lazy<RwLock<HashMap<&'static str, Benchmark>>> = Lazy::new(|| RwLock::new(HashMap::new()));
 
 static _SINGLETON: Lazy<RwLock<HashMap<&'static str, Instant>>> = Lazy::new(|| RwLock::new(HashMap::new()));
 
 #[allow(dead_code)]
 struct Benchmark {
-    name: &'static str,
-    time: u128,
+    total: u128,
+    times: usize,
+    min: u128,
+    max: u128,
+    // name: &'static str,
+    // time: u128,
+    
 }
 
 impl Benchmark {
     #[allow(dead_code)]
-    fn new(name: &'static str, time: u128) -> Self {
-        Self { name, time }
+    fn new(time: u128) -> Self {
+        Self { times: 1, total: time, min: time, max: time } 
+    }
+    fn add(&mut self, time: u128){
+        self.times += 1;
+        self.total += time;
+        self.min = self.min.min(time);
+        self.max = self.max.max(time);
     }
 }
 #[macro_export]
@@ -31,7 +42,13 @@ macro_rules! arch_start {
 macro_rules! arch_finish {
     ($name:expr) => {{
         if let Some(start) = crate::benchmark::_SINGLETON.write().unwrap().remove($name) {
-            crate::benchmark::_SET.write().unwrap().push(crate::benchmark::Benchmark::new($name, start.elapsed().as_millis()));
+            let time =  start.elapsed().as_millis();
+            let mut set = crate::benchmark::_SET.write().unwrap();
+            if let Some(cc) = set.get_mut($name) {
+                cc.add(time);
+            } else {
+                set.insert($name, crate::benchmark::Benchmark::new(time));
+            }
         } else {
             println!("[{}] Timer not found or already finished", $name);
         }
@@ -40,23 +57,21 @@ macro_rules! arch_finish {
 
 #[macro_export]
 macro_rules! arch_print {
-    ($($vals:expr),+) => {
+    () => {{
         let mut table = prettytable::Table::new();
-        let mut header:Vec<prettytable::Cell> = vec![$($vals),+].iter().map(|v| prettytable::Cell::new(v)).collect();
-        header.push(prettytable::Cell::new("Elapsed"));
+        let header:Vec<prettytable::Cell> = vec!["name", "times", "min", "max", "avg"].iter().map(|v| prettytable::Cell::new(v)).collect();
         table.add_row(prettytable::Row::new(header));
-        for b in crate::benchmark::_SET.read().unwrap().iter() {
-            let mut list = b.name.split("#").map(|f| prettytable::Cell::new(f)).collect::<Vec<_>>();
-            list.push(prettytable::Cell::new(format!("{}ms", b.time).as_str()));
+        for (name, val) in crate::benchmark::_SET.read().unwrap().iter() {
+            let mut ll: Vec<String> = vec![(*name).into()];
+            ll.push(format!("{}", val.times));
+            ll.push(format!("{}Ms", val.min));
+            ll.push(format!("{}Ms", val.max));
+            let avg = val.total as f64 / val.times as f64;
+            ll.push(format!("{:.3}Ms", avg));
+            let list = ll.iter().map(|f| prettytable::Cell::new(f)).collect::<Vec<_>>();
             table.add_row(prettytable::Row::new(list));
         }
         table.printstd();
-
-    };
-    () => {{
-        for b in crate::benchmark::_SET.read().unwrap().iter() {
-            println!("[{}] Elapsed time: {:.3} ms", b.name, b.time);
-        }
     }};
 }
 
@@ -69,15 +84,15 @@ mod benchmark {
 
     fn load_data(f: &str) {
         let fname = format!("../../../pcaps/{}", f);
-        let times = 3;
+        let times = 10;
         if let Ok(_) = fs::exists(&fname) {
             let data: Vec<u8> = fs::read(&fname).unwrap();
-            let task = format!("{}#{}", f, times).leak();
-            arch_start!(task);
+            let task = format!("{}", f).leak();
             for _ in 0..times {
+                arch_start!(task);
                 let _ = shark::entry::load_data(data.clone(), Configuration::new(false)).unwrap();
+                arch_finish!(task);
             }
-            arch_finish!(task);
         }
     }
     #[test]
@@ -89,8 +104,8 @@ mod benchmark {
         load_data("dns.pcapng");
         load_data("pppoe.pcap");
         load_data("sip.pcap");
-        load_data("slow.pcap");
-        arch_print!("type", "times");
+        // load_data("slow.pcap");
+        arch_print!();
     }
 
     #[test]
@@ -101,7 +116,7 @@ mod benchmark {
         let fname = format!("../../../pcaps/{}", f);
         if let Ok(_) = fs::exists(&fname) {
             let data: Vec<u8> = fs::read(&fname).unwrap();
-            let task = format!("file: {}", f).leak();
+            let task = format!("{}", f).leak();
             arch_start!(task);
             let _ = shark::entry::load_data(data, Configuration::new(false)).unwrap();
             arch_finish!(task);

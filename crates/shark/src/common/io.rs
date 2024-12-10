@@ -212,9 +212,6 @@ pub trait AReader: Clone + Sized {
     fn len(&self) -> usize;
     fn _set(&self, cursor: usize);
 
-    fn data_refer(&self) -> Rc<Vec<u8>> {
-        Rc::new(self._get_data().to_vec())
-    }
     /// Move the reader forward by the given number of bytes, if possible.
     ///
     /// If the move is successful, true is returned. Otherwise, false is returned.
