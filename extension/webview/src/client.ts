@@ -40,9 +40,9 @@ export abstract class PCAPClient {
   init(): void {
     if (!this.ctx && this.data) {
       try {
-        const _start = Date.now();
+        // const _start = Date.now();
         this.ctx = load(this.data as Uint8Array, Conf.new(false));
-        this.cost = Date.now() - _start;
+        // this.cost = Date.now() - _start;
         this._info();
       } catch (e) {
         this.emitMessage(new ComMessage('_error', "failed to open file"));
@@ -54,7 +54,7 @@ export abstract class PCAPClient {
   getInfo(): IContextInfo {
     if (!this._cache.info) {
       this._cache.info = JSON.parse(this.ctx.info());
-      this._cache.info.cost = this.cost;
+      // this._cache.info.cost = this.cost;
     }
     return this._cache.info;
   }

@@ -17,7 +17,6 @@ use crate::{
 };
 use anyhow::{Ok, Result};
 use std::fmt::Display;
-use std::rc::Rc;
 
 pub struct Flag;
 
@@ -72,7 +71,7 @@ impl IEE80211 {
     /// function returns None.
     fn management(&self) -> Option<PacketContext<Management>> {
         if let Some(_data) = &self.data {
-            let _reader = Reader::new_raw(Rc::new(_data.clone()));
+            let _reader = Reader::new_raw(_data.clone());
             return Management::create(&_reader, self).ok();
         }
         None

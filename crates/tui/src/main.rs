@@ -30,7 +30,7 @@ fn main() -> Result<()> {
     }
     let data: Vec<u8> = fs::read(fname).unwrap();
     let start = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis() as usize;
-    if let Ok(mut _ctx) = load_data(&data,Configuration::new(false)) {
+    if let Ok(mut _ctx) = load_data(data,Configuration::new(false)) {
         let end = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis() as usize;
         let ctx = &mut _ctx.ctx;
         ctx.cost = end - start;

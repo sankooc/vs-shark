@@ -39,7 +39,7 @@ use crate::common::{FileInfo, FileType};
 use super::{
     concept::{Connect, Criteria, DNSRecord, Field, FrameInfo, HttpMessage, ListResult, TCPConversation, TLSHS},
     filter::PacketProps,
-    io::SliceReader,
+    io::{DataSource, SliceReader},
     util::date_str,
 };
 
@@ -49,7 +49,7 @@ pub struct Configuration {
 }
 impl Configuration {
     pub fn new(resolve_all: bool) -> Self {
-        Self{resolve_all}
+        Self { resolve_all }
     }
     pub fn resolve_all(&self) -> bool {
         self.resolve_all
@@ -144,20 +144,32 @@ where
         }
     }
     pub fn _build(&self, reader: &Reader, start: usize, size: usize, props: Option<(&'static str, &'static str)>, content: String) {
-        self.fields.borrow_mut().push(Box::new(TXTPosition { start, size, data: reader.get_raw(), content, props }));
+        self.fields.borrow_mut().push(Box::new(TXTPosition {
+            start,
+            size,
+            data: reader.get_source(),
+            content,
+            props,
+        }));
     }
     pub fn build_txt(&self, content: String) {
         self.fields.borrow_mut().push(Box::new(TXTPosition {
             start: 0,
             size: 0,
-            data: Rc::new(Vec::new()),
+            data: DataSource::empty(),
             content,
             props: None,
         }));
     }
 
     pub fn _build_lazy(&self, reader: &Reader, start: usize, size: usize, props: Option<(&'static str, &'static str)>, render: fn(&T) -> String) {
-        self.fields.borrow_mut().push(Box::new(StringPosition { start, size, data: reader.get_raw(), render, props }));
+        self.fields.borrow_mut().push(Box::new(StringPosition {
+            start,
+            size,
+            data: reader.get_source(),
+            render,
+            props,
+        }));
     }
     pub fn build_packet_no_position_lazy<K: 'static>(&self, render: fn(&T) -> Option<PacketContext<K>>)
     where
@@ -166,7 +178,7 @@ where
         self.fields.borrow_mut().push(Box::new(PhantomBuilder {
             start: 0,
             size: 0,
-            data: Rc::new(Vec::new()),
+            data: DataSource::empty(),
             render,
             props: None,
         }));
@@ -197,10 +209,22 @@ where
     }
     pub fn build_compact(&self, content: String, data: Rc<Vec<u8>>) {
         let size = data.len();
-        self.fields.borrow_mut().push(Box::new(TXTPosition { start: 0, size, data, content, props: None }));
+        self.fields.borrow_mut().push(Box::new(TXTPosition {
+            start: 0,
+            size,
+            data: DataSource::new(data),
+            content,
+            props: None,
+        }));
     }
     pub fn append_string(&self, content: String, data: Rc<Vec<u8>>) {
-        self.fields.borrow_mut().push(Box::new(TXTPosition { start: 0, size: 0, data, content, props: None }));
+        self.fields.borrow_mut().push(Box::new(TXTPosition {
+            start: 0,
+            size: 0,
+            data: DataSource::new(data),
+            content,
+            props: None,
+        }));
     }
     pub fn build<K>(&self, reader: &Reader, opt: impl FnOnce(&Reader) -> K, key: Option<&'static str>, content: String) -> K
     where
@@ -249,7 +273,7 @@ where
         Ok(val)
     }
 
-    pub fn build_fn<K, P>(&self, reader: &Reader, opt: impl FnOnce(&Reader) -> Result<K>, key: Option<&'static str>, mapper: impl Fn(K)-> P) -> Result<K>
+    pub fn build_fn<K, P>(&self, reader: &Reader, opt: impl FnOnce(&Reader) -> Result<K>, key: Option<&'static str>, mapper: impl Fn(K) -> P) -> Result<K>
     where
         K: Clone + ToString,
         P: Into<String>,
@@ -265,7 +289,13 @@ where
             props = Some((k, v.leak()));
         }
         let content = mapper(val.clone()).into();
-        self.fields.borrow_mut().push(Box::new(TXTPosition { start, size, data: reader.get_raw(), content, props }));
+        self.fields.borrow_mut().push(Box::new(TXTPosition {
+            start,
+            size,
+            data: reader.get_source(),
+            content,
+            props,
+        }));
         Ok(val)
     }
     pub fn build_packet<K, M>(&self, reader: &Reader, opt: impl FnOnce(&Reader, Option<M>) -> Result<PacketContext<K>>, packet_opt: Option<M>, head: Option<String>) -> Result<Ref2<K>>
@@ -291,7 +321,7 @@ where
         self.fields.borrow_mut().push(Box::new(FieldPosition {
             start,
             size,
-            data: reader.get_raw(),
+            data: reader.get_source(),
             head,
             packet,
             props: None,
@@ -306,8 +336,14 @@ where
         let val: M = opt(reader)?;
         let end = reader.cursor();
         let size = end - start;
-        let data = reader.get_raw().clone();
-        self.fields.borrow_mut().push(Box::new(PhantomBuilder { start, size, data, render, props: None }));
+        let data = reader.get_source();
+        self.fields.borrow_mut().push(Box::new(PhantomBuilder {
+            start,
+            size,
+            data,
+            render,
+            props: None,
+        }));
         Ok(val)
     }
 }
@@ -317,7 +353,7 @@ pub struct PhantomBuilder<K, T> {
     props: Option<(&'static str, &'static str)>,
     pub start: usize,
     pub size: usize,
-    data: Rc<Vec<u8>>,
+    data: DataSource,
 }
 impl<K, T> FieldBuilder<T> for PhantomBuilder<K, T>
 where
@@ -327,7 +363,7 @@ where
         let _packet = (self.render)(t);
         if let Some(packet) = _packet {
             let sum = packet.get().borrow().summary();
-            let mut field = Field::new(self.start, self.size, self.data.clone(), sum);
+            let mut field = Field::new(self.start, self.size, self.data.data(), sum);
             let fields = packet.get_fields();
             field.children = fields;
             return Some(field);
@@ -336,7 +372,7 @@ where
     }
 
     fn data(&self) -> Rc<Vec<u8>> {
-        self.data.clone()
+        self.data.data()
     }
     fn get_props(&self) -> Option<(&'static str, &'static str)> {
         self.props.clone()
@@ -345,7 +381,7 @@ where
 pub struct Position<T> {
     pub start: usize,
     pub size: usize,
-    data: Rc<Vec<u8>>,
+    data: DataSource,
     props: Option<(&'static str, &'static str)>,
     pub render: fn(usize, usize, &T) -> Field,
 }
@@ -355,7 +391,7 @@ impl<T> FieldBuilder<T> for Position<T> {
     }
 
     fn data(&self) -> Rc<Vec<u8>> {
-        self.data.clone()
+        self.data.data()
     }
     fn get_props(&self) -> Option<(&'static str, &'static str)> {
         self.props.clone()
@@ -368,7 +404,7 @@ where
 {
     pub start: usize,
     pub size: usize,
-    data: Rc<Vec<u8>>,
+    data: DataSource,
     head: Option<String>,
     props: Option<(&'static str, &'static str)>,
     pub packet: PacketContext<T>,
@@ -382,14 +418,14 @@ where
             Some(t) => t,
             _ => self.packet.get().borrow().summary(),
         };
-        let mut field = Field::new(self.start, self.size, self.data.clone(), summary);
+        let mut field = Field::new(self.start, self.size, self.data.data(), summary);
         let fields = self.packet.get_fields();
         field.children = fields;
         Some(field)
     }
 
     fn data(&self) -> Rc<Vec<u8>> {
-        self.data.clone()
+        self.data.data()
     }
     fn get_props(&self) -> Option<(&'static str, &'static str)> {
         self.props.clone()
@@ -399,18 +435,18 @@ where
 pub struct StringPosition<T> {
     pub start: usize,
     pub size: usize,
-    data: Rc<Vec<u8>>,
+    data: DataSource,
     pub render: fn(&T) -> String,
     props: Option<(&'static str, &'static str)>,
 }
 impl<T> FieldBuilder<T> for StringPosition<T> {
     fn build(&self, t: &T) -> Option<Field> {
         let summary = (self.render)(t);
-        Some(Field::new(self.start, self.size, self.data.clone(), summary))
+        Some(Field::new(self.start, self.size, self.data.data(), summary))
     }
 
     fn data(&self) -> Rc<Vec<u8>> {
-        self.data.clone()
+        self.data.data()
     }
     fn get_props(&self) -> Option<(&'static str, &'static str)> {
         self.props.clone()
@@ -420,16 +456,16 @@ impl<T> FieldBuilder<T> for StringPosition<T> {
 pub struct TXTPosition {
     start: usize,
     size: usize,
-    data: Rc<Vec<u8>>,
+    data: DataSource,
     content: String,
     props: Option<(&'static str, &'static str)>,
 }
 impl<T> FieldBuilder<T> for TXTPosition {
     fn build(&self, _: &T) -> Option<Field> {
-        Some(Field::new(self.start, self.size, self.data.clone(), self.content.clone()))
+        Some(Field::new(self.start, self.size, self.data.data(), self.content.clone()))
     }
     fn data(&self) -> Rc<Vec<u8>> {
-        self.data.clone()
+        self.data.data()
     }
 
     fn get_props(&self) -> Option<(&'static str, &'static str)> {
@@ -718,7 +754,7 @@ impl Endpoint {
                 } else if size == clen {
                     // remove all
                     let data: Vec<u8> = self._buffer.drain(..).collect();
-                    let reader = Reader::new_raw(Rc::new(data));
+                    let reader = Reader::new_raw(data);
                     let _rs = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| TLSVisitor.visit(&reader)));
                     if let Ok(rs) = _rs {
                         self.shift_cache(None, rs);
@@ -732,7 +768,7 @@ impl Endpoint {
                 } else {
                     let mount: Vec<u8> = self._buffer.drain(0..size).collect();
                     let data_ref = Rc::new(mount);
-                    let reader = Reader::new_raw(data_ref.clone());
+                    let reader = Reader::new(data_ref.clone());
                     let _rs = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| TLSVisitor.visit(&reader)));
                     if let Ok(rs) = _rs {
                         self.connec_type = TCPPAYLOAD::NONE;
@@ -896,9 +932,17 @@ impl TCPConnection {
         let ep1 = TCPConnection::create_ep(src, srp);
         let ep2 = TCPConnection::create_ep(dst, dsp);
         if arch {
-            return Self { connec_type: TCPPAYLOAD::NONE, ep1, ep2 };
+            return Self {
+                connec_type: TCPPAYLOAD::NONE,
+                ep1,
+                ep2,
+            };
         }
-        Self { connec_type: TCPPAYLOAD::NONE, ep2: ep1, ep1: ep2 }
+        Self {
+            connec_type: TCPPAYLOAD::NONE,
+            ep2: ep1,
+            ep1: ep2,
+        }
     }
     pub fn get_endpoint(&mut self, arch: bool) -> &mut Endpoint {
         match arch {
@@ -971,19 +1015,23 @@ pub struct Frame {
     pub capture_size: u32,
     pub origin_size: u32,
     pub summary: FrameSummary,
-    data: Rc<Vec<u8>>,
+    source: DataSource,
     pub eles: Vec<ProtocolData>,
     pub refer: Ref2<FrameRefer>,
     pub props: PacketProps,
 }
 impl Frame {
-    pub fn new(data: Vec<u8>, ts: u64, capture_size: u32, origin_size: u32, index: u32, link_type: u32) -> Frame {
+    pub fn new(source: DataSource, ts: u64, capture_size: u32, origin_size: u32, index: u32, link_type: u32) -> Frame {
         let f = Frame {
             props: PacketProps::new(),
             eles: Vec::new(),
             refer: Rc::new(RefCell::new(FrameRefer { index, ts, ..Default::default() })),
-            summary: FrameSummary { index, link_type, ..Default::default() },
-            data: Rc::new(data),
+            summary: FrameSummary {
+                index,
+                link_type,
+                ..Default::default()
+            },
+            source,
             ts,
             capture_size,
             origin_size,
@@ -991,7 +1039,14 @@ impl Frame {
         f
     }
     pub fn to_string(&self) -> String {
-        format!("Frame {}: {} bytes on wire ({} bits), {} bytes captured ({} bits)", self.summary.index, self.origin_size, self.origin_size * 8, self.capture_size, self.capture_size * 8)
+        format!(
+            "Frame {}: {} bytes on wire ({} bits), {} bytes captured ({} bits)",
+            self.summary.index,
+            self.origin_size,
+            self.origin_size * 8,
+            self.capture_size,
+            self.capture_size * 8
+        )
     }
     pub fn get_protocol(&self) -> String {
         self.summary.protocol.to_lowercase()
@@ -1089,7 +1144,7 @@ impl Frame {
         rs.push(Field::new2(self.to_string(), Rc::new(Vec::new()), lists));
         for e in self.eles.iter() {
             let vs = e.get_fields();
-            rs.push(Field::new2(e.summary(), self.data.clone(), vs));
+            rs.push(Field::new2(e.summary(), self.data(), vs));
         }
         rs
     }
@@ -1098,13 +1153,14 @@ impl Frame {
         serde_json::to_string(&fields)
     }
     fn data(&self) -> Rc<Vec<u8>> {
-        self.data.clone()
-    }
-    pub fn get_reader(&self) -> Reader {
-        return Reader::new_raw(self.data());
+        self.source.data()
     }
     pub fn _create_packet<K>(val: Ref2<K>) -> PacketContext<K> {
-        PacketContext { props: None, val, fields: RefCell::new(Vec::new()) }
+        PacketContext {
+            props: None,
+            val,
+            fields: RefCell::new(Vec::new()),
+        }
     }
     pub fn create_packet<K>() -> PacketContext<K>
     where
@@ -1121,7 +1177,11 @@ impl Frame {
         Frame::_create_with_props(Rc::new(RefCell::new(val)))
     }
     pub fn _create<K>(val: Ref2<K>) -> PacketContext<K> {
-        PacketContext { props: None, val, fields: RefCell::new(Vec::new()) }
+        PacketContext {
+            props: None,
+            val,
+            fields: RefCell::new(Vec::new()),
+        }
     }
     pub fn _create_with_props<K>(val: Ref2<K>) -> PacketContext<K> {
         PacketContext {
@@ -1130,7 +1190,7 @@ impl Frame {
             fields: RefCell::new(Vec::new()),
         }
     }
-    
+
     fn ipv4_collect(_ip: &Option<Ipv4Addr>, ctx: &mut Context) {
         let _map = &mut ctx.statistic.ip_type;
         if let Some(ip) = _ip {
@@ -1275,7 +1335,12 @@ impl Context {
             let source = _s.stringfy();
             let target = _t.stringfy();
             let index = list.len();
-            let mut msg_: Connect<HttpMessage> = Connect { source, target, index, list: Vec::new() };
+            let mut msg_: Connect<HttpMessage> = Connect {
+                source,
+                target,
+                index,
+                list: Vec::new(),
+            };
             let mut messages = Vec::new();
             messages.append(&mut reff.ep1.http_messages);
             _append_http_to(&mut msg_.list, messages, ref_statis);
@@ -1488,20 +1553,24 @@ impl Context {
 pub struct Instance {
     pub ctx: Context,
     pub frames: Vec<Frame>,
+    pub reader: Reader,
 }
 impl Instance {
-    pub fn new(ftype: FileType, _conf: Configuration) -> Instance {
+    pub fn new(reader: Reader, ftype: FileType, _conf: Configuration) -> Instance {
         let ctx = Context {
             cost: 0,
             count: 1,
             dns: Vec::new(),
-            info: FileInfo { file_type: ftype, ..Default::default() },
+            info: FileInfo {
+                file_type: ftype,
+                ..Default::default()
+            },
             http_list: Vec::new(),
             conversation_map: HashMap::new(),
             statistic: Statistic::new(),
             dns_map: HashMap::new(),
         };
-        Instance { ctx, frames: Vec::new() }
+        Instance { reader, ctx, frames: Vec::new() }
     }
     /// parse a frame from data, save the frame to `self.frames`
     ///
@@ -1510,14 +1579,16 @@ impl Instance {
     /// if the frame is complete, it will save the frame to `self.frames` and return 0.
     /// if the frame is corrupted, it will save the frame to `self.frames` and return 0.
     ///
-    pub fn create(&mut self, data: Vec<u8>, ts: u64, capture_size: u32, origin_size: u32) {
+    pub fn create(&mut self, ts: u64, capture_size: u32, origin_size: u32) {
         let ctx = &mut self.ctx;
         let file_type = &ctx.info.file_type;
         let count = ctx.count;
+        let reader = self.reader.slice_reader(origin_size as usize);
+        // let range = reader.get_range();
         ctx.count += 1;
         let link_type = ctx.info.link_type;
-        let mut f = Frame::new(data, ts, capture_size, origin_size, count, link_type);
-        let reader = f.get_reader();
+        let mut f = Frame::new(reader.get_source(), ts, capture_size, origin_size, count, link_type);
+        // let reader = f.get_reader();
 
         let mut next = crate::specs::execute(file_type, link_type, &f, &reader);
         'ins: loop {

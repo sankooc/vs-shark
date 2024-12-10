@@ -4,7 +4,6 @@ mod tc;
 
 #[cfg(test)]
 mod tests {
-    use std::rc::Rc;
 
     use shark::{common::io::Reader, specs::{self, ProtocolData}};
 
@@ -14,7 +13,7 @@ mod tests {
     #[test]
     fn test_icmp_echo(){
         let data: Vec<u8> = build_reader("sip_request_ack");
-        let reader = Reader::new_raw(Rc::new(data));
+        let reader = Reader::new_raw(data);
         let (prop, _) = specs::sip::SIPVisitor.visit2(&reader).unwrap();
         match &prop {
             ProtocolData::SIP(el) => {

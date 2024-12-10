@@ -9,7 +9,6 @@ mod unit {
         common::io::Reader,
         specs::{self, ProtocolData},
     };
-    use std::rc::Rc;
     use crate::tc::{build_reader, inspect};
 
     
@@ -17,7 +16,7 @@ mod unit {
     #[test]
     fn test_radiotap(){
         let data: Vec<u8> = build_reader("radiotap3");
-        let reader = Reader::new_raw(Rc::new(data));
+        let reader = Reader::new_raw(data);
         let (prop, _) = specs::ethernet::ieee80211::RadiotapVisitor.visit2(&reader).unwrap();
         match &prop {
             ProtocolData::Radiotap(el) => {
@@ -33,7 +32,7 @@ mod unit {
     fn test_ppp_lcp() {
         // let frame = mock_frame();
         let data: Vec<u8> = build_reader("ppp.lcp");
-        let reader = Reader::new_raw(Rc::new(data));
+        let reader = Reader::new_raw(data);
         let (prop, _) = specs::ethernet::pppoes::PPPoESSVisitor.visit2(&reader).unwrap();
         match &prop {
             ProtocolData::PPPoES(el) => {
@@ -49,7 +48,7 @@ mod unit {
     fn test_ethernet() {
         // let frame = mock_frame();
         let data: Vec<u8> = build_reader("ethernet");
-        let reader = Reader::new_raw(Rc::new(data));
+        let reader = Reader::new_raw(data);
         let (prop, next) = specs::ethernet::ii::EthernetVisitor.visit2(&reader).unwrap();
 
         assert_eq!(next, "ipv4");
@@ -67,7 +66,7 @@ mod unit {
     fn test_dns_rr_srv() {
         // env_logger::builder().is_test(true).try_init().unwrap();
         let data: Vec<u8> = build_reader("dns_srv");
-        let reader = Reader::new_raw(Rc::new(data));
+        let reader = Reader::new_raw(data);
         let (prop, next) = specs::dns::DNSVisitor.visit2(&reader).unwrap();
         assert_eq!(next, "none");
         match &prop {
@@ -87,7 +86,7 @@ mod unit {
     #[test]
     fn test_dns_query() { 
         let data: Vec<u8> = build_reader("dns_query");
-        let reader = Reader::new_raw(Rc::new(data));
+        let reader = Reader::new_raw(data);
         let (prop, next) = specs::dns::DNSVisitor.visit2(&reader).unwrap();
         assert_eq!(next, "none");
         match &prop {
@@ -107,7 +106,7 @@ mod unit {
     fn test_dns_auth() {
         // env_logger::builder().is_test(true).try_init().unwrap();
         let data: Vec<u8> = build_reader("dns_auth");
-        let reader = Reader::new_raw(Rc::new(data));
+        let reader = Reader::new_raw(data);
         let (prop, next) = specs::dns::DNSVisitor.visit2(&reader).unwrap();
         assert_eq!(next, "none");
         match &prop {
@@ -127,7 +126,7 @@ mod unit {
     #[test]
     fn test_tls_err1() {
         let data: Vec<u8> = build_reader("tls");
-        let reader = Reader::new_raw(Rc::new(data));
+        let reader = Reader::new_raw(data);
         let prop = specs::tls::TLSVisitor.visit(&reader).unwrap();
         if let ProtocolData::TLS(tls_packet) = prop {
             let tls = tls_packet.get().borrow();
@@ -137,7 +136,7 @@ mod unit {
     // #[test]
     // fn test_tls_err2() {
     //   let data: Vec<u8> = build_reader("tls_2");
-    //   let reader = Reader::new_raw(Rc::new(data));
+    //   let reader = Reader::new_raw(data);
     //   let (_prop) = specs::tls::TLSVisitor.visit(&reader).unwrap();
     // }
 
@@ -145,7 +144,7 @@ mod unit {
     fn test_certificate() {
         // env_logger::builder().is_test(true).try_init().unwrap();
         let data: Vec<u8> = build_reader("certificate");
-        let reader = Reader::new_raw(Rc::new(data));
+        let reader = Reader::new_raw(data);
         let ins = specs::tls::handshake::Certificate::create(&reader, Some(1425)).unwrap();
         inspect(&ins);
         println!("finish");
@@ -154,7 +153,7 @@ mod unit {
     #[test]
     fn test_certificates() {
         // let data: Vec<u8> = build_reader("certificates");
-        // let reader = Reader::new_raw(Rc::new(data));
+        // let reader = Reader::new_raw(data);
         // let ins = specs::tls::handshake::Certificates::create(&reader, Some(1425)).unwrap();
         // println!("--");
     }
