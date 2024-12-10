@@ -35,21 +35,27 @@
 **PcapViewer** is an open-source packet analysis tool designed to efficiently handle PCAP/PCAPNG (Packet Capture) files. It enables users to dive into network traffic and inspect various protocol layers, from the physical Ethernet layer to the application layer, providing a streamlined alternative to full-scale tools like Wireshark. With its lightweight nature, it’s ideal for developers, network administrators, and engineers who need quick insights into network packets.
 
 
-### Key Features
+### 🌟 Features
 
-- **Protocol Support**:
+- **Native Integration:** Seamless operation as a custom editor within VS Code.
+- **Multi-format Support:** Handles `.pcap`, `.pcapng`, and `.cap` files.
+- **High Performance:** Utilizes WASM and Rust for fast and efficient packet analysis.
+- **Extensible Design:** Open to contributions and improvements via the modular architecture.
+
+### 🔌 Protocol Support
+
   - **File Formats**: PCAP, PCAPNG
   - **Link Layer**: Ethernet II, PPPoE, IEEE 1905.1a, IEEE 802.11, SSL
   - **Network Layer**: IPv4, IPv6, ARP, RARP, ICMP, IGMP
   - **Transport Layer**: TCP, UDP
   - **Application Layer**: TLS, HTTP, DNS, DHCP, SSDP, SIP
 
-### Online Demo
+### 📦 Online Demo
 
 Try out [PcapViewer](https://sankooc.github.io/vs-shark/app/) in your browser.
 
 
-### Features in Action
+### 🚀 Features in Action
 
 #### Demo
 
@@ -89,18 +95,18 @@ Try out [PcapViewer](https://sankooc.github.io/vs-shark/app/) in your browser.
 
 
 
-### VS Code Extension
+### 🛠️ VS Code Extension
 
 Install the **PcapViewer** extension from the [VSCode Marketplace](https://marketplace.visualstudio.com/items?itemName=sankooc.pcapviewer) for seamless integration into your Visual Studio Code environment.
 
 
 
-### ZED Extension
+### 🛠️ ZED Extension
 
 > Coming soon...
 
 
-### TUI 
+### 🛠️ TUI 
 
 ![](https://i.ibb.co/WVPTzP1/tui3.gif)
 
@@ -115,13 +121,13 @@ Download from [Releases](https://github.com/sankooc/vs-shark/releases)
 `pcaps --help`
 
 
-### Contribution
+### 🌐 Contribution
 
 We welcome contributions! If you'd like to contribute, please check out the guidelines (coming soon) and open a pull request or issue.
 
 
 
-### Contact
+### 📝 Contact
 
 For any inquiries or suggestions, feel free to reach out to us (details coming soon).
 
