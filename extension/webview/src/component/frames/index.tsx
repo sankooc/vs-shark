@@ -42,7 +42,7 @@ function FrameList() {
       }
     });
     emitMessage(new ComMessage('protocols', null));
-    emitMessage(new ComMessage('frame', {page:1, size: PAGE_SIZE, filter}));
+    emitMessage(new ComMessage('frame', {page:1, size: PAGE_SIZE, filter: filter.join("&")}));
     return remv;
   };
   useEffect(mountHook, []);
