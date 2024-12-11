@@ -1,7 +1,7 @@
+use once_cell::sync::Lazy;
 use std::collections::HashMap;
 use std::sync::RwLock;
 use std::time::Instant;
-use once_cell::sync::Lazy;
 
 #[warn(dead_code)]
 static _SET: Lazy<RwLock<HashMap<&'static str, Benchmark>>> = Lazy::new(|| RwLock::new(HashMap::new()));
@@ -16,15 +16,20 @@ struct Benchmark {
     max: u128,
     // name: &'static str,
     // time: u128,
-    
 }
 
 impl Benchmark {
     #[allow(dead_code)]
     fn new(time: u128) -> Self {
-        Self { times: 1, total: time, min: time, max: time } 
+        Self {
+            times: 1,
+            total: time,
+            min: time,
+            max: time,
+        }
     }
-    fn add(&mut self, time: u128){
+    #[allow(dead_code)]
+    fn add(&mut self, time: u128) {
         self.times += 1;
         self.total += time;
         self.min = self.min.min(time);
@@ -42,7 +47,7 @@ macro_rules! arch_start {
 macro_rules! arch_finish {
     ($name:expr) => {{
         if let Some(start) = crate::benchmark::_SINGLETON.write().unwrap().remove($name) {
-            let time =  start.elapsed().as_millis();
+            let time = start.elapsed().as_millis();
             let mut set = crate::benchmark::_SET.write().unwrap();
             if let Some(cc) = set.get_mut($name) {
                 cc.add(time);
@@ -59,7 +64,7 @@ macro_rules! arch_finish {
 macro_rules! arch_print {
     () => {{
         let mut table = prettytable::Table::new();
-        let header:Vec<prettytable::Cell> = vec!["name", "times", "min", "max", "avg"].iter().map(|v| prettytable::Cell::new(v)).collect();
+        let header: Vec<prettytable::Cell> = vec!["name", "times", "min", "max", "avg"].iter().map(|v| prettytable::Cell::new(v)).collect();
         table.add_row(prettytable::Row::new(header));
         for (name, val) in crate::benchmark::_SET.read().unwrap().iter() {
             let mut ll: Vec<String> = vec![(*name).into()];
@@ -78,9 +83,15 @@ macro_rules! arch_print {
 #[cfg(test)]
 mod benchmark {
 
-    use std::{cell::{Cell, RefCell}, fs};
+    use std::{
+        cell::{Cell, RefCell},
+        fs,
+    };
 
-    use shark::{common::base::Configuration, specs::sip::{parse_token, parse_token_with_cache}};
+    use shark::{
+        common::base::Configuration,
+        specs::sip::{parse_token, parse_token_with_cache},
+    };
 
     fn load_data(f: &str) {
         let fname = format!("../../../pcaps/{}", f);
@@ -109,7 +120,7 @@ mod benchmark {
     }
 
     #[test]
-    fn test_parse(){
+    fn test_parse() {
         env_logger::builder().is_test(true).try_init().unwrap();
         // let f = "http.pcap";
         let f = "11.pcapng";
@@ -123,7 +134,6 @@ mod benchmark {
             arch_print!();
         }
     }
-
 
     #[test]
     fn map_cache() {
@@ -150,12 +160,12 @@ mod benchmark {
         arch_print!();
     }
     #[test]
-    fn test_mut(){
+    fn test_mut() {
         struct A {
-            count: Cell<usize>
+            count: Cell<usize>,
         }
         struct MutA {
-            count: usize
+            count: usize,
         }
         let times = 10000000;
         arch_start!("refcell");
@@ -167,14 +177,13 @@ mod benchmark {
         }
         arch_finish!("refcell");
 
-        
         arch_start!("cell");
         let a = A { count: Cell::new(0) };
         for i in 0..times {
             a.count.set(i);
         }
         arch_finish!("cell");
-        
+
         arch_start!("mut");
         let mut a = MutA { count: 0 };
         for i in 0..times {
@@ -183,7 +192,57 @@ mod benchmark {
         arch_finish!("mut");
 
         arch_print!()
-
-
     }
+
+    // mod eth {
+    //     use shark::{
+    //         cache::{add_ethernet_map, get_ethernet_map},
+    //         common::{
+    //             io::{AReader, Reader},
+    //             MacAddress,
+    //         },
+    //         specs::ethernet::ii::Ethernet,
+    //     };
+
+    //     // #[derive(Default)]
+    //     // pub struct Ethernet {
+    //     //     source_mac: Option<MacAddress>,
+    //     //     target_mac: Option<MacAddress>,
+    //     //     len: u16,
+    //     //     pub ptype: u16,
+    //     // }
+    //     fn ether_parse(reader: &Reader) -> Ethernet {
+    //         let mut p = Ethernet::default();
+    //         p.source_mac = Some(reader.read_mac().unwrap());
+    //         p.target_mac = Some(reader.read_mac().unwrap());
+    //         p.ptype = reader.read16(true).unwrap();
+    //         p
+    //     }
+    //     fn ether_parse_with_cache(reader: &'static Reader) -> Ethernet {
+    //         let slice: &'static [u8] = reader._slice(14);
+    //         if let Some(eth) = get_ethernet_map(slice) {
+    //             return eth;
+    //         } else {
+    //             let rs = ether_parse(reader);
+    //             add_ethernet_map(slice, rs.clone());
+    //             return rs;
+    //         }
+    //     }
+
+    //     #[test]
+    //     fn parse_test() {
+    //         let count = 10000;
+    //         arch_start!("parse");
+    //         for _ in 0..count {
+    //             let reader = Reader::new_raw(vec![0xc4, 0xd0, 0xe3, 0xd8, 0x3e, 0x98, 0x26, 0x5a, 0xfc, 0x25, 0x9c, 0x53, 0x08, 0x00]);
+    //             ether_parse_with_cache(&reader);
+    //         }
+    //         arch_finish!("parse");
+
+    //         arch_start!("cache");
+    //         arch_finish!("cache");
+
+    //         arch_print!()
+    //     }
+    // }
 }

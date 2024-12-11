@@ -190,7 +190,7 @@ where
         self._build(reader, start, size, None, content);
     }
 
-    pub fn build_lazy<K>(&self, reader: &Reader, opt: impl FnOnce(&Reader) -> Result<K>, key: Option<&'static str>, render: fn(&T) -> String) -> Result<K>
+    pub fn build_lazy<K>(&self, reader: &Reader, opt: impl FnOnce(&Reader) -> Result<K>, _key: Option<&'static str>, render: fn(&T) -> String) -> Result<K>
     where
         K: ToString,
     {
@@ -198,13 +198,13 @@ where
         let val: K = opt(reader)?;
         let end = reader.cursor();
         let size = end - start;
-        let mut props: Option<(&str, &str)> = None;
-        if let Some(k) = key {
-            let v = val.to_string();
-            self.set(k, v.clone());
-            props = Some((k, v.leak()));
-        }
-        self._build_lazy(reader, start, size, props, render);
+        // let mut props: Option<(&str, &str)> = None;
+        // if let Some(k) = key {
+        //     let v = val.to_string();
+        //     self.set(k, v.clone());
+        //     props = Some((k, v.leak()));
+        // }
+        self._build_lazy(reader, start, size, None, render);
         Ok(val)
     }
     pub fn build_compact(&self, content: String, data: Rc<Vec<u8>>) {
@@ -226,7 +226,7 @@ where
             props: None,
         }));
     }
-    pub fn build<K>(&self, reader: &Reader, opt: impl FnOnce(&Reader) -> K, key: Option<&'static str>, content: String) -> K
+    pub fn build<K>(&self, reader: &Reader, opt: impl FnOnce(&Reader) -> K, _key: Option<&'static str>, content: String) -> K
     where
         K: ToString,
     {
@@ -234,13 +234,13 @@ where
         let val: K = opt(reader);
         let end = reader.cursor();
         let size = end - start;
-        let mut props: Option<(&str, &str)> = None;
-        if let Some(k) = key {
-            let v = val.to_string();
-            self.set(k, v.clone());
-            props = Some((k, v.leak()));
-        }
-        self._build(reader, start, size, props, content);
+        // let mut props: Option<(&str, &str)> = None;
+        // if let Some(k) = key {
+        //     let v = val.to_string();
+        //     self.set(k, v.clone());
+        //     props = Some((k, v.leak()));
+        // }
+        self._build(reader, start, size, None, content);
         val
     }
 
@@ -253,7 +253,7 @@ where
         self._build(reader, from, step, None, content);
     }
 
-    pub fn build_format<K>(&self, reader: &Reader, opt: impl FnOnce(&Reader) -> Result<K>, key: Option<&'static str>, tmp: &str) -> Result<K>
+    pub fn build_format<K>(&self, reader: &Reader, opt: impl FnOnce(&Reader) -> Result<K>, _key: Option<&'static str>, tmp: &str) -> Result<K>
     where
         K: ToString,
     {
@@ -263,17 +263,17 @@ where
         let end = reader.cursor();
         let size = end - start;
         let content = tmp.replace("{}", val.to_string().as_str());
-        let mut props: Option<(&str, &str)> = None;
-        if let Some(k) = key {
-            let v = val.to_string();
-            self.set(k, v.clone());
-            props = Some((k, v.leak()));
-        }
-        self._build(reader, start, size, props, content);
+        // let mut props: Option<(&str, &str)> = None;
+        // if let Some(k) = key {
+        //     let v = val.to_string();
+        //     self.set(k, v.clone());
+        //     props = Some((k, v.leak()));
+        // }
+        self._build(reader, start, size, None, content);
         Ok(val)
     }
 
-    pub fn build_fn<K, P>(&self, reader: &Reader, opt: impl FnOnce(&Reader) -> Result<K>, key: Option<&'static str>, mapper: impl Fn(K) -> P) -> Result<K>
+    pub fn build_fn<K, P>(&self, reader: &Reader, opt: impl FnOnce(&Reader) -> Result<K>, _key: Option<&'static str>, mapper: impl Fn(K) -> P) -> Result<K>
     where
         K: Clone + ToString,
         P: Into<String>,
@@ -282,19 +282,19 @@ where
         let val: K = opt(reader)?;
         let end = reader.cursor();
         let size = end - start;
-        let mut props: Option<(&str, &str)> = None;
-        if let Some(k) = key {
-            let v = val.to_string();
-            self.set(k, v.clone());
-            props = Some((k, v.leak()));
-        }
+        // let mut props: Option<(&str, &str)> = None;
+        // if let Some(k) = key {
+        //     let v = val.to_string();
+        //     self.set(k, v.clone());
+        //     props = Some((k, v.leak()));
+        // }
         let content = mapper(val.clone()).into();
         self.fields.borrow_mut().push(Box::new(TXTPosition {
             start,
             size,
             data: reader.get_source(),
             content,
-            props,
+            props: None,
         }));
         Ok(val)
     }
