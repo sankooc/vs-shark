@@ -6,8 +6,6 @@ members = [
   "crates/wasm"
 , "crates/tui", "crates/benchmark"]
 
-readme="./README.MD"
-license-file = "./LICENSE"
 
 [profile.release]
 panic = "unwind"
