@@ -5,8 +5,8 @@ authors = ["sankooc <sankooc@163.com>"]
 description = "pcap/pcapng file analyzer"
 edition = "2021"
 repository = "https://github.com/sankooc/vs-shark"
-readme="../README.MD"
-license-file = "../LICENSE"
+readme=false
+license-file = "./LICENSE"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [lib]

@@ -14,10 +14,10 @@ use std::fmt::Display;
 
 use super::get_next_from_type;
 
-#[derive(Default, Packet2, NINFO)]
+#[derive(Default, Packet2, NINFO, Clone)]
 pub struct Ethernet {
-    source_mac: Option<MacAddress>,
-    target_mac: Option<MacAddress>,
+    pub source_mac: Option<MacAddress>,
+    pub target_mac: Option<MacAddress>,
     len: u16,
     pub ptype: u16,
 }

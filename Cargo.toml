@@ -6,6 +6,7 @@ members = [
   "crates/wasm"
 , "crates/tui", "crates/benchmark"]
 
+
 [profile.release]
 panic = "unwind"
 

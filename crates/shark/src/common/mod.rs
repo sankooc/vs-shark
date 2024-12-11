@@ -95,7 +95,7 @@ pub struct FileInfo {
     pub version: String,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct MacAddress {
     pub data: [u8; 6],
 }
