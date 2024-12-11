@@ -13,10 +13,10 @@ use anyhow::{bail, Result};
 ///
 /// This function will return an error of type `DataError::UnsupportFileType` if the given byte slice
 /// does not correspond to a supported file type.
-pub fn  load_data<'a> (data: Vec<u8>, conf: Configuration)->  Result<Instance>{
+pub fn load_data(data: &[u8], conf: Configuration)->  Result<Instance>{
   let head: &[u8] = &data[..4];
   let head_str = format!("{:x}", IO::read32(head, false)?);
-  let reader = Reader::new_raw(data);
+  let reader = Reader::new(data);
   // let head_str = format!("{:x}", reader.read32(false)?);
   match head_str.as_str() {
     "a1b2c3d4" => {

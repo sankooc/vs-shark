@@ -100,14 +100,15 @@ impl DataSource {
 }
 
 #[derive(Clone)]
-pub struct Reader {
+pub struct Reader<'a> {
     cursor: Cell<usize>,
-    source: DataSource,
+    source: &'a [u8]
+    // source: DataSource,
 }
 
-impl AReader for Reader {
+impl AReader for Reader<'_> {
     fn _get_data(&self) -> &[u8] {
-        self.source.data_ref()
+        self.source
     }
     fn len(&self) -> usize {
         self.source.len()
@@ -121,25 +122,26 @@ impl AReader for Reader {
         self.cursor.set(min);
     }
 }
-impl Reader {
-    pub fn new(raw: Rc<Vec<u8>>) -> Self {
-        let source = DataSource::new(raw);
+impl <'a>Reader<'a> {
+    pub fn new(source: &'a [u8]) -> Self {
+        // let source = DataSource::new(raw);
         let cursor = Cell::new(0);
         Self{source, cursor}
     }
-    pub fn new_raw(raw: Vec<u8>) -> Self {
-        Self::new(Rc::new(raw))
-    }
+    // pub fn new_raw(raw: Vec<u8>) -> Self {
+    //     Self::new(Rc::new(raw))
+    // }
 
     pub fn slice_reader(&self, count: usize) -> Self {
         let cursor = Cell::new(0);
         let start = self.cursor();
-        let source = self.source.slice(start..start + count);
+        // let source = self.source.slice(start..start + count);
+        let source = &self.source[start..start + count];
         Self{source, cursor}
     }
 
-    pub fn get_source(&self) -> DataSource{
-        self.source.clone()
+    pub fn get_source(&self) -> &'a [u8]{
+        self.source
     }
 
     pub fn _read_enter(reader: &Reader) -> Result<String> {

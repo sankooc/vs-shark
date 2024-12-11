@@ -35,7 +35,6 @@ impl FrameResult {
 #[wasm_bindgen]
 #[derive(Default,Clone)]
 pub struct FrameInfo {
-    // frame: &'static Frame,
     pub index: u32,
     pub time: u32,
     source: String,
@@ -45,6 +44,7 @@ pub struct FrameInfo {
     pub irtt: u16,
     info: String,
     status: String,
+    
 }
 
 #[wasm_bindgen]
@@ -75,7 +75,7 @@ impl FrameInfo {
 
 #[wasm_bindgen]
 pub struct WContext {
-    ctx: Box<Instance>,
+    ctx: Instance,
 }
 
 
@@ -85,12 +85,14 @@ impl WContext {
     pub fn new(s: &Uint8Array, conf: Conf) -> WContext {
         // let mut slice = vec![0; s.length() as usize];
         // s.copy_to(&mut slice[..]);
+        // let slic: &'static [u8] = &s.to_vec();
         let slice = s.to_vec();
+        // let ss:&'static [u8] = &slice;
         let start = instant::Instant::now();
-        let mut ins = load_data(slice, conf.into()).unwrap();
+        let mut ins = load_data(&slice, conf.into()).unwrap();
         ins.ctx.cost = start.elapsed().as_millis() as usize;
         WContext {
-            ctx: Box::new(ins),
+            ctx: ins,
         }
     }
     #[wasm_bindgen]

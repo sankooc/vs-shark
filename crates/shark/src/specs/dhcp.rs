@@ -6,7 +6,7 @@ use pcap_derive::{Packet, Visitor3};
 use crate::common::io::Reader;
 use crate::{
     common::base::{Frame, PacketContext},
-    common::{io::AReader, MacAddress, Ref2, FIELDSTATUS},
+    common::{io::AReader, MacAddress, FIELDSTATUS},
     constants::{arp_hardware_type_mapper, dhcp_option_type_mapper, dhcp_type_mapper},
 };
 
@@ -27,7 +27,7 @@ pub struct DHCP {
     next_server_address: Option<Ipv4Addr>,
     relay_address: Option<Ipv4Addr>,
     mac_address: Option<MacAddress>,
-    options: Vec<Ref2<DHCPOption>>,
+    // options: Vec<Ref2<DHCPOption>>,
 }
 
 impl std::fmt::Display for DHCP {
@@ -140,7 +140,6 @@ impl DHCPVisitor {
             }
             drop(m_option);
             let option = _option.borrow();
-            p.options.push(option_packet._clone_obj());
             if option.code == 0xff {
                 break;
             }

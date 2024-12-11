@@ -397,7 +397,7 @@ impl FrameInfo {
         item.status = "info".into();
         match frame.eles.last() {
             Some(ele) => {
-                item.status = ele.status().into();
+                // item.status = ele.status().into();
             }
             _ => {}
         }
@@ -437,11 +437,12 @@ pub struct Field {
     pub children: Vec<Field>,
 }
 impl Field {
-    pub fn new(start: usize, size: usize, data: Rc<Vec<u8>>, summary: String) -> Field {
-        Field { start, size, data, summary, children: Vec::new() }
+    pub fn new(start: usize, size: usize, data: &[u8], summary: String) -> Field {
+        // Field::new2(summary, data, Vec::new())
+        Field { start, size, data:Rc::new(data.to_vec()), summary, children: Vec::new() }
     }
-    pub fn new2(summary: String, data: Rc<Vec<u8>>, vs: Vec<Field>) -> Field {
-        Field { start: 0, size: 0, data, summary, children: vs }
+    pub fn new2(summary: String, data: &[u8], vs: Vec<Field>) -> Field {
+        Field { start: 0, size: 0, data: Rc::new(data.to_vec()), summary, children: vs }
     }
     pub fn new3(summary: String) -> Field {
         Field {

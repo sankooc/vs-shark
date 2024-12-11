@@ -57,22 +57,21 @@ impl Configuration {
 }
 
 #[enum_dispatch(ProtocolData)]
-pub trait Element {
+pub trait Element<'a> {
     fn summary(&self) -> String;
-    fn get_fields(&self) -> Vec<Field>;
+    fn get_fields(&'a self) -> Vec<Field>;
     fn status(&self) -> FIELDSTATUS;
     fn info(&self) -> String;
-    fn props(&self) -> &Option<RefCell<PacketProps>>;
+    // fn props(&self) -> &Option<RefCell<PacketProps>>;
 }
 
 pub trait Visitor {
     fn visit(&self, frame: &mut Frame, ctx: &mut Context, reader: &Reader) -> Result<(ProtocolData, &'static str)>;
 }
 
-pub trait FieldBuilder<T> {
+pub trait FieldBuilder<'a, T> {
     fn build(&self, t: &T) -> Option<Field>;
-    fn get_props(&self) -> Option<(&'static str, &'static str)>;
-    fn data(&self) -> Rc<Vec<u8>>;
+    fn data(&self) -> &[u8];
 }
 
 pub type PacketOpt = usize;
@@ -87,110 +86,97 @@ impl<T> PacketBuilder for MultiBlock<T> {
     }
 }
 
-pub struct PacketContext<T: ?Sized> {
-    val: Ref2<T>,
-    fields: RefCell<Vec<Box<dyn FieldBuilder<T>>>>,
-    props: Option<RefCell<PacketProps>>,
+pub struct PacketContext<'a, T: Sized> {
+    // val: Ref2<T>,
+    val: T,
+    fields: Vec<Box<dyn FieldBuilder<'a, T> + 'a>>,
+    // props: Option<RefCell<PacketProps>>,
 }
 
-impl<T> PacketContext<T> {
-    pub fn _clone_obj(&self) -> Ref2<T> {
-        self.val.clone()
-    }
-    pub fn get(&self) -> &RefCell<T> {
-        &self.val
-    }
+impl<'a, T> PacketContext<'a, T> {
+    // pub fn get(&self) -> &RefCell<T> {
+    //     &self.val
+    // }
     pub fn get_fields(&self) -> Vec<Field> {
-        let t: &T = &self.get().borrow();
-        let mut rs: Vec<Field> = Vec::new();
-        for pos in self.fields.borrow().iter() {
-            if let Some(_t) = pos.build(t) {
-                rs.push(_t);
-            }
-        }
-        rs
+        let t: &T = &self.val;
+        self.fields.iter().map(|f| f.build(t)).filter(|f| f.is_some()).map(|f| f.unwrap()).collect::<Vec<_>>()
+        
     }
 }
 
-impl<T> Element for PacketContext<T>
+impl<'a, T> Element<'a> for PacketContext<'a, T>
 where
     T: PacketBuilder + InfoPacket,
 {
     fn summary(&self) -> String {
-        self.get().borrow().summary()
+        self.val.summary()
     }
     fn get_fields(&self) -> Vec<Field> {
         self.get_fields()
     }
     fn info(&self) -> String {
-        self.get().borrow().info()
+        self.val.info()
     }
     fn status(&self) -> FIELDSTATUS {
-        self.get().borrow().status()
-    }
-
-    fn props(&self) -> &Option<RefCell<PacketProps>> {
-        &self.props
+        self.val.status()
     }
 }
-impl<T> PacketContext<T>
+impl<'a, T> PacketContext<'a, T>
 where
-    T: PacketBuilder + 'static,
+    T: PacketBuilder + 'a,
 {
-    pub fn set(&self, key: &'static str, val: String) {
-        if let Some(props) = &self.props {
-            let mut _props = props.borrow_mut();
-            _props.add(key, val.leak());
-        }
-    }
-    pub fn _build(&self, reader: &Reader, start: usize, size: usize, props: Option<(&'static str, &'static str)>, content: String) {
-        self.fields.borrow_mut().push(Box::new(TXTPosition {
+    // pub fn set(&self, key: &'static str, val: String) {
+    //     if let Some(props) = &self.props {
+    //         let mut _props = props.borrow_mut();
+    //         _props.add(key, val.leak());
+    //     }
+    // }
+    pub fn _build(&mut self, reader: &'a Reader, start: usize, size: usize, props: Option<(&'static str, &'static str)>, content: String) {
+        let pos = TXTPosition {
             start,
             size,
             data: reader.get_source(),
             content,
-            props,
-        }));
+        };
+        self.fields.push(Box::new(pos));
     }
-    pub fn build_txt(&self, content: String) {
-        self.fields.borrow_mut().push(Box::new(TXTPosition {
+    pub fn build_txt(&mut self, content: String) {
+        self.fields.push(Box::new(TXTPosition {
             start: 0,
             size: 0,
-            data: DataSource::empty(),
+            data: &[],
             content,
-            props: None,
         }));
     }
 
-    pub fn _build_lazy(&self, reader: &Reader, start: usize, size: usize, props: Option<(&'static str, &'static str)>, render: fn(&T) -> String) {
-        self.fields.borrow_mut().push(Box::new(StringPosition {
+    pub fn _build_lazy(&mut self, reader: &Reader, start: usize, size: usize, props: Option<(& str, & str)>, render: fn(&T) -> String) {
+        
+        self.fields.push(Box::new(StringPosition {
             start,
             size,
-            data: reader.get_source(),
+            data: &[],
             render,
-            props,
         }));
     }
-    pub fn build_packet_no_position_lazy<K: 'static>(&self, render: fn(&T) -> Option<PacketContext<K>>)
+    pub fn build_packet_no_position_lazy<K: >(&mut self, render: fn(&T) -> Option<PacketContext<'a, K>>)
     where
-        K: PacketBuilder,
+        K: PacketBuilder + 'a,
     {
-        self.fields.borrow_mut().push(Box::new(PhantomBuilder {
+        self.fields.push(Box::new(PhantomBuilder {
             start: 0,
             size: 0,
-            data: DataSource::empty(),
+            data: &[],
             render,
-            props: None,
         }));
     }
-    pub fn build_skip(&self, reader: &Reader, size: usize) {
+    pub fn build_skip(&mut self, reader: &'a Reader, size: usize) {
         let start = reader.cursor();
         let content = format!("resolve later [{}]", size);
         reader.slice(size);
         self._build(reader, start, size, None, content);
     }
 
-    pub fn build_lazy<K>(&self, reader: &Reader, opt: impl FnOnce(&Reader) -> Result<K>, key: Option<&'static str>, render: fn(&T) -> String) -> Result<K>
+    pub fn build_lazy<K>(&mut self, reader: &Reader, opt: impl FnOnce(&Reader) -> Result<K>, key: Option<& str>, render: fn(&T) -> String) -> Result<K>
     where
         K: ToString,
     {
@@ -199,34 +185,32 @@ where
         let end = reader.cursor();
         let size = end - start;
         let mut props: Option<(&str, &str)> = None;
-        if let Some(k) = key {
-            let v = val.to_string();
-            self.set(k, v.clone());
-            props = Some((k, v.leak()));
-        }
+        // if let Some(k) = key {
+        //     let v = val.to_string();
+        //     self.set(k, v.clone());
+        //     props = Some((k, v.leak()));
+        // }
         self._build_lazy(reader, start, size, props, render);
         Ok(val)
     }
-    pub fn build_compact(&self, content: String, data: Rc<Vec<u8>>) {
+    pub fn build_compact(&mut self, content: String, data: &'a [u8]) {
         let size = data.len();
-        self.fields.borrow_mut().push(Box::new(TXTPosition {
+        self.fields.push(Box::new(TXTPosition {
             start: 0,
             size,
-            data: DataSource::new(data),
+            data,
             content,
-            props: None,
         }));
     }
-    pub fn append_string(&self, content: String, data: Rc<Vec<u8>>) {
-        self.fields.borrow_mut().push(Box::new(TXTPosition {
+    pub fn append_string(&mut self, content: String, data: &'a [u8]) {
+        self.fields.push(Box::new(TXTPosition {
             start: 0,
             size: 0,
-            data: DataSource::new(data),
+            data,
             content,
-            props: None,
         }));
     }
-    pub fn build<K>(&self, reader: &Reader, opt: impl FnOnce(&Reader) -> K, key: Option<&'static str>, content: String) -> K
+    pub fn build<K>(&mut self, reader: &'a Reader, opt: impl FnOnce(&Reader) -> K, key: Option<& str>, content: String) -> K
     where
         K: ToString,
     {
@@ -234,17 +218,11 @@ where
         let val: K = opt(reader);
         let end = reader.cursor();
         let size = end - start;
-        let mut props: Option<(&str, &str)> = None;
-        if let Some(k) = key {
-            let v = val.to_string();
-            self.set(k, v.clone());
-            props = Some((k, v.leak()));
-        }
-        self._build(reader, start, size, props, content);
+        self._build(reader, start, size, None, content);
         val
     }
 
-    pub fn build_backward(&self, reader: &Reader, step: usize, content: String) {
+    pub fn build_backward(&mut self, reader: &'a Reader, step: usize, content: String) {
         let cur = reader.cursor();
         if cur < step {
             return;
@@ -253,7 +231,7 @@ where
         self._build(reader, from, step, None, content);
     }
 
-    pub fn build_format<K>(&self, reader: &Reader, opt: impl FnOnce(&Reader) -> Result<K>, key: Option<&'static str>, tmp: &str) -> Result<K>
+    pub fn build_format<K>(&mut self, reader: &'a Reader, opt: impl FnOnce(&Reader) -> Result<K>, key: Option<& str>, tmp: &str) -> Result<K>
     where
         K: ToString,
     {
@@ -263,17 +241,11 @@ where
         let end = reader.cursor();
         let size = end - start;
         let content = tmp.replace("{}", val.to_string().as_str());
-        let mut props: Option<(&str, &str)> = None;
-        if let Some(k) = key {
-            let v = val.to_string();
-            self.set(k, v.clone());
-            props = Some((k, v.leak()));
-        }
-        self._build(reader, start, size, props, content);
+        self._build(reader, start, size, None, content);
         Ok(val)
     }
 
-    pub fn build_fn<K, P>(&self, reader: &Reader, opt: impl FnOnce(&Reader) -> Result<K>, key: Option<&'static str>, mapper: impl Fn(K) -> P) -> Result<K>
+    pub fn build_fn<K, P>(&mut self, reader: &'a Reader, opt: impl FnOnce(&Reader) -> Result<K>, key: Option<& str>, mapper: impl Fn(K) -> P) -> Result<K>
     where
         K: Clone + ToString,
         P: Into<String>,
@@ -282,202 +254,178 @@ where
         let val: K = opt(reader)?;
         let end = reader.cursor();
         let size = end - start;
-        let mut props: Option<(&str, &str)> = None;
-        if let Some(k) = key {
-            let v = val.to_string();
-            self.set(k, v.clone());
-            props = Some((k, v.leak()));
-        }
         let content = mapper(val.clone()).into();
-        self.fields.borrow_mut().push(Box::new(TXTPosition {
+        self.fields.push(Box::new(TXTPosition {
             start,
             size,
             data: reader.get_source(),
             content,
-            props,
         }));
         Ok(val)
     }
-    pub fn build_packet<K, M>(&self, reader: &Reader, opt: impl FnOnce(&Reader, Option<M>) -> Result<PacketContext<K>>, packet_opt: Option<M>, head: Option<String>) -> Result<Ref2<K>>
+    pub fn build_packet<K, M>(&mut self, reader: &'a Reader, opt: impl FnOnce(&Reader, Option<M>) -> Result<PacketContext<'a ,K>>, packet_opt: Option<M>, head: Option<String>) -> Result<K>
     where
-        K: PacketBuilder + 'static,
-        FieldPosition<K>: FieldBuilder<T>,
+        K: PacketBuilder + Copy + 'a,
+        FieldPosition<'a, K>: FieldBuilder<'a, T>,
     {
         let start = reader.cursor();
         let packet = opt(reader, packet_opt)?;
-        let rs = packet._clone_obj();
+        let rs = packet.val;
         let end = reader.cursor();
         let size = end - start;
 
-        if let Some(props_self) = &self.props {
-            let mut props = props_self.borrow_mut();
-            if let Some(prop) = &packet.props {
-                let mut _props = prop.borrow_mut();
-                props.merge(_props.deref_mut());
-                drop(_props);
-            }
-            drop(props);
-        }
-        self.fields.borrow_mut().push(Box::new(FieldPosition {
+        self.fields.push(Box::new(FieldPosition {
             start,
             size,
             data: reader.get_source(),
             head,
             packet,
-            props: None,
         }));
         Ok(rs)
     }
-    pub fn build_packet_lazy<M, K: 'static>(&self, reader: &Reader, opt: impl FnOnce(&Reader) -> Result<M>, _props: Option<&'static str>, render: fn(&T) -> Option<PacketContext<K>>) -> Result<M>
+    pub fn build_packet_lazy<M, K>(&mut self, reader: &'a Reader, opt: impl FnOnce(&Reader) -> Result<M>, _props: Option<& str>, render: fn(&T) -> Option<PacketContext<'a, K>>) -> Result<M>
     where
-        K: PacketBuilder,
+        K: PacketBuilder + 'a,
     {
         let start = reader.cursor();
         let val: M = opt(reader)?;
         let end = reader.cursor();
         let size = end - start;
         let data = reader.get_source();
-        self.fields.borrow_mut().push(Box::new(PhantomBuilder {
+        self.fields.push(Box::new(PhantomBuilder {
             start,
             size,
             data,
             render,
-            props: None,
         }));
         Ok(val)
     }
 }
 
-pub struct PhantomBuilder<K, T> {
-    pub render: fn(&T) -> Option<PacketContext<K>>,
-    props: Option<(&'static str, &'static str)>,
+pub struct PhantomBuilder<'a, K, T> {
+    pub render: fn(&T) -> Option<PacketContext<'a, K>>,
     pub start: usize,
     pub size: usize,
-    data: DataSource,
+    data: &'a [u8],
 }
-impl<K, T> FieldBuilder<T> for PhantomBuilder<K, T>
+impl<'a, K, T> FieldBuilder<'a, T> for PhantomBuilder<'a, K, T>
 where
-    K: PacketBuilder,
+    K: PacketBuilder+'a,
 {
     fn build(&self, t: &T) -> Option<Field> {
         let _packet = (self.render)(t);
         if let Some(packet) = _packet {
-            let sum = packet.get().borrow().summary();
-            let mut field = Field::new(self.start, self.size, self.data.data(), sum);
-            let fields = packet.get_fields();
-            field.children = fields;
+            let sum = packet.val.summary();
+            // let packet_clone = packet.clone(); // clone packet
+            let fields: Vec<Field> = packet.get_fields();
+            let mut field = Field::new(self.start, self.size, self.data, sum);
+            field.children = fields; // assuming Field has a children field
             return Some(field);
         }
         None
     }
 
-    fn data(&self) -> Rc<Vec<u8>> {
-        self.data.data()
+    fn data(&self) -> &'a [u8] {
+        self.data
     }
-    fn get_props(&self) -> Option<(&'static str, &'static str)> {
-        self.props.clone()
-    }
+    // fn get_props(&self) -> Option<(& str, & str)> {
+    //     self.props.clone()
+    // }
 }
-pub struct Position<T> {
+pub struct Position<'a, T> {
     pub start: usize,
     pub size: usize,
-    data: DataSource,
-    props: Option<(&'static str, &'static str)>,
+    data: &'a [u8],
+    // props: Option<(& str, & str)>,
     pub render: fn(usize, usize, &T) -> Field,
 }
-impl<T> FieldBuilder<T> for Position<T> {
+impl<'a, T> FieldBuilder<'a, T> for Position<'a, T> {
     fn build(&self, t: &T) -> Option<Field> {
         Some((self.render)(self.start, self.size, t))
     }
 
-    fn data(&self) -> Rc<Vec<u8>> {
-        self.data.data()
-    }
-    fn get_props(&self) -> Option<(&'static str, &'static str)> {
-        self.props.clone()
+    fn data(&self) -> &'a [u8] {
+        self.data
     }
 }
 
-pub struct FieldPosition<T>
+pub struct FieldPosition<'a, T>
 where
     T: PacketBuilder,
 {
     pub start: usize,
     pub size: usize,
-    data: DataSource,
+    data: &'a [u8],
     head: Option<String>,
-    props: Option<(&'static str, &'static str)>,
-    pub packet: PacketContext<T>,
+    // props: Option<(& str, & str)>,
+    pub packet: PacketContext<'a, T>,
 }
-impl<T, K> FieldBuilder<T> for FieldPosition<K>
+impl<'a, T, K> FieldBuilder<'a, T> for FieldPosition<'a, K>
 where
     K: PacketBuilder,
 {
     fn build(&self, _: &T) -> Option<Field> {
         let summary = match self.head.clone() {
             Some(t) => t,
-            _ => self.packet.get().borrow().summary(),
+            _ => self.packet.val.summary(),
         };
-        let mut field = Field::new(self.start, self.size, self.data.data(), summary);
+        let mut field = Field::new(self.start, self.size, self.data, summary);
         let fields = self.packet.get_fields();
         field.children = fields;
         Some(field)
     }
 
-    fn data(&self) -> Rc<Vec<u8>> {
-        self.data.data()
+    fn data(&self) -> &'a [u8] {
+        self.data
     }
-    fn get_props(&self) -> Option<(&'static str, &'static str)> {
-        self.props.clone()
-    }
+    // fn get_props(&self) -> Option<(&'a str, &'a str)> {
+    //     self.props.clone()
+    // }
 }
 
-pub struct StringPosition<T> {
+pub struct StringPosition<'a, T> {
     pub start: usize,
     pub size: usize,
-    data: DataSource,
+    data: &'a [u8],
     pub render: fn(&T) -> String,
-    props: Option<(&'static str, &'static str)>,
+    // props: Option<(& str, & str)>,
 }
-impl<T> FieldBuilder<T> for StringPosition<T> {
+impl<'a,T> FieldBuilder<'a,T> for StringPosition<'a,T> {
     fn build(&self, t: &T) -> Option<Field> {
         let summary = (self.render)(t);
-        Some(Field::new(self.start, self.size, self.data.data(), summary))
+        Some(Field::new(self.start, self.size, self.data(), summary))
     }
 
-    fn data(&self) -> Rc<Vec<u8>> {
-        self.data.data()
-    }
-    fn get_props(&self) -> Option<(&'static str, &'static str)> {
-        self.props.clone()
+
+    fn data(&self) -> &'a [u8] {
+        self.data
     }
 }
 
-pub struct TXTPosition {
+pub struct TXTPosition<'a> {
     start: usize,
     size: usize,
-    data: DataSource,
+    data: &'a [u8],
     content: String,
-    props: Option<(&'static str, &'static str)>,
 }
-impl<T> FieldBuilder<T> for TXTPosition {
+impl<'a, T> FieldBuilder<'a, T> for TXTPosition<'_> {
     fn build(&self, _: &T) -> Option<Field> {
-        Some(Field::new(self.start, self.size, self.data.data(), self.content.clone()))
+        Some(Field::new(self.start, self.size, self.data, self.content.clone()))
     }
-    fn data(&self) -> Rc<Vec<u8>> {
-        self.data.data()
+    fn data(&self) -> &[u8] {
+        self.data
     }
 
-    fn get_props(&self) -> Option<(&'static str, &'static str)> {
-        self.props.clone()
-    }
+    // fn get_props(&self) -> Option<(& str, & str)> {
+    //     self.props.clone()
+    // }
 }
 
 pub trait DomainService {
     fn name(&self) -> String;
-    fn _type(&self) -> &'static str;
+    fn _type(&self) -> & str;
     fn proto(&self) -> String;
-    fn class(&self) -> &'static str;
+    fn class(&self) -> & str;
     fn content(&self) -> String;
     fn ttl(&self) -> u32;
 }
@@ -754,7 +702,7 @@ impl Endpoint {
                 } else if size == clen {
                     // remove all
                     let data: Vec<u8> = self._buffer.drain(..).collect();
-                    let reader = Reader::new_raw(data);
+                    let reader = Reader::new(&data);
                     let _rs = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| TLSVisitor.visit(&reader)));
                     if let Ok(rs) = _rs {
                         self.shift_cache(None, rs);
@@ -767,8 +715,8 @@ impl Endpoint {
                     self.connec_type = TCPPAYLOAD::NONE;
                 } else {
                     let mount: Vec<u8> = self._buffer.drain(0..size).collect();
-                    let data_ref = Rc::new(mount);
-                    let reader = Reader::new(data_ref.clone());
+                    // let data_ref = Rc::new(mount);
+                    let reader = Reader::new(&mount);
                     let _rs = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| TLSVisitor.visit(&reader)));
                     if let Ok(rs) = _rs {
                         self.connec_type = TCPPAYLOAD::NONE;
@@ -1010,18 +958,18 @@ pub struct FrameSummary {
     pub tcp: Option<Ref2<TCP>>,
 }
 
-pub struct Frame {
+pub struct Frame<'a> {
     pub ts: u64,
     pub capture_size: u32,
     pub origin_size: u32,
     pub summary: FrameSummary,
-    source: DataSource,
+    source: &'a [u8],
     pub eles: Vec<ProtocolData>,
     pub refer: Ref2<FrameRefer>,
     pub props: PacketProps,
 }
-impl Frame {
-    pub fn new(source: DataSource, ts: u64, capture_size: u32, origin_size: u32, index: u32, link_type: u32) -> Frame {
+impl <'a>Frame<'a> {
+    pub fn new(source: &[u8], ts: u64, capture_size: u32, origin_size: u32, index: u32, link_type: u32) -> Frame {
         let f = Frame {
             props: PacketProps::new(),
             eles: Vec::new(),
@@ -1068,7 +1016,7 @@ impl Frame {
     pub fn info(&self) -> String {
         let the_last = self.eles.last();
         match the_last {
-            Some(data) => data.info(),
+            Some(data) => "N/A".into(),
             None => "N/A".into(),
         }
     }
@@ -1133,62 +1081,35 @@ impl Frame {
         ctx.update_tcp(self, refer.deref(), packet, reader)
     }
     pub fn get_fields(&self) -> Vec<Field> {
-        let mut rs = Vec::new();
-        let mut lists = Vec::new();
-        let ltype = self.summary.link_type;
-        lists.push(Field::new3(format!("Encapsulation type: {} ({})", link_type_mapper(ltype as u16), ltype)));
-        lists.push(Field::new3(format!("UTC Arrival Time: {} UTC", date_str(self.ts))));
-        lists.push(Field::new3(format!("Frame Number: {}", self.summary.index)));
-        lists.push(Field::new3(format!("Frame Length: {} bytes ({} bits)", self.origin_size, self.origin_size * 8)));
-        lists.push(Field::new3(format!("Capture Length: {} bytes ({} bits)", self.capture_size, self.capture_size * 8)));
-        rs.push(Field::new2(self.to_string(), Rc::new(Vec::new()), lists));
-        for e in self.eles.iter() {
-            let vs = e.get_fields();
-            rs.push(Field::new2(e.summary(), self.data(), vs));
-        }
-        rs
+        todo!()
+        // let mut rs = Vec::new();
+        // let mut lists = Vec::new();
+        // let ltype = self.summary.link_type;
+        // lists.push(Field::new3(format!("Encapsulation type: {} ({})", link_type_mapper(ltype as u16), ltype)));
+        // lists.push(Field::new3(format!("UTC Arrival Time: {} UTC", date_str(self.ts))));
+        // lists.push(Field::new3(format!("Frame Number: {}", self.summary.index)));
+        // lists.push(Field::new3(format!("Frame Length: {} bytes ({} bits)", self.origin_size, self.origin_size * 8)));
+        // lists.push(Field::new3(format!("Capture Length: {} bytes ({} bits)", self.capture_size, self.capture_size * 8)));
+        // rs.push(Field::new2(self.to_string(), &[], lists));
+        // for e in self.eles.iter() {
+        //     let vs = e.get_fields();
+        //     rs.push(Field::new2(e.summary(), self.data(), vs));
+        // }
+        // rs
     }
     pub fn get_fields_json(&self) -> core::result::Result<String, Error> {
         let fields = self.get_fields();
         serde_json::to_string(&fields)
     }
-    fn data(&self) -> Rc<Vec<u8>> {
-        self.source.data()
+    fn data(&self) -> &[u8]  {
+        self.source
     }
-    pub fn _create_packet<K>(val: Ref2<K>) -> PacketContext<K> {
-        PacketContext {
-            props: None,
-            val,
-            fields: RefCell::new(Vec::new()),
-        }
-    }
-    pub fn create_packet<K>() -> PacketContext<K>
-    where
-        K: PacketBuilder,
-    {
-        let val = K::new();
-        Frame::_create_packet(Rc::new(RefCell::new(val)))
-    }
-    pub fn create_packet_with_props<K>() -> PacketContext<K>
-    where
-        K: PacketBuilder,
-    {
-        let val = K::new();
-        Frame::_create_with_props(Rc::new(RefCell::new(val)))
-    }
-    pub fn _create<K>(val: Ref2<K>) -> PacketContext<K> {
-        PacketContext {
-            props: None,
-            val,
-            fields: RefCell::new(Vec::new()),
-        }
-    }
-    pub fn _create_with_props<K>(val: Ref2<K>) -> PacketContext<K> {
-        PacketContext {
-            props: Some(RefCell::new(PacketProps::new())),
-            val,
-            fields: RefCell::new(Vec::new()),
-        }
+    pub fn _create_packet<K>(val: Ref2<K>) -> PacketContext<'a, K> {
+        todo!()
+        // PacketContext {
+        //     val,
+        //     fields: Vec::new(),
+        // }
     }
 
     fn ipv4_collect(_ip: &Option<Ipv4Addr>, ctx: &mut Context) {
@@ -1223,39 +1144,39 @@ impl Frame {
     }
     pub fn add_element(&mut self, ctx: &mut Context, ele: ProtocolData, reader: &Reader) {
         match &ele {
-            ProtocolData::IPV4(packet) => {
-                self.update_ip(ctx, packet._clone_obj());
-                let ip = packet.get().borrow();
-                Frame::ipv4_collect(&ip.source_ip, ctx);
-                Frame::ipv4_collect(&ip.target_ip, ctx);
-                drop(ip);
-            }
-            ProtocolData::IPV6(packet) => {
-                self.update_ip(ctx, packet._clone_obj());
-                let ip = packet.get().borrow();
-                Frame::ipv6_collect(&ip.source_ip, ctx);
-                Frame::ipv6_collect(&ip.target_ip, ctx);
-                drop(ip);
-            }
-            ProtocolData::ARP(packet) => {
-                self.update_ip(ctx, packet._clone_obj());
-            }
-            ProtocolData::TCP(packet) => {
-                let tcp = packet.get();
-                self.update_tcp(tcp.borrow_mut().deref_mut(), ctx, reader);
-            }
-            ProtocolData::DNS(packet) => {
-                self.add_dns(packet._clone_obj(), ctx);
-            }
+            // ProtocolData::IPV4(packet) => {
+            //     self.update_ip(ctx, packet._clone_obj());
+            //     let ip = packet.get().borrow();
+            //     Frame::ipv4_collect(&ip.source_ip, ctx);
+            //     Frame::ipv4_collect(&ip.target_ip, ctx);
+            //     drop(ip);
+            // }
+            // ProtocolData::IPV6(packet) => {
+            //     self.update_ip(ctx, packet._clone_obj());
+            //     let ip = packet.get().borrow();
+            //     Frame::ipv6_collect(&ip.source_ip, ctx);
+            //     Frame::ipv6_collect(&ip.target_ip, ctx);
+            //     drop(ip);
+            // }
+            // ProtocolData::ARP(packet) => {
+            //     self.update_ip(ctx, packet._clone_obj());
+            // }
+            // ProtocolData::TCP(packet) => {
+            //     let tcp = packet.get();
+            //     self.update_tcp(tcp.borrow_mut().deref_mut(), ctx, reader);
+            // }
+            // ProtocolData::DNS(packet) => {
+            //     self.add_dns(packet._clone_obj(), ctx);
+            // }
             _ => {}
         }
         let reff = &mut self.eles;
         let mut append_prop = |data: ProtocolData| {
-            if let Some(_cell) = data.props() {
-                let mut _props = _cell.borrow_mut();
-                self.props.merge(_props.deref_mut());
-                drop(_props);
-            }
+            // if let Some(_cell) = data.props() {
+            //     let mut _props = _cell.borrow_mut();
+            //     self.props.merge(_props.deref_mut());
+            //     drop(_props);
+            // }
             reff.push(data);
         };
         append_prop(ele);
@@ -1550,12 +1471,12 @@ impl Context {
         (host, port, hostname)
     }
 }
-pub struct Instance {
+pub struct Instance<'a> {
     pub ctx: Context,
-    pub frames: Vec<Frame>,
-    pub reader: Reader,
+    pub frames: Vec<Frame<'a>>,
+    pub reader: Reader<'a>,
 }
-impl Instance {
+impl <'a>Instance<'a> {
     pub fn new(reader: Reader, ftype: FileType, _conf: Configuration) -> Instance {
         let ctx = Context {
             cost: 0,
@@ -1848,12 +1769,12 @@ where
     T: Default + Binary + Copy + std::fmt::Display + BitAnd<Output = T> + PartialEq<<T as BitAnd>::Output> + 'static + std::ops::Shr<usize, Output = T> + std::ops::Shl<usize, Output = T>,
     <T as BitAnd>::Output: PartialEq<T>,
 {
-    pub fn make<F>(value: T) -> Option<PacketContext<Self>>
+    pub fn make<'a, F>(value: T) -> Option<PacketContext<'a, Self>>
     where
         F: FlagData<T>,
     {
-        let packet: PacketContext<Self> = Frame::create_packet();
-        let mut p = packet.get().borrow_mut();
+        let mut packet: PacketContext<Self> = Frame::create_packet();
+        let p = &mut packet.val;
         p.value = value;
         F::summary(&mut p.content, value);
         let n = size_of_val(&value) * 8;
@@ -1893,7 +1814,7 @@ where
                 }
             }
         }
-        drop(p);
+        // drop(p);
         Some(packet)
     }
     // fn print_line_off(value: T, mask: T) -> String where T:Binary + Copy + BitAnd, <T as BitAnd>::Output: PartialEq<T> {

@@ -71,7 +71,7 @@ impl IEE80211 {
     /// function returns None.
     fn management(&self) -> Option<PacketContext<Management>> {
         if let Some(_data) = &self.data {
-            let _reader = Reader::new_raw(_data.clone());
+            let _reader = Reader::new(_data);
             return Management::create(&_reader, self).ok();
         }
         None

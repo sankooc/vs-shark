@@ -24,6 +24,7 @@ impl Benchmark {
     fn new(time: u128) -> Self {
         Self { times: 1, total: time, min: time, max: time } 
     }
+    #[allow(dead_code)]
     fn add(&mut self, time: u128){
         self.times += 1;
         self.total += time;
@@ -67,7 +68,7 @@ macro_rules! arch_print {
             ll.push(format!("{}Ms", val.min));
             ll.push(format!("{}Ms", val.max));
             let avg = val.total as f64 / val.times as f64;
-            ll.push(format!("{:.3}Ms", avg));
+            ll.push(format!("{:.2}Ms", avg));
             let list = ll.iter().map(|f| prettytable::Cell::new(f)).collect::<Vec<_>>();
             table.add_row(prettytable::Row::new(list));
         }
@@ -89,8 +90,9 @@ mod benchmark {
             let data: Vec<u8> = fs::read(&fname).unwrap();
             let task = format!("{}", f).leak();
             for _ in 0..times {
+                let _data = data.clone();
                 arch_start!(task);
-                let _ = shark::entry::load_data(data.clone(), Configuration::new(false)).unwrap();
+                let _ = shark::entry::load_data(&data, Configuration::new(false)).unwrap();
                 arch_finish!(task);
             }
         }
@@ -118,7 +120,7 @@ mod benchmark {
             let data: Vec<u8> = fs::read(&fname).unwrap();
             let task = format!("{}", f).leak();
             arch_start!(task);
-            let _ = shark::entry::load_data(data, Configuration::new(false)).unwrap();
+            let _ = shark::entry::load_data(&data, Configuration::new(false)).unwrap();
             arch_finish!(task);
             arch_print!();
         }
