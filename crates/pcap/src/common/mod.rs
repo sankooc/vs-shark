@@ -4,7 +4,7 @@ use anyhow::{bail, Result};
 use io::{DataSource, Reader, IO};
 use thiserror::Error;
 
-use crate::files::pcap::PCAP;
+use crate::files::{pcap::PCAP, pcapng::PCAPNG};
 
 /// 内部化字符串
 pub fn intern(content: &str) -> &'static str {
@@ -17,7 +17,6 @@ pub trait FileParser {
     fn next(&mut self) -> Option<(usize, usize)>;
 }
 
-
 #[derive(Default, PartialEq)]
 pub struct Frame {
     pub index: u32,
@@ -29,18 +28,21 @@ pub struct Frame {
 
 impl Frame {
     pub fn new() -> Self {
-        Self { ..Default::default()}
+        Self { ..Default::default() }
     }
 }
+
+#[derive(Default)]
 pub struct Context {
     file_type: FileType,
-    list: Vec<Frame>,
+    pub link_type: u32,
+    pub list: Vec<Frame>,
     pub counter: u32,
 }
 
 impl Context {
     pub fn new() -> Self {
-        Self {counter: 0, file_type: FileType::NONE, list: Vec::new()}
+        Self { ..Default::default()}
     }
 }
 
@@ -50,7 +52,6 @@ pub struct Instance {
     ctx: Context,
     last: usize,
 }
-
 
 #[derive(Default, Clone, Copy)]
 pub enum FileType {
@@ -95,38 +96,40 @@ impl Instance {
                     let _minor = reader.read16(false)?;
                     reader.forward(8);
                     let _snap_len = reader.read32(false)?;
-                    let _linktype = reader.read32(false)?;
+                    self.ctx.link_type = reader.read32(false)?;
                     self.file_type = FileType::PCAP;
                     self.ctx.file_type = FileType::PCAP;
                 }
                 "a0d0d0a" => {
-                    //   return pcapng::parse(reader, conf)
-                    bail!(DataError::UnsupportFileType)
+                    self.file_type = FileType::PCAPNG;
+                    self.ctx.file_type = FileType::PCAPNG;
                 }
                 _ => bail!(DataError::UnsupportFileType),
             };
         }
+        let ds = &self.ds;
+        let cxt = &mut self.ctx;
         match self.file_type {
-            FileType::PCAP => {
-                let ds = &self.ds;
-                loop {
-                    if let Ok((_next,f)) = PCAP::next(&mut reader){
-                        Instance::parse_packet(&mut self.ctx,f, ds);
-                        reader.cursor = _next;
-                    } else {
-                        self.last = reader.cursor;
-                        break;
-                    }
+            FileType::PCAP => loop {
+                if let Ok((_next, f)) = PCAP::next(&mut reader) {
+                    Instance::parse_packet(cxt, f, ds);
+                    reader.cursor = _next;
+                } else {
+                    self.last = reader.cursor;
+                    break;
                 }
-                // {
-                //     let (start, end) = PCAP::next(&mut reader)?;
-                //     let mut _reader = Reader::new(&mut self.ds, start, end);
-                //     Instance::parse_packet(&mut self.ctx, &mut _reader);
-                //     println!("{} {} : {}", start, end, end-start);
-                // }
-                // pcap::parse(reader, conf);
-            }
-            FileType::PCAPNG => {}
+            },
+            FileType::PCAPNG => loop {
+                if let Ok((_next, f)) = PCAPNG::next(cxt, &mut reader) {
+                    if let Some(frame) = f {
+                        Instance::parse_packet(cxt, frame, ds);
+                    }
+                    reader.cursor = _next;
+                } else {
+                    self.last = reader.cursor;
+                    break;
+                }
+            },
             _ => {}
         }
         Ok(())
@@ -138,7 +141,7 @@ impl Instance {
             frame.children = Vec::new();
         }
         frame.index = ctx.counter;
-        ctx.counter+=1;
+        ctx.counter += 1;
         ctx.list.push(frame);
     }
     pub fn update(&mut self, data: &[u8]) -> Result<()> {

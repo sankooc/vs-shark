@@ -16,7 +16,7 @@ mod tests {
         let file = File::open(fname)?;
         let mut reader = BufReader::new(file);
         let mut buffer = Vec::with_capacity(1024 * 1024);
-        buffer.resize(1024 * 1024, 0); // 确保缓冲区有初始大小
+        buffer.resize(1024 * 1024, 0);
 
         loop {
             let n = reader.read(&mut buffer)?;
@@ -29,8 +29,9 @@ mod tests {
     }
     #[test]
     fn testbasic() -> std::io::Result<()> {
+        let fname = "../../../pcaps/11.pcapng";
         // let fname = "../../../pcaps/http.pcap";
-        let fname = "../../../pcaps/http2.pcap";
+        // let fname = "../../../pcaps/http2.pcap";
         let _ins = _parse(fname)?;
         let ctx = _ins.get_context();
         println!("total frames {}", ctx.counter);
