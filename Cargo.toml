@@ -4,7 +4,7 @@ members = [
   "crates/shark",
   "crates/derive",
   "crates/wasm"
-, "crates/tui", "crates/benchmark"]
+, "crates/tui", "crates/benchmark", "crates/pcap"]
 
 
 [profile.release]

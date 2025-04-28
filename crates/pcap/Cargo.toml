@@ -1,0 +1,21 @@
+[package]
+name = "pcap"
+version = "0.1.0"
+edition = "2021"
+
+
+[lib]
+crate-type = ["lib"]
+
+[dependencies]
+chrono.workspace = true
+log.workspace = true
+pcap_derive = { path = "../derive" }
+thiserror.workspace = true
+anyhow.workspace = true
+enum_dispatch.workspace = true
+strum = { workspace = true, features = ["derive"]}
+strum_macros.workspace = true
+serde = { workspace = true, features = ["derive"]}
+serde_json.workspace = true
+once_cell.workspace = true
