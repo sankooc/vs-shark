@@ -1,5 +1,4 @@
-
-use anyhow::Result;
+use anyhow::{bail, Result};
 // // use instant::Instant;
 
 // pub fn parse(_reader: Reader, conf: Configuration) -> Result<Instance> {
@@ -36,31 +35,37 @@ use anyhow::Result;
 //     Ok(instance)
 // }
 
-use crate::common::{io::Reader, FileParser};
+use crate::common::{io::Reader, Frame};
 
-
-pub struct PCAP {
-
-}
+pub struct PCAP {}
 
 impl PCAP {
     pub fn new() -> Self {
-        Self{}
+        Self {}
     }
 }
 
 impl PCAP {
-    fn has_next(reader: &Reader) -> bool {
-        todo!()
-    }
 
-    pub fn next(reader: &mut Reader) -> Result<(usize, usize)> {
-        let cursor = reader.cursor;
-        let h_ts: u64 = reader.read32(false)?.into();
-        let l_ts: u64 = reader.read32(false)?.into();
-        let ts: u64 = h_ts * 1000000 + l_ts;
+    pub fn next(reader: &mut Reader) -> Result<(usize, Frame)> {
+        if reader.left() < 16 {
+            bail!("end")
+        }
+        // let cursor = reader.cursor;
+        let t = reader.slice(8, true)?.to_vec();
         let captured = reader.read32(false)?;
         let origin = reader.read32(false)?;
-        Ok((cursor, origin as usize))
+        if captured != origin {
+            bail!("nomatch")
+        }
+        if reader.left() < (origin as usize) {
+            reader.back(16);
+            bail!("end of stream")
+        }
+        let mut f = Frame::new();
+        f.size = origin;
+        f.time = Some(t);
+        f.range = Some(reader.cursor..reader.cursor + origin as usize);
+        Ok((origin as usize + reader.cursor, f))
     }
 }

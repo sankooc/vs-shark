@@ -1,4 +1,6 @@
-use anyhow::{bail, Result};
+use std::{cmp, ops::Range};
+
+use anyhow::{bail, Ok, Result};
 
 pub struct IO;
 
@@ -28,31 +30,34 @@ impl IO {
 
 pub struct DataSource {
     pub data: Vec<u8>,
-    start: usize,
-    end: usize,
+    pub range: Range<usize>,
 }
 
 impl DataSource {
     pub fn new() -> Self {
-        Self { data: Vec::new(), start: 0, end: 0 }
+        Self { data: Vec::new(), range: 0..0 }
     }
-    // pub fn create_reader(&self, start: usize,) -> Reader {
-    //     Reader::new(&self.data, start)
-    // }
     pub fn update(&mut self, data: &[u8]) {
         self.data.extend_from_slice(data);
+        self.range.end = self.range.start + self.data.len();
     }
 }
 
 pub struct Reader<'a> {
     data: &'a DataSource,
-    start: usize,
+    pub range: Range<usize>,
     pub cursor: usize,
 }
 
 impl<'a> Reader<'a> {
-    pub fn new(data: &'a DataSource, start: usize) -> Self {
-        Self { data, start, cursor: 0 }
+    pub fn new(data: &'a DataSource) -> Self {
+        let range = data.range.clone();
+        let cursor = range.start;
+        Self { data, range, cursor }
+    }
+    pub fn new_sub(data: &'a DataSource, range: Range<usize>) -> Self {
+        let cursor = range.start;
+        Self { data, range, cursor }
     }
     pub fn _data(&self) -> &[u8] {
         &self.data.data
@@ -60,38 +65,52 @@ impl<'a> Reader<'a> {
 }
 
 impl Reader<'_> {
-    pub fn _move(&mut self, len: usize) -> bool {
-        // let t = self.len();
-        // let c = self.cursor();
-        // if c + len > t {
-        //     return false;
-        // }
-        // self._set(self.cursor + len);
-        self.cursor += len;
-        true
-    }
-    pub fn _slice(&mut self, _len: usize, mv: bool) -> &[u8] {
-        // let lef = self.left();
-        // let len = cmp::min(lef, _len);
-        if mv {
-            self._move(_len);
+    pub fn set(&mut self, pos: usize) -> bool {
+        if !self.range.contains(&pos) {
+            return false;
         }
-        &(self._data())[self.cursor-_len..self.cursor]
+        self.cursor = pos;
+        return true;
     }
+    pub fn left(&self) -> usize {
+        let _cursor = cmp::min(self.range.end, self.cursor);
+        return self.range.end - _cursor;
+    }
+    pub fn forward(&mut self, len: usize) -> bool {
+        return self.set(self.cursor + len);
+    }
+    pub fn back(&mut self, len: usize) -> bool {
+        if self.cursor < len {
+            return false;
+        }
+        return self.set(self.cursor - len);
+    }
+    pub fn slice(&mut self, len: usize, mv: bool) -> Result<&[u8]> {
+        if self.forward(len) {
+            if mv {
+                Ok(&(self._data())[self.cursor - len..self.cursor])
+            } else {
+                self.back(len);
+                Ok(&(self._data())[self.cursor..self.cursor + len])
+            }
+        } else {
+            bail!("todo: data length error");
+        }
+    }
+
     pub fn read16(&mut self, endian: bool) -> Result<u16> {
         let len = 2;
-        let data = self._slice(len, true);
+        let data = self.slice(len, true)?;
         IO::read16(data, endian)
     }
     pub fn read32(&mut self, endian: bool) -> Result<u32> {
         let len = 4;
-        let data: &[u8] = self._slice(len, true);
+        let data: &[u8] = self.slice(len, true)?;
         IO::read32(data, endian)
     }
-    pub 
-    fn read64(&mut self, endian: bool) -> Result<u64> {
+    pub fn read64(&mut self, endian: bool) -> Result<u64> {
         let len = 8;
-        let data: &[u8] = self._slice(len, true);
+        let data: &[u8] = self.slice(len, true)?;
         IO::_read64(data, endian)
     }
 }

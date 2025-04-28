@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use std::fs;
+    // use std::fs;
     // fn _parse(fname: &str) -> Instance {
     //     let data: Vec<u8> = fs::read(fname).unwrap();
     //     let _ctx = load_data(&data, Configuration::new(false)).unwrap();
@@ -10,7 +10,7 @@ mod tests {
     fn testbasic() -> std::io::Result<()> {
         // let fname = "../sandbox/demo.pcap";
         // let fname = "../sandbox/demo.pcapng";
-        let fname = "../../../pcaps/11.pcapng";
+        // let fname = "../../../pcaps/11.pcapng";
 
         // _parse(fname);
 
