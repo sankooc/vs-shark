@@ -4,12 +4,14 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --host",
     "build": "tsc -b && vite build",
+    "build:all": "tsc -b && VITE_BUILD_ALL=true vite build",
     "lint": "eslint .",
     "preview": "vite preview"
   },
   "dependencies": {
+    "@types/node": "^22.15.3",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
