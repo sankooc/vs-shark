@@ -226,10 +226,15 @@ impl Instance {
         ctx.counter += 1;
         ctx.list.push(frame);
     }
-    pub fn update(&mut self, data: &[u8]) -> Result<()> {
+    pub fn update(&mut self, data: &[u8]) -> Result<String> {
         self.ds.update(data);
         self.parse()?;
-        Ok(())
+        let msg = format!("size: {} range {} - {}", self.ds.data.len(), self.ds.range.start, self.ds.range.end);
+        Ok(msg)
+    }
+    pub fn destroy(&mut self) -> bool {
+        // TODO 
+        true
     }
 }
 

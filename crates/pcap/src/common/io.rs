@@ -62,10 +62,16 @@ impl<'a> Reader<'a> {
     pub fn _data(&self) -> &[u8] {
         &self.data.data
     }
+    pub fn offset(&self, range: Range<usize>) -> &[u8] {
+        todo!("")
+    }
 }
 
 impl Reader<'_> {
     pub fn set(&mut self, pos: usize) -> bool {
+        if !self.data.range.contains(&pos) {
+            return false;
+        }
         if !self.range.contains(&pos) {
             return false;
         }
@@ -91,7 +97,7 @@ impl Reader<'_> {
                 Ok(&(self._data())[self.cursor - len..self.cursor])
             } else {
                 self.back(len);
-                Ok(&(self._data())[self.cursor..self.cursor + len])
+                Ok(&self._data()[self.cursor..self.cursor + len])
             }
         } else {
             bail!("todo: data length error");
