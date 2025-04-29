@@ -1,4 +1,6 @@
 const esbuild = require("esbuild");
+const fs = require('fs');
+const path = require('path');
 
 const production = process.argv.includes('--production');
 const watch = process.argv.includes('--watch');
@@ -8,7 +10,6 @@ const watch = process.argv.includes('--watch');
  */
 const esbuildProblemMatcherPlugin = {
 	name: 'esbuild-problem-matcher',
-
 	setup(build) {
 		build.onStart(() => {
 			console.log('[watch] build started');
@@ -19,6 +20,32 @@ const esbuildProblemMatcherPlugin = {
 				console.error(`    ${location.file}:${location.line}:${location.column}:`);
 			});
 			console.log('[watch] build finished');
+		});
+	},
+};
+
+/**
+ * @type {import('esbuild').Plugin}
+ */
+const copyWasmPlugin = {
+	name: 'copy-wasm',
+	setup(build) {
+		build.onEnd(() => {
+			// 确保dist目录存在
+			if (!fs.existsSync('dist')) {
+				fs.mkdirSync('dist', { recursive: true });
+			}
+
+			// 复制node_modules中的wasm文件到dist目录
+			const wasmSourcePath = path.resolve(__dirname, 'node_modules/.pnpm/wasm-pcps@file+..+crates+wasm2+node/node_modules/wasm-pcps/wasm_pcps_bg.wasm');
+			const wasmDestPath = path.resolve(__dirname, 'dist/wasm_pcps_bg.wasm');
+			
+			if (fs.existsSync(wasmSourcePath)) {
+				fs.copyFileSync(wasmSourcePath, wasmDestPath);
+				console.log('✓ Copied WASM file to dist directory');
+			} else {
+				console.error('✘ WASM file not found:', wasmSourcePath);
+			}
 		});
 	},
 };
@@ -38,7 +65,7 @@ async function main() {
 		external: ['vscode'],
 		logLevel: 'silent',
 		plugins: [
-			/* add to the end of plugins array */
+			copyWasmPlugin,
 			esbuildProblemMatcherPlugin,
 		],
 	});
@@ -50,7 +77,7 @@ async function main() {
 	}
 }
 
-main().catch(e => {
-	console.error(e);
+main().catch((err) => {
+	console.error(err);
 	process.exit(1);
 });
