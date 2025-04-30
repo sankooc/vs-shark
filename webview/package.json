@@ -12,6 +12,9 @@
   },
   "dependencies": {
     "@types/node": "^22.15.3",
+    "primeflex": "^4.0.0",
+    "primeicons": "^7.0.0",
+    "primereact": "^10.9.5",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
@@ -24,6 +27,7 @@
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.19",
     "globals": "^16.0.0",
+    "sass": "^1.87.0",
     "typescript": "~5.7.2",
     "typescript-eslint": "^8.26.1",
     "vite": "^6.3.1"

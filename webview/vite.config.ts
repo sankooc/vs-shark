@@ -25,6 +25,18 @@ export default defineConfig(({ command, mode }) => {
 
   return {
     plugins: [react()],
+    css: {
+      preprocessorOptions: {
+        scss: {
+          additionalData: `@import "@/scss/_var.scss"; @import "@/scss/_theme.scss";`,
+        },
+      },
+    },
+    resolve: {
+      alias: {
+        '@': resolve(__dirname, 'src'),
+      },
+    },
     base: '', // 使用相对路径，在插件端处理资源路径
     build: {
       rollupOptions: {
