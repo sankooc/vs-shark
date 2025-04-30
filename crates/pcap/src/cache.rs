@@ -1,11 +1,12 @@
 use rustc_hash::FxHasher;
+use std::cell::UnsafeCell;
 use std::collections::HashMap;
 use std::hash::BuildHasherDefault;
 
 type FastHashMap<K, V> = HashMap<K, V, BuildHasherDefault<FxHasher>>;
 
 pub struct StringPool {
-    map: FastHashMap<&'static str, ()>,
+    map: FastHashMap<String, &'static str>,
 }
 
 impl StringPool {
@@ -16,26 +17,22 @@ impl StringPool {
     }
 
     #[inline(always)]
-    pub fn intern(&mut self, s: &str) -> &'static str {
-        if let Some((&existing, _)) = self.map.get_key_value(s) {
-            return existing;
+    pub fn intern(&mut self, s: String) -> &'static str {
+        if let Some(v) = self.map.get(&s) {
+            return *v;
         }
-        
-        let boxed: Box<str> = s.to_owned().into_boxed_str();
-        let static_ref: &'static str = Box::leak(boxed);
-        self.map.insert(static_ref, ());
+        let static_ref: &'static str = unsafe { std::mem::transmute(s.as_str()) };
+        self.map.insert(s, static_ref);
         static_ref
     }
 }
 
-static mut POOL: Option<StringPool> = None;
+
+thread_local! {
+    static STRING_POOL: UnsafeCell<StringPool> = UnsafeCell::new(StringPool::new());
+}
 
 #[inline(always)]
-pub fn intern(s: &str) -> &'static str {
-    unsafe {
-        if POOL.is_none() {
-            POOL = Some(StringPool::new());
-        }
-        POOL.as_mut().unwrap_unchecked().intern(s)
-    }
+pub fn intern(s: String) -> &'static str {
+    unsafe { STRING_POOL.with(|pool| (*pool.get()).intern(s)) }
 }

@@ -2,6 +2,8 @@ use std::{cmp, ops::Range};
 
 use anyhow::{bail, Ok, Result};
 
+use crate::common::DataError;
+
 pub struct IO;
 
 impl IO {
@@ -41,6 +43,17 @@ impl DataSource {
         self.data.extend_from_slice(data);
         self.range.end = self.range.start + self.data.len();
     }
+    pub fn offset(&self, range: Range<usize>) -> Result<&[u8]> {
+        if !self.range.contains(&range.start) {
+            bail!(DataError::BitSize);
+        }
+        if !self.range.contains(&range.end) {
+            bail!(DataError::BitSize);
+        }
+        let _start = self.range.start;
+        let _range = (range.start - _start)..(range.end - _start);
+        Ok(&self.data[_range])
+    }
 }
 
 pub struct Reader<'a> {
@@ -62,8 +75,8 @@ impl<'a> Reader<'a> {
     pub fn _data(&self) -> &[u8] {
         &self.data.data
     }
-    pub fn offset(&self, range: Range<usize>) -> &[u8] {
-        todo!("")
+    pub fn offset(&self, range: Range<usize>) -> Result<&[u8]> {
+        self.data.offset(range)
     }
 }
 
@@ -100,7 +113,7 @@ impl Reader<'_> {
                 Ok(&self._data()[self.cursor..self.cursor + len])
             }
         } else {
-            bail!("todo: data length error");
+            bail!(DataError::BitSize)
         }
     }
 

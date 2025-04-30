@@ -14,7 +14,7 @@ macro_rules! read_field_format {
         let start = $reader.cursor as u64;
         let content = ($body);
         let end = $reader.cursor as u64;
-        let msg = intern(format!($msg_template, content).as_str());
+        let msg = intern(format!($msg_template, content));
         let ele = FieldElement::create(msg, Some(start..end));
         $list.push(ele);
         content

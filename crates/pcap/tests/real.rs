@@ -6,7 +6,7 @@ mod tests {
         path::Path,
     };
 
-    use pcap::common::Instance;
+    use pcap::{cache::intern, common::Instance};
     fn _parse(fname: &str) -> std::io::Result<Instance> {
         let mut ins = Instance::new();
         let path = Path::new(fname);
@@ -28,7 +28,7 @@ mod tests {
         Ok(ins)
     }
     #[test]
-    fn testbasic() -> std::io::Result<()> {
+    fn basic() -> std::io::Result<()> {
         let fname = "../../../pcaps/11.pcapng";
         // let fname = "../../../pcaps/http.pcap";
         // let fname = "../../../pcaps/http2.pcap";
@@ -36,5 +36,17 @@ mod tests {
         let ctx = _ins.get_context();
         println!("total frames {}", ctx.counter);
         Ok(())
+    }
+
+    #[test]
+    fn pooltest() {
+        let a1 = format!("{}-1k", "test");
+        let a2 = format!("{}-1k", "test");
+        
+        println!("original: {:p} - {:p}", a1.as_ptr(), a2.as_ptr());
+        println!("reference: {:p} - {:p}", (&a1).as_ptr(), (&a2).as_ptr());
+        let c1 = intern(a1);
+        let c2 = intern(a2);
+        println!("cached: {:p} - {:p}", c1.as_ptr(), c2.as_ptr());
     }
 }

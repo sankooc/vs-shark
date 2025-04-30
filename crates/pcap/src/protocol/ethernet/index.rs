@@ -1,6 +1,6 @@
 
 use anyhow::Result;
-use crate::{cache::intern, common::{io::Reader, FieldElement, Protocol, ProtocolElement }, field_back_format, read_field_format, with_range};
+use crate::{cache::intern, common::{io::Reader, FieldElement, Protocol, ProtocolElement }, field_back_format, read_field_format};
 
 pub struct EthernetVisitor {
     
@@ -13,7 +13,7 @@ pub fn read_mac(reader: &mut Reader) -> Result<&'static str> {
             .map(|x| format!("{:02x?}", x))
             .collect::<Vec<String>>()
             .join(":");
-    Ok(intern(&str))
+    Ok(intern(str))
 }
 
 impl EthernetVisitor {
@@ -26,11 +26,11 @@ impl EthernetVisitor {
         let mut ptype = reader.read16(true)?;
         if reader.left() == ptype as usize {
             ptype = 1010; // IEEE 802.3
-            field_back_format!(list, reader,2, format!("Length: {}", ptype).as_str());
+            field_back_format!(list, reader,2, format!("Length: {}", ptype));
         } else {
-            field_back_format!(list, reader,2, format!("Type: {} ({:#06x})", ptype, ptype).as_str());
+            field_back_format!(list, reader,2, format!("Type: {} ({:#06x})", ptype, ptype));
         }
-        fe.element.title = intern(format!("Ethernet II, Src: {}, Dst: {}", source, target).as_str());
+        fe.element.title = intern(format!("Ethernet II, Src: {}, Dst: {}", source, target));
         fe.element.children = Some(list);
 
         Ok(("none", fe))

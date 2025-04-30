@@ -13,11 +13,12 @@ pub struct WContext {
 #[wasm_bindgen]
 impl WContext {
     #[wasm_bindgen(constructor)]
-    pub fn new(conf: Conf) -> WContext {
+    pub fn new(_: Conf) -> WContext {
         // let mut slice = vec![0; s.length() as usize];
         // s.copy_to(&mut slice[..]);
         // let slice = s.to_vec();
         // let _start = instant::Instant::now();
+        
         let ins = Instance::new();
         
         // // let mut ins = load_data(slice, conf.into()).unwrap();
