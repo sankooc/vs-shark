@@ -18,7 +18,7 @@ impl WContext {
         // s.copy_to(&mut slice[..]);
         // let slice = s.to_vec();
         // let _start = instant::Instant::now();
-        
+
         let ins = Instance::new();
         
         // // let mut ins = load_data(slice, conf.into()).unwrap();
@@ -36,7 +36,7 @@ impl WContext {
         // let _start = instant::Instant::now();
         // let mut ins = Instance::new();
         // ins.update(&slice).unwrap();
-        self.ctx.update(&slice).unwrap()
+        self.ctx.update(slice).unwrap()
         
     }
 }

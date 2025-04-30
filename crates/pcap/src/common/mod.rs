@@ -149,7 +149,7 @@ impl Instance {
         let mut reader = Reader::new(&self.ds);
         reader.cursor = self.last;
         if let FileType::NONE = self.file_type {
-            let head: &[u8] = &self.ds.data[..4];
+            let head: &[u8] = self.ds.slice(0..4)?;
             let head_str = format!("{:x}", IO::read32(head, false)?);
             match head_str.as_str() {
                 "a1b2c3d4" => {
@@ -226,10 +226,10 @@ impl Instance {
         ctx.counter += 1;
         ctx.list.push(frame);
     }
-    pub fn update(&mut self, data: &[u8]) -> Result<String> {
+    pub fn update(&mut self, data: Vec<u8>) -> Result<String> {
         self.ds.update(data);
         self.parse()?;
-        let msg = format!("size: {} range {} - {}", self.ds.data.len(), self.ds.range.start, self.ds.range.end);
+        let msg = format!("size: {} range {} - {}", self.ds.len(), self.ds.range().start, self.ds.range().end);
         Ok(msg)
     }
     pub fn destroy(&mut self) -> bool {
