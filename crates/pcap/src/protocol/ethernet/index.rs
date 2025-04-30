@@ -1,6 +1,6 @@
 
 use anyhow::Result;
-use crate::{cache::intern, common::{io::Reader, FieldElement, Protocol, ProtocolElement }, field_back_format, read_field_format};
+use crate::{cache::intern, common::{enum_def::Protocol, io::Reader, FieldElement, ProtocolElement }, constants::etype_mapper, field_back_format, read_field_format};
 
 pub struct EthernetVisitor {
     
@@ -26,9 +26,10 @@ impl EthernetVisitor {
         let mut ptype = reader.read16(true)?;
         if reader.left() == ptype as usize {
             ptype = 1010; // IEEE 802.3
+            //"IEEE 802.3 Ethernet"
             field_back_format!(list, reader,2, format!("Length: {}", ptype));
         } else {
-            field_back_format!(list, reader,2, format!("Type: {} ({:#06x})", ptype, ptype));
+            field_back_format!(list, reader,2, format!("Type: {} ({:#06x})", etype_mapper(ptype), ptype));
         }
         fe.element.title = intern(format!("Ethernet II, Src: {}, Dst: {}", source, target));
         fe.element.children = Some(list);

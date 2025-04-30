@@ -1,6 +1,7 @@
+use crate::common::enum_def::Protocol;
 
 use anyhow::Result;
-use crate::{cache::intern, common::{io::Reader, range64, Protocol, ProtocolElement}};
+use crate::{cache::intern, common::{io::Reader, range64, ProtocolElement}};
 pub struct DefaultParser {
     
 }

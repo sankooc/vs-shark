@@ -2,7 +2,8 @@ use std::{cmp, ops::Range};
 
 use anyhow::{bail, Ok, Result};
 
-use crate::common::DataError;
+use crate::common::enum_def::DataError;
+
 
 pub struct IO;
 

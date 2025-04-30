@@ -1,12 +1,12 @@
 use std::ops::Range;
 
 use anyhow::{bail, Result};
+use enum_def::{DataError, FileType, Protocol};
 use io::{DataSource, Reader, IO};
-use thiserror::Error;
 
 use crate::{
     files::{pcap::PCAP, pcapng::PCAPNG},
-    protocol::{ethernet::execute, parse},
+    protocol::{link_type_map, parse},
 };
 
 pub fn range64(range: Range<usize>) -> Range<u64> {
@@ -49,21 +49,6 @@ pub struct Instance {
     last: usize,
 }
 
-#[derive(Default, Clone, Copy)]
-pub enum FileType {
-    PCAP,
-    PCAPNG,
-    #[default]
-    NONE,
-}
-
-#[derive(Default)]
-pub enum Protocol {
-    #[default]
-    None,
-    Ethernet,
-}
-
 pub trait Element {
     fn title(&self) -> &'static str;
     fn position(&self) -> Option<Range<u64>>;
@@ -75,6 +60,7 @@ pub struct FieldElement {
     pub title: &'static str,
     pub position: Option<Range<u64>>,
     pub children: Option<Vec<FieldElement>>,
+    // props: Option<(&'static str, &'static str)>
 }
 
 impl FieldElement {
@@ -123,13 +109,6 @@ impl Element for ProtocolElement {
     }
 }
 
-#[derive(Error, Debug)]
-pub enum DataError {
-    #[error("unsupport file type")]
-    UnsupportFileType,
-    #[error("bit error")]
-    BitSize,
-}
 impl Instance {
     pub fn new() -> Instance {
         let ds = DataSource::new();
@@ -199,7 +178,7 @@ impl Instance {
     pub fn parse_packet(ctx: &mut Context, mut frame: Frame, ds: &DataSource) {
         if let Some(range) = &frame.range {
             let mut _reader = Reader::new_sub(&ds, range.clone());
-            let proto = execute(&ctx.file_type, ctx.link_type, &mut _reader);
+            let proto = link_type_map(&ctx.file_type, ctx.link_type, &mut _reader);
             if let Ok((next, pe)) = parse(proto, &mut _reader) {
                 frame.element.push(pe);
                 let mut _next = next;
@@ -233,7 +212,7 @@ impl Instance {
         Ok(msg)
     }
     pub fn destroy(&mut self) -> bool {
-        // TODO 
+        // TODO
         true
     }
 }

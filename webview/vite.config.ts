@@ -10,7 +10,7 @@ export default defineConfig(({ command, mode }) => {
   // 所有入口配置
   const allEntries = {
     main: resolve(__dirname, 'index.html'),
-    admin: resolve(__dirname, 'admin.html'),
+    app: resolve(__dirname, 'app.html'),
   }
 
   const mainEntry = {
@@ -25,15 +25,17 @@ export default defineConfig(({ command, mode }) => {
 
   return {
     plugins: [react()],
+    base: '', // 使用相对路径，在插件端处理资源路径
     build: {
       rollupOptions: {
         input: getEntries(),
         output: {
           entryFileNames: 'js/[name].js',
           chunkFileNames: 'js/[name]-chunk.js',
-          assetFileNames: 'assets/[name][extname]',
+          assetFileNames: 'assets/[name][extname]'
         },
       },
+      assetsInlineLimit: 0, // 禁止将小文件转为base64
     },
   }
 })

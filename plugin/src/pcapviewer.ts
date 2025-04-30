@@ -24,21 +24,29 @@ const createWebviewHtml = (
   file: string,
 ): string => {
   const scriptUri = webview.asWebviewUri(
-    vscode.Uri.joinPath(context.extensionUri, DIST, file),
+    vscode.Uri.joinPath(context.extensionUri, 'dist','web', 'js', 'main.js'),
+  );
+  const cssUri = webview.asWebviewUri(
+    vscode.Uri.joinPath(context.extensionUri, 'dist','web', 'assets', 'main.css'),
+  );
+  const viteIconUri = webview.asWebviewUri(
+    vscode.Uri.joinPath(context.extensionUri, 'dist','web', 'assets', 'vite.svg'),
   );
   const nonce = getNonce();
-  const result = `<!DOCTYPE html>
-		<html lang="en">
-			<head>
-			<meta charset="utf-8" />
-			<meta name="viewport" content="width=device-width, initial-scale=1" />
-			</head>
-			<body>
-			<div id="app"></div>
-			<script nonce="${nonce}" src="${scriptUri}"></script>
-			</body>
-		</html>
-		`;
+  const result = `<!doctype html>
+    <html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="${viteIconUri}" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vite + React + TS</title>
+    <script nonce="${nonce}" type="module" crossorigin src="${scriptUri}"></script>
+    <link rel="stylesheet" nonce="${nonce}" crossorigin href="${cssUri}">
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>`;
   return result;
 };
 class PcapDocument extends Disposable implements vscode.CustomDocument {
