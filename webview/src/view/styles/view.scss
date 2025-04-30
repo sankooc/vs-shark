@@ -1,3 +1,5 @@
+@use "../../scss/var";
+@use "../../scss/theme";
 .app {
   display: flex;
   flex-direction: column;
@@ -5,17 +7,17 @@
   justify-content: center;
   min-height: 100vh;
   padding: 2rem;
-  
+
   h1 {
     margin-bottom: 2rem;
   }
-  
+
   .card {
     padding: 2rem;
     border-radius: var(--border-radius);
     background: var(--vscode-editor-background);
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    
+
     button {
       @include vscode-button;
       margin: 1rem 0;

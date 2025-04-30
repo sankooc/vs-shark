@@ -1,14 +1,14 @@
 // Mock VSCode API for development environment
 const vscode = {
   postMessage: (message: any) => {
-    console.log('VSCode postMessage:', message);
+    console.log("VSCode postMessage:", message);
   },
   getState: () => {
     return {};
   },
   setState: (state: any) => {
-    console.log('VSCode setState:', state);
-  }
+    console.log("VSCode setState:", state);
+  },
 };
 
 // Add vscode to window for development

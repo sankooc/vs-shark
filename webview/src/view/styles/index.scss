@@ -1,5 +1,7 @@
+@use "../../scss/var";
+@use "../../scss/theme";
 :root {
-  font-family: $vscode-font-family;
+  // font-family: $vscode-font-family;
   line-height: 1.5;
   font-weight: 400;
 
@@ -17,7 +19,7 @@ a {
   font-weight: 500;
   color: var(--vscode-textLink-foreground);
   text-decoration: inherit;
-  
+
   &:hover {
     color: var(--vscode-textLink-activeForeground);
   }
@@ -37,17 +39,17 @@ h1 {
 }
 
 button {
-  @include vscode-button;
+  // @include vscode-button;
   border-radius: 8px;
   font-size: 1em;
   font-weight: 500;
   font-family: inherit;
   transition: border-color 0.25s;
-  
+
   &:hover {
     border-color: var(--vscode-button-hoverBackground);
   }
-  
+
   &:focus,
   &:focus-visible {
     outline: 4px auto -webkit-focus-ring-color;
