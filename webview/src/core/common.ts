@@ -2,13 +2,26 @@ export function deserialize<T>(content: string): T {
   return JSON.parse(content);
 }
 
+export enum ComType {
+  SERVER_REDAY = "ready",
+  CLIENT_REDAY = "_ready",
+  REQUEST = "request",
+  RESPONSE = "response",
+  log = "log",
+  error = "error",
+}
+
 export class ComMessage<T> {
-  type: string;
+  type: ComType;
   body: T;
   id!: string;
-  constructor(type: string, body: T) {
+  constructor(type: ComType, body: T) {
     this.type = type;
     this.body = body;
+    this.id = Date.now().toString();
+  }
+  static new(type: ComType, body: any): ComMessage<any> {
+    return new ComMessage(type, body);
   }
 }
 

@@ -1,96 +1,81 @@
-import React, {
-  useEffect,
-  useRef,
-  useState,
-  useCallback
-} from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import { Menubar } from "primereact/menubar";
 import { Avatar } from "primereact/avatar";
-import init from "rshark";
 import { IframeWithPlaceholder } from "./components/IframeWithPlaceholder";
 import "./app.scss";
-import { ComLog, ComMessage } from "../core/common";
-import { PCAPClient } from "../core/client";
+import { useStore } from "./store";
 
-class Client extends PCAPClient {
-  data!: Uint8Array;
-  constructor(private ref: React.RefObject<HTMLIFrameElement | null>) {
-    super();
-  }
-  printLog(log: ComLog): void {
-    console.log(log.level, log.msg);
-  }
-  emitMessage(msg: ComMessage<any>): void {
-    this.ref.current?.contentWindow?.postMessage(msg, "*");
-  }
-}
-
-const ready = init();
 export default function CommandDemo() {
+  const loadIFrame = useStore((state) => state.loadIFrame);
+  const loadFile = useStore((state) => state.loadFile);
+  // const unloadFile = useStore(state => state.unloadFile);
+  const loadData = useStore((state) => state.loadData);
+
   const inputRef = useRef<HTMLInputElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const [blocked, setBlocked] = useState<boolean>(false);
   const [visible, setVisible] = useState(false);
   const [iframeSrc, _setIframeSrc] = useState<string>("index.html");
   const [isLoaded, setIsLoading] = useState(true);
-  const [name, setName] = useState<string>("");
-
+  loadIFrame(iframeRef.current);
+  // console.log(iframeRef.current);
   function add_comment() {
-    let script = document.createElement('script');
-    let anchor = document.getElementById('comments');
+    let script = document.createElement("script");
+    let anchor = document.getElementById("comments");
     if (!anchor) return;
-    script.setAttribute('src', 'https://utteranc.es/client.js');
-    script.setAttribute('crossorigin', 'anonymous');
-    script.setAttribute('async', 'true');
-    script.setAttribute('repo', 'sankooc/comments');
-    script.setAttribute('issue-term', 'pathname');
-    script.setAttribute('theme', 'github-dark');
+    script.setAttribute("src", "https://utteranc.es/client.js");
+    script.setAttribute("crossorigin", "anonymous");
+    script.setAttribute("async", "true");
+    script.setAttribute("repo", "sankooc/comments");
+    script.setAttribute("issue-term", "pathname");
+    script.setAttribute("theme", "github-dark");
     anchor.appendChild(script);
   }
   useEffect(() => {
-    ready.then((rs) => {
-      console.log("wasm loaded", rs);
-    });
     add_comment();
   }, []);
 
-  let globalClient: Client;
+  // let globalClient: Client;
   const onFileChangeCapture = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files && files.length) {
-      iframeRef.current?.contentWindow?.postMessage(
-        new ComMessage("_reset", ""),
-        "*",
-      );
-      if (files[0].name) {
-        setName(files[0].name);
-      }
+      setBlocked(true);
+      const name = files[0].name;
+      // if (files[0].name) {
+      //   setName(files[0].name);
+      // }
       document.title = name;
       const reader = new FileReader();
       reader.onload = function () {
         const arrayBuffer: ArrayBuffer = this.result as ArrayBuffer;
         const array = new Uint8Array(arrayBuffer);
-        if (globalClient) {
-          // globalClient.distroy();
-        }
-        const client = new Client(iframeRef);
-        client.data = array;
-        client.ready = true;
-        try {
-          client.init();
-          client.update(client.data);
-          globalClient = client;
-          window.onmessage = function (e) {
-            client.handle(e.data);
-          };
-        } catch (e) {
-          console.error(e);
-          // client.destory();
-        }
+        const size = array.length;
+        loadFile({ name, size, start: Date.now() });
+        loadData(array).then(() => {
+          setBlocked(false);
+        });
+        // if (globalClient) {
+        //   // globalClient.distroy();
+        // }
+        // const client = new Client(iframeRef);
+        // client.data = array;
+        // client.ready = true;
+        // try {
+        //   client.init();
+        //   client.update(client.data);
+        //   globalClient = client;
+        //   window.onmessage = function (e) {
+        //     client.handle(e.data);
+        //   };
+        // } catch (e) {
+        //   console.error(e);
+        //   // client.destory();
+        // }
       };
       reader.readAsArrayBuffer(files[0]);
     }
   };
-  const disabled = isLoaded;
+  const disabled = isLoaded || blocked;
   const items = [
     {
       label: "File",
@@ -101,6 +86,9 @@ export default function CommandDemo() {
           icon: "pi pi-plus",
           disabled,
           command: () => {
+            if (blocked) {
+              return;
+            }
             inputRef.current?.click();
           },
         },

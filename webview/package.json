@@ -8,18 +8,20 @@
     "build": "tsc -b && vite build",
     "build:all": "tsc -b && VITE_BUILD_ALL=true vite build",
     "lint": "eslint .",
-		"format": "prettier -w ./src",
+    "format": "prettier -w ./src",
     "preview": "vite preview"
   },
   "dependencies": {
     "@types/node": "^22.15.3",
     "@types/vscode-webview": "^1.57.5",
+    "immer": "^10.1.1",
     "primeflex": "^4.0.0",
     "primeicons": "^7.0.0",
     "primereact": "^10.9.5",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "rshark": "file:../crates/wasm2/pkg"
+    "rshark": "file:../crates/wasm2/pkg",
+    "zustand": "^5.0.3"
   },
   "devDependencies": {
     "@eslint/js": "^9.22.0",

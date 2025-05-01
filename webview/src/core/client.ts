@@ -1,5 +1,5 @@
 import { load, WContext, Conf } from "rshark";
-import { ComLog, ComMessage } from "./common";
+import { ComLog, ComMessage, ComType } from "./common";
 
 export abstract class PCAPClient {
   level: string = "trace";
@@ -9,11 +9,7 @@ export abstract class PCAPClient {
   _cache: any = {};
   init(): void {
     if (!this.ctx) {
-      try {
-        this.ctx = load(Conf.new(false));
-      } catch (e) {
-        this.emitMessage(new ComMessage("_error", "failed to open file"));
-      }
+      this.ctx = load(Conf.new(false));
     }
     // if (!this.ctx && this.data) {
     // try {
@@ -29,26 +25,31 @@ export abstract class PCAPClient {
     // }
   }
   async update(data: Uint8Array): Promise<string> {
+    if (!this.ctx) {
+      this.init();
+    }
     if (this.ctx) {
       try {
         const rs = await this.ctx.update(data);
         console.log(rs);
       } catch (e) {
-        this.emitMessage(new ComMessage("_error", "failed to open file"));
+        this.emitMessage(new ComMessage(ComType.error, "failed to open file"));
       }
     }
-    return '';
+    return "";
   }
   abstract printLog(log: ComLog): void;
   abstract emitMessage(msg: ComMessage<any>): void;
+
   handle(msg: ComMessage<any>) {
     if (!msg) return;
     const { type, body } = msg;
     if (!type) return;
     try {
       switch (type) {
-        case "ready":
+        case ComType.CLIENT_REDAY:
           this.ready = true;
+          console.log("is ready");
           try {
             this.init();
           } catch (e) {
@@ -56,11 +57,10 @@ export abstract class PCAPClient {
             this.printLog(new ComLog("error", "failed to open file"));
           }
           break;
-        case "log":
+        case ComType.log:
           this.printLog(body as ComLog);
           break;
-        case "webpackWarnings":
-          break;
+
         default:
           console.log("unknown type", msg.type);
       }

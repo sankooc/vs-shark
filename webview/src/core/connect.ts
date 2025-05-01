@@ -1,5 +1,5 @@
-import * as vs from "vscode-webview";
-import { ComLog, ComMessage } from "./common";
+// import * as vs from "vscode-webview";
+import { ComLog, ComMessage, ComType } from "./common";
 
 let vscode: any;
 if (window["acquireVsCodeApi"]) {
@@ -21,7 +21,7 @@ export const onMessage = (type: string, listen: (msg: any) => void) => {
 };
 
 export const log = (level: string, msg: any): void => {
-  emitMessage(new ComMessage("log", new ComLog(level, msg)));
+  emitMessage(new ComMessage(ComType.log, new ComLog(level, msg)));
 };
 export const trace = (msg: any) => {
   log("trace", msg);
