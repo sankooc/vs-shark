@@ -1,16 +1,15 @@
 import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 import { resolve } from 'path'
+import wasm from "vite-plugin-wasm";
+import topLevelAwait from "vite-plugin-top-level-await";
 
-// https://vite.dev/config/
 export default defineConfig(({ command, mode }) => {
-  // 加载环境变量
   const env = loadEnv(mode, process.cwd())
   
-  // 所有入口配置
   const allEntries = {
     main: resolve(__dirname, 'index.html'),
-    admin: resolve(__dirname, 'admin.html'),
+    app: resolve(__dirname, 'app.html'),
   }
 
   const mainEntry = {
@@ -24,16 +23,34 @@ export default defineConfig(({ command, mode }) => {
   }
 
   return {
-    plugins: [react()],
+    plugins: [
+      react(),
+      wasm(),
+      topLevelAwait()
+    ],
+    resolve: {
+      alias: {
+        '@': resolve(__dirname, 'src'),
+        '@assets': resolve(__dirname, 'src/assets')
+      },
+    },
+    optimizeDeps: {
+      exclude: ['rshark']
+    },
+    base: '',
+    assetsInclude: ['**/*.ttf'],
     build: {
+      outDir: './../plugin/dist/web',
       rollupOptions: {
         input: getEntries(),
         output: {
           entryFileNames: 'js/[name].js',
           chunkFileNames: 'js/[name]-chunk.js',
-          assetFileNames: 'assets/[name][extname]',
+          assetFileNames: 'assets/[name][extname]'
         },
       },
+      target: 'esnext',
+      assetsInlineLimit: 0,
     },
   }
 })

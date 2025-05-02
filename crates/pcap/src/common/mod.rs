@@ -1,12 +1,14 @@
-use std::ops::Range;
+use std::{cmp, ops::Range};
 
 use anyhow::{bail, Result};
+use concept::{Criteria, FrameInfo, ListResult, ProgressStatus};
+use enum_def::{DataError, FileType, Protocol};
 use io::{DataSource, Reader, IO};
-use thiserror::Error;
+use serde_json::Error;
 
 use crate::{
     files::{pcap::PCAP, pcapng::PCAPNG},
-    protocol::{ethernet::execute, parse},
+    protocol::{link_type_map, parse},
 };
 
 pub fn range64(range: Range<usize>) -> Range<u64> {
@@ -15,10 +17,11 @@ pub fn range64(range: Range<usize>) -> Range<u64> {
 
 #[derive(Default)]
 pub struct Frame {
-    pub index: u32,
-    pub size: u32,
+    // pub index: u32,
+    // pub size: u32,
     pub range: Option<Range<usize>>,
-    pub time: Option<Vec<u8>>,
+    // pub time: Option<Vec<u8>>,
+    pub info: FrameInfo,
     pub element: Vec<ProtocolElement>,
 }
 
@@ -49,21 +52,6 @@ pub struct Instance {
     last: usize,
 }
 
-#[derive(Default, Clone, Copy)]
-pub enum FileType {
-    PCAP,
-    PCAPNG,
-    #[default]
-    NONE,
-}
-
-#[derive(Default)]
-pub enum Protocol {
-    #[default]
-    None,
-    Ethernet,
-}
-
 pub trait Element {
     fn title(&self) -> &'static str;
     fn position(&self) -> Option<Range<u64>>;
@@ -75,6 +63,7 @@ pub struct FieldElement {
     pub title: &'static str,
     pub position: Option<Range<u64>>,
     pub children: Option<Vec<FieldElement>>,
+    // props: Option<(&'static str, &'static str)>
 }
 
 impl FieldElement {
@@ -123,13 +112,6 @@ impl Element for ProtocolElement {
     }
 }
 
-#[derive(Error, Debug)]
-pub enum DataError {
-    #[error("unsupport file type")]
-    UnsupportFileType,
-    #[error("bit error")]
-    BitSize,
-}
 impl Instance {
     pub fn new() -> Instance {
         let ds = DataSource::new();
@@ -145,11 +127,11 @@ impl Instance {
         &self.ctx
     }
 
-    pub fn parse(&mut self) -> Result<()> {
+    pub fn parse(&mut self) -> Result<ProgressStatus> {
         let mut reader = Reader::new(&self.ds);
         reader.cursor = self.last;
         if let FileType::NONE = self.file_type {
-            let head: &[u8] = &self.ds.data[..4];
+            let head: &[u8] = self.ds.slice(0..4)?;
             let head_str = format!("{:x}", IO::read32(head, false)?);
             match head_str.as_str() {
                 "a1b2c3d4" => {
@@ -194,13 +176,16 @@ impl Instance {
             },
             _ => {}
         }
-        Ok(())
+        let mut rs: ProgressStatus = (&reader).into();
+        rs.count = self.ctx.list.len();
+        Ok(rs)
     }
     pub fn parse_packet(ctx: &mut Context, mut frame: Frame, ds: &DataSource) {
         if let Some(range) = &frame.range {
             let mut _reader = Reader::new_sub(&ds, range.clone());
-            let proto = execute(&ctx.file_type, ctx.link_type, &mut _reader);
-            if let Ok((next, pe)) = parse(proto, &mut _reader) {
+            let proto = link_type_map(&ctx.file_type, ctx.link_type, &mut _reader);
+            frame.info.protocol = proto;
+            if let Ok((next, pe)) = parse(proto, &mut frame, &mut _reader) {
                 frame.element.push(pe);
                 let mut _next = next;
                 // loop {
@@ -222,23 +207,56 @@ impl Instance {
             // println!("proto: {}", _proto);
             // frame.children = Vec::new();
         }
-        frame.index = ctx.counter;
+        frame.info.index = ctx.counter;
         ctx.counter += 1;
         ctx.list.push(frame);
     }
-    pub fn update(&mut self, data: &[u8]) -> Result<String> {
+    pub fn update(&mut self, data: Vec<u8>) -> Result<ProgressStatus> {
         self.ds.update(data);
-        self.parse()?;
-        let msg = format!("size: {} range {} - {}", self.ds.data.len(), self.ds.range.start, self.ds.range.end);
-        Ok(msg)
+        self.parse()
     }
     pub fn destroy(&mut self) -> bool {
-        // TODO 
+        // TODO
         true
     }
 }
 
+
+impl Instance {
+    pub fn get_count(&self, catelog: &str) -> usize {
+        match catelog {
+            "frame" => {
+                self.ctx.list.len()
+            },
+            _ => 0,
+        }
+    }
+    pub fn select_frames_by(&self, cri: Criteria) -> ListResult<&FrameInfo> {
+        // let Criteria { start, size } = cri;
+        // let info = self.context().get_info();
+        // let start_ts = info.start_time;
+        let start = cri.start;
+        let size = cri.size;
+        let fs: &[Frame] = &self.ctx.list;
+        let total = fs.len();
+        let mut items = Vec::new();
+        if total <= start {
+            return ListResult::new(start, 0, Vec::new());
+        }
+        let end = cmp::min(start + size, total);
+        let _data = &fs[start..end];
+        for frame in _data.iter() {
+            items.push(&frame.info);
+        }
+        ListResult::new(start, total, items)
+    }
+    pub fn select_frames_json(&self, cri: Criteria) -> Result<String, Error> {
+        let item = self.select_frames_by(cri);
+        serde_json::to_string(&item)
+    }
+}
 pub mod core;
 pub mod enum_def;
 pub mod io;
 pub mod macro_def;
+pub mod concept;

@@ -2,7 +2,10 @@ use std::{cmp, ops::Range};
 
 use anyhow::{bail, Ok, Result};
 
-use crate::common::DataError;
+use crate::common::enum_def::DataError;
+
+use super::concept::ProgressStatus;
+
 
 pub struct IO;
 
@@ -31,19 +34,41 @@ impl IO {
 }
 
 pub struct DataSource {
-    pub data: Vec<u8>,
-    pub range: Range<usize>,
+    data: Vec<u8>,
+    range: Range<usize>,
 }
 
 impl DataSource {
     pub fn new() -> Self {
         Self { data: Vec::new(), range: 0..0 }
     }
-    pub fn update(&mut self, data: &[u8]) {
-        self.data.extend_from_slice(data);
+    pub fn range(&self) -> Range<usize>{
+        self.range.clone()
+    }
+    pub fn len(&self) -> usize {
+        self.data.len()
+    }
+    // 追加数据
+    #[inline(always)]
+    pub fn update(&mut self, data: Vec<u8>) {
+        self.data.extend(data);
         self.range.end = self.range.start + self.data.len();
     }
-    pub fn offset(&self, range: Range<usize>) -> Result<&[u8]> {
+    pub fn trim(&mut self, cursor: usize) -> Result<()> {
+        if cursor <= self.range.start {
+            return Ok(());
+        }
+        let offset = cursor - self.range.start;
+        if offset >= self.data.len() {
+            self.data.clear();
+            self.range = cursor..cursor;
+            return Ok(());
+        }
+        self.data.drain(..offset);
+        self.range = cursor..self.range.end;
+        Ok(())
+    }
+    pub fn slice(&self, range: Range<usize>) -> Result<&[u8]> {
         if !self.range.contains(&range.start) {
             bail!(DataError::BitSize);
         }
@@ -62,6 +87,13 @@ pub struct Reader<'a> {
     pub cursor: usize,
 }
 
+impl Into<ProgressStatus> for &Reader<'_> {
+    fn into(self) -> ProgressStatus {
+        let total = self.data.len();
+        let cursor = self.cursor;
+        ProgressStatus{total, cursor, count: 0}
+    }
+}
 impl<'a> Reader<'a> {
     pub fn new(data: &'a DataSource) -> Self {
         let range = data.range.clone();
@@ -72,11 +104,8 @@ impl<'a> Reader<'a> {
         let cursor = range.start;
         Self { data, range, cursor }
     }
-    pub fn _data(&self) -> &[u8] {
-        &self.data.data
-    }
-    pub fn offset(&self, range: Range<usize>) -> Result<&[u8]> {
-        self.data.offset(range)
+    pub fn _slice(&self, range: Range<usize>) -> Result<&[u8]> {
+        self.data.slice(range)
     }
 }
 
@@ -107,10 +136,10 @@ impl Reader<'_> {
     pub fn slice(&mut self, len: usize, mv: bool) -> Result<&[u8]> {
         if self.forward(len) {
             if mv {
-                Ok(&(self._data())[self.cursor - len..self.cursor])
+                self._slice(self.cursor - len..self.cursor)
             } else {
                 self.back(len);
-                Ok(&self._data()[self.cursor..self.cursor + len])
+                self._slice(self.cursor..self.cursor + len)
             }
         } else {
             bail!(DataError::BitSize)

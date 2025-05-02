@@ -5,15 +5,25 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host",
-    "build": "tsc -b && vite build",
+    "build": "rm -rf ../plugin/dist/web && tsc -b && vite build",
     "build:all": "tsc -b && VITE_BUILD_ALL=true vite build",
     "lint": "eslint .",
+    "gen": "npx rs2ts -i ../crates/pcap/src/common/concept.rs  -o src/core/gen.ts",
+    "format": "prettier -w ./src",
     "preview": "vite preview"
   },
   "dependencies": {
     "@types/node": "^22.15.3",
+    "@types/vscode-webview": "^1.57.5",
+    "dayjs": "^1.11.13",
+    "immer": "^10.1.1",
+    "primeflex": "^4.0.0",
+    "primeicons": "^7.0.0",
+    "primereact": "^10.9.5",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "rshark": "file:../crates/wasm2/pkg",
+    "zustand": "^5.0.3"
   },
   "devDependencies": {
     "@eslint/js": "^9.22.0",
@@ -24,8 +34,13 @@
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.19",
     "globals": "^16.0.0",
+    "prettier": "^3.5.3",
+    "rs2ts": "^0.0.5",
+    "sass": "^1.87.0",
     "typescript": "~5.7.2",
     "typescript-eslint": "^8.26.1",
-    "vite": "^6.3.1"
+    "vite": "^6.3.1",
+    "vite-plugin-top-level-await": "^1.5.0",
+    "vite-plugin-wasm": "^3.4.1"
   }
 }

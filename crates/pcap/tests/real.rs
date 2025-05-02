@@ -23,7 +23,7 @@ mod tests {
             if n == 0 {
                 break;
             }
-            ins.update(&buffer[..n]).unwrap();
+            ins.update(buffer[..n].to_vec()).unwrap();
         }
         Ok(ins)
     }
