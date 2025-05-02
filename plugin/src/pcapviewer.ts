@@ -1,9 +1,8 @@
 import * as vscode from "vscode";
 import { Disposable, disposeAll } from "./dispose";
-import { load, WContext, Conf } from "rshark";
-// import { PCAPClient } from './client';
-import { ComLog, ComMessage } from "./common";
+import { ComLog, ComMessage, PcapFile } from "./core/common";
 import { FileTailWatcher } from "./fswatcher";
+import { PCAPClient } from "./core/client";
 
 function getNonce() {
   let text = "";
@@ -29,26 +28,24 @@ const createWebviewHtml = (
   const cssUri = webview.asWebviewUri(
     vscode.Uri.joinPath(context.extensionUri, 'dist','web', 'assets', 'main.css'),
   );
-  const viteIconUri = webview.asWebviewUri(
-    vscode.Uri.joinPath(context.extensionUri, 'dist','web', 'assets', 'vite.svg'),
-  );
   const nonce = getNonce();
   const result = `<!doctype html>
-    <html lang="en">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="${viteIconUri}" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Vite + React + TS</title>
+    <title>VSCode Webview Dev</title>
     <script nonce="${nonce}" type="module" crossorigin src="${scriptUri}"></script>
     <link rel="stylesheet" nonce="${nonce}" crossorigin href="${cssUri}">
   </head>
   <body>
-    <div id="root"></div>
+    <div id="app"></div>
   </body>
 </html>`;
   return result;
 };
+
+
 class PcapDocument extends Disposable implements vscode.CustomDocument {
   static async create(
     uri: vscode.Uri,
@@ -56,20 +53,19 @@ class PcapDocument extends Disposable implements vscode.CustomDocument {
   ): Promise<PcapDocument | PromiseLike<PcapDocument>> {
     const dataFile =
       typeof backupId === "string" ? vscode.Uri.parse(backupId) : uri;
-    const config = Conf.new(true);
-    const ins = await load(config);
     const watcher = new FileTailWatcher(dataFile.fsPath, {
       chunkSize: 1024 * 1024,
       intervalMs: 1000,
     });
-    return new PcapDocument(dataFile, ins, watcher);
+    return new PcapDocument(dataFile, watcher);
   }
 
   // private readonly _uri: vscode.Uri;
 
+  public client?: Client;
   private constructor(
     public uri: vscode.Uri,
-    public instance: WContext,
+    // public instance: WContext,
     public watcher: FileTailWatcher,
   ) {
     super();
@@ -85,22 +81,22 @@ class PcapDocument extends Disposable implements vscode.CustomDocument {
   }
 }
 
-// export class Client extends PCAPClient {
-// 	constructor(private view: vscode.Webview, private output: vscode.LogOutputChannel) {
-// 		super();
-// 	}
-// 	printLog(log: ComLog): void {
-// 		switch (log.level) {
-// 			case 'error':
-// 				vscode.window.showErrorMessage(log.msg.toString());
-// 				break;
-// 		}
-// 		this.output.info(log.msg.toString());
-// 	}
-// 	emitMessage(msg: ComMessage<any>): void {
-// 		this.view.postMessage(msg);
-// 	}
-// }
+export class Client extends PCAPClient {
+	constructor(private view: vscode.Webview, private output: vscode.LogOutputChannel) {
+		super();
+	}
+	printLog(log: ComLog): void {
+		switch (log.level) {
+			case 'error':
+				vscode.window.showErrorMessage(log.msg.toString());
+				break;
+		}
+		this.output.info(log.msg.toString());
+	}
+	emitMessage(msg: ComMessage<any>): void {
+		this.view.postMessage(msg);
+	}
+}
 
 export class PcapViewerProvider
   implements vscode.CustomReadonlyEditorProvider<PcapDocument>
@@ -151,16 +147,6 @@ export class PcapViewerProvider
     webviewPanel: vscode.WebviewPanel,
     _token: vscode.CancellationToken,
   ): Promise<void> {
-    // const uri = document.uri;
-    document.watcher.start((buffer: Buffer) => {
-      const rs = document.instance.update(buffer);
-      console.log(rs);
-      PcapViewerProvider.output.info(rs);
-      // const arr = new Uint8Array(buffer);
-    });
-
-    this.webviews.add(document.uri, webviewPanel);
-
     webviewPanel.title = "";
     webviewPanel.webview.options = {
       enableScripts: true,
@@ -170,12 +156,24 @@ export class PcapViewerProvider
       webviewPanel.webview,
       ENTRY,
     );
-    // if (!document.client) {
-    // const client = new Client(webviewPanel.webview, PcapViewerProvider.output);
-    // client.initData(document.documentData);
-    // document.client = client;
-    // webviewPanel.webview.onDidReceiveMessage(client.handle.bind(client));
-    // }
+    const info: PcapFile = { name: document.uri.fsPath, size: 0, start: 0 };
+    if (!document.client) {
+      const client = new Client(webviewPanel.webview, PcapViewerProvider.output);
+      client.touchFile(info);
+      document.client = client;
+      webviewPanel.webview.onDidReceiveMessage(client.handle.bind(client));
+    }
+    const client = document.client;
+    document.watcher.start((buffer: Buffer) => {
+      client.update(buffer).then((rs) => {
+        PcapViewerProvider.output.info(rs);
+      });
+      // const rs = document.instance.update(buffer);
+      // console.log(rs);
+      // const arr = new Uint8Array(buffer);
+    });
+
+    this.webviews.add(document.uri, webviewPanel);
   }
 
   private _requestId = 1;

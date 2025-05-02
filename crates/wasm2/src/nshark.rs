@@ -1,5 +1,5 @@
 use js_sys::Uint8Array;
-use pcap::common::Instance;
+use pcap::common::{concept::Criteria, Instance};
 use wasm_bindgen::prelude::*;
 
 use crate::entity::Conf;
@@ -14,17 +14,7 @@ pub struct WContext {
 impl WContext {
     #[wasm_bindgen(constructor)]
     pub fn new(_: Conf) -> WContext {
-        // let mut slice = vec![0; s.length() as usize];
-        // s.copy_to(&mut slice[..]);
-        // let slice = s.to_vec();
-        // let _start = instant::Instant::now();
-
         let ins = Instance::new();
-        
-        // // let mut ins = load_data(slice, conf.into()).unwrap();
-        
-        // ins.update(&slice).unwrap();
-        // ins.ctx.cost = start.elapsed().as_millis() as usize;
         WContext {
             ctx: Box::new(ins),
         }
@@ -33,11 +23,22 @@ impl WContext {
     #[wasm_bindgen]
     pub fn update(&mut self, s: &Uint8Array) -> String {
         let slice = s.to_vec();
-        // let _start = instant::Instant::now();
-        // let mut ins = Instance::new();
-        // ins.update(&slice).unwrap();
-        self.ctx.update(slice).unwrap()
-        
+        self.ctx.update(slice).unwrap().to_json()
+    }
+
+    
+    #[wasm_bindgen]
+    pub fn count(&self, catelog: String) -> usize {
+        self.ctx.get_count(&catelog)
+    }
+    
+    #[wasm_bindgen]
+    pub fn select(&self, catelog: String, start: usize, size: usize) -> String {
+        let cri = Criteria{start, size};
+        match catelog.as_str() {
+            "frame" => self.ctx.select_frames_json(cri).unwrap(),
+            _ => "{}".into()
+        }
     }
 }
 

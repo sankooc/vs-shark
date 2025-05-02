@@ -1,6 +1,6 @@
 
 use anyhow::Result;
-use crate::{cache::intern, common::{enum_def::Protocol, io::Reader, FieldElement, ProtocolElement }, constants::etype_mapper, field_back_format, read_field_format};
+use crate::{cache::intern, common::{enum_def::Protocol, io::Reader, FieldElement, Frame, ProtocolElement }, constants::etype_mapper, field_back_format, read_field_format};
 
 pub struct EthernetVisitor {
     
@@ -17,7 +17,7 @@ pub fn read_mac(reader: &mut Reader) -> Result<&'static str> {
 }
 
 impl EthernetVisitor {
-    pub fn parse(reader: &mut Reader) -> Result<(&'static str, ProtocolElement)> {
+    pub fn parse(frame: &mut Frame, reader: &mut Reader) -> Result<(&'static str, ProtocolElement)> {
         let mut fe = ProtocolElement::new(Protocol::Ethernet);
         
         let mut list = Vec::new();
@@ -31,9 +31,12 @@ impl EthernetVisitor {
         } else {
             field_back_format!(list, reader,2, format!("Type: {} ({:#06x})", etype_mapper(ptype), ptype));
         }
-        fe.element.title = intern(format!("Ethernet II, Src: {}, Dst: {}", source, target));
+        let info = intern(format!("Ethernet II, Src: {}, Dst: {}", source, target));
+        fe.element.title = info;
         fe.element.children = Some(list);
-
+        frame.info.info = info;
+        frame.info.source = source;
+        frame.info.dest = target;
         Ok(("none", fe))
     }
 }

@@ -4,6 +4,8 @@ use anyhow::{bail, Ok, Result};
 
 use crate::common::enum_def::DataError;
 
+use super::concept::ProgressStatus;
+
 
 pub struct IO;
 
@@ -85,6 +87,13 @@ pub struct Reader<'a> {
     pub cursor: usize,
 }
 
+impl Into<ProgressStatus> for &Reader<'_> {
+    fn into(self) -> ProgressStatus {
+        let total = self.data.len();
+        let cursor = self.cursor;
+        ProgressStatus{total, cursor, count: 0}
+    }
+}
 impl<'a> Reader<'a> {
     pub fn new(data: &'a DataSource) -> Self {
         let range = data.range.clone();

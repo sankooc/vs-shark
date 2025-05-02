@@ -4,10 +4,12 @@ import { Avatar } from "primereact/avatar";
 import { IframeWithPlaceholder } from "./components/IframeWithPlaceholder";
 import "./app.scss";
 import { useStore } from "./store";
+import { ComMessage, ComType, PcapFile } from "../core/common";
 
 export default function CommandDemo() {
   const loadIFrame = useStore((state) => state.loadIFrame);
-  const loadFile = useStore((state) => state.loadFile);
+  const send = useStore((state) => state.send);
+  // const loadFile = useStore((state) => state.loadFile);
   // const unloadFile = useStore(state => state.unloadFile);
   const loadData = useStore((state) => state.loadData);
 
@@ -41,16 +43,14 @@ export default function CommandDemo() {
     if (files && files.length) {
       setBlocked(true);
       const name = files[0].name;
-      // if (files[0].name) {
-      //   setName(files[0].name);
-      // }
       document.title = name;
       const reader = new FileReader();
       reader.onload = function () {
         const arrayBuffer: ArrayBuffer = this.result as ArrayBuffer;
         const array = new Uint8Array(arrayBuffer);
         const size = array.length;
-        loadFile({ name, size, start: Date.now() });
+        const fd: PcapFile = { name, size, start: Date.now() };
+        send(ComMessage.new(ComType.TOUCH_FILE, fd));
         loadData(array).then(() => {
           setBlocked(false);
         });

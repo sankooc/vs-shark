@@ -5,23 +5,41 @@ export function deserialize<T>(content: string): T {
 export enum ComType {
   SERVER_REDAY = "ready",
   CLIENT_REDAY = "_ready",
+  TOUCH_FILE = "file_touch",
+  PROCESS_DATA = "process_data",
+  PRGRESS_STATUS = "progress",
+  FILE_CLOSE = "file_close",
   REQUEST = "request",
   RESPONSE = "response",
+  FRAMES = "frames",
+  FILEINFO = "fileinfo",
   log = "log",
   error = "error",
 }
+
+export interface ComRequest {
+  catelog: string;
+  type: string;
+  param: any;
+}
+
+// export interface Pagination {
+//   start: number
+//   size?: number
+// }
 
 export class ComMessage<T> {
   type: ComType;
   body: T;
   id!: string;
-  constructor(type: ComType, body: T) {
+  constructor(type: ComType, body: T, id?: string) {
+    const _id = id ? id : Date.now().toString();
     this.type = type;
     this.body = body;
-    this.id = Date.now().toString();
+    this.id = _id;
   }
-  static new(type: ComType, body: any): ComMessage<any> {
-    return new ComMessage(type, body);
+  static new(type: ComType, body: any, id?: string): ComMessage<any> {
+    return new ComMessage(type, body, id);
   }
 }
 
@@ -33,6 +51,14 @@ export class ComLog {
     this.msg = msg;
   }
 }
+
+export interface PcapFile {
+  name: string;
+  size: number;
+  start: number;
+  state?: number;
+}
+
 export class HexV {
   data: Uint8Array;
   index!: [number, number];
@@ -87,7 +113,7 @@ export interface IOverviewData {
 }
 
 export class Pagination {
-  page?: number;
+  start?: number;
   size?: number;
   filter?: string;
 }

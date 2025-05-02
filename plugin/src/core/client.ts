@@ -19,6 +19,7 @@ export abstract class PCAPClient {
       try {
         const rs = await this.ctx.update(data);
         this.emitMessage(ComMessage.new(ComType.PRGRESS_STATUS, rs));
+        console.log('push emit');
         return rs;
       } catch (e) {
         this.emitMessage(new ComMessage(ComType.error, "failed to open file"));
@@ -51,9 +52,9 @@ export abstract class PCAPClient {
     }
   }
   handle(msg: ComMessage<any>) {
-    if (!msg) return;
+    if (!msg) {return;}
     const { type, body, id } = msg;
-    if (!type) return;
+    if (!type) {return;}
     try {
       switch (type) {
         case ComType.CLIENT_REDAY:
@@ -71,9 +72,7 @@ export abstract class PCAPClient {
           break;
         case ComType.PROCESS_DATA:
           const data = body.data as Uint8Array;
-          this.update(data).then((rs) => {
-            this.emitMessage(ComMessage.new(ComType.PRGRESS_STATUS, rs));
-          });
+          this.update(data);
           break;
         case ComType.log:
           this.printLog(body as ComLog);
@@ -88,7 +87,7 @@ export abstract class PCAPClient {
           }
           break;
         default:
-          // console.log("unknown type", msg.type);
+          console.log("unknown type", msg.type);
         // console.log(msg.body);
       }
     } catch (e) {

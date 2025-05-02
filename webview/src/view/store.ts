@@ -1,58 +1,55 @@
 // userStore.ts
 import { create } from "zustand";
-import { immer } from "zustand/middleware/immer";
 import { onMessage, emitMessage } from "../core/connect";
 import { _log } from "./util";
-import { ComMessage, ComType } from "../core/common";
-
-// interface User {
-//   id: string
-//   name: string
-//   email: string
-//   age: number
-// }
-
-// interface UserState {
-//   users: User[]
-//   loading: boolean
-//   error: string | null
-//   fetchUsers: () => Promise<void>
-//   addUser: (user: Omit<User, 'id'>) => void
-//   updateUser: (id: string, user: Partial<User>) => void
-//   deleteUser: (id: string) => void
-// }
+import { ComMessage, ComType, deserialize, PcapFile } from "../core/common";
+import { IFrameInfo, IListResult, IProgressStatus } from "../core/gen";
 
 interface PcapState {
-  filename: string;
-  size: number;
-  loading: boolean;
-  status: string;
+  fileinfo?: PcapFile;
+  progress?: IProgressStatus;
+  frameResult?: IListResult<IFrameInfo>;
   sendReady: () => void;
-  request: () => void;
+  request: (data: any) => string;
 }
 
 export const useStore = create<PcapState>()((set) => {
   _log("create pcap store");
   onMessage("message", (e: any) => {
-    const { type, body, id } = e.data;
-    _log(type, body, id);
+    const { type, body } = e.data;
+    // _log(type, body, id);
+    // console.log();
     switch (type) {
       case ComType.SERVER_REDAY: {
         //   emitMessage(ComMessage.new(ComType.CLIENT_REDAY, Date.now()));
         break;
       }
+      case ComType.FILEINFO:
+        const fileinfo = body as PcapFile;
+        set((state) => ({ ...state, fileinfo: fileinfo }));
+        break;
+      case ComType.PRGRESS_STATUS:
+        const progress = deserialize(body) as IProgressStatus;
+        set((state) => ({ ...state, progress }));
+        break;
+      case ComType.FRAMES:
+        const frameResult: IListResult<IFrameInfo> = deserialize(body);
+        set((state) => ({ ...state, frameResult }));
+        break;
     }
   });
   return {
-    filename: "",
-    size: 0,
-    loading: false,
-    status: "",
+    // filename: "",
+    // size: 0,
+    // loading: false,
+    // status: "",
     sendReady: () => {
       emitMessage(ComMessage.new(ComType.CLIENT_REDAY, Date.now()));
     },
-    request: () => {
-      emitMessage(new ComMessage(ComType.REQUEST, ""));
+    request: (data: any): string => {
+      const _req = new ComMessage(ComType.REQUEST, data);
+      emitMessage(_req);
+      return _req.id;
     },
   };
 });

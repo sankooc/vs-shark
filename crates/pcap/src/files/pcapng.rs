@@ -55,12 +55,18 @@ impl PCAPNG {
             "0x00000006" => {
                 let finish = reader.cursor + packet_size;
                 let _interface_id = reader.read32(false)?;
-                let t = reader.slice(8, true)?.to_vec();
+                // let t = reader.slice(8, true)?.to_vec();
+                
+                let mut ts = reader.read32(false)? as u64;
+                let low_ts = reader.read32(false)? as u64;
+                ts = (ts << 32) + low_ts;
+
+
                 let _captured = reader.read32(false)?;
                 let origin = reader.read32(false)?;
                 let mut f = Frame::new();
-                f.size = origin;
-                f.time = Some(t);
+                f.info.len = origin;
+                f.info.time = ts;
                 let end = reader.cursor + origin as usize;
                 f.range = Some(reader.cursor..end);
                 Ok((finish + 4, Some(f)))

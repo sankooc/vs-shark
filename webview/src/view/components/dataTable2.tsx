@@ -1,16 +1,16 @@
-import React, { ReactElement, useState } from "react";
+import { ReactElement, useState } from "react";
 import {
   DataTable,
   DataTableSelectionSingleChangeEvent,
 } from "primereact/datatable";
-import { Paginator } from "primereact/paginator";
+import { Paginator, PaginatorPageChangeEvent } from "primereact/paginator";
 import { Column, ColumnProps } from "primereact/column";
 import { IconField } from "primereact/iconfield";
-import { MultiSelect } from "primereact/multiselect";
+// import { MultiSelect } from "primereact/multiselect";
 import { IResult } from "../../core/common";
 
-class Props {
-  cols: ColumnProps[] = [];
+interface Props {
+  cols: ColumnProps[];
   result?: IResult;
   onSelect?: (item: any) => void;
   getStyle?: (item: any) => string;
@@ -18,7 +18,7 @@ class Props {
   size?: "small" | "normal" | "large";
   className?: string;
   multi?: boolean;
-  request?: (event: any) => void;
+  request?: (event: PaginatorPageChangeEvent) => void;
   filter?: any;
 }
 const DTable = (props: Props) => {
@@ -43,15 +43,15 @@ const DTable = (props: Props) => {
   const result = props.result || { total: 0, size: 0, items: [], page: 1 };
   const { total, size, items, page } = result;
   const hasPaging = total > size;
-  let tableHeight = `${scrollHeight}vh`;
+  // let tableHeight = `${scrollHeight}vh`;
   let inSight = `calc(${scrollHeight}vh - 1px)`;
   const space = 40;
   const hasFootbar = hasPaging || !!props.filter;
   if (hasFootbar) {
-    tableHeight = `calc(${scrollHeight}vh - ${space}px)`;
+    // tableHeight = `calc(${scrollHeight}vh - ${space}px)`;
     inSight = `calc(${scrollHeight}vh - ${space + 1}px)`;
   }
-  const onPageChange = (event: any) => {
+  const onPageChange = (event: PaginatorPageChangeEvent) => {
     if (props.request) {
       setLoading(true);
       props.request(event);
@@ -67,12 +67,12 @@ const DTable = (props: Props) => {
     return "";
   };
   const first = (page - 1) * size;
-  const opt = {
-    optionLabel: "name",
-    placeholder: "Select Protocols",
-    maxSelectedLabels: 10,
-    ...props.filter,
-  };
+  // const opt = {
+  //   optionLabel: "name",
+  //   placeholder: "Select Protocols",
+  //   maxSelectedLabels: 10,
+  //   ...props.filter,
+  // };
 
   const tableProps = {
     loading,
@@ -113,7 +113,7 @@ const DTable = (props: Props) => {
           >
             {!!props.filter && (
               <IconField className="filter w-3 flex">
-                <MultiSelect {...opt} className="p-inputtext-sm" />
+                {/* <MultiSelect {...opt} className="p-inputtext-sm" iconPosition="right"  /> */}
               </IconField>
             )}
             {hasPaging && (
@@ -150,7 +150,7 @@ const DTable = (props: Props) => {
         >
           {!!props.filter && (
             <IconField className="filter w-3 flex">
-              <MultiSelect {...opt} className="p-inputtext-sm" />
+              {/* <MultiSelect {...opt} className="p-inputtext-sm" iconPosition="right"  /> */}
             </IconField>
           )}
           {hasPaging && (

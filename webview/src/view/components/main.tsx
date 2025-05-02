@@ -2,22 +2,12 @@ import { ReactElement, useEffect, useState } from "react";
 import { MenuItem } from "primereact/menuitem";
 import { Badge } from "primereact/badge";
 import { Menu } from "primereact/menu";
-import {
-  ComMessage,
-  ComType,
-  IContextInfo,
-  ILines,
-  IStatistic,
-  deserialize,
-} from "../../core/common";
-// import { onMessage, log, emitMessage } from "../../core/connect";
 
 import FrameList from "./frame";
 import Empty from "./loading/empty";
 import Loading from "./loading";
 import { _log } from "../util";
 import { useStore } from "../store";
-// import { create } from 'zustand'
 
 // import _httpRecords from '../mock/http.json';
 
@@ -38,24 +28,13 @@ const itemRenderer = (item: any, options: any) => {
 
 // let _start = 0;
 const Main = () => {
-  const [select, setSelect] = useState("frame");
+  const [select, _setSelect] = useState("frame");
   const [status, setStatus] = useState<number>(-1);
   const sendReady = useStore((state) => state.sendReady);
+  const info = useStore((state) => state.fileinfo);
+  const progress = useStore((state) => state.progress);
   useEffect(() => {
     sendReady();
-    //   return onMessage("message", (e: any) => {
-    //     const { type, body, id } = e.data;
-    //     _log(type, body, id);
-    //     switch (type) {
-    //       case ComType.SERVER_REDAY: {
-    //         emitMessage(ComMessage.new(ComType.CLIENT_REDAY, Date.now()));
-    //         setStatus(1);
-    //         break;
-    //       }
-    //     }
-    //   });
-    //   // _start = Date.now();
-    //   // emitMessage(new ComMessage('ready', 'demo'));
   }, []);
   const convert = (): MenuItem[] => {
     const mitems: MenuItem[] = [];
@@ -72,7 +51,7 @@ const Main = () => {
         label,
         icon,
         className: select === id ? "active" : "",
-        command: (env) => {
+        command: () => {
           // setSelect(env.item.id);
         },
       });
@@ -83,6 +62,9 @@ const Main = () => {
   const buildPage = (): ReactElement => {
     return <FrameList />;
   };
+  if (status <= 0 && info && progress) {
+    setStatus(1);
+  }
   if (status == -1) {
     return <Empty />;
   }
@@ -98,7 +80,6 @@ const Main = () => {
   return (
     <>
       <div className="card h-full">
-        {/* <BreadCrumb model={items} home={home} /> */}
         <div className="flex flex-row h-full">
           <div className="w-full flex flex-grow-1">{buildPage()}</div>
           <div

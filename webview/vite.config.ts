@@ -5,10 +5,8 @@ import wasm from "vite-plugin-wasm";
 import topLevelAwait from "vite-plugin-top-level-await";
 
 export default defineConfig(({ command, mode }) => {
-  // 加载环境变量
   const env = loadEnv(mode, process.cwd())
   
-  // 所有入口配置
   const allEntries = {
     main: resolve(__dirname, 'index.html'),
     app: resolve(__dirname, 'app.html'),
@@ -33,12 +31,16 @@ export default defineConfig(({ command, mode }) => {
     resolve: {
       alias: {
         '@': resolve(__dirname, 'src'),
+        '@assets': resolve(__dirname, 'src/assets')
       },
     },
     optimizeDeps: {
       exclude: ['rshark']
     },
+    base: '',
+    assetsInclude: ['**/*.ttf'],
     build: {
+      outDir: './../plugin/dist/web',
       rollupOptions: {
         input: getEntries(),
         output: {
