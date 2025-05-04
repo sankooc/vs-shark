@@ -1,19 +1,9 @@
 
 use anyhow::Result;
-use crate::{cache::intern, common::{enum_def::Protocol, io::Reader, FieldElement, Frame, ProtocolElement }, constants::etype_mapper, field_back_format, read_field_format};
+use crate::{cache::intern, common::{enum_def::Protocol, io::{read_mac, Reader}, Frame, ProtocolElement }, constants::etype_mapper, field_back_format, protocol::enthernet_protocol_mapper, read_field_format};
 
 pub struct EthernetVisitor {
     
-}
-
-pub fn read_mac(reader: &mut Reader) -> Result<&'static str> {
-    let data = reader.slice(6, true)?;
-    let str = (data)
-            .iter()
-            .map(|x| format!("{:02x?}", x))
-            .collect::<Vec<String>>()
-            .join(":");
-    Ok(intern(str))
 }
 
 impl EthernetVisitor {
@@ -37,6 +27,6 @@ impl EthernetVisitor {
         frame.info.info = info;
         frame.info.source = source;
         frame.info.dest = target;
-        Ok(("none", fe))
+        Ok((enthernet_protocol_mapper(ptype), fe))
     }
 }

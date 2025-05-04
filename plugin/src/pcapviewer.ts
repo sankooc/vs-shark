@@ -1,8 +1,8 @@
 import * as vscode from "vscode";
 import { Disposable, disposeAll } from "./dispose";
-import { ComLog, ComMessage, PcapFile } from "./core/common";
+import { ComLog, ComMessage, ComType, PcapFile } from "./share/common";
 import { FileTailWatcher } from "./fswatcher";
-import { PCAPClient } from "./core/client";
+import { PCAPClient } from "./share/client";
 
 function getNonce() {
   let text = "";
@@ -82,6 +82,9 @@ class PcapDocument extends Disposable implements vscode.CustomDocument {
 }
 
 export class Client extends PCAPClient {
+  appendData(data: Uint8Array): void {
+    // TODO
+  }
 	constructor(private view: vscode.Webview, private output: vscode.LogOutputChannel) {
 		super();
 	}
@@ -161,7 +164,33 @@ export class PcapViewerProvider
       const client = new Client(webviewPanel.webview, PcapViewerProvider.output);
       client.touchFile(info);
       document.client = client;
-      webviewPanel.webview.onDidReceiveMessage(client.handle.bind(client));
+      webviewPanel.webview.onDidReceiveMessage((data) => {
+        const id = data.id;
+        const type = data.type;
+        if (type === ComType.DATA && id) {
+          const { start, size } = data.body;
+          if (start >= 0 && size > 0) {
+            document.watcher.readRandomAccess(start, size).then((buffer) => {
+              const data = new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength);
+              client.emitMessage({
+                type: ComType.RESPONSE,
+                id,
+                body: { data },
+              });
+            });
+          } else {
+            document.watcher.readRandomAccess(start, size).then((data) => {
+              client.emitMessage({
+                type: ComType.RESPONSE,
+                id,
+                body: {},
+              });
+            });
+          }
+          return;
+        }
+        client.handle(data);
+      });
     }
     const client = document.client;
     document.watcher.start((buffer: Buffer) => {

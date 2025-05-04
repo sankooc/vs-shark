@@ -17,6 +17,7 @@
     "@types/vscode-webview": "^1.57.5",
     "dayjs": "^1.11.13",
     "immer": "^10.1.1",
+    "mitt": "^3.0.1",
     "primeflex": "^4.0.0",
     "primeicons": "^7.0.0",
     "primereact": "^10.9.5",

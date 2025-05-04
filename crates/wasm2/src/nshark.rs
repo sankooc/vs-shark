@@ -33,10 +33,18 @@ impl WContext {
     }
     
     #[wasm_bindgen]
-    pub fn select(&self, catelog: String, start: usize, size: usize) -> String {
+    pub fn list(&self, catelog: String, start: usize, size: usize) -> String {
         let cri = Criteria{start, size};
         match catelog.as_str() {
-            "frame" => self.ctx.select_frames_json(cri).unwrap(),
+            "frame" => self.ctx.frames_list_json(cri).unwrap(),
+            _ => "{}".into()
+        }
+    }
+
+    #[wasm_bindgen]
+    pub fn select(&self, catelog: String, index: usize) -> String {
+        match catelog.as_str() {
+            "frame" => self.ctx.select_frame(index).unwrap(),
             _ => "{}".into()
         }
     }

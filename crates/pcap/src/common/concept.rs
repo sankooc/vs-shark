@@ -47,3 +47,11 @@ pub struct FrameInfo {
     pub info: &'static str,
     pub status: &'static str,
 }
+
+#[derive(Default, Clone, Serialize)]
+pub struct Field {
+    pub start: u64,
+    pub size: u64,
+    pub summary: &'static str,
+    pub children: Option<Vec<Field>>,
+}

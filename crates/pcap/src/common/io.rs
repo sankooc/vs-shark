@@ -2,7 +2,7 @@ use std::{cmp, ops::Range};
 
 use anyhow::{bail, Ok, Result};
 
-use crate::common::enum_def::DataError;
+use crate::{cache::intern, common::enum_def::DataError};
 
 use super::concept::ProgressStatus;
 
@@ -47,6 +47,9 @@ impl DataSource {
     }
     pub fn len(&self) -> usize {
         self.data.len()
+    }
+    pub fn _data(&self) -> &[u8]{
+        &self.data
     }
     // 追加数据
     #[inline(always)]
@@ -146,6 +149,19 @@ impl Reader<'_> {
         }
     }
 
+    pub fn next(&self) -> Result<u8>{
+        if self.left() > 0 {
+            Ok(self.data._data()[self.cursor])
+        } else {
+            bail!(DataError::BitSize)
+        }
+    }
+
+    pub fn read8(&mut self) -> Result<u8> {
+        let d = self.next()?;
+        self.forward(1);
+        Ok(d)
+    }
     pub fn read16(&mut self, endian: bool) -> Result<u16> {
         let len = 2;
         let data = self.slice(len, true)?;
@@ -161,4 +177,15 @@ impl Reader<'_> {
         let data: &[u8] = self.slice(len, true)?;
         IO::_read64(data, endian)
     }
+}
+
+
+pub fn read_mac(reader: &mut Reader) -> Result<&'static str> {
+    let data = reader.slice(6, true)?;
+    let str = (data)
+            .iter()
+            .map(|x| format!("{:02x?}", x))
+            .collect::<Vec<String>>()
+            .join(":");
+    Ok(intern(str))
 }

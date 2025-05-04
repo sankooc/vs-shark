@@ -12,6 +12,8 @@ export enum ComType {
   REQUEST = "request",
   RESPONSE = "response",
   FRAMES = "frames",
+  FRAMES_SELECT = "frames_select",
+  DATA = "DATA",
   FILEINFO = "fileinfo",
   log = "log",
   error = "error",
@@ -31,7 +33,7 @@ export interface ComRequest {
 export class ComMessage<T> {
   type: ComType;
   body: T;
-  id!: string;
+  id: string;
   constructor(type: ComType, body: T, id?: string) {
     const _id = id ? id : Date.now().toString();
     this.type = type;
@@ -59,6 +61,32 @@ export interface PcapFile {
   state?: number;
 }
 
+
+export interface IField {
+  summary: string;
+  start?: number;
+  size?: number;
+  children: IField[] | null;
+}
+
+
+export interface Cursor {
+  scope?: {
+    start: number;
+    size: number;
+  }
+  selected?: {
+    start: number;
+    size: number;
+  }
+}
+
+export interface DataResponse {
+  data: Uint8Array;
+  start?: number;
+  size?: number;
+}
+
 export class HexV {
   data: Uint8Array;
   index!: [number, number];
@@ -67,50 +95,50 @@ export class HexV {
   }
 }
 
-export class OverviewSource {
-  legends!: string[];
-  labels!: number[];
-  counts!: number[];
-  valMap: any;
-}
-export interface ICase {
-  name: string;
-  value: number;
-}
-export interface IStatistic {
-  http_method: ICase[];
-  http_status: ICase[];
-  http_type: ICase[];
-  ip: ICase[];
-  ip_type: ICase[];
-}
-export interface IContextInfo {
-  file_type: string;
-  start_time: number;
-  end_time: number;
-  frame_count: number;
-  http_count: number;
-  dns_count: number;
-  tcp_count: number;
-  tls_count: number;
-  cost: number;
-}
+// export class OverviewSource {
+//   legends!: string[];
+//   labels!: number[];
+//   counts!: number[];
+//   valMap: any;
+// }
+// export interface ICase {
+//   name: string;
+//   value: number;
+// }
+// export interface IStatistic {
+//   http_method: ICase[];
+//   http_status: ICase[];
+//   http_type: ICase[];
+//   ip: ICase[];
+//   ip_type: ICase[];
+// }
+// export interface IContextInfo {
+//   file_type: string;
+//   start_time: number;
+//   end_time: number;
+//   frame_count: number;
+//   http_count: number;
+//   dns_count: number;
+//   tcp_count: number;
+//   tls_count: number;
+//   cost: number;
+// }
 
-export interface ILineData {
-  name: string;
-  data: number[];
-}
-export interface ILines {
-  x: string[];
-  y: string[];
-  data: ILineData[];
-}
+// export interface ILineData {
+//   name: string;
+//   data: number[];
+// }
+// export interface ILines {
+//   x: string[];
+//   y: string[];
+//   data: ILineData[];
+// }
 
-export interface IOverviewData {
-  legends: any[];
-  labels: any[];
-  datas: any[];
-}
+// export interface IOverviewData {
+//   legends: any[];
+//   labels: any[];
+//   datas: any[];
+// }
 
 export class Pagination {
   start?: number;
@@ -125,7 +153,7 @@ export interface IResult {
   size: number;
 }
 
-export interface CField {
-  summary: string;
-  children?: CField[];
-}
+// export interface CField {
+//   summary: string;
+//   children?: CField[];
+// }
