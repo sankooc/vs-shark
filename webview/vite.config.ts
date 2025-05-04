@@ -41,12 +41,19 @@ export default defineConfig(({ command, mode }) => {
     assetsInclude: ['**/*.ttf'],
     build: {
       outDir: './../plugin/dist/web',
+      emptyOutDir: true,
       rollupOptions: {
         input: getEntries(),
         output: {
           entryFileNames: 'js/[name].js',
           chunkFileNames: 'js/[name]-chunk.js',
-          assetFileNames: 'assets/[name][extname]'
+          assetFileNames: (assetInfo) => {
+            const info = assetInfo.name ?? '';
+            if (info.endsWith('.ttf')) {
+              return 'assets/font/[name][extname]';
+            }
+            return 'assets/[name][extname]';
+          }
         },
       },
       target: 'esnext',

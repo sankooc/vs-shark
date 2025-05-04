@@ -1,7 +1,7 @@
 use std::{cmp, ops::Range};
 
 use anyhow::{bail, Result};
-use concept::{Criteria, FrameInfo, ListResult, ProgressStatus};
+use concept::{Criteria, Field, FrameInfo, ListResult, ProgressStatus};
 use enum_def::{DataError, FileType, Protocol};
 use io::{DataSource, Reader, IO};
 use serde_json::Error;
@@ -63,7 +63,6 @@ pub struct FieldElement {
     pub title: &'static str,
     pub position: Option<Range<u64>>,
     pub children: Option<Vec<FieldElement>>,
-    // props: Option<(&'static str, &'static str)>
 }
 
 impl FieldElement {
@@ -109,6 +108,42 @@ impl Element for ProtocolElement {
 
     fn children(&self) -> Option<&[FieldElement]> {
         self.element.children.as_deref()
+    }
+}
+
+impl Into<Field> for &FieldElement {
+    fn into(self) -> Field {
+        let mut field = Field {
+            start: 0,
+            size: 0,
+            summary: self.title,
+            children: None,
+        };
+        if let Some(range) = &self.position {
+            field.start = range.start;
+            field.size = range.end - range.start;
+        }
+        if let Some(children) = &self.children {
+            field.children = Some(children.iter().map(|f| f.into()).collect());
+        }
+        field
+    }
+}
+
+impl Into<Field> for &Frame {
+    fn into(self) -> Field {
+        let mut field = Field {
+            start: 0,
+            size: 0,
+            summary: "",
+            children: None,
+        };
+        if let Some(range) = &self.range {
+            field.start = range.start as u64;
+            field.size = range.end as u64 - field.start;
+        }
+        field.children = Some(self.element.iter().map(|f| (&f.element).into()).collect());
+        field
     }
 }
 
@@ -185,7 +220,11 @@ impl Instance {
             let mut _reader = Reader::new_sub(&ds, range.clone());
             let proto = link_type_map(&ctx.file_type, ctx.link_type, &mut _reader);
             frame.info.protocol = proto;
-            if let Ok((next, pe)) = parse(proto, &mut frame, &mut _reader) {
+            frame.range = Some(range.clone());
+            let _start = _reader.cursor;
+            if let Ok((next, mut pe)) = parse(proto, &mut frame, &mut _reader) {
+                let _end = _reader.cursor;
+                pe.element.position = Some(range64(_start.._end));
                 frame.element.push(pe);
                 let mut _next = next;
                 // loop {
@@ -221,17 +260,14 @@ impl Instance {
     }
 }
 
-
 impl Instance {
     pub fn get_count(&self, catelog: &str) -> usize {
         match catelog {
-            "frame" => {
-                self.ctx.list.len()
-            },
+            "frame" => self.ctx.list.len(),
             _ => 0,
         }
     }
-    pub fn select_frames_by(&self, cri: Criteria) -> ListResult<&FrameInfo> {
+    pub fn frames_by(&self, cri: Criteria) -> ListResult<&FrameInfo> {
         // let Criteria { start, size } = cri;
         // let info = self.context().get_info();
         // let start_ts = info.start_time;
@@ -250,13 +286,22 @@ impl Instance {
         }
         ListResult::new(start, total, items)
     }
-    pub fn select_frames_json(&self, cri: Criteria) -> Result<String, Error> {
-        let item = self.select_frames_by(cri);
+    pub fn frames_list_json(&self, cri: Criteria) -> Result<String, Error> {
+        let item = self.frames_by(cri);
         serde_json::to_string(&item)
     }
+
+    pub fn select_frame(&self, index: usize) -> Result<String, Error> {
+        if let Some(frame) = self.ctx.list.get(index) {
+            let fs: Field = frame.into();
+            serde_json::to_string(&fs)
+        } else {
+            Ok("{}".into())
+        }
+    }
 }
+pub mod concept;
 pub mod core;
 pub mod enum_def;
 pub mod io;
 pub mod macro_def;
-pub mod concept;

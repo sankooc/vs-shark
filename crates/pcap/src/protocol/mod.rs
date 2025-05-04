@@ -3,13 +3,15 @@ use anyhow::Result;
 
 use crate::common::{enum_def::FileType, io::Reader, Frame, ProtocolElement};
 
-pub mod ethernet;
+pub mod link;
 pub mod def;
 
 
 pub fn parse(protocol: &'static str, frame: &mut Frame, reader: &mut crate::common::io::Reader) -> Result<(&'static str, ProtocolElement)> {
     match protocol {
-        "ethernet" => ethernet::index::EthernetVisitor::parse(frame, reader),
+        "ethernet" => link::ethernet::EthernetVisitor::parse(frame, reader),
+        "ssl" => link::ssl::SSLVisitor::parse(frame, reader),
+        "loopback" => link::loopback::Visitor::parse(frame, reader),
         _ => {
             return DefaultParser::parse(frame, reader);
         },

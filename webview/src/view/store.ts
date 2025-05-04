@@ -1,24 +1,48 @@
 // userStore.ts
 import { create } from "zustand";
-import { onMessage, emitMessage } from "../core/connect";
+import { onMessage, emitMessage } from "../common/connect";
 import { _log } from "./util";
-import { ComMessage, ComType, deserialize, PcapFile } from "../core/common";
-import { IFrameInfo, IListResult, IProgressStatus } from "../core/gen";
+import { ComMessage, ComType, DataResponse, deserialize, PcapFile } from "../share/common";
+import { IFrameInfo, IListResult, IProgressStatus } from "../share/gen";
+import mitt from 'mitt'
 
 interface PcapState {
   fileinfo?: PcapFile;
   progress?: IProgressStatus;
   frameResult?: IListResult<IFrameInfo>;
+  frameSelect?: string;
   sendReady: () => void;
-  request: (data: any) => string;
+  request: <F>(data: any) => Promise<F>;
+  requestData: (data: {start: number, size: number}) => Promise<DataResponse>;
+  // frameList: (page: number, size: number) => Promise<IListResult<IFrameInfo>>;
+}
+// const compute = (page: number, size: number): Pagination => {
+//   if (page < 1) {
+//     return { start: 0, size: size };
+//   }
+//   const start = (page - 1) * size;
+//   return { start, size };
+// };
+
+
+// const commandMap = new Map<string, any>();
+const emitter = mitt()
+
+const doRequest = <F>(data: ComMessage<any>): Promise<F>  => {
+  emitMessage(data);
+  const id = data.id;
+  return new Promise<F>((resolve, _) => {
+    emitter.on(id, (event: any) => {
+      emitter.off(id);
+      resolve(event as F);
+    });
+  });
 }
 
 export const useStore = create<PcapState>()((set) => {
   _log("create pcap store");
   onMessage("message", (e: any) => {
-    const { type, body } = e.data;
-    // _log(type, body, id);
-    // console.log();
+    const { type, body, id } = e.data;
     switch (type) {
       case ComType.SERVER_REDAY: {
         //   emitMessage(ComMessage.new(ComType.CLIENT_REDAY, Date.now()));
@@ -33,72 +57,33 @@ export const useStore = create<PcapState>()((set) => {
         set((state) => ({ ...state, progress }));
         break;
       case ComType.FRAMES:
-        const frameResult: IListResult<IFrameInfo> = deserialize(body);
-        set((state) => ({ ...state, frameResult }));
+      case ComType.FRAMES_SELECT:
+        emitter.emit(id, deserialize(body));
         break;
+      case ComType.RESPONSE:
+        emitter.emit(id, body);
     }
   });
   return {
-    // filename: "",
-    // size: 0,
-    // loading: false,
-    // status: "",
     sendReady: () => {
       emitMessage(ComMessage.new(ComType.CLIENT_REDAY, Date.now()));
     },
-    request: (data: any): string => {
-      const _req = new ComMessage(ComType.REQUEST, data);
-      emitMessage(_req);
-      return _req.id;
+    request: <F>(data: any): Promise<F> => {
+      const req = new ComMessage(ComType.REQUEST, data);
+      return doRequest<F>(req);
     },
+    requestData: (data: {start: number, size: number}): Promise<DataResponse> => {
+      const req = new ComMessage(ComType.DATA, data);
+      return doRequest<DataResponse>(req);
+    },
+
+    // frameList: (page: number, size: number): Promise<IListResult<IFrameInfo>> => {
+    //   const _req = new ComMessage(ComType.REQUEST, {
+    //     catelog: "frame",
+    //     type: "list",
+    //     param: compute(page, size),
+    //   });
+      
+    // }
   };
 });
-
-// export const useUserStore = create<UserState>()(
-//   immer(
-//     (set, get) => ({
-//       users: [],
-//       loading: false,
-//       error: null,
-
-//       // 异步获取用户
-//       fetchUsers: async () => {
-//         set({ loading: true, error: null })
-//         try {
-//           const response = await fetch('https://api.example.com/users')
-//           const data = await response.json()
-//           set({ users: data, loading: false })
-//         } catch (err) {
-//           set({ error: (err as Error).message, loading: false })
-//         }
-//       },
-
-//       // 添加用户（使用 Immer 简化不可变更新）
-//       addUser: (user) => {
-//         set((state) => {
-//           state.users.push({
-//             ...user,
-//             id: Math.random().toString(36).substring(2, 9)
-//           })
-//         })
-//       },
-
-//       // 更新用户
-//       updateUser: (id, updates) => {
-//         set((state) => {
-//           const index = state.users.findIndex((u: User) => u.id === id)
-//           if (index !== -1) {
-//             state.users[index] = { ...state.users[index], ...updates }
-//           }
-//         })
-//       },
-
-//       // 删除用户
-//       deleteUser: (id) => {
-//         set((state) => {
-//           state.users = state.users.filter((user: User) => user.id !== id)
-//         })
-//       }
-//     })
-//   )
-// )

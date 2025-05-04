@@ -4,7 +4,7 @@ import { Avatar } from "primereact/avatar";
 import { IframeWithPlaceholder } from "./components/IframeWithPlaceholder";
 import "./app.scss";
 import { useStore } from "./store";
-import { ComMessage, ComType, PcapFile } from "../core/common";
+import { ComMessage, ComType, PcapFile } from "../share/common";
 
 export default function CommandDemo() {
   const loadIFrame = useStore((state) => state.loadIFrame);

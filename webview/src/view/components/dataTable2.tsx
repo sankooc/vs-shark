@@ -7,7 +7,7 @@ import { Paginator, PaginatorPageChangeEvent } from "primereact/paginator";
 import { Column, ColumnProps } from "primereact/column";
 import { IconField } from "primereact/iconfield";
 // import { MultiSelect } from "primereact/multiselect";
-import { IResult } from "../../core/common";
+import { IResult } from "../../share/common";
 
 interface Props {
   cols: ColumnProps[];

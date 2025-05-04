@@ -40,4 +40,6 @@ pub enum Protocol {
     #[default]
     None,
     Ethernet,
+    SSL,
+    Loopback,
 }

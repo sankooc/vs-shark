@@ -1,5 +1,5 @@
 // import * as vs from "vscode-webview";
-import { ComLog, ComMessage, ComType } from "./common";
+import { ComLog, ComMessage, ComType } from "../share/common";
 
 let vscode: any;
 if (window["acquireVsCodeApi"]) {
