@@ -61,7 +61,6 @@ export interface PcapFile {
   state?: number;
 }
 
-
 export interface IField {
   summary: string;
   start?: number;
@@ -69,16 +68,15 @@ export interface IField {
   children: IField[] | null;
 }
 
-
 export interface Cursor {
   scope?: {
     start: number;
     size: number;
-  }
+  };
   selected?: {
     start: number;
     size: number;
-  }
+  };
 }
 
 export interface DataResponse {
@@ -146,12 +144,12 @@ export class Pagination {
   filter?: string;
 }
 
-// export interface IResult {
-//   items: any[];
-//   total: number;
-//   page: number;
-//   size: number;
-// }
+export interface IResult {
+  items: any[];
+  total: number;
+  page: number;
+  size: number;
+}
 
 // export interface CField {
 //   summary: string;

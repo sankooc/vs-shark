@@ -38,7 +38,7 @@
 	},
 	"scripts": {
 		"vscode:prepublish": "pnpm run package",
-		"cp": "cp -r ../webview/src/share/ src/share",
+		"cp": "cp -r ../webview/src/share/ src/",
 		"compile": "pnpm run check-types && pnpm run lint && node esbuild.js",
 		"watch": "npm-run-all -p watch:*",
 		"watch:esbuild": "node esbuild.js --watch",

@@ -2,9 +2,15 @@
 import { create } from "zustand";
 import { onMessage, emitMessage } from "../common/connect";
 import { _log } from "./util";
-import { ComMessage, ComType, DataResponse, deserialize, PcapFile } from "../share/common";
+import {
+  ComMessage,
+  ComType,
+  DataResponse,
+  deserialize,
+  PcapFile,
+} from "../share/common";
 import { IFrameInfo, IListResult, IProgressStatus } from "../share/gen";
-import mitt from 'mitt'
+import mitt from "mitt";
 
 interface PcapState {
   fileinfo?: PcapFile;
@@ -13,7 +19,7 @@ interface PcapState {
   frameSelect?: string;
   sendReady: () => void;
   request: <F>(data: any) => Promise<F>;
-  requestData: (data: {start: number, size: number}) => Promise<DataResponse>;
+  requestData: (data: { start: number; size: number }) => Promise<DataResponse>;
   // frameList: (page: number, size: number) => Promise<IListResult<IFrameInfo>>;
 }
 // const compute = (page: number, size: number): Pagination => {
@@ -24,11 +30,10 @@ interface PcapState {
 //   return { start, size };
 // };
 
-
 // const commandMap = new Map<string, any>();
-const emitter = mitt()
+const emitter = mitt();
 
-const doRequest = <F>(data: ComMessage<any>): Promise<F>  => {
+const doRequest = <F>(data: ComMessage<any>): Promise<F> => {
   emitMessage(data);
   const id = data.id;
   return new Promise<F>((resolve, _) => {
@@ -37,7 +42,7 @@ const doRequest = <F>(data: ComMessage<any>): Promise<F>  => {
       resolve(event as F);
     });
   });
-}
+};
 
 export const useStore = create<PcapState>()((set) => {
   _log("create pcap store");
@@ -72,7 +77,10 @@ export const useStore = create<PcapState>()((set) => {
       const req = new ComMessage(ComType.REQUEST, data);
       return doRequest<F>(req);
     },
-    requestData: (data: {start: number, size: number}): Promise<DataResponse> => {
+    requestData: (data: {
+      start: number;
+      size: number;
+    }): Promise<DataResponse> => {
       const req = new ComMessage(ComType.DATA, data);
       return doRequest<DataResponse>(req);
     },
@@ -83,7 +91,7 @@ export const useStore = create<PcapState>()((set) => {
     //     type: "list",
     //     param: compute(page, size),
     //   });
-      
+
     // }
   };
 });

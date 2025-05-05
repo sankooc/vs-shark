@@ -1,9 +1,6 @@
 import { load, WContext, Conf } from "rshark";
 import { ComLog, ComMessage, ComRequest, ComType, PcapFile } from "./common";
 
-
-
-
 export abstract class PCAPClient {
   level: string = "trace";
   ready: boolean = false;
@@ -14,7 +11,7 @@ export abstract class PCAPClient {
       this.ctx = load(Conf.new(false));
     }
   }
-  async update(data: Uint8Array): Promise<string> {
+  private async update(data: Uint8Array): Promise<string> {
     if (!this.ctx) {
       this.init();
     }
@@ -34,11 +31,16 @@ export abstract class PCAPClient {
   abstract printLog(log: ComLog): void;
   abstract emitMessage(msg: ComMessage<any>): void;
 
-  touchFile(fileInfo: PcapFile): void {
+  private touchFile(fileInfo: PcapFile): void {
     this.info = fileInfo;
     this.emitMessage(ComMessage.new(ComType.FILEINFO, fileInfo));
   }
-  list(requestId: string, catelog: string, start: number, size: number): void {
+  private list(
+    requestId: string,
+    catelog: string,
+    start: number,
+    size: number,
+  ): void {
     if (this.ctx) {
       try {
         let rs;
@@ -56,14 +58,16 @@ export abstract class PCAPClient {
       }
     }
   }
-  select(requestId: string,catelog: string, index: number){
+  private select(requestId: string, catelog: string, index: number) {
     if (this.ctx) {
       try {
         let rs;
         switch (catelog) {
           case "frame":
             rs = this.ctx.select("frame", index);
-            this.emitMessage(ComMessage.new(ComType.FRAMES_SELECT, rs, requestId));
+            this.emitMessage(
+              ComMessage.new(ComType.FRAMES_SELECT, rs, requestId),
+            );
             break;
           default:
             return;
@@ -72,13 +76,13 @@ export abstract class PCAPClient {
         this.emitMessage(new ComMessage(ComType.error, "failed"));
       }
     }
-
   }
 
-  handle(msg: ComMessage<any>) {
-    if (!msg) {return;}
+  private _process(msg: ComMessage<any>) {
     const { type, body, id } = msg;
-    if (!type) {return;}
+    if (!type) {
+      return;
+    }
     try {
       switch (type) {
         case ComType.CLIENT_REDAY:
@@ -109,7 +113,7 @@ export abstract class PCAPClient {
             case "list":
               this.list(id, catelog, param.start, param.size);
               break;
-            case 'select':
+            case "select":
               this.select(id, catelog, param.index);
               break;
           }
@@ -121,5 +125,12 @@ export abstract class PCAPClient {
     } catch (e) {
       console.error(e);
     }
+  }
+
+  handle(msg: ComMessage<any>) {
+    if (!msg) {
+      return;
+    }
+    this._process(msg);
   }
 }

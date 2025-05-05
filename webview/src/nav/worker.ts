@@ -19,8 +19,8 @@ class Client extends PCAPClient {
   printLog(log: ComLog): void {
     console.log(log.level, log.msg);
   }
-  appendData(data: Uint8Array):void {
-    this.data= Uint8Array.from([...this.data, ...data]);
+  appendData(data: Uint8Array): void {
+    this.data = Uint8Array.from([...this.data, ...data]);
   }
 }
 
@@ -32,7 +32,9 @@ ctx.addEventListener("message", (event: MessageEvent<any>) => {
     const { start, size } = event.data.body;
     if (start >= 0 && size > 0 && client.data!.length > start + size) {
       const _data = client.data!.slice(start, start + size);
-      ctx.postMessage({ type: ComType.RESPONSE, id, body: {data: _data} }, [_data.buffer]);
+      ctx.postMessage({ type: ComType.RESPONSE, id, body: { data: _data } }, [
+        _data.buffer,
+      ]);
     } else {
       ctx.postMessage({ type: ComType.RESPONSE, id });
     }

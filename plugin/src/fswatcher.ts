@@ -79,7 +79,7 @@ export class FileTailWatcher {
     }, this.intervalMs);
   }
 
-  async readRandomAccess(position: number, length: number): Promise<Uint8Array> {
+  async readRandomAccess(position: number, length: number): Promise<Buffer> {
     const buffer = Buffer.alloc(length);
     await this.fd!.read(
       buffer,

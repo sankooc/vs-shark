@@ -14,7 +14,6 @@ function getNonce() {
   return text;
 }
 
-const DIST = "media";
 const ENTRY = "app.js";
 
 const createWebviewHtml = (
@@ -69,14 +68,12 @@ class PcapDocument extends Disposable implements vscode.CustomDocument {
     public watcher: FileTailWatcher,
   ) {
     super();
-    // this._uri = uri;
-    // const config = Conf.new(true);
-    // const ins = await load(config);
   }
 
   // public get uri() { return this._uri; }
 
   dispose(): void {
+    console.log(this.uri.path + "dispose");
     super.dispose();
   }
 }
@@ -101,13 +98,20 @@ export class Client extends PCAPClient {
 	}
 }
 
+
+
+
+const bufferToUint8Array = (buffer: Buffer): Uint8Array => {
+  return new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength);
+  // return buffer;
+};
+
 export class PcapViewerProvider
   implements vscode.CustomReadonlyEditorProvider<PcapDocument>
 {
   // private static newPawDrawFileId = 1;
   private static output: vscode.LogOutputChannel =
     vscode.window.createOutputChannel("pcap console", { log: true });
-  // private static pcapProvider: FrameProvider = new FrameProvider();
 
   public get output(): vscode.LogOutputChannel {
     return PcapViewerProvider.output;
@@ -162,7 +166,7 @@ export class PcapViewerProvider
     const info: PcapFile = { name: document.uri.fsPath, size: 0, start: 0 };
     if (!document.client) {
       const client = new Client(webviewPanel.webview, PcapViewerProvider.output);
-      client.touchFile(info);
+      client.handle(ComMessage.new(ComType.TOUCH_FILE, info));
       document.client = client;
       webviewPanel.webview.onDidReceiveMessage((data) => {
         const id = data.id;
@@ -170,8 +174,8 @@ export class PcapViewerProvider
         if (type === ComType.DATA && id) {
           const { start, size } = data.body;
           if (start >= 0 && size > 0) {
-            document.watcher.readRandomAccess(start, size).then((buffer) => {
-              const data = new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength);
+            document.watcher.readRandomAccess(start, size).then((buffer: Buffer) => {
+              const data = bufferToUint8Array(buffer);
               client.emitMessage({
                 type: ComType.RESPONSE,
                 id,
@@ -194,49 +198,16 @@ export class PcapViewerProvider
     }
     const client = document.client;
     document.watcher.start((buffer: Buffer) => {
-      client.update(buffer).then((rs) => {
-        PcapViewerProvider.output.info(rs);
-      });
+      client.handle(ComMessage.new(ComType.PROCESS_DATA, { data: bufferToUint8Array(buffer) }));
+      // client.update(buffer).then((rs) => {
+      //   PcapViewerProvider.output.info(rs);
+      // });
       // const rs = document.instance.update(buffer);
       // console.log(rs);
       // const arr = new Uint8Array(buffer);
     });
 
     this.webviews.add(document.uri, webviewPanel);
-  }
-
-  private _requestId = 1;
-  private readonly _callbacks = new Map<number, (response: any) => void>();
-
-  private postMessageWithResponse<R = unknown>(
-    panel: vscode.WebviewPanel,
-    type: string,
-    body: any,
-  ): Promise<R> {
-    const requestId = this._requestId++;
-    const p = new Promise<R>((resolve) =>
-      this._callbacks.set(requestId, resolve),
-    );
-    panel.webview.postMessage({ type, requestId, body });
-    return p;
-  }
-
-  private postMessage(
-    panel: vscode.WebviewPanel,
-    type: string,
-    body: any,
-  ): void {
-    panel.webview.postMessage({ type, body });
-  }
-
-  private onMessage(document: PcapDocument, message: any) {
-    switch (message.type) {
-      case "response": {
-        const callback = this._callbacks.get(message.requestId);
-        callback?.(message.body);
-        return;
-      }
-    }
   }
 }
 
