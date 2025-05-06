@@ -219,30 +219,52 @@ impl Instance {
         if let Some(range) = &frame.range {
             let mut _reader = Reader::new_sub(&ds, range.clone());
             let proto = link_type_map(&ctx.file_type, ctx.link_type, &mut _reader);
-            frame.info.protocol = proto;
             frame.range = Some(range.clone());
-            let _start = _reader.cursor;
-            if let Ok((next, mut pe)) = parse(proto, &mut frame, &mut _reader) {
-                let _end = _reader.cursor;
-                pe.element.position = Some(range64(_start.._end));
-                frame.element.push(pe);
-                let mut _next = next;
-                // loop {
-                //     match _next {
-                //         "none" => {
-                //             break;
-                //         }
-                //         _ => {
-                //             if let Ok((next, pe)) = parse(next, &mut _reader){
-                //                 _next = next;
-                //                 frame.element.push(pe);
-                //             } else {
-                //                 break;
-                //             }
-                //         }
-                //     }
-                // }
+            let mut _next = proto;
+            loop {
+                match _next {
+                    "none" => {
+                        break;
+                    }
+                    _ => {
+                        frame.info.protocol = _next;
+                        let _start = _reader.cursor;
+                        if let Ok((next, mut pe)) = parse(_next, &mut frame, &mut _reader){
+                            let _end = _reader.cursor;
+                            pe.element.position = Some(range64(_start.._end));
+                            frame.element.push(pe);
+                            _next = next;
+                        } else {
+                            break;
+                        }
+                    }
+                }
             }
+            // let mut _start = _reader.cursor;
+            // if let Ok((next, mut pe)) = parse(proto, &mut frame, &mut _reader) {
+            //     let mut _end = _reader.cursor;
+            //     pe.element.position = Some(range64(_start.._end));
+            //     frame.element.push(pe);
+            //     let mut _next = next;
+            //     loop {
+            //         match _next {
+            //             "none" => {
+            //                 break;
+            //             }
+            //             _ => {
+            //                 _start = _reader.cursor;
+            //                 if let Ok((next, mut pe)) = parse(next, &mut frame, &mut _reader){
+            //                     _end = _reader.cursor;
+            //                     _next = next;
+            //                     pe.element.position = Some(range64(_start.._end));
+            //                     frame.element.push(pe);
+            //                 } else {
+            //                     break;
+            //                 }
+            //             }
+            //         }
+            //     }
+            // }
             // println!("proto: {}", _proto);
             // frame.children = Vec::new();
         }

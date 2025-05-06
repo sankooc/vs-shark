@@ -1,11 +1,14 @@
 import { load, WContext, Conf } from "rshark";
 import { ComLog, ComMessage, ComRequest, ComType, PcapFile } from "./common";
-
-
-
+import mitt, { Emitter } from "mitt";
 
 export abstract class PCAPClient {
+
+  private emitter: Emitter<any> = mitt();
+  private highPirityQueue: ComMessage<any>[] = [];
+  private lowPirityQueue: ComMessage<any>[] = [];
   level: string = "trace";
+  isPendding: boolean = false;
   ready: boolean = false;
   ctx?: WContext;
   info?: PcapFile;
@@ -14,7 +17,7 @@ export abstract class PCAPClient {
       this.ctx = load(Conf.new(false));
     }
   }
-  async update(data: Uint8Array): Promise<string> {
+  private async update(data: Uint8Array): Promise<string> {
     if (!this.ctx) {
       this.init();
     }
@@ -34,11 +37,16 @@ export abstract class PCAPClient {
   abstract printLog(log: ComLog): void;
   abstract emitMessage(msg: ComMessage<any>): void;
 
-  touchFile(fileInfo: PcapFile): void {
+  private touchFile(fileInfo: PcapFile): void {
     this.info = fileInfo;
     this.emitMessage(ComMessage.new(ComType.FILEINFO, fileInfo));
   }
-  list(requestId: string, catelog: string, start: number, size: number): void {
+  private list(
+    requestId: string,
+    catelog: string,
+    start: number,
+    size: number,
+  ): void {
     if (this.ctx) {
       try {
         let rs;
@@ -56,14 +64,16 @@ export abstract class PCAPClient {
       }
     }
   }
-  select(requestId: string,catelog: string, index: number){
+  private select(requestId: string, catelog: string, index: number) {
     if (this.ctx) {
       try {
         let rs;
         switch (catelog) {
           case "frame":
             rs = this.ctx.select("frame", index);
-            this.emitMessage(ComMessage.new(ComType.FRAMES_SELECT, rs, requestId));
+            this.emitMessage(
+              ComMessage.new(ComType.FRAMES_SELECT, rs, requestId),
+            );
             break;
           default:
             return;
@@ -72,13 +82,31 @@ export abstract class PCAPClient {
         this.emitMessage(new ComMessage(ComType.error, "failed"));
       }
     }
-
   }
 
-  handle(msg: ComMessage<any>) {
-    if (!msg) {return;}
+  private async process(): Promise<void> {
+    if(this.isPendding) {
+      return;
+    }
+    this.isPendding = true;
+    while(this.highPirityQueue.length > 0){
+      const msg = this.highPirityQueue.shift();
+      await this._process(msg!);
+      this.emitter.emit(msg!.id, {});
+    }
+    while(this.lowPirityQueue.length > 0){
+      const msg = this.lowPirityQueue.shift();
+      await this._process(msg!);
+      this.emitter.emit(msg!.id, {});
+    }
+    this.isPendding = false;
+  }
+
+  private async _process(msg: ComMessage<any>) {
     const { type, body, id } = msg;
-    if (!type) {return;}
+    if (!type) {
+      return;
+    }
     try {
       switch (type) {
         case ComType.CLIENT_REDAY:
@@ -95,9 +123,8 @@ export abstract class PCAPClient {
           break;
         case ComType.PROCESS_DATA:
           const data = body.data as Uint8Array;
-          this.update(data).then((rs) => {
-            this.emitMessage(ComMessage.new(ComType.PRGRESS_STATUS, rs));
-          });
+          const rs = await this.update(data);
+          this.emitMessage(ComMessage.new(ComType.PRGRESS_STATUS, rs));
           break;
         case ComType.log:
           this.printLog(body as ComLog);
@@ -109,7 +136,7 @@ export abstract class PCAPClient {
             case "list":
               this.list(id, catelog, param.start, param.size);
               break;
-            case 'select':
+            case "select":
               this.select(id, catelog, param.index);
               break;
           }
@@ -121,5 +148,24 @@ export abstract class PCAPClient {
     } catch (e) {
       console.error(e);
     }
+  }
+
+  async handle(msg: ComMessage<any>) : Promise<void>{
+    if (!msg) {
+      return;
+    }
+    const {type, id} = msg;
+    if(type == ComType.PROCESS_DATA){
+      this.lowPirityQueue.push(msg);
+    } else {
+      this.highPirityQueue.push(msg);
+    }
+    return new Promise((resolve) => {
+      this.emitter.on(id, () => {
+        this.emitter.off(id);
+        resolve();
+      });
+      this.process();
+    });
   }
 }

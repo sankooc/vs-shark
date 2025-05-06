@@ -41,3 +41,15 @@ macro_rules! field_back_format {
         $list.push(ele);
     }};
 }
+
+
+#[macro_export]
+macro_rules! field_back_format_fn {
+    ($list:expr, $reader:expr, $inx:expr, $body:expr) => {{
+        let start = $reader.cursor as u64;
+        let content = ($body);
+        let msg = crate::cache::intern(content);
+        let ele = crate::common::FieldElement::create(msg, Some(start-$inx..start));
+        $list.push(ele);
+    }};
+}

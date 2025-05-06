@@ -6,8 +6,8 @@ import { ComRequest, Cursor, Pagination } from "../../../share/common.ts";
 import { IFrameInfo, IListResult } from "../../../share/gen.ts";
 import { ColumnProps } from "primereact/column";
 import { Tooltip } from "primereact/tooltip";
-import Stack from './tree';
-import HexView from './hex';
+import Stack from "./tree";
+import HexView from "./hex";
 import dayjs from "dayjs";
 
 const PAGE_SIZE = 500;
@@ -19,7 +19,11 @@ function FrameList() {
   const [page, setPage] = useState<number>(1);
   const [select, setSelect] = useState<number>(-1);
   const [cursor, setCursor] = useState<Cursor>({});
-  const [result, setResult] = useState<IListResult<IFrameInfo>>({ start: 0, total: 0, items: [] });
+  const [result, setResult] = useState<IListResult<IFrameInfo>>({
+    start: 0,
+    total: 0,
+    items: [],
+  });
   // const frameResult = useStore(
   //   (state) => state.frameResult,
   // ) || { start: 0, total: 0, items: [] };
@@ -42,7 +46,7 @@ function FrameList() {
       type: "list",
       param: compute(page, size),
     };
-    _request<IListResult<IFrameInfo>>(data).then( (rs) => {
+    _request<IListResult<IFrameInfo>>(data).then((rs) => {
       // console.log('rs', rs);
       setResult(rs);
     });
@@ -154,15 +158,15 @@ function FrameList() {
           scrollHeight={70}
         />
       </div>
-      
-    <div className="viewer flex-grow-1 flex flex-row">
-      <div className="treemap h-full flex-shrink-0">
-      <Stack select={select} onSelect={setCursor}/>
+
+      <div className="viewer flex-grow-1 flex flex-row">
+        <div className="treemap h-full flex-shrink-0">
+          <Stack select={select} onSelect={setCursor} />
+        </div>
+        <div className="hexvewer">
+          <HexView cursor={cursor} />
+        </div>
       </div>
-      <div className="hexvewer">
-        <HexView cursor={cursor}/>
-      </div>
-    </div>
     </div>
   );
 }

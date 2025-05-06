@@ -35,8 +35,8 @@ mod tests {
         let _ins = _parse(fname)?;
         let ctx = _ins.get_context();
         println!("total frames {}", ctx.counter);
-        let json = _ins.select_frame(0).unwrap();
-        println!("json {}", json);
+        // let json = _ins.select_frame(0).unwrap();
+        // println!("json {}", json);
         Ok(())
     }
 

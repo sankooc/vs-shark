@@ -1,4 +1,4 @@
-use std::{cmp, ops::Range};
+use std::{cmp, net::Ipv6Addr, ops::Range };
 
 use anyhow::{bail, Ok, Result};
 
@@ -189,3 +189,38 @@ pub fn read_mac(reader: &mut Reader) -> Result<&'static str> {
             .join(":");
     Ok(intern(str))
 }
+
+
+
+pub struct IP6 {
+    pub str: &'static str,
+    pub loopback: bool,
+    pub multicast: bool
+}
+
+
+impl std::fmt::Display for IP6 {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.str)
+    }
+}
+
+impl From<Ipv6Addr> for IP6{
+    fn from(val: Ipv6Addr) -> Self {
+        let str = intern(val.to_string());
+        let loopback = val.is_loopback();
+        let multicast = val.is_multicast();
+        Self { str, loopback, multicast }
+    }
+}
+
+// fn read_ipv4(reader: &mut Reader) -> Result<std::net::Ipv4Addr> {
+//     let len = 4;
+//     if reader.left() < len {
+//         bail!(DataError::BitSize)
+//     }
+//     let mut data: [u8; 4] = [0; 4];
+//     data.copy_from_slice(self._slice(len));
+//     self._move(len);
+//     Ok(IPv4Address::new(data))
+// }

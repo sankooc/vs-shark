@@ -4,6 +4,7 @@ use anyhow::Result;
 use crate::common::{enum_def::FileType, io::Reader, Frame, ProtocolElement};
 
 pub mod link;
+pub mod network;
 pub mod def;
 
 
@@ -12,6 +13,11 @@ pub fn parse(protocol: &'static str, frame: &mut Frame, reader: &mut crate::comm
         "ethernet" => link::ethernet::EthernetVisitor::parse(frame, reader),
         "ssl" => link::ssl::SSLVisitor::parse(frame, reader),
         "loopback" => link::loopback::Visitor::parse(frame, reader),
+        "ieee1905.a" => link::ieee1905a::Visitor::parse(frame, reader),
+        "ipv4" => network::ip4::Visitor::parse(frame, reader),
+        "ipv6" => network::ip6::Visitor::parse(frame, reader),
+        "arp" => network::arp::Visitor::parse(frame, reader),
+        "icmp" => network::icmp::V4Visitor::parse(frame, reader),
         _ => {
             return DefaultParser::parse(frame, reader);
         },
@@ -51,6 +57,16 @@ pub fn enthernet_protocol_mapper(ptype: u16) -> &'static str {
         0x8035 => "rarp",
         0x8864 => "pppoes",
         0x8863 => "pppoed",
+        _ => "none",
+    }
+}
+
+pub fn ip4_mapper(ipprototype: u8) -> &'static str {
+    match ipprototype {
+        1 => "icmp",
+        2 => "igmp",
+        6 => "tcp",
+        17 => "udp",
         _ => "none",
     }
 }

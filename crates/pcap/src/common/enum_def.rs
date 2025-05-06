@@ -42,4 +42,8 @@ pub enum Protocol {
     Ethernet,
     SSL,
     Loopback,
+    IP4,
+    IP6,
+    ICMP,
+    ARP,
 }
