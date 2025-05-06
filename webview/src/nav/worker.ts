@@ -8,6 +8,8 @@ ready.then((rs) => {
 });
 const ctx: Worker = self as any;
 
+
+
 class Client extends PCAPClient {
   emitMessage(msg: ComMessage<any>): void {
     ctx.postMessage(msg);

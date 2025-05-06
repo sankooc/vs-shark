@@ -1,8 +1,14 @@
 import { load, WContext, Conf } from "rshark";
 import { ComLog, ComMessage, ComRequest, ComType, PcapFile } from "./common";
+import mitt, { Emitter } from "mitt";
 
 export abstract class PCAPClient {
+
+  private emitter: Emitter<any> = mitt();
+  private highPirityQueue: ComMessage<any>[] = [];
+  private lowPirityQueue: ComMessage<any>[] = [];
   level: string = "trace";
+  isPendding: boolean = false;
   ready: boolean = false;
   ctx?: WContext;
   info?: PcapFile;
@@ -78,7 +84,25 @@ export abstract class PCAPClient {
     }
   }
 
-  private _process(msg: ComMessage<any>) {
+  private async process(): Promise<void> {
+    if(this.isPendding) {
+      return;
+    }
+    this.isPendding = true;
+    while(this.highPirityQueue.length > 0){
+      const msg = this.highPirityQueue.shift();
+      await this._process(msg!);
+      this.emitter.emit(msg!.id, {});
+    }
+    while(this.lowPirityQueue.length > 0){
+      const msg = this.lowPirityQueue.shift();
+      await this._process(msg!);
+      this.emitter.emit(msg!.id, {});
+    }
+    this.isPendding = false;
+  }
+
+  private async _process(msg: ComMessage<any>) {
     const { type, body, id } = msg;
     if (!type) {
       return;
@@ -99,9 +123,8 @@ export abstract class PCAPClient {
           break;
         case ComType.PROCESS_DATA:
           const data = body.data as Uint8Array;
-          this.update(data).then((rs) => {
-            this.emitMessage(ComMessage.new(ComType.PRGRESS_STATUS, rs));
-          });
+          const rs = await this.update(data);
+          this.emitMessage(ComMessage.new(ComType.PRGRESS_STATUS, rs));
           break;
         case ComType.log:
           this.printLog(body as ComLog);
@@ -127,10 +150,22 @@ export abstract class PCAPClient {
     }
   }
 
-  handle(msg: ComMessage<any>) {
+  async handle(msg: ComMessage<any>) : Promise<void>{
     if (!msg) {
       return;
     }
-    this._process(msg);
+    const {type, id} = msg;
+    if(type == ComType.PROCESS_DATA){
+      this.lowPirityQueue.push(msg);
+    } else {
+      this.highPirityQueue.push(msg);
+    }
+    return new Promise((resolve) => {
+      this.emitter.on(id, () => {
+        this.emitter.off(id);
+        resolve();
+      });
+      this.process();
+    });
   }
 }
