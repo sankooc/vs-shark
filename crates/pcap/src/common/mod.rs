@@ -1,28 +1,35 @@
-use std::{cmp, ops::Range};
+use std::{cmp, collections::HashMap, hash::BuildHasherDefault, ops::Range, rc::Rc};
 
 use anyhow::{bail, Result};
 use concept::{Criteria, Field, FrameInfo, ListResult, ProgressStatus};
-use enum_def::{DataError, FileType, Protocol};
-use io::{DataSource, Reader, IO};
+use enum_def::{DataError, FieldDef, FileType, Protocol};
+use enum_dispatch::enum_dispatch;
+use io::{DataSource, MacAddress, Reader, IO};
+use rustc_hash::FxHasher;
 use serde_json::Error;
 
+type FastHashMap<K, V> = HashMap<K, V, BuildHasherDefault<FxHasher>>;
 use crate::{
     files::{pcap::PCAP, pcapng::PCAPNG},
-    protocol::{link_type_map, parse},
+    protocol::{detail, link_type_map, parse},
 };
 
 pub fn range64(range: Range<usize>) -> Range<u64> {
     range.start as u64..range.end as u64
 }
 
+pub struct Ethernet {
+    pub source: MacAddress,
+    pub destination: MacAddress,
+    pub protocol_type: u16,
+}
+
 #[derive(Default)]
 pub struct Frame {
-    // pub index: u32,
-    // pub size: u32,
     pub range: Option<Range<usize>>,
-    // pub time: Option<Vec<u8>>,
     pub info: FrameInfo,
-    pub element: Vec<ProtocolElement>,
+    pub head: Protocol,
+    // pub element: Vec<FieldDef>,
 }
 
 impl Frame {
@@ -37,12 +44,19 @@ pub struct Context {
     pub link_type: u32,
     pub list: Vec<Frame>,
     pub counter: u32,
+    pub ethernet: FastHashMap<u64, Rc<Ethernet>>,
 }
 
 impl Context {
     pub fn new() -> Self {
         Self { ..Default::default() }
     }
+    // pub fn read_ethernet(&self, _reader: &mut Reader) -> Result<Rc<Ethernet>> {
+    //     let reader = _reader.create_child_reader(14)?;
+    //     let key = reader.hash();
+    //     self.ethernet.get(k)
+    //     todo!()
+    // }
 }
 
 pub struct Instance {
@@ -52,17 +66,18 @@ pub struct Instance {
     last: usize,
 }
 
+#[enum_dispatch(FieldDef)]
 pub trait Element {
     fn title(&self) -> &'static str;
     fn position(&self) -> Option<Range<u64>>;
-    fn children(&self) -> Option<&[FieldElement]>;
+    fn children(&self) -> Option<&[FieldDef]>;
 }
 
 #[derive(Default)]
 pub struct FieldElement {
     pub title: &'static str,
     pub position: Option<Range<u64>>,
-    pub children: Option<Vec<FieldElement>>,
+    pub children: Option<Vec<FieldDef>>,
 }
 
 impl FieldElement {
@@ -80,72 +95,92 @@ impl Element for FieldElement {
         self.position.clone()
     }
 
-    fn children(&self) -> Option<&[FieldElement]> {
+    fn children(&self) -> Option<&[FieldDef]> {
         self.children.as_deref()
     }
 }
 
-pub struct ProtocolElement {
-    pub protocol: Protocol,
-    pub element: FieldElement,
-}
-impl ProtocolElement {
-    pub fn new(protocol: Protocol) -> Self {
-        Self {
-            protocol,
-            element: FieldElement::default(),
-        }
-    }
-}
-impl Element for ProtocolElement {
-    fn title(&self) -> &'static str {
-        self.element.title
-    }
+// pub struct ProtocolElement {
+//     pub protocol: Protocol,
+//     pub element: FieldElement,
+// }
+// impl ProtocolElement {
+//     pub fn new(protocol: Protocol) -> Self {
+//         Self {
+//             protocol,
+//             element: FieldElement::default(),
+//         }
+//     }
+// }
+// impl Element for ProtocolElement {
+//     fn title(&self) -> &'static str {
+//         self.element.title
+//     }
 
-    fn position(&self) -> Option<Range<u64>> {
-        self.element.position.clone()
-    }
+//     fn position(&self) -> Option<Range<u64>> {
+//         self.element.position.clone()
+//     }
 
-    fn children(&self) -> Option<&[FieldElement]> {
-        self.element.children.as_deref()
-    }
-}
+//     fn children(&self) -> Option<&[FieldElement]> {
+//         self.element.children.as_deref()
+//     }
+// }
 
-impl Into<Field> for &FieldElement {
+impl Into<Field> for &FieldDef {
     fn into(self) -> Field {
         let mut field = Field {
             start: 0,
             size: 0,
-            summary: self.title,
+            summary: self.title(),
             children: None,
         };
-        if let Some(range) = &self.position {
+        if let Some(range) = &self.position() {
             field.start = range.start;
             field.size = range.end - range.start;
         }
-        if let Some(children) = &self.children {
+        if let Some(children) = self.children() {
             field.children = Some(children.iter().map(|f| f.into()).collect());
         }
         field
     }
 }
 
-impl Into<Field> for &Frame {
-    fn into(self) -> Field {
-        let mut field = Field {
-            start: 0,
-            size: 0,
-            summary: "",
-            children: None,
-        };
-        if let Some(range) = &self.range {
-            field.start = range.start as u64;
-            field.size = range.end as u64 - field.start;
-        }
-        field.children = Some(self.element.iter().map(|f| (&f.element).into()).collect());
-        field
-    }
-}
+// impl Into<Field> for &Frame {
+//     fn into(self) -> Field {
+//         // let list = vec![];
+//         // let mut _next = self.head;
+//         // loop {
+//         //     match &_next {
+//         //         Protocol::None => {
+//         //             break;
+//         //         }
+//         //         _ => {
+//         //             // let _start = _reader.cursor;
+//         //             if let Ok(next) = parse(_next, ctx, &mut frame, &mut _reader){
+//         //                 // let _end = _reader.cursor;
+//         //                 // pe.element.position = Some(range64(_start.._end));
+//         //                 // frame.element.push(pe);
+//         //                 _next = next;
+//         //             } else {
+//         //                 break;
+//         //             }
+//         //         }
+//         //     }
+//         // }
+//         let mut field = Field {
+//             start: 0,
+//             size: 0,
+//             summary: "",
+//             children: None,
+//         };
+//         if let Some(range) = &self.range {
+//             field.start = range.start as u64;
+//             field.size = range.end as u64 - field.start;
+//         }
+//         // field.children = Some(self.element.iter().map(|f| (&f.element).into()).collect());
+//         field
+//     }
+// }
 
 impl Instance {
     pub fn new() -> Instance {
@@ -218,21 +253,22 @@ impl Instance {
     pub fn parse_packet(ctx: &mut Context, mut frame: Frame, ds: &DataSource) {
         if let Some(range) = &frame.range {
             let mut _reader = Reader::new_sub(&ds, range.clone());
-            let proto = link_type_map(&ctx.file_type, ctx.link_type, &mut _reader);
+            let proto: Protocol = link_type_map(&ctx.file_type, ctx.link_type, &mut _reader);
             frame.range = Some(range.clone());
+            frame.head = proto;
             let mut _next = proto;
             loop {
-                match _next {
-                    "none" => {
+                match &_next {
+                    Protocol::None => {
                         break;
                     }
                     _ => {
-                        frame.info.protocol = _next;
-                        let _start = _reader.cursor;
-                        if let Ok((next, mut pe)) = parse(_next, &mut frame, &mut _reader){
-                            let _end = _reader.cursor;
-                            pe.element.position = Some(range64(_start.._end));
-                            frame.element.push(pe);
+                        frame.info.protocol = format!("{}", _next);
+                        // let _start = _reader.cursor;
+                        if let Ok(next) = parse(_next, ctx, &mut frame, &mut _reader) {
+                            // let _end = _reader.cursor;
+                            // pe.element.position = Some(range64(_start.._end));
+                            // frame.element.push(pe);
                             _next = next;
                         } else {
                             break;
@@ -315,11 +351,32 @@ impl Instance {
 
     pub fn select_frame(&self, index: usize) -> Result<String, Error> {
         if let Some(frame) = self.ctx.list.get(index) {
-            let fs: Field = frame.into();
-            serde_json::to_string(&fs)
-        } else {
-            Ok("{}".into())
+            if let Some(range) = &frame.range {
+                let mut reader = Reader::new_sub(&self.ds, range.clone());
+                let mut list = vec![];
+                let mut _next = frame.head;
+                loop {
+                    match &_next {
+                        Protocol::None => {
+                            break;
+                        }
+                        _ => {
+                            let mut f = Field::empty();
+                            f.start = reader.cursor as u64;
+                            if let Ok(next) = detail(_next, &mut f, &self.ctx, &frame, &mut reader) {
+                                f.size = reader.cursor as u64 - f.start;
+                                list.push(f);
+                                _next = next;
+                            } else {
+                                break;
+                            }
+                        }
+                    }
+                }
+                return serde_json::to_string(&list);
+            }
         }
+        Ok("{}".into())
     }
 }
 pub mod concept;

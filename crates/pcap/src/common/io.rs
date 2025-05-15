@@ -1,11 +1,11 @@
-use std::{cmp, net::Ipv6Addr, ops::Range };
+use std::{cmp, hash::{Hash, Hasher}, net::Ipv6Addr, ops::Range };
 
+use ahash::AHasher;
 use anyhow::{bail, Ok, Result};
 
 use crate::{cache::intern, common::enum_def::DataError};
 
 use super::concept::ProgressStatus;
-
 
 pub struct IO;
 
@@ -75,7 +75,7 @@ impl DataSource {
         if !self.range.contains(&range.start) {
             bail!(DataError::BitSize);
         }
-        if !self.range.contains(&range.end) {
+        if !self.range.contains(&range.end) && self.range.end != range.end {
             bail!(DataError::BitSize);
         }
         let _start = self.range.start;
@@ -113,7 +113,28 @@ impl<'a> Reader<'a> {
 }
 
 impl Reader<'_> {
+    pub fn create_child_reader(&mut self, len: usize) -> Result<Self> {
+        if self.left() < len {
+            bail!(DataError::BitSize)
+        }
+        let ds = self.data;
+        let range = self.range.start..self.range.start + len;
+        self.forward(len);
+        Ok(Self { data: ds, range, cursor: self.range.start })
+    }
+    pub fn hash(&self) -> u64 {
+        let mut hasher = AHasher::default();
+        let data = self.data.slice(self.range.clone()).unwrap();
+        data.hash(&mut hasher);
+        hasher.finish()
+    }
+}
+impl Reader<'_> {
     pub fn set(&mut self, pos: usize) -> bool {
+        if pos == self.range.end || pos == self.data.range.end {
+            self.cursor = pos;
+            return true
+        }
         if !self.data.range.contains(&pos) {
             return false;
         }
@@ -214,6 +235,9 @@ impl From<Ipv6Addr> for IP6{
     }
 }
 
+pub struct MacAddress {
+    pub data: [u8; 6],
+}
 // fn read_ipv4(reader: &mut Reader) -> Result<std::net::Ipv4Addr> {
 //     let len = 4;
 //     if reader.left() < len {

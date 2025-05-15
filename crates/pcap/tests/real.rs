@@ -1,12 +1,10 @@
 #[cfg(test)]
 mod tests {
     use std::{
-        fs::File,
-        io::{BufReader, Read},
-        path::Path,
+        fs::File, io::{BufReader, Read}, mem, path::Path
     };
 
-    use pcap::{cache::intern, common::Instance};
+    use pcap::{cache::intern, common::{enum_def::Protocol, Instance}};
     fn _parse(fname: &str) -> std::io::Result<Instance> {
         let mut ins = Instance::new();
         let path = Path::new(fname);
@@ -30,13 +28,26 @@ mod tests {
     #[test]
     fn basic() -> std::io::Result<()> {
         let fname = "../../../pcaps/11.pcapng";
+        // let fname = "../../../pcaps/c1.pcap";
+        // let fname = "../../../pcaps/demo.pcapng";
+        // let fname = "../../../pcaps/demo.pcap";
+        // let fname = "../../../pcaps/dns.pcapng";
+        // let fname = "../../../pcaps/ftp.pcapng";
+        // let fname = "../../../pcaps/http.pcapng";
         // let fname = "../../../pcaps/http.pcap";
         // let fname = "../../../pcaps/http2.pcap";
+        // let fname = "../../../pcaps/http3.pcap";
+        // let fname = "../../../pcaps/moden.pcapng";
+        // let fname = "../../../pcaps/netbios.pcapng";
+        // let fname = "../../../pcaps/pppoe.pcap";
+        // let fname = "../../../pcaps/sip.pcap";
+        // let fname = "../../../pcaps/slow.pcap";
         let _ins = _parse(fname)?;
+        // print!("--finish-");
         let ctx = _ins.get_context();
         println!("total frames {}", ctx.counter);
-        // let json = _ins.select_frame(0).unwrap();
-        // println!("json {}", json);
+        let json = _ins.select_frame(0).unwrap();
+        println!("json {}", json);
         Ok(())
     }
 
@@ -50,5 +61,13 @@ mod tests {
         let c1 = intern(a1);
         let c2 = intern(a2);
         println!("cached: {:p} - {:p}", c1.as_ptr(), c2.as_ptr());
+    }
+
+    #[test]
+    fn pooltest2() {
+        let ptoro = Protocol::SSL;
+        println!("----------{}", ptoro);
+        println!("----------{:?}", (ptoro as i32));
+        println!("Size of Protocol: {} bytes", mem::size_of::<Protocol>()); 
     }
 }

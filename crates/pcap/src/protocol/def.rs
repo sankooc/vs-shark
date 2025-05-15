@@ -1,16 +1,20 @@
-use crate::common::{enum_def::Protocol, Frame};
+use crate::common::{concept::Field, enum_def::Protocol, io::Reader, Context, Frame};
 
 use anyhow::Result;
-use crate::{cache::intern, common::{io::Reader, range64, ProtocolElement}};
-pub struct DefaultParser {
-    
-}
+
+pub struct DefaultParser {}
 
 impl DefaultParser {
-    pub fn parse(_: &mut Frame, reader: &mut Reader) -> Result<(&'static str, ProtocolElement)> {
-        let mut fe = ProtocolElement::new(Protocol::None);
-        fe.element.title = intern("Unkown data packet".to_string());
-        fe.element.position = Some(range64(reader.range.clone()));
-        Ok(("none", fe))
+    pub fn parse(_: &mut Frame, _: &mut Reader) -> Result<Protocol> {
+        // let mut fe = ProtocolElement::new(Protocol::None);
+        // fe.element.title = intern("Unkown data packet".to_string());
+        // fe.element.position = Some(range64(reader.range.clone()));
+        // let fe = FieldElement::create(intern("Unkown data packet".to_string()), None);
+        Ok(Protocol::None)
+    }
+    pub fn detail(field: &mut Field, _: &Context, _: &Frame, reader: &mut Reader) -> Result<Protocol> {
+        field.summary = "parse failed";
+        // TODO 
+        Ok(Protocol::None)
     }
 }

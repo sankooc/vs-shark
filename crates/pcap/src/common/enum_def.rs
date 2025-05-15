@@ -1,5 +1,12 @@
+use std::ops::Range;
+
+use enum_dispatch::enum_dispatch;
 use strum_macros::{EnumString, Display};
 use thiserror::Error;
+
+use super::FieldElement;
+use super::Element;
+
 
 #[derive(Debug, EnumString, Display)]
 #[strum(serialize_all = "camel_case")]
@@ -35,15 +42,55 @@ pub enum FileType {
     NONE,
 }
 
-#[derive(Default)]
+#[derive(Default, Display, Debug, Clone, Copy)]
 pub enum Protocol {
     #[default]
     None,
-    Ethernet,
+    ETHERNET,
     SSL,
     Loopback,
     IP4,
     IP6,
     ICMP,
     ARP,
+    RARP,
+    RADIOTAP,
+    Ieee1905a,
+    IGMP,
+    UDP,
+    TCP,
+    DNS,
+    DHCP,
+    DHCPv6,
+    HTTP,
+    HTTPS,
+    TLS,
 }
+
+#[enum_dispatch]
+pub enum FieldDef {
+    UNKOWN(FieldElement),
+
+}
+
+
+// #[enum_dispatch(FieldElement)]
+// pub trait TestElement {
+//     fn position(&self) -> Option<Range<u64>>;
+//     fn children(&self) -> Option<&[FieldElement]>;
+// }
+
+
+
+// pub struct TestEle {
+
+// }
+
+// impl TestElement for TestEle {
+//     fn position(&self) -> Option<Range<u64>> {
+//         None
+//     }
+//     fn children(&self) -> Option<&[FieldElement]> {
+//         None
+//     }
+// }
