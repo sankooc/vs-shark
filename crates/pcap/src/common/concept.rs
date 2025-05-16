@@ -58,10 +58,10 @@ pub struct Field {
 }
 
 impl Field {
-    pub fn label(summary: &'static str, start: u64, size: u64) -> Field {
+    pub fn label(summary: &'static str, start: u64, end: u64) -> Field {
         Field {
             start,
-            size,
+            size: end - start,
             summary,
             children: None,
         }

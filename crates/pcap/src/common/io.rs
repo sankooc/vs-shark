@@ -39,6 +39,9 @@ pub struct DataSource {
 }
 
 impl DataSource {
+    pub fn create(data: Vec<u8>, range: Range<usize>) -> Self {
+        Self { data, range }
+    }
     pub fn new() -> Self {
         Self { data: Vec::new(), range: 0..0 }
     }
@@ -48,8 +51,12 @@ impl DataSource {
     pub fn len(&self) -> usize {
         self.data.len()
     }
-    pub fn _data(&self) -> &[u8]{
-        &self.data
+    pub fn _data(&self, cursor: usize) -> Result<u8> {
+        if self.range.contains(&cursor) {
+            let start = self.range.start;
+            return Ok(self.data[cursor - start])
+        }
+        bail!(DataError::BitSize);
     }
     // 追加数据
     #[inline(always)]
@@ -172,7 +179,7 @@ impl Reader<'_> {
 
     pub fn next(&self) -> Result<u8>{
         if self.left() > 0 {
-            Ok(self.data._data()[self.cursor])
+            self.data._data(self.cursor)
         } else {
             bail!(DataError::BitSize)
         }

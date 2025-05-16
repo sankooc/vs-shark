@@ -42,9 +42,12 @@ impl WContext {
     }
 
     #[wasm_bindgen]
-    pub fn select(&self, catelog: String, index: usize) -> String {
+    pub fn select(&self, catelog: String, index: usize, s: &Uint8Array) -> String {
         match catelog.as_str() {
-            "frame" => self.ctx.select_frame(index).unwrap(),
+            "frame" => {
+                let slice = s.to_vec();
+                self.ctx.select_frame_json(index, slice).unwrap()
+            }, 
             _ => "{}".into()
         }
     }

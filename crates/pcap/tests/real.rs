@@ -1,7 +1,8 @@
+mod tc;
 #[cfg(test)]
 mod tests {
     use std::{
-        fs::File, io::{BufReader, Read}, mem, path::Path
+        fs::File, io::{BufReader, Read, Seek, SeekFrom}, mem, ops::Range, path::Path
     };
 
     use pcap::{cache::intern, common::{enum_def::Protocol, Instance}};
@@ -25,6 +26,16 @@ mod tests {
         }
         Ok(ins)
     }
+    
+    fn _seek(fname: &str, range: Range<usize>) -> anyhow::Result<Vec<u8>> {
+        let offset = range.start as u64;
+        let size = range.end - range.start;
+        let mut file = File::open(fname)?;
+        file.seek(SeekFrom::Start(offset))?;
+        let mut buffer = vec![0; size];
+        file.read_exact(&mut buffer)?;
+        Ok(buffer)
+    }
     #[test]
     fn basic() -> std::io::Result<()> {
         let fname = "../../../pcaps/11.pcapng";
@@ -46,8 +57,14 @@ mod tests {
         // print!("--finish-");
         let ctx = _ins.get_context();
         println!("total frames {}", ctx.counter);
-        let json = _ins.select_frame(0).unwrap();
-        println!("json {}", json);
+        let f = _ins.frame(0).unwrap();
+        let range = f.range().unwrap();
+
+        println!("range  {} - {}", range.start, range.end);
+        let data = _seek(fname, range).unwrap();
+        let json = _ins.select_frame(0, data).unwrap();
+        crate::tc::print_fields(&json);
+        // println!("json {}", json);
         Ok(())
     }
 
