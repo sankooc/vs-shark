@@ -12,7 +12,7 @@ impl DefaultParser {
         // let fe = FieldElement::create(intern("Unkown data packet".to_string()), None);
         Ok(Protocol::None)
     }
-    pub fn detail(field: &mut Field, _: &Context, _: &Frame, reader: &mut Reader) -> Result<Protocol> {
+    pub fn detail(field: &mut Field, _: &Context, _: &Frame, _: &mut Reader) -> Result<Protocol> {
         field.summary = "parse failed";
         // TODO 
         Ok(Protocol::None)

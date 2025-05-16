@@ -42,6 +42,7 @@ impl Visitor {
             if total_len < (_start - _stop) as u16 {
                 return Ok(Protocol::None);
             }
+            frame.iplen = total_len - (_start - _stop) as u16;
         }
         frame.info.source = source;
         frame.info.dest = target;
@@ -67,7 +68,7 @@ impl Visitor {
         let target = read_field_format!(list, reader, intern_ip4(reader)?, "Destination Address: {}");
         let ext = head_len - 5;
         if ext > 0 {
-            reader.slice((ext * 4) as usize, true)?;
+            reader.forward((ext * 4) as usize);
         }
         let _stop = reader.left();
         if total_len == 0 {

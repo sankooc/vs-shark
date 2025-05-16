@@ -7,12 +7,12 @@
 //     type FastHashMap<K, V> = HashMap<K, V, BuildHasherDefault<FxHasher>>;
 //     #[test]
 //     fn maptest() {
-//         let map:FastHashMap<[u8;4], &'static str> = FastHashMap::default();
+//         let map:FastHashMap<[u8;4], NString> = FastHashMap::default();
 //         thread_local! {
-//             static IP_CACHE: RefCell<HashMap<[u8; 4], &'static str>> = RefCell::new(HashMap::new());
+//             static IP_CACHE: RefCell<HashMap<[u8; 4], NString>> = RefCell::new(HashMap::new());
 //         }
         
-//         // pub fn read_ip(bytes: &[u8]) -> &'static str {
+//         // pub fn read_ip(bytes: &[u8]) -> NString {
 //         //     let ip_bytes = [bytes[0], bytes[1], bytes[2], bytes[3]];
             
 //         //     IP_CACHE.with(|cache| {

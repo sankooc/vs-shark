@@ -1,12 +1,11 @@
-use std::ops::Range;
 
 use crate::{
     cache::intern,
     common::{
         concept::Field,
-        enum_def::{FieldDef, Protocol},
+        enum_def::Protocol,
         io::{read_mac, Reader},
-        Context, Element, Frame,
+        Context, Frame,
     },
     constants::etype_mapper,
     field_back_format,
@@ -14,30 +13,6 @@ use crate::{
     read_field_format,
 };
 use anyhow::Result;
-
-pub struct EthernetElement {
-    pub list: Vec<FieldDef>,
-}
-
-impl Element for EthernetElement {
-    fn title(&self) -> &'static str {
-        todo!()
-    }
-
-    fn position(&self) -> Option<Range<u64>> {
-        todo!()
-    }
-
-    fn children(&self) -> Option<&[FieldDef]> {
-        todo!()
-    }
-}
-
-impl EthernetElement {
-    pub fn parse(_data: &[u8]) -> Result<Field> {
-        todo!()
-    }
-}
 
 pub struct EthernetVisitor {}
 

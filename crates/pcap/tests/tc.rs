@@ -23,7 +23,7 @@ pub fn build_reader(name: &str) -> Vec<u8> {
 pub fn print_field(inx: usize, field: &Field) {
     let start = field.start;
     let end= field.start + field.size;
-    println!("[{:5}-{:5}] {:inx$}- {}",start, end, "", field.summary);
+    println!("[{:05}-{:05}] {:inx$}- {}",start, end, "", field.summary);
     if let Some(fields) = &field.children {
         for f in fields.iter() {
             print_field(inx + 1, f);

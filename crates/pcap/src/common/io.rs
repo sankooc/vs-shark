@@ -5,7 +5,7 @@ use anyhow::{bail, Ok, Result};
 
 use crate::{cache::intern, common::enum_def::DataError};
 
-use super::concept::ProgressStatus;
+use super::{concept::ProgressStatus, NString};
 
 pub struct IO;
 
@@ -208,7 +208,7 @@ impl Reader<'_> {
 }
 
 
-pub fn read_mac(reader: &mut Reader) -> Result<&'static str> {
+pub fn read_mac(reader: &mut Reader) -> Result<NString> {
     let data = reader.slice(6, true)?;
     let str = (data)
             .iter()
@@ -221,7 +221,7 @@ pub fn read_mac(reader: &mut Reader) -> Result<&'static str> {
 
 
 pub struct IP6 {
-    pub str: &'static str,
+    pub str: NString,
     pub loopback: bool,
     pub multicast: bool
 }

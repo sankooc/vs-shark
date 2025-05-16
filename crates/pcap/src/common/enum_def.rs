@@ -1,11 +1,6 @@
-use std::ops::Range;
 
-use enum_dispatch::enum_dispatch;
 use strum_macros::{EnumString, Display};
 use thiserror::Error;
-
-use super::FieldElement;
-use super::Element;
 
 
 #[derive(Debug, EnumString, Display)]
@@ -67,30 +62,7 @@ pub enum Protocol {
     TLS,
 }
 
-#[enum_dispatch]
-pub enum FieldDef {
-    UNKOWN(FieldElement),
-
-}
-
-
-// #[enum_dispatch(FieldElement)]
-// pub trait TestElement {
-//     fn position(&self) -> Option<Range<u64>>;
-//     fn children(&self) -> Option<&[FieldElement]>;
-// }
-
-
-
-// pub struct TestEle {
-
-// }
-
-// impl TestElement for TestEle {
-//     fn position(&self) -> Option<Range<u64>> {
-//         None
-//     }
-//     fn children(&self) -> Option<&[FieldElement]> {
-//         None
-//     }
+// #[enum_dispatch]
+// pub enum FieldDef {
+//     UNKOWN(FieldElement),
 // }

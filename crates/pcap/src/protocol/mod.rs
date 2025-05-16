@@ -1,13 +1,14 @@
 use anyhow::Result;
 use def::DefaultParser;
 
-use crate::common::{
+use crate::{cache::intern, common::{
     concept::Field, enum_def::{ FileType, Protocol}, io::Reader, Context, Frame
-};
+}};
 
 pub mod link;
 pub mod network;
 pub mod def;
+pub mod transport;
 
 pub fn parse(protocol: Protocol, ctx: &mut Context, frame: &mut Frame, reader: &mut crate::common::io::Reader) -> Result<Protocol> {
     match &protocol {
@@ -33,7 +34,9 @@ pub fn detail(protocol: Protocol, field: &mut Field, ctx: &Context, frame: &Fram
         Protocol::IP4 => network::ip4::Visitor::detail(field, ctx, frame, reader),
         Protocol::IP6 => network::ip6::Visitor::detail(field, ctx, frame, reader),
         _ => {
-            return DefaultParser::detail(field, ctx, frame, reader);
+            field.summary = intern(format!("Unimplement Protocol: {}", protocol));
+            Ok(Protocol::None)
+            // return DefaultParser::detail(field, ctx, frame, reader);
         }
     }
 }
