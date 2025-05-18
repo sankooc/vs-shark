@@ -74,7 +74,7 @@ pub struct V4Visitor {
 
 impl V4Visitor {
     
-    pub fn parse(_: &mut Frame, reader: &mut Reader) -> Result<(&'static str, ProtocolElement)> {
+    pub fn parse(_: &mut Frame, reader: &mut Reader) -> Result<(NString, ProtocolElement)> {
         let mut fe = ProtocolElement::new(Protocol::ICMP);
         let mut list = vec![];
         let icpm_type = reader.read8()?;
@@ -94,7 +94,7 @@ impl V4Visitor {
         Ok(("none", fe))
     }
 
-    pub fn parse_v6(_: &mut Frame, reader: &mut Reader) -> Result<(&'static str, ProtocolElement)> {
+    pub fn parse_v6(_: &mut Frame, reader: &mut Reader) -> Result<(NString, ProtocolElement)> {
         let mut fe = ProtocolElement::new(Protocol::ICMP);
         let mut list = vec![];
         let icpm_type = reader.read8()?;

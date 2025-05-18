@@ -17,7 +17,7 @@ pub struct Visitor {
 
 impl Visitor {
     
-    pub fn parse(frame: &mut Frame, reader: &mut Reader) -> Result<(&'static str, ProtocolElement)> {
+    pub fn parse(frame: &mut Frame, reader: &mut Reader) -> Result<(NString, ProtocolElement)> {
         let mut fe = ProtocolElement::new(Protocol::SSL);
         let mut list = vec![];
         read_field_format_fn!(list, reader, reader.read16(true)?, hardware_type_desc);
@@ -37,7 +37,7 @@ impl Visitor {
         fe.element.children = Some(list);
         Ok(("none", fe))
     }
-    // pub fn rparse(frame: &mut Frame, reader: &mut Reader) -> Result<(&'static str, ProtocolElement)> {
+    // pub fn rparse(frame: &mut Frame, reader: &mut Reader) -> Result<(NString, ProtocolElement)> {
 
     // }
 }

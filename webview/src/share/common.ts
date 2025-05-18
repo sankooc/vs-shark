@@ -13,6 +13,8 @@ export enum ComType {
   RESPONSE = "response",
   FRAMES = "frames",
   FRAMES_SELECT = "frames_select",
+  FRAME_SCOPE = "frame_scope",
+  FRAME_SCOPE_RES = "FRAME_SCOPE_RES",
   DATA = "DATA",
   FILEINFO = "fileinfo",
   log = "log",
@@ -30,12 +32,19 @@ export interface ComRequest {
 //   size?: number
 // }
 
+let counter = 0;
+
+const getMessageId = (type: string) => {
+  const cc = counter++;
+  return `${cc}_${type}_${Date.now()}`
+}
+
 export class ComMessage<T> {
   type: ComType;
   body: T;
   id: string;
   constructor(type: ComType, body: T, id?: string) {
-    const _id = id ? id : Date.now().toString();
+    const _id = id ? id : getMessageId(type);
     this.type = type;
     this.body = body;
     this.id = _id;
@@ -69,10 +78,7 @@ export interface IField {
 }
 
 export interface Cursor {
-  scope?: {
-    start: number;
-    size: number;
-  };
+  scope: VRange;
   selected?: {
     start: number;
     size: number;
@@ -90,6 +96,16 @@ export class HexV {
   index!: [number, number];
   constructor(data: Uint8Array) {
     this.data = data;
+  }
+}
+
+export class VRange {
+  constructor(public start: number, public end: number){}
+  public size(): number{
+    if (this.end > this.start) {
+      this.end - this.start;
+    }
+    return 0;
   }
 }
 

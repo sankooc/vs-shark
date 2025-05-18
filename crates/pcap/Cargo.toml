@@ -19,4 +19,5 @@ strum_macros = "0.25"
 serde = { workspace = true, features = ["derive"]}
 serde_json.workspace = true
 once_cell.workspace = true
+ahash = { version = "0.8", default-features = false }
 rustc-hash = "1.1"

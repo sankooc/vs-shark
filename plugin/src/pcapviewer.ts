@@ -22,10 +22,10 @@ const createWebviewHtml = (
   file: string,
 ): string => {
   const scriptUri = webview.asWebviewUri(
-    vscode.Uri.joinPath(context.extensionUri, 'dist','web', 'js', 'main.js'),
+    vscode.Uri.joinPath(context.extensionUri, 'dist', 'web', 'js', 'main.js'),
   );
   const cssUri = webview.asWebviewUri(
-    vscode.Uri.joinPath(context.extensionUri, 'dist','web', 'assets', 'main.css'),
+    vscode.Uri.joinPath(context.extensionUri, 'dist', 'web', 'assets', 'main.css'),
   );
   const nonce = getNonce();
   const result = `<!doctype html>
@@ -56,6 +56,7 @@ class PcapDocument extends Disposable implements vscode.CustomDocument {
       chunkSize: 1024 * 1024,
       intervalMs: 1000,
     });
+
     return new PcapDocument(dataFile, watcher);
   }
 
@@ -79,23 +80,27 @@ class PcapDocument extends Disposable implements vscode.CustomDocument {
 }
 
 export class Client extends PCAPClient {
+  async pickData(start: number, end: number): Promise<Uint8Array> {
+    const buffer = await this.watcher.readRandomAccess(start, (end - start));
+    return bufferToUint8Array(buffer);
+  }
   appendData(data: Uint8Array): void {
     // TODO
   }
-	constructor(private view: vscode.Webview, private output: vscode.LogOutputChannel) {
-		super();
-	}
-	printLog(log: ComLog): void {
-		switch (log.level) {
-			case 'error':
-				vscode.window.showErrorMessage(log.msg.toString());
-				break;
-		}
-		this.output.info(log.msg.toString());
-	}
-	emitMessage(msg: ComMessage<any>): void {
-		this.view.postMessage(msg);
-	}
+  constructor(private view: vscode.Webview, private output: vscode.LogOutputChannel, private watcher: FileTailWatcher) {
+    super();
+  }
+  printLog(log: ComLog): void {
+    switch (log.level) {
+      case 'error':
+        vscode.window.showErrorMessage(log.msg.toString());
+        break;
+    }
+    this.output.info(log.msg.toString());
+  }
+  emitMessage(msg: ComMessage<any>): void {
+    this.view.postMessage(msg);
+  }
 }
 
 
@@ -107,8 +112,7 @@ const bufferToUint8Array = (buffer: Buffer): Uint8Array => {
 };
 
 export class PcapViewerProvider
-  implements vscode.CustomReadonlyEditorProvider<PcapDocument>
-{
+  implements vscode.CustomReadonlyEditorProvider<PcapDocument> {
   // private static newPawDrawFileId = 1;
   private static output: vscode.LogOutputChannel =
     vscode.window.createOutputChannel("pcap console", { log: true });
@@ -137,7 +141,7 @@ export class PcapViewerProvider
    */
   private readonly webviews = new WebviewCollection();
 
-  constructor(private readonly _context: vscode.ExtensionContext) {}
+  constructor(private readonly _context: vscode.ExtensionContext) { }
 
   //#region CustomEditorProvider
 
@@ -165,14 +169,17 @@ export class PcapViewerProvider
     );
     const info: PcapFile = { name: document.uri.fsPath, size: 0, start: 0 };
     if (!document.client) {
-      const client = new Client(webviewPanel.webview, PcapViewerProvider.output);
+      // document.watcher;
+      const client = new Client(webviewPanel.webview, PcapViewerProvider.output, document.watcher);
       client.handle(ComMessage.new(ComType.TOUCH_FILE, info));
       document.client = client;
       webviewPanel.webview.onDidReceiveMessage((data) => {
         const id = data.id;
         const type = data.type;
         if (type === ComType.DATA && id) {
-          const { start, size } = data.body;
+          const { start, end } = data.body;
+          const size = end - start;
+          //todo
           if (start >= 0 && size > 0) {
             document.watcher.readRandomAccess(start, size).then((buffer: Buffer) => {
               const data = bufferToUint8Array(buffer);

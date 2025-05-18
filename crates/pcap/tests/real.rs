@@ -1,12 +1,12 @@
+mod tc;
 #[cfg(test)]
 mod tests {
     use std::{
-        fs::File,
-        io::{BufReader, Read},
-        path::Path,
+        fs::File, io::{BufReader, Read, Seek, SeekFrom}, mem, ops::Range, path::Path
     };
+    use std::time::Instant;
 
-    use pcap::{cache::intern, common::Instance};
+    use pcap::{cache::intern, common::{connection::TcpFlagField, enum_def::Protocol, Instance}};
     fn _parse(fname: &str) -> std::io::Result<Instance> {
         let mut ins = Instance::new();
         let path = Path::new(fname);
@@ -18,6 +18,7 @@ mod tests {
         let mut buffer = Vec::with_capacity(1024 * 1024);
         buffer.resize(1024 * 1024, 0);
 
+        let start = Instant::now();
         loop {
             let n = reader.read(&mut buffer)?;
             if n == 0 {
@@ -25,17 +26,49 @@ mod tests {
             }
             ins.update(buffer[..n].to_vec()).unwrap();
         }
+        let duration = start.elapsed();
+        println!("Elapsed: {} nanoseconds", duration.as_millis());
         Ok(ins)
     }
+    
+    fn _seek(fname: &str, range: Range<usize>) -> anyhow::Result<Vec<u8>> {
+        let offset = range.start as u64;
+        let size = range.end - range.start;
+        let mut file = File::open(fname)?;
+        file.seek(SeekFrom::Start(offset))?;
+        let mut buffer = vec![0; size];
+        file.read_exact(&mut buffer)?;
+        Ok(buffer)
+    }
     #[test]
-    fn basic() -> std::io::Result<()> {
+    fn basic() -> std::io::Result<()> { 
         let fname = "../../../pcaps/11.pcapng";
+        // let fname = "../../../pcaps/c1.pcap";
+        // let fname = "../../../pcaps/demo.pcapng";
+        // let fname = "../../../pcaps/demo.pcap";
+        // let fname = "../../../pcaps/dns.pcapng";
+        // let fname = "../../../pcaps/ftp.pcapng";
+        // let fname = "../../../pcaps/http.pcapng";
         // let fname = "../../../pcaps/http.pcap";
         // let fname = "../../../pcaps/http2.pcap";
+        // let fname = "../../../pcaps/http3.pcap";
+        // let fname = "../../../pcaps/moden.pcapng";
+        // let fname = "../../../pcaps/netbios.pcapng";
+        // let fname = "../../../pcaps/pppoe.pcap";
+        // let fname = "../../../pcaps/sip.pcap";
+        // let fname = "../../../pcaps/slow.pcap";
         let _ins = _parse(fname)?;
+        // print!("--finish-");
         let ctx = _ins.get_context();
         println!("total frames {}", ctx.counter);
-        // let json = _ins.select_frame(0).unwrap();
+        let index = 13;
+        let f = _ins.frame(index).unwrap();
+        let range = f.range().unwrap();
+
+        println!("range  {} - {}", range.start, range.end);
+        let data = _seek(fname, range).unwrap();
+        let json = _ins.select_frame(index, data).unwrap();
+        crate::tc::print_fields(&json);
         // println!("json {}", json);
         Ok(())
     }
@@ -50,5 +83,19 @@ mod tests {
         let c1 = intern(a1);
         let c2 = intern(a2);
         println!("cached: {:p} - {:p}", c1.as_ptr(), c2.as_ptr());
+    }
+
+    #[test]
+    fn pooltest2() {
+        let ptoro = Protocol::SSL;
+        println!("----------{}", ptoro);
+        println!("----------{:?}", (ptoro as i32));
+        println!("Size of Protocol: {} bytes", mem::size_of::<Protocol>()); 
+
+        println!("ack => {}", TcpFlagField::from(0x0010).list_str());
+        println!("push ack => {}", TcpFlagField::from(0x0018).list_str());
+        println!("fin ack => {}", TcpFlagField::from(0x0011).list_str());
+        println!("syn ack => {}", TcpFlagField::from(0x0012).list_str());
+        println!("ret ack => {}", TcpFlagField::from(0x0014).list_str());
     }
 }

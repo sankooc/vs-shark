@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Tree, TreeNodeClickEvent } from "primereact/tree";
 import { TreeNode } from "primereact/treenode";
 import "./app.scss";
-import { Cursor, IField } from "../../../../share/common";
+import { Cursor, IField, VRange } from "../../../../share/common";
 import { useStore } from "../../../store";
 
 const className = "vector";
@@ -12,19 +12,29 @@ interface StackProps {
   onSelect: (cursor: Cursor) => void;
 }
 export default function Stack(props: StackProps) {
-  const [field, setField] = useState<IField>();
+  const [fields, setField] = useState<IField[]>([]);
   const [select, setSelect] = useState<string>("");
+  const [scope, setScope] = useState<VRange>(new VRange(0,0));
   const _request = useStore((state) => state.request);
   useEffect(() => {
     if (props.select < 0) {
       return;
     }
-    _request<IField>({
+    _request<IField[]>({
       catelog: "frame",
       type: "select",
       param: { index: props.select },
     }).then((rs) => {
       setField(rs);
+    });
+    
+    _request<VRange>({
+      catelog: "frame",
+      type: "scope",
+      param: { index: props.select },
+    }).then((rs) => {
+      setScope(rs);
+      // setField(rs);
     });
   }, [props.select]);
   const mapper = (it: IField, key: string): TreeNode => {
@@ -48,8 +58,7 @@ export default function Stack(props: StackProps) {
     }
     return rs;
   };
-
-  const items = field?.children || [];
+  const items = fields;
   const stacks: TreeNode[] = items.map((item, inx) => {
     return mapper(item, inx + "");
   });
@@ -57,10 +66,7 @@ export default function Stack(props: StackProps) {
     const { node } = e;
     setSelect(node.key + "");
     const cursor = {
-      scope: {
-        start: field?.start || 0,
-        size: field?.size || 0,
-      },
+      scope,
       selected: {
         start: node.data.start || 0,
         size: node.data.size || 0,

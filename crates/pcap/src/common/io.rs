@@ -1,11 +1,11 @@
-use std::{cmp, net::Ipv6Addr, ops::Range };
+use std::{cmp, hash::{Hash, Hasher}, net::Ipv6Addr, ops::Range };
 
+use ahash::AHasher;
 use anyhow::{bail, Ok, Result};
 
 use crate::{cache::intern, common::enum_def::DataError};
 
-use super::concept::ProgressStatus;
-
+use super::{concept::ProgressStatus, NString};
 
 pub struct IO;
 
@@ -39,6 +39,9 @@ pub struct DataSource {
 }
 
 impl DataSource {
+    pub fn create(data: Vec<u8>, range: Range<usize>) -> Self {
+        Self { data, range }
+    }
     pub fn new() -> Self {
         Self { data: Vec::new(), range: 0..0 }
     }
@@ -48,8 +51,12 @@ impl DataSource {
     pub fn len(&self) -> usize {
         self.data.len()
     }
-    pub fn _data(&self) -> &[u8]{
-        &self.data
+    pub fn _data(&self, cursor: usize) -> Result<u8> {
+        if self.range.contains(&cursor) {
+            let start = self.range.start;
+            return Ok(self.data[cursor - start])
+        }
+        bail!(DataError::BitSize);
     }
     // 追加数据
     #[inline(always)]
@@ -75,7 +82,7 @@ impl DataSource {
         if !self.range.contains(&range.start) {
             bail!(DataError::BitSize);
         }
-        if !self.range.contains(&range.end) {
+        if !self.range.contains(&range.end) && self.range.end != range.end {
             bail!(DataError::BitSize);
         }
         let _start = self.range.start;
@@ -113,7 +120,28 @@ impl<'a> Reader<'a> {
 }
 
 impl Reader<'_> {
+    pub fn create_child_reader(&mut self, len: usize) -> Result<Self> {
+        if self.left() < len {
+            bail!(DataError::BitSize)
+        }
+        let ds = self.data;
+        let range = self.range.start..self.range.start + len;
+        self.forward(len);
+        Ok(Self { data: ds, range, cursor: self.range.start })
+    }
+    pub fn hash(&self) -> u64 {
+        let mut hasher = AHasher::default();
+        let data = self.data.slice(self.range.clone()).unwrap();
+        data.hash(&mut hasher);
+        hasher.finish()
+    }
+}
+impl Reader<'_> {
     pub fn set(&mut self, pos: usize) -> bool {
+        if pos == self.range.end || pos == self.data.range.end {
+            self.cursor = pos;
+            return true
+        }
         if !self.data.range.contains(&pos) {
             return false;
         }
@@ -151,7 +179,7 @@ impl Reader<'_> {
 
     pub fn next(&self) -> Result<u8>{
         if self.left() > 0 {
-            Ok(self.data._data()[self.cursor])
+            self.data._data(self.cursor)
         } else {
             bail!(DataError::BitSize)
         }
@@ -180,7 +208,7 @@ impl Reader<'_> {
 }
 
 
-pub fn read_mac(reader: &mut Reader) -> Result<&'static str> {
+pub fn read_mac(reader: &mut Reader) -> Result<NString> {
     let data = reader.slice(6, true)?;
     let str = (data)
             .iter()
@@ -193,7 +221,7 @@ pub fn read_mac(reader: &mut Reader) -> Result<&'static str> {
 
 
 pub struct IP6 {
-    pub str: &'static str,
+    pub str: NString,
     pub loopback: bool,
     pub multicast: bool
 }
@@ -214,6 +242,9 @@ impl From<Ipv6Addr> for IP6{
     }
 }
 
+pub struct MacAddress {
+    pub data: [u8; 6],
+}
 // fn read_ipv4(reader: &mut Reader) -> Result<std::net::Ipv4Addr> {
 //     let len = 4;
 //     if reader.left() < len {

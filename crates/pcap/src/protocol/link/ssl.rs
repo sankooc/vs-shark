@@ -1,43 +1,58 @@
-use crate::constants::ssl_type_mapper;
+use crate::common::concept::Field;
+use crate::common::Context;
+use crate::constants::{link_type_mapper, ssl_type_mapper};
+use crate::{read_field_format, read_field_format_fn};
 use crate::{
     cache::intern,
     common::{
         enum_def::Protocol,
         io::{read_mac, Reader},
-        Frame, ProtocolElement,
+        Frame,
     },
     constants::etype_mapper,
     protocol::enthernet_protocol_mapper,
-    read_field_format, read_field_format_fn,
 };
 use anyhow::Result;
 
-pub struct SSLVisitor;
+pub struct Visitor;
 
-fn typedesc(_type: u16) -> String {
+pub fn typedesc(_type: u16) -> String {
     format!("Packet Type: {}", ssl_type_mapper(_type))
 }
 
-fn ptype_str(ptype: u16) -> String {
+pub fn ptype_str(ptype: u16) -> String {
     format!("Protocol: {} ({:#06x})", etype_mapper(ptype), ptype)
 }
 
-impl SSLVisitor {
-    pub fn parse(frame: &mut Frame, reader: &mut Reader) -> Result<(&'static str, ProtocolElement)> {
-        let mut fe = ProtocolElement::new(Protocol::SSL);
-        let mut list = vec![];
-        let _type = read_field_format_fn!(list, reader, reader.read16(true)?, typedesc);
-        read_field_format!(list, reader, reader.read16(true)?, "Link-layer address type: {}");
-        read_field_format!(list, reader, reader.read16(true)?, "Length: {}");
-        let source = read_field_format!(list, reader, read_mac(reader)?, "Source MAC: {}");
-        reader.forward(2);
-        let ptype = read_field_format_fn!(list, reader, reader.read16(true)?, ptype_str);
+fn link_address_type(addr_type: u16) -> String {
+    format!("Link-layer address type: {} ({})", link_type_mapper(addr_type), addr_type)
+}
 
-        let info = intern(format!("Ethernet II, Src: {}", source));
-        fe.element.title = info;
+impl Visitor {
+    pub fn parse(_: &mut Context, frame: &mut Frame, reader: &mut Reader) -> Result<Protocol> {
+        reader.read16(true)?;
+        reader.read16(true)?;
+        let _len = reader.read16(true)?;
+        let source = read_mac(reader)?;
+        reader.forward(2);
+        let ptype = reader.read16(true)?;
+        let info = intern("Linux cooked capture v1".to_string());
         frame.info.info = info;
         frame.info.source = source;
-        fe.element.children = Some(list);
-        Ok((enthernet_protocol_mapper(ptype), fe))
+
+        Ok(enthernet_protocol_mapper(ptype))
+    }
+    pub fn detail(field: &mut Field, _: &Context, _: &Frame, reader: &mut Reader) -> Result<Protocol> {
+        let mut list = vec![];
+        let _type = read_field_format_fn!(list, reader, reader.read16(true)?, typedesc);
+        read_field_format_fn!(list, reader, reader.read16(true)?, link_address_type);
+        read_field_format!(list, reader, reader.read16(true)?, "Link-layer address length: {}");
+        read_field_format!(list, reader, read_mac(reader)?, "Source MAC: {}");
+        reader.forward(2);
+        let ptype = read_field_format_fn!(list, reader, reader.read16(true)?, ptype_str);
+        let info = intern("Linux cooked capture v1".to_string());
+        field.summary = info;
+        field.children = Some(list);
+        Ok(enthernet_protocol_mapper(ptype))
     }
 }

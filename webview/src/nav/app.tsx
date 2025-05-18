@@ -20,7 +20,6 @@ export default function CommandDemo() {
   const [iframeSrc, _setIframeSrc] = useState<string>("index.html");
   const [isLoaded, setIsLoading] = useState(true);
   loadIFrame(iframeRef.current);
-  // console.log(iframeRef.current);
   function add_comment() {
     let script = document.createElement("script");
     let anchor = document.getElementById("comments");
@@ -124,12 +123,6 @@ export default function CommandDemo() {
   const handleIframeLoad = useCallback(() => {
     setIsLoading(false);
   }, []);
-
-  // const handleMessage = useCallback((event: MessageEvent) => {
-  //     const { data } = event;
-  //     // 处理消息
-  //     console.log('Received message:', data);
-  // }, []);
 
   return (
     <>

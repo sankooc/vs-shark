@@ -26,7 +26,6 @@ mod unit {
                 assert!(false);
             }
         }
-        
     }
     #[test]
     fn test_ppp_lcp() {

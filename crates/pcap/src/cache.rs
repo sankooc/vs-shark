@@ -9,6 +9,7 @@ use std::hash::Hasher;
 use std::net::Ipv6Addr;
 
 use crate::common::io::{Reader, IO, IP6};
+use crate::common::NString;
 
 type FastHashMap<K, V> = HashMap<K, V, BuildHasherDefault<FxHasher>>;
 
@@ -26,8 +27,8 @@ pub fn hash_ipv6(ip: &[u8]) -> u64 {
 // }
 
 pub struct StringPool {
-    map: FastHashMap<String, &'static str>,
-    ip4_map: FastHashMap<u32, &'static str>,
+    map: FastHashMap<String, NString>,
+    ip4_map: FastHashMap<u32, NString>,
     ip6_map: FastHashMap<u64, IP6>,
 }
 
@@ -41,23 +42,23 @@ impl StringPool {
     }
 
     #[inline(always)]
-    pub fn intern(&mut self, s: String) -> &'static str {
+    pub fn intern(&mut self, s: String) -> NString {
         if let Some(v) = self.map.get(&s) {
             return *v;
         }
         let key = s.clone();
-        let static_ref: &'static str = Box::leak(s.into_boxed_str());
-        // let static_ref: &'static str = unsafe { std::mem::transmute(s.as_str()) };
+        let static_ref: NString = Box::leak(s.into_boxed_str());
+        // let static_ref: NString = unsafe { std::mem::transmute(s.as_str()) };
         self.map.insert(key, static_ref);
         static_ref
     }
     #[inline(always)]
-    pub fn intern_ip4(&mut self, reader: &mut Reader) -> anyhow::Result<&'static str> {
+    pub fn intern_ip4(&mut self, reader: &mut Reader) -> anyhow::Result<NString> {
         let data = reader.slice(4, true)?;
         let key = IO::read32(data, false)?;
         if !self.ip4_map.contains_key(&key) {
             let ip = format!("{}.{}.{}.{}", data[0], data[1], data[2], data[3]);
-            let static_ref: &'static str = Box::leak(ip.into_boxed_str());
+            let static_ref: NString = Box::leak(ip.into_boxed_str());
             self.ip4_map.insert(key, static_ref);
             return Ok(static_ref);
         }
@@ -86,11 +87,11 @@ thread_local! {
 }
 
 #[inline(always)]
-pub fn intern(s: String) -> &'static str {
+pub fn intern(s: String) -> NString {
     unsafe { STRING_POOL.with(|pool| (*pool.get()).intern(s)) }
 }
 #[inline(always)]
-pub fn intern_ip4(reader: &mut Reader) -> anyhow::Result<&'static str> {
+pub fn intern_ip4(reader: &mut Reader) -> anyhow::Result<NString> {
     unsafe { STRING_POOL.with(|pool| (*pool.get()).intern_ip4(reader)) }
 }
 #[inline(always)]

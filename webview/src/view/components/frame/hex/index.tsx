@@ -6,7 +6,7 @@ import { useStore } from "../../../store";
 import { useEffect, useState } from "react";
 
 interface Props {
-  cursor: Cursor;
+  cursor: Cursor | undefined;
 }
 
 function HexView(props: Props) {
@@ -16,11 +16,12 @@ function HexView(props: Props) {
   const request = useStore((state) => state.requestData);
 
   let selected: [number, number] | undefined = undefined;
-  const scope = props.cursor.scope;
+  const scope = props.cursor?.scope;
   let fetch = "";
   if (scope) {
-    fetch = `${scope.start}-${scope.size}`;
-    const inx = props.cursor.selected;
+    const size = scope.end - scope.start;
+    fetch = `${scope.start}-${size}`;
+    const inx = props.cursor?.selected;
     if (inx) {
       const start = Math.max(inx.start - scope.start, 0);
       selected = [start, inx.size];
@@ -28,11 +29,10 @@ function HexView(props: Props) {
   }
 
   useEffect(() => {
-    const scope = props.cursor.scope;
+    const scope = props.cursor?.scope;
     if (!scope) {
       return;
     }
-    console.log("fetch data");
     request(scope).then((rs: { data: Uint8Array }) => {
       const _bin = rs.data;
       if (_bin.length == 0) {

@@ -8,6 +8,7 @@ import {
   DataResponse,
   deserialize,
   PcapFile,
+  VRange,
 } from "../share/common";
 import { IFrameInfo, IListResult, IProgressStatus } from "../share/gen";
 import mitt from "mitt";
@@ -19,7 +20,7 @@ interface PcapState {
   frameSelect?: string;
   sendReady: () => void;
   request: <F>(data: any) => Promise<F>;
-  requestData: (data: { start: number; size: number }) => Promise<DataResponse>;
+  requestData: (data: VRange) => Promise<DataResponse>;
   // frameList: (page: number, size: number) => Promise<IListResult<IFrameInfo>>;
 }
 // const compute = (page: number, size: number): Pagination => {
@@ -36,10 +37,14 @@ const emitter = mitt();
 const doRequest = <F>(data: ComMessage<any>): Promise<F> => {
   emitMessage(data);
   const id = data.id;
-  return new Promise<F>((resolve, _) => {
+  return new Promise<F>((resolve, reject) => {
     emitter.on(id, (event: any) => {
       emitter.off(id);
-      resolve(event as F);
+      if (event == "error"){
+        reject("error");
+      } else {
+        resolve(event as F);
+      }
     });
   });
 };
@@ -61,12 +66,22 @@ export const useStore = create<PcapState>()((set) => {
         const progress = deserialize(body) as IProgressStatus;
         set((state) => ({ ...state, progress }));
         break;
+      // case ComType.FRAME_SCOPE_RES:
+      //   const range = body as VRange;
+      //   break;
       case ComType.FRAMES:
       case ComType.FRAMES_SELECT:
         emitter.emit(id, deserialize(body));
         break;
+      case ComType.FRAME_SCOPE_RES:
+        emitter.emit(id, body);
+        break;
       case ComType.RESPONSE:
         emitter.emit(id, body);
+        break;
+      case ComType.error:
+        emitter.emit(id, "error");
+        break;
     }
   });
   return {
@@ -77,10 +92,7 @@ export const useStore = create<PcapState>()((set) => {
       const req = new ComMessage(ComType.REQUEST, data);
       return doRequest<F>(req);
     },
-    requestData: (data: {
-      start: number;
-      size: number;
-    }): Promise<DataResponse> => {
+    requestData: (data: VRange): Promise<DataResponse> => {
       const req = new ComMessage(ComType.DATA, data);
       return doRequest<DataResponse>(req);
     },
