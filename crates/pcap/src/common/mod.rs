@@ -1,9 +1,9 @@
 use std::{cmp, collections::HashMap, hash::BuildHasherDefault, ops::Range, rc::Rc};
 
 use anyhow::{bail, Result};
-use concept::{Criteria, Field, FrameInfo, ListResult, ProgressStatus, TmpConnection};
+use concept::{Criteria, Field, FrameInfo, ListResult, ProgressStatus};
+use connection::{ConnectState, Connection, Endpoint, TCPStat, TmpConnection};
 use enum_def::{DataError, FileType, Protocol};
-use enum_dispatch::enum_dispatch;
 use io::{DataSource, MacAddress, Reader, IO};
 use rustc_hash::FxHasher;
 use serde_json::Error;
@@ -33,6 +33,7 @@ pub struct Frame {
     pub iplen: u16,
     pub source: NString,
     pub target: NString,
+    pub tcp_info: Option<ConnectState>,
     // pub element: Vec<FieldDef>,
 }
 
@@ -42,10 +43,6 @@ impl Frame {
     }
     pub fn range(&self) -> Option<Range<usize>>{
         self.range.clone()
-        // if let Some(r) = self.range.clone() {
-
-        // }
-        // None
     }
 }
 
@@ -56,14 +53,31 @@ pub struct Context {
     pub list: Vec<Frame>,
     pub counter: u32,
     pub ethernet: FastHashMap<u64, Rc<Ethernet>>,
+    pub connections: FastHashMap<(&'static str, u16, &'static str, u16), Connection>,
 }
 
 impl Context {
     pub fn new() -> Self {
         Self { ..Default::default() }
     }
-    pub fn get_connect(host1: String, port1: u16, host2: String, port2: u16) -> TmpConnection {
-        todo!()
+    pub fn get_connect(&mut self, host1:&'static str, port1: u16, host2: &'static str, port2: u16, stat: TCPStat) -> ConnectState {
+        let mut key = (host1, port1, host2, port2);
+        let mut reverse = true;
+
+        if !self.connections.contains_key(&key) {
+            key = (host2, port2, host1, port1);
+            reverse = false;
+        }
+
+        if self.connections.contains_key(&key) {
+            // 
+        } else {
+            let connection = Connection::new(Endpoint::new(host1, port1), Endpoint::new(host2, port2));
+            self.connections.insert(key, connection);
+        }
+        let conn = self.connections.get_mut(&key).unwrap();
+        let mut tmp_conn = TmpConnection::new(conn, reverse);
+        tmp_conn.update(&stat)
     }
 }
 
@@ -227,6 +241,8 @@ impl Instance {
             let proto: Protocol = link_type_map(&ctx.file_type, ctx.link_type, &mut _reader);
             frame.range = Some(range.clone());
             frame.head = proto;
+            frame.info.index = ctx.counter;
+            ctx.counter += 1;
             let mut _next = proto;
             loop {
                 match &_next {
@@ -275,8 +291,6 @@ impl Instance {
             // println!("proto: {}", _proto);
             // frame.children = Vec::new();
         }
-        frame.info.index = ctx.counter;
-        ctx.counter += 1;
         ctx.list.push(frame);
     }
     pub fn update(&mut self, data: Vec<u8>) -> Result<ProgressStatus> {
@@ -367,3 +381,4 @@ pub mod core;
 pub mod enum_def;
 pub mod io;
 pub mod macro_def;
+pub mod connection;

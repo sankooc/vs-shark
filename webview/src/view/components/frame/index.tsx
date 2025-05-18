@@ -18,7 +18,7 @@ function FrameList() {
   const _request = useStore((state) => state.request);
   const [page, setPage] = useState<number>(1);
   const [select, setSelect] = useState<number>(-1);
-  const [cursor, setCursor] = useState<Cursor>({});
+  const [cursor, setCursor] = useState<Cursor|undefined>();
   const [result, setResult] = useState<IListResult<IFrameInfo>>({
     start: 0,
     total: 0,
@@ -97,12 +97,6 @@ function FrameList() {
   ];
   const onSelect = (_item: IFrameInfo): void => {
     setSelect(_item.index);
-    // _request<IField[]>({catelog: "frame", type: "select", param: _item}).then((rs) => {
-    //   console.log(rs);
-    // })
-    // setIndex(item.index);
-    // emitMessage(new ComMessage('fields', item.index - 1));
-    // setHex(new HexV(new Uint8Array()));
   };
   const getStyle = (item: any) => {
     switch (item.status) {

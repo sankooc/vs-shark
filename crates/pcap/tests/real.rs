@@ -4,8 +4,9 @@ mod tests {
     use std::{
         fs::File, io::{BufReader, Read, Seek, SeekFrom}, mem, ops::Range, path::Path
     };
+    use std::time::Instant;
 
-    use pcap::{cache::intern, common::{enum_def::Protocol, Instance}};
+    use pcap::{cache::intern, common::{connection::TcpFlagField, enum_def::Protocol, Instance}};
     fn _parse(fname: &str) -> std::io::Result<Instance> {
         let mut ins = Instance::new();
         let path = Path::new(fname);
@@ -17,6 +18,7 @@ mod tests {
         let mut buffer = Vec::with_capacity(1024 * 1024);
         buffer.resize(1024 * 1024, 0);
 
+        let start = Instant::now();
         loop {
             let n = reader.read(&mut buffer)?;
             if n == 0 {
@@ -24,6 +26,8 @@ mod tests {
             }
             ins.update(buffer[..n].to_vec()).unwrap();
         }
+        let duration = start.elapsed();
+        println!("Elapsed: {} nanoseconds", duration.as_millis());
         Ok(ins)
     }
     
@@ -37,7 +41,7 @@ mod tests {
         Ok(buffer)
     }
     #[test]
-    fn basic() -> std::io::Result<()> {
+    fn basic() -> std::io::Result<()> { 
         let fname = "../../../pcaps/11.pcapng";
         // let fname = "../../../pcaps/c1.pcap";
         // let fname = "../../../pcaps/demo.pcapng";
@@ -57,12 +61,13 @@ mod tests {
         // print!("--finish-");
         let ctx = _ins.get_context();
         println!("total frames {}", ctx.counter);
-        let f = _ins.frame(0).unwrap();
+        let index = 13;
+        let f = _ins.frame(index).unwrap();
         let range = f.range().unwrap();
 
         println!("range  {} - {}", range.start, range.end);
         let data = _seek(fname, range).unwrap();
-        let json = _ins.select_frame(0, data).unwrap();
+        let json = _ins.select_frame(index, data).unwrap();
         crate::tc::print_fields(&json);
         // println!("json {}", json);
         Ok(())
@@ -86,5 +91,11 @@ mod tests {
         println!("----------{}", ptoro);
         println!("----------{:?}", (ptoro as i32));
         println!("Size of Protocol: {} bytes", mem::size_of::<Protocol>()); 
+
+        println!("ack => {}", TcpFlagField::from(0x0010).list_str());
+        println!("push ack => {}", TcpFlagField::from(0x0018).list_str());
+        println!("fin ack => {}", TcpFlagField::from(0x0011).list_str());
+        println!("syn ack => {}", TcpFlagField::from(0x0012).list_str());
+        println!("ret ack => {}", TcpFlagField::from(0x0014).list_str());
     }
 }

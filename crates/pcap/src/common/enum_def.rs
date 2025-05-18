@@ -66,3 +66,35 @@ pub enum Protocol {
 // pub enum FieldDef {
 //     UNKOWN(FieldElement),
 // }
+
+#[derive(Clone)]
+pub enum TCPDetail {
+    KEEPALIVE,
+    NOPREVCAPTURE,
+    RETRANSMISSION,
+    DUMP,
+    RESET,
+    NEXT,
+}
+
+
+#[derive(Display, Debug, Clone, Copy)]
+pub enum TCPFLAG {
+    FIN = 0,
+    SYNC,
+    RESET,
+    PUSH,
+    ACK,
+    URGENT,
+    ECN,
+    CWR,
+    AccurateEcn,
+    REVERVED,
+}
+
+#[derive(Default, serde::Serialize)]
+pub enum PacketStatus {
+    #[default]
+    NORNAL,
+    ERROR,
+}

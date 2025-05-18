@@ -8,22 +8,6 @@ const worker = new Worker(new URL("./worker.ts", import.meta.url), {
   type: "module",
 });
 
-// class Client extends PCAPClient {
-//   data?: Uint8Array;
-//   iframe?: HTMLIFrameElement;
-//   constructor() {
-//     super();
-//   }
-//   setIframe(iframe: HTMLIFrameElement) {
-//     this.iframe = iframe;
-//   }
-//   printLog(log: ComLog): void {
-//     console.log(log.level, log.msg);
-//   }
-//   emitMessage(msg: ComMessage<any>): void {
-//     this.iframe?.contentWindow?.postMessage(msg, "*");
-//   }
-// }
 const _log = console.log.bind(console);
 
 interface PcapState {

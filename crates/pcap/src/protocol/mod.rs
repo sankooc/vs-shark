@@ -1,13 +1,19 @@
 use anyhow::Result;
 use def::DefaultParser;
 
-use crate::{cache::intern, common::{
-    concept::Field, enum_def::{ FileType, Protocol}, io::Reader, Context, Frame
-}};
+use crate::{
+    cache::intern,
+    common::{
+        concept::Field,
+        enum_def::{FileType, Protocol},
+        io::Reader,
+        Context, Frame,
+    },
+};
 
+pub mod def;
 pub mod link;
 pub mod network;
-pub mod def;
 pub mod transport;
 
 pub fn parse(protocol: Protocol, ctx: &mut Context, frame: &mut Frame, reader: &mut crate::common::io::Reader) -> Result<Protocol> {
@@ -18,6 +24,7 @@ pub fn parse(protocol: Protocol, ctx: &mut Context, frame: &mut Frame, reader: &
         Protocol::Ieee1905a => link::ieee1905a::Visitor::parse(ctx, frame, reader),
         Protocol::IP4 => network::ip4::Visitor::parse(ctx, frame, reader),
         Protocol::IP6 => network::ip6::Visitor::parse(ctx, frame, reader),
+        Protocol::TCP => transport::tcp::Visitor::parse(ctx, frame, reader),
         // "arp" => network::arp::Visitor::parse(frame, reader),
         // "icmp" => network::icmp::V4Visitor::parse(frame, reader),
         _ => {
@@ -33,6 +40,7 @@ pub fn detail(protocol: Protocol, field: &mut Field, ctx: &Context, frame: &Fram
         Protocol::Ieee1905a => link::ieee1905a::Visitor::detail(field, ctx, frame, reader),
         Protocol::IP4 => network::ip4::Visitor::detail(field, ctx, frame, reader),
         Protocol::IP6 => network::ip6::Visitor::detail(field, ctx, frame, reader),
+        Protocol::TCP => transport::tcp::Visitor::detail(field, ctx, frame, reader),
         _ => {
             field.summary = intern(format!("Unimplement Protocol: {}", protocol));
             Ok(Protocol::None)
@@ -40,7 +48,6 @@ pub fn detail(protocol: Protocol, field: &mut Field, ctx: &Context, frame: &Fram
         }
     }
 }
-
 
 pub fn link_type_map(file_type: &FileType, link_type: u32, reader: &mut Reader) -> Protocol {
     match link_type {

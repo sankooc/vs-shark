@@ -1,9 +1,6 @@
 use serde::Serialize;
 
-use super::NString;
-
-
-
+use super::{enum_def::PacketStatus, NString};
 
 pub struct Criteria {
     // pub criteria: String,
@@ -37,7 +34,6 @@ impl<T> ListResult<T> {
     }
 }
 
-
 #[derive(Serialize, Default)]
 pub struct FrameInfo {
     pub index: u32,
@@ -48,29 +44,7 @@ pub struct FrameInfo {
     pub len: u32,
     pub irtt: u16,
     pub info: NString,
-    pub status: NString,
-}
-
-pub enum TCPFLAG {
-    FIN = 0,
-    SYN,
-    RESET,
-    PUSH,
-    ACKNOWLEDGMENT,
-    URGENT,
-    ECN,
-    CWR,
-    AccurateEcn,
-    REVERVED,
-}
-pub struct TcpFlagField{
-    data: u16
-}
-
-impl TcpFlagField {
-    pub fn new(data: u16) -> Self {
-        Self { data }
-    }
+    pub status: PacketStatus,
 }
 
 
@@ -110,44 +84,4 @@ impl Field {
     pub fn with_children_reader(reader: &super::io::Reader) -> Field {
         Field::with_children("", reader.cursor as u64, 0)
     }
-}
-
-
-
-pub struct Endpoint {
-    host: String,
-    port: u16
-}
-impl Endpoint {
-    pub fn update(&self, stat: TCPStat) {
-        // todo
-    }
-}
-
-pub struct Connection {
-    primary:  Endpoint,
-    second:  Endpoint,
-}
-
-pub struct TmpConnection{
-    conn: Connection,
-    reverse: bool,
-}
-
-impl TmpConnection {
-    pub fn update(&self, stat: TCPStat) {
-        if self.reverse {
-            self.conn.primary.update(stat);
-        } else {
-            self.conn.second.update(stat);
-        }
-    }
-}
-
-pub struct TCPStat{
-    sequence: u32,
-    ack: u32,
-    state: TcpFlagField,
-    window: u16,
-    urgent: u16
 }

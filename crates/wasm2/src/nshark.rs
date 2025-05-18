@@ -2,7 +2,7 @@ use js_sys::Uint8Array;
 use pcap::common::{concept::Criteria, Instance};
 use wasm_bindgen::prelude::*;
 
-use crate::entity::Conf;
+use crate::entity::{Conf, Range};
 
 #[wasm_bindgen]
 pub struct WContext {
@@ -39,6 +39,23 @@ impl WContext {
             "frame" => self.ctx.frames_list_json(cri).unwrap(),
             _ => "{}".into()
         }
+    }
+
+    #[wasm_bindgen]
+    pub fn frame_range(&self, index: usize) -> Range {
+        if let Some(f) = self.ctx.frame(index) {
+            if let Some(range) = f.range() {
+                return range.into();
+            }
+        }
+        Range::empty()
+        // match catelog.as_str() {
+        //     "frame" => {
+        //         let slice = s.to_vec();
+        //         self.ctx.select_frame_json(index, slice).unwrap()
+        //     }, 
+        //     _ => "{}".into()
+        // }
     }
 
     #[wasm_bindgen]

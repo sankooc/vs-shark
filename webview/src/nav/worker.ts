@@ -1,5 +1,5 @@
 import { PCAPClient } from "../share/client";
-import { ComLog, ComMessage, ComType } from "../share/common";
+import { ComLog, ComMessage, ComType, VRange } from "../share/common";
 import init from "rshark";
 import { _log } from "../view/util";
 const ready = init();
@@ -11,6 +11,10 @@ const ctx: Worker = self as any;
 
 
 class Client extends PCAPClient {
+  async pickData(start: number, end: number): Promise<Uint8Array> {
+    const _data = client.data!.slice(start, end);
+    return _data;
+  }
   emitMessage(msg: ComMessage<any>): void {
     ctx.postMessage(msg);
   }
@@ -31,7 +35,9 @@ ctx.addEventListener("message", (event: MessageEvent<any>) => {
   const id = event.data?.id;
   const type = event.data?.type;
   if (type == ComType.DATA && id) {
-    const { start, size } = event.data.body;
+    const r = event.data.body as VRange;
+    const start = r.start;
+    const size = r.end - r.start;
     if (start >= 0 && size > 0 && client.data!.length > start + size) {
       const _data = client.data!.slice(start, start + size);
       ctx.postMessage({ type: ComType.RESPONSE, id, body: { data: _data } }, [
