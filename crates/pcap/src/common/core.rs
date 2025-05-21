@@ -169,4 +169,10 @@ impl Context {
         bail!("c-1-0")
         
     }
+    pub fn get_ip4(&self, frame: &Frame) -> Option<&(Ipv4Addr, Ipv4Addr)>{
+        if let Some(refer) = &frame.ipv4 {
+            return self.ipv4map.get(refer)
+        }
+        None
+    }
 }

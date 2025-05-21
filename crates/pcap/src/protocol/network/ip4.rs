@@ -22,7 +22,7 @@ impl Visitor {
     pub fn info(ctx: &Context, frame: &Frame) -> Option<String> {
         if let Some(key) = frame.ptr {
             if let Some((source, target)) = ctx.ipv4map.get(&key) {
-                return Some(format!("Internet Protocol Version 4, Src: {}, Dst: {}", source, target))
+                return Some(format!("Internet Protocol Version 4, Src: {}, Dst: {}", source, target));
             }
         }
         None
@@ -45,8 +45,6 @@ impl Visitor {
         if let None = ctx.ipv4map.get(&key) {
             let source = Ipv4Addr::from(<[u8; 4]>::try_from(&_data[..4])?);
             let target = Ipv4Addr::from(<[u8; 4]>::try_from(&_data[4..])?);
-            source.to_string();
-            target.to_string();
             ctx.ipv4map.insert(key, (source, target));
         }
         let ext = head_len - 5;
@@ -62,11 +60,6 @@ impl Visitor {
             }
             frame.iplen = total_len - (_start - _stop) as u16;
         }
-        // frame.source = source;
-        // frame.target = target;
-        // frame.info.source = source;
-        // frame.info.dest = target;
-        // frame.info.info = intern(format!("Internet Protocol Version 4, Src: {}, Dst: {}", source, target));
 
         Ok(ip4_mapper(protocol_type))
     }
@@ -84,9 +77,9 @@ impl Visitor {
         read_field_format!(list, reader, reader.read8()?, "Time To Live: {}");
         let protocol_type = read_field_format_fn!(list, reader, reader.read8()?, t_protocol);
         read_field_format!(list, reader, reader.read16(true)?, "Header Checksum: {}");
-        reader.forward(8);
-        // let source = read_field_format!(list, reader, intern_ip4(reader)?, "Source Address: {}");
-        // let target = read_field_format!(list, reader, intern_ip4(reader)?, "Destination Address: {}");
+
+        let source = read_field_format!(list, reader, reader.read_ip4()?, "Source Address: {}");
+        let target = read_field_format!(list, reader, reader.read_ip4()?, "Destination Address: {}");
         let ext = head_len - 5;
         if ext > 0 {
             reader.forward((ext * 4) as usize);
@@ -101,7 +94,7 @@ impl Visitor {
             // let payload_len = Some(total_len - (_start - _stop) as u16);
         }
 
-        // field.summary = ctx.cache_str(format!("Internet Protocol Version 4, Src: {}, Dst: {}", source, target));
+        field.summary = format!("Internet Protocol Version 4, Src: {}, Dst: {}", source, target);
         field.children = Some(list);
         Ok(ip4_mapper(protocol_type))
     }
