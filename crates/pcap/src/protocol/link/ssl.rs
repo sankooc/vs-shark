@@ -13,6 +13,8 @@ use crate::{
 };
 use anyhow::Result;
 
+
+const SUMMARY: &'static str = "Linux cooked capture v1";
 pub struct Visitor;
 
 pub fn typedesc(_type: u16) -> String {
@@ -28,29 +30,28 @@ fn link_address_type(addr_type: u16) -> String {
 }
 
 impl Visitor {
-    pub fn parse(_: &mut Context, frame: &mut Frame, reader: &mut Reader) -> Result<Protocol> {
+    pub fn info(_: &Context, _: &Frame) -> Option<String> {
+        Some(SUMMARY.to_string())
+    }
+    pub fn parse(_: &mut Context, _: &mut Frame, reader: &mut Reader) -> Result<Protocol> {
         reader.read16(true)?;
         reader.read16(true)?;
         let _len = reader.read16(true)?;
-        let source = read_mac(reader)?;
+        let _source = read_mac(reader.slice(6, true)?);
         reader.forward(2);
         let ptype = reader.read16(true)?;
-        // let info = intern("Linux cooked capture v1".to_string());
-        // frame.info.info = info;
-        // frame.info.source = source;
 
         Ok(enthernet_protocol_mapper(ptype))
     }
-    pub fn detail(field: &mut Field, ctx: &Context, _: &Frame, reader: &mut Reader) -> Result<Protocol> {
+    pub fn detail(field: &mut Field, _: &Context, _: &Frame, reader: &mut Reader) -> Result<Protocol> {
         let mut list = vec![];
         let _type = read_field_format_fn!(list, reader, reader.read16(true)?, typedesc);
         read_field_format_fn!(list, reader, reader.read16(true)?, link_address_type);
         read_field_format!(list, reader, reader.read16(true)?, "Link-layer address length: {}");
-        read_field_format!(list, reader, read_mac(reader)?, "Source MAC: {}");
+        read_field_format!(list, reader, read_mac(reader.slice(6, true)?), "Source MAC: {}");
         reader.forward(2);
         let ptype = read_field_format_fn!(list, reader, reader.read16(true)?, ptype_str);
-        // let info = ctx.cache_str("Linux cooked capture v1".to_string());
-        // field.summary = info;
+        field.summary = SUMMARY.to_string();
         field.children = Some(list);
         Ok(enthernet_protocol_mapper(ptype))
     }

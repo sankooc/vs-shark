@@ -1,16 +1,16 @@
 use crate::common::io::Reader;
 
-macro_rules! chc {
-    ($reader:expr, $byte_slice:expr) => {
-        {
-            if let Ok(stream) = $reader.preview($byte_slice.len()) {
-                stream == $byte_slice
-            } else {
-                false
-            }
-        }
-    };
-}
+// macro_rules! chc {
+//     ($reader:expr, $byte_slice:expr) => {
+//         {
+//             if let Ok(stream) = $reader.preview($byte_slice.len()) {
+//                 stream == $byte_slice
+//             } else {
+//                 false
+//             }
+//         }
+//     };
+// }
 
 pub fn detect<'a>(reader: &'a Reader) -> bool {
     if reader.left() < 8 {

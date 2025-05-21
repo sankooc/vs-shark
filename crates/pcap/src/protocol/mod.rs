@@ -1,8 +1,6 @@
 use anyhow::{bail, Result};
-use def::DefaultParser;
 
 use crate::{
-    cache::intern,
     common::{
         concept::Field, core::Context, enum_def::{FileType, Protocol}, io::Reader, Frame
     },
@@ -41,7 +39,7 @@ pub fn detail(protocol: Protocol, field: &mut Field, ctx: &Context, frame: &Fram
         Protocol::IP6 => network::ip6::Visitor::detail(field, ctx, frame, reader),
         Protocol::TCP => transport::tcp::Visitor::detail(field, ctx, frame, reader),
         _ => {
-            field.summary = intern(format!("Unimplement Protocol: {}", protocol));
+            field.summary = format!("Unimplement Protocol: {}", protocol);
             Ok(Protocol::None)
             // return DefaultParser::detail(field, ctx, frame, reader);
         }

@@ -22,21 +22,23 @@ type FastHashMap<K, V> = HashMap<K, V, BuildHasherDefault<FxHasher>>;
 
 pub type NString = &'static str;
 
+// pub const EP: String = String::from("");
+
 pub fn range64(range: Range<usize>) -> Range<u64> {
     range.start as u64..range.end as u64
 }
 
-pub fn quick_hash(data: &[u8]) -> u64 {
+pub fn quick_hash<T>(data: T) -> u64 where T: Hash {
     let mut hasher = FxHasher::default();
     data.hash(&mut hasher);
     hasher.finish()
 }
 
-fn quick_hash_str(s: &str) -> u64 {
-    let mut hasher = FxHasher::default();
-    s.hash(&mut hasher);
-    hasher.finish()
-}
+// fn quick_hash_str(s: &str) -> u64 {
+//     let mut hasher = FxHasher::default();
+//     s.hash(&mut hasher);
+//     hasher.finish()
+// }
 
 // pub trait FrameRefer {
 //     fn info(&self) -> String;
@@ -92,14 +94,14 @@ impl Frame {
 }
 
 pub struct EthernetCache {
-    pub source: [u8; 6],
-    pub target: [u8; 6],
+    pub source: MacAddress,
+    pub target: MacAddress,
     // pub info: NString,
     pub ptype: u16,
 }
 
 impl EthernetCache {
-    pub fn new(source: [u8; 6], target: [u8; 6], ptype: u16) -> Self {
+    pub fn new(source: MacAddress, target: MacAddress, ptype: u16) -> Self {
         Self { source, target, ptype }
     }
 }
@@ -287,7 +289,7 @@ impl Instance {
                             break;
                         }
                         _ => {
-                            let mut f = Field::empty();
+                            let mut f = Field::default();
                             f.start = reader.cursor as u64;
                             if let Ok(next) = detail(_next, &mut f, &self.ctx, &frame, &mut reader) {
                                 f.size = (reader.cursor as u64) - f.start;

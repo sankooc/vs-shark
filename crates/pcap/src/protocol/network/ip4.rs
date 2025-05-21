@@ -45,6 +45,8 @@ impl Visitor {
         if let None = ctx.ipv4map.get(&key) {
             let source = Ipv4Addr::from(<[u8; 4]>::try_from(&_data[..4])?);
             let target = Ipv4Addr::from(<[u8; 4]>::try_from(&_data[4..])?);
+            source.to_string();
+            target.to_string();
             ctx.ipv4map.insert(key, (source, target));
         }
         let ext = head_len - 5;
@@ -68,7 +70,7 @@ impl Visitor {
 
         Ok(ip4_mapper(protocol_type))
     }
-    pub fn detail(field: &mut Field, ctx: &Context, _: &Frame, reader: &mut Reader) -> Result<Protocol> {
+    pub fn detail(field: &mut Field, _: &Context, _: &Frame, reader: &mut Reader) -> Result<Protocol> {
         let _start = reader.left();
         let mut list = vec![];
         let head = reader.read8()?;

@@ -1,5 +1,4 @@
 use crate::{
-    cache::intern,
     common::{
         concept::Field,
         connection::{TCPStat, TcpFlagField},
@@ -60,15 +59,15 @@ impl Visitor {
         let range = reader.cursor..reader.cursor + left_size;
         let tcp_state = TCPStat::new(index, sequence, ack, crc, state, left_size as u16);
 
-        let mut rely = ctx.get_connect(frame, source_port, target_port, tcp_state, ds, range)?;
-
-        rely.flag_bit = flag_bit;
-        frame.info.status = match &rely.status {
-            TCPDetail::NEXT | TCPDetail::KEEPALIVE => PacketStatus::NORNAL,
-            _ => PacketStatus::ERROR,
-        };
-        frame.ports = Some((source_port, target_port));
-        frame.tcp_info = Some(rely);
+        if let Ok(mut rely) = ctx.get_connect(frame, source_port, target_port, tcp_state, ds, range) {
+            rely.flag_bit = flag_bit;
+            frame.info.status = match &rely.status {
+                TCPDetail::NEXT | TCPDetail::KEEPALIVE => PacketStatus::NORNAL,
+                _ => PacketStatus::ERROR,
+            };
+            frame.ports = Some((source_port, target_port));
+            frame.tcp_info = Some(rely);
+        }
         Ok(Protocol::None)
     }
     pub fn detail(field: &mut Field, _: &Context, frame: &Frame, reader: &mut Reader) -> Result<Protocol> {
@@ -82,7 +81,7 @@ impl Visitor {
         let sequence = reader.read32(true)?;
         field_back_format!(list, reader, 4, format!("Sequence Number: {}    (relative sequence number)", info.seq));
         field_back_format!(list, reader, 4, format!("Sequence Number (raw): {}", sequence));
-        list.push(Field::label(intern(format!("[Next Sequence Number: {}    (relative sequence number)]", info.next)), 0, 0));
+        list.push(Field::label(format!("[Next Sequence Number: {}    (relative sequence number)]", info.next), 0, 0));
         let ack = reader.read32(true)?;
         field_back_format!(list, reader, 4, format!("Acknowledgment Number: {}    (relative ack number)", info.ack));
         field_back_format!(list, reader, 4, format!("Acknowledgment Number (raw): {}", ack));
@@ -101,10 +100,7 @@ impl Visitor {
             field_back_format!(list, reader, payload_len as u64, format!("TCP payload ({} bytes)", payload_len));
         }
 
-        // field.summary = intern(format!(
-        //     "Transmission Control Protocol, Src Port: {}, Dst Port: {}, Len: {}",
-        //     source_port, target_port, info.len
-        // ));
+        field.summary = format!("Transmission Control Protocol, Src Port: {}, Dst Port: {}, Len: {}", source_port, target_port, info.len);
         field.children = Some(list);
         Ok(Protocol::None)
     }

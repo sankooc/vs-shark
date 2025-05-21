@@ -25,7 +25,7 @@ mod unit {
         }
         {
             let mut reader = Reader::new(&ds);
-            let mut f = Field::empty();
+            let mut f = Field::default();
             let next = protocol::link::ethernet::EthernetVisitor::detail(&mut f, &mut cx, &mut frame, &mut reader)?;
             assert!(matches!(next, Protocol::IP4));
             print_field(1,&f);
@@ -44,7 +44,7 @@ mod unit {
         }
         {
             let mut reader = Reader::new(&ds);
-            let mut f = Field::empty();
+            let mut f = Field::default();
             let next = protocol::link::ssl::Visitor::detail(&mut f, &mut cx, &mut frame, &mut reader)?;
             assert!(matches!(next, Protocol::IP4));
             print_field(1,&f);
@@ -61,7 +61,7 @@ mod unit {
         }
         {
             let mut reader = Reader::new(&ds);
-            let mut f = Field::empty();
+            let mut f = Field::default();
             let next = protocol::link::ieee1905a::Visitor::detail(&mut f, &mut cx, &mut frame, &mut reader)?;
             assert!(matches!(next, Protocol::None));
             print_field(1,&f);

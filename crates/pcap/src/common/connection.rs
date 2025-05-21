@@ -138,7 +138,7 @@ impl TCPSegment {
 
 #[derive(Default)]
 pub struct Endpoint {
-    host: &'static str,
+    host: String,
     port: u16,
     pub status: TCPConnectStatus,
     seq: u32,
@@ -151,7 +151,7 @@ pub struct Endpoint {
     _segments: Option<Vec<TCPSegment>>,
 }
 impl Endpoint {
-    pub fn new(host: &'static str, port: u16) -> Self {
+    pub fn new(host: String, port: u16) -> Self {
         let mut _self = Self::default();
         _self.host = host;
         _self.port = port;
@@ -323,7 +323,7 @@ impl<'a> TmpConnection<'a> {
                 if rs.status == TCPDetail::NEXT {
                     if rs.len > 0 {
                         let reader = Reader::new_sub(data_source, range.clone())?;
-                        if let Some(protocol) = &self.conn.protocol {
+                        if let Some(_protocol) = &self.conn.protocol {
                         } else {
                             if protocol::application::http::detect(&reader) {
                                 self.conn.protocol = Some(TCPProtocol::HTTP);
@@ -350,7 +350,7 @@ impl<'a> TmpConnection<'a> {
 }
 
 pub struct TCPStat {
-    index: u32,
+    pub index: u32,
     sequence: u32,
     ack: u32,
     crc: u16,

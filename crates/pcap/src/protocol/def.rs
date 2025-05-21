@@ -13,7 +13,7 @@ impl DefaultParser {
         Ok(Protocol::None)
     }
     pub fn detail(field: &mut Field, _: &Context, _: &Frame, _: &mut Reader) -> Result<Protocol> {
-        field.summary = "parse failed";
+        field.summary = String::from("parse failed");
         // TODO 
         Ok(Protocol::None)
     }

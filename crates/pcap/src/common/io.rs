@@ -1,9 +1,9 @@
-use std::{cmp, hash::{Hash, Hasher}, net::Ipv6Addr, ops::Range, ptr };
+use std::{cmp, hash::{Hash, Hasher}, ops::Range, ptr };
 
 use ahash::AHasher;
 use anyhow::{bail, Ok, Result};
 
-use crate::{cache::{intern_mac}, common::enum_def::DataError};
+use crate::{common::enum_def::DataError};
 
 use super::{concept::ProgressStatus, NString};
 
@@ -296,11 +296,8 @@ impl Reader<'_> {
 }
 
 
-pub fn read_mac(reader: &mut Reader) -> Result<NString> {
-    let data = reader.slice(6, true)?;
-    intern_mac(data)
-    // let str = format!("{:02x?}:{:02x?}:{:02x?}:{:02x?}:{:02x?}:{:02x?}", data[0],data[1],data[2],data[3],data[4],data[5]);
-    // Ok(intern(str))
+pub fn read_mac(data: &[u8]) -> String {
+    format!("{:02x?}:{:02x?}:{:02x?}:{:02x?}:{:02x?}:{:02x?}", data[0],data[1],data[2],data[3],data[4],data[5])
 }
 
 
@@ -329,6 +326,20 @@ impl std::fmt::Display for IP6 {
 
 pub struct MacAddress {
     pub data: [u8; 6],
+}
+
+impl From<[u8; 6]> for MacAddress {
+    fn from(data: [u8; 6]) -> Self {
+        Self{data}
+    }
+}
+
+impl std::fmt::Display for MacAddress {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let data = &self.data;
+        // read_mac(data);
+        f.write_str(&read_mac(data))
+    }
 }
 // fn read_ipv4(reader: &mut Reader) -> Result<std::net::Ipv4Addr> {
 //     let len = 4;

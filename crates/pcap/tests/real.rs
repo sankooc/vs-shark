@@ -6,7 +6,7 @@ mod tests {
     };
     use std::time::Instant;
 
-    use pcap::{cache::intern, common::{concept::Criteria, connection::TcpFlagField, enum_def::Protocol, Instance}};
+    use pcap::{ common::{connection::TcpFlagField, enum_def::Protocol, Instance}};
     fn _parse(fname: &str) -> std::io::Result<Instance> {
         let mut ins = Instance::new();
         let path = Path::new(fname);
@@ -44,7 +44,7 @@ mod tests {
     }
     #[test]
     fn basic() -> std::io::Result<()> { 
-        let fname = "../../../pcaps/11.pcapng";
+        // let fname = "../../../pcaps/11.pcapng";
         // let fname = "../../../pcaps/c1.pcap";
         // let fname = "../../../pcaps/demo.pcapng";
         // let fname = "../../../pcaps/demo.pcap";
@@ -59,7 +59,7 @@ mod tests {
         // let fname = "../../../pcaps/pppoe.pcap";
         // let fname = "../../../pcaps/sip.pcap";
         // let fname = "../../../pcaps/slow.pcap";
-        // let fname = "../../../pcaps/big-2.pcap";
+        let fname = "../../../pcaps/big-2.pcap";
         let _ins = _parse(fname)?;
         // print!("--finish-");
         let ctx = _ins.get_context();
@@ -69,11 +69,11 @@ mod tests {
         println!("ipv6 cache {}", ctx.ipv6map.len());
 
 
-        {
-            let json = _ins.frames_list_json(Criteria{ start: 0, size: 10})?;
-            println!("{}", json);
-            // return;
-        }
+        // {
+        //     let json = _ins.frames_list_json(Criteria{ start: 0, size: 10})?;
+        //     println!("{}", json);
+        //     // return;
+        // }
         // {
         //     let index = 13;
         //     let f = _ins.frame(index).unwrap();
@@ -87,17 +87,17 @@ mod tests {
         Ok(())
     }
 
-    #[test]
-    fn pooltest() {
-        let a1 = format!("{}-1k", "test");
-        let a2 = format!("{}-1k", "test");
+    // #[test]
+    // fn pooltest() {
+    //     let a1 = format!("{}-1k", "test");
+    //     let a2 = format!("{}-1k", "test");
         
-        println!("original: {:p} - {:p}", a1.as_ptr(), a2.as_ptr());
-        println!("reference: {:p} - {:p}", (&a1).as_ptr(), (&a2).as_ptr());
-        let c1 = intern(a1);
-        let c2 = intern(a2);
-        println!("cached: {:p} - {:p}", c1.as_ptr(), c2.as_ptr());
-    }
+    //     println!("original: {:p} - {:p}", a1.as_ptr(), a2.as_ptr());
+    //     println!("reference: {:p} - {:p}", (&a1).as_ptr(), (&a2).as_ptr());
+    //     let c1 = intern(a1);
+    //     let c2 = intern(a2);
+    //     println!("cached: {:p} - {:p}", c1.as_ptr(), c2.as_ptr());
+    // }
 
     #[test]
     fn pooltest2() {
