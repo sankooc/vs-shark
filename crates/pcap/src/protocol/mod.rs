@@ -1,16 +1,14 @@
-use anyhow::Result;
+use anyhow::{bail, Result};
 use def::DefaultParser;
 
 use crate::{
     cache::intern,
     common::{
-        concept::Field,
-        enum_def::{FileType, Protocol},
-        io::Reader,
-        Context, Frame,
+        concept::Field, core::Context, enum_def::{FileType, Protocol}, io::Reader, Frame
     },
 };
 
+pub mod application;
 pub mod def;
 pub mod link;
 pub mod network;
@@ -28,7 +26,8 @@ pub fn parse(protocol: Protocol, ctx: &mut Context, frame: &mut Frame, reader: &
         // "arp" => network::arp::Visitor::parse(frame, reader),
         // "icmp" => network::icmp::V4Visitor::parse(frame, reader),
         _ => {
-            return DefaultParser::parse(frame, reader);
+            bail!("finish");
+            // return DefaultParser::parse(frame, reader);
         }
     }
 }

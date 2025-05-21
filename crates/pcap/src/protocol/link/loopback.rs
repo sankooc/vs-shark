@@ -1,4 +1,4 @@
-use crate::{common::{concept::Field, enum_def::Protocol, io::Reader, Context, Frame}, read_field_format};
+use crate::{common::{concept::Field, enum_def::Protocol, io::Reader, core::Context, Frame}, read_field_format};
 use anyhow::Result;
 
 pub struct Visitor {}
@@ -6,7 +6,7 @@ pub struct Visitor {}
 impl Visitor {
     pub fn parse(_: &mut Context, frame: &mut Frame, reader: &mut Reader) -> Result<Protocol> {
         reader.read32(false)?;
-        frame.info.info = "Null/Loopback";
+        // frame.info.info = "Null/Loopback";
         let _next = reader.next()?;
         if _next == 0x45 {
             Ok(Protocol::IP4)

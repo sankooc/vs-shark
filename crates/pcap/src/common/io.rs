@@ -1,9 +1,9 @@
-use std::{cmp, hash::{Hash, Hasher}, net::Ipv6Addr, ops::Range };
+use std::{cmp, hash::{Hash, Hasher}, net::Ipv6Addr, ops::Range, ptr };
 
 use ahash::AHasher;
 use anyhow::{bail, Ok, Result};
 
-use crate::{cache::intern, common::enum_def::DataError};
+use crate::{cache::{intern_mac}, common::enum_def::DataError};
 
 use super::{concept::ProgressStatus, NString};
 
@@ -58,7 +58,14 @@ impl DataSource {
         }
         bail!(DataError::BitSize);
     }
-    // 追加数据
+    pub fn data(&self, cursor: usize) -> &[u8] {
+        let start: usize = self.range.start;
+        let mut _offset = 0;
+        if cursor >= start {
+            _offset = cursor - start;
+        }
+        &self.data[_offset..]
+    }
     #[inline(always)]
     pub fn update(&mut self, data: Vec<u8>) {
         self.data.extend(data);
@@ -110,25 +117,55 @@ impl<'a> Reader<'a> {
         let cursor = range.start;
         Self { data, range, cursor }
     }
-    pub fn new_sub(data: &'a DataSource, range: Range<usize>) -> Self {
+    pub fn new_sub(data: &'a DataSource, range: Range<usize>) -> Result<Self> {
         let cursor = range.start;
-        Self { data, range, cursor }
+        if !data.range.contains(&cursor) {
+            bail!(DataError::BitSize)
+        }
+        if data.range.end < range.end {
+            bail!(DataError::BitSize)
+
+        }
+        Ok(Self { data, range, cursor })
     }
     pub fn _slice(&self, range: Range<usize>) -> Result<&[u8]> {
         self.data.slice(range)
     }
+
+    pub fn preview(&self, len: usize) -> Result<&[u8]> {
+        self._slice( self.cursor..self.cursor + len)
+    }
+    pub fn ds(&self) -> &DataSource {
+        self.data
+    }
 }
 
 impl Reader<'_> {
-    pub fn create_child_reader(&mut self, len: usize) -> Result<Self> {
-        if self.left() < len {
+    // pub fn create_child_reader(&mut self, len: usize) -> Result<Self> {
+    //     if self.left() < len {
+    //         bail!(DataError::BitSize)
+    //     }
+    //     let ds = self.data;
+    //     let range = self.range.start..self.range.start + len;
+    //     self.forward(len);
+    //     Ok(Self { data: ds, range, cursor: self.range.start })
+    // }
+
+    
+    pub fn slice_as_reader(&mut self, len: usize) -> Result<Self> {
+        if self.forward(len) {
+            let range = self.cursor-len..self.cursor;
+            Ok(Self { data: self.data, range, cursor: self.cursor-len })
+        } else {
             bail!(DataError::BitSize)
         }
-        let ds = self.data;
-        let range = self.range.start..self.range.start + len;
-        self.forward(len);
-        Ok(Self { data: ds, range, cursor: self.range.start })
     }
+    pub fn refer(&self) -> Result<&[u8]>{
+        self.data.slice(self.range.clone())
+    }
+    // pub fn create_range_reader(&mut self, range: Range<usize>)-> Result<Self> {
+    //     Reader::new_sub(self.data, range)
+    // }
     pub fn hash(&self) -> u64 {
         let mut hasher = AHasher::default();
         let data = self.data.slice(self.range.clone()).unwrap();
@@ -192,30 +229,78 @@ impl Reader<'_> {
     }
     pub fn read16(&mut self, endian: bool) -> Result<u16> {
         let len = 2;
-        let data = self.slice(len, true)?;
-        IO::read16(data, endian)
+        // let data = self.slice(len, true)?;
+        // IO::read16(data, endian)
+        if !self.forward(len) {
+            bail!(DataError::BitSize)
+        }
+        let bytes = self.data.data(self.cursor - len);
+        let mut _val = 0;
+        if endian {
+            _val = unsafe { ptr::read_unaligned(bytes.as_ptr() as *const u16).to_be() }
+        } else {
+            _val = unsafe { ptr::read_unaligned(bytes.as_ptr() as *const u16).to_le() }
+        }
+        Ok(_val)
     }
     pub fn read32(&mut self, endian: bool) -> Result<u32> {
         let len = 4;
-        let data: &[u8] = self.slice(len, true)?;
-        IO::read32(data, endian)
+        // let data: &[u8] = self.slice(len, true)?;
+        // IO::read32(data, endian)
+
+        if !self.forward(len) {
+            bail!(DataError::BitSize)
+        }
+        let bytes = self.data.data(self.cursor - len);
+        let mut _val = 0;
+        if endian {
+            _val = unsafe { ptr::read_unaligned(bytes.as_ptr() as *const u32).to_be() }
+        } else {
+            _val = unsafe { ptr::read_unaligned(bytes.as_ptr() as *const u32).to_le() }
+        }
+        Ok(_val)
+
     }
     pub fn read64(&mut self, endian: bool) -> Result<u64> {
         let len = 8;
-        let data: &[u8] = self.slice(len, true)?;
-        IO::_read64(data, endian)
+        // let data: &[u8] = self.slice(len, true)?;
+        // IO::_read64(data, endian)
+        if !self.forward(len) {
+            bail!(DataError::BitSize)
+        }
+        let bytes = self.data.data(self.cursor - len);
+        let mut _val = 0;
+        if endian {
+            _val = unsafe { ptr::read_unaligned(bytes.as_ptr() as *const u64).to_be() }
+        } else {
+            _val = unsafe { ptr::read_unaligned(bytes.as_ptr() as *const u64).to_le() }
+        }
+        Ok(_val)
+    }
+    pub fn read128(&mut self, endian: bool) -> Result<u128> {
+        let len = 16;
+        // let data: &[u8] = self.slice(len, true)?;
+        // IO::_read64(data, endian)
+        if !self.forward(len) {
+            bail!(DataError::BitSize)
+        }
+        let bytes = self.data.data(self.cursor - len);
+        let mut _val = 0;
+        if endian {
+            _val = unsafe { ptr::read_unaligned(bytes.as_ptr() as *const u128).to_be() }
+        } else {
+            _val = unsafe { ptr::read_unaligned(bytes.as_ptr() as *const u128).to_le() }
+        }
+        Ok(_val)
     }
 }
 
 
 pub fn read_mac(reader: &mut Reader) -> Result<NString> {
     let data = reader.slice(6, true)?;
-    let str = (data)
-            .iter()
-            .map(|x| format!("{:02x?}", x))
-            .collect::<Vec<String>>()
-            .join(":");
-    Ok(intern(str))
+    intern_mac(data)
+    // let str = format!("{:02x?}:{:02x?}:{:02x?}:{:02x?}:{:02x?}:{:02x?}", data[0],data[1],data[2],data[3],data[4],data[5]);
+    // Ok(intern(str))
 }
 
 
@@ -233,14 +318,14 @@ impl std::fmt::Display for IP6 {
     }
 }
 
-impl From<Ipv6Addr> for IP6{
-    fn from(val: Ipv6Addr) -> Self {
-        let str = intern(val.to_string());
-        let loopback = val.is_loopback();
-        let multicast = val.is_multicast();
-        Self { str, loopback, multicast }
-    }
-}
+// impl From<Ipv6Addr> for IP6{
+//     fn from(val: Ipv6Addr) -> Self {
+//         let str = intern(val.to_string());
+//         let loopback = val.is_loopback();
+//         let multicast = val.is_multicast();
+//         Self { str, loopback, multicast }
+//     }
+// }
 
 pub struct MacAddress {
     pub data: [u8; 6],

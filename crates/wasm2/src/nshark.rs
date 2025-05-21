@@ -33,7 +33,7 @@ impl WContext {
     }
     
     #[wasm_bindgen]
-    pub fn list(&self, catelog: String, start: usize, size: usize) -> String {
+    pub fn list(&mut self, catelog: String, start: usize, size: usize) -> String {
         let cri = Criteria{start, size};
         match catelog.as_str() {
             "frame" => self.ctx.frames_list_json(cri).unwrap(),

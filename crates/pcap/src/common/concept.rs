@@ -34,17 +34,38 @@ impl<T> ListResult<T> {
     }
 }
 
-#[derive(Serialize, Default)]
+#[derive(Default)]
+pub struct FrameInternInfo {
+    pub index: u32,
+    pub time: u64,
+    pub len: u32,
+    pub irtt: u16,
+    pub status: PacketStatus,
+}
+
+#[derive(Serialize, Default, Clone)]
 pub struct FrameInfo {
     pub index: u32,
     pub time: u64,
-    pub source: NString,
-    pub dest: NString,
+    pub source: String,
+    pub dest: String,
     pub protocol: String,
     pub len: u32,
     pub irtt: u16,
-    pub info: NString,
+    pub info: String,
     pub status: PacketStatus,
+}
+
+impl From<&FrameInternInfo> for FrameInfo {
+    fn from(value: &FrameInternInfo) -> Self {
+        let mut info = FrameInfo::default();
+        info.index = value.index;
+        info.time = value.time;
+        info.len = value.len;
+        info.irtt = value.irtt;
+        info.status = value.status;
+        info
+    }
 }
 
 

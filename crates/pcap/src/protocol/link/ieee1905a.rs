@@ -1,5 +1,5 @@
 use crate::{
-    common::{concept::Field, enum_def::Protocol, io::Reader, Context, Frame},
+    common::{concept::Field, enum_def::Protocol, io::Reader, core::Context, Frame},
     read_field_format,
 };
 use anyhow::Result;
@@ -8,7 +8,7 @@ pub struct Visitor {}
 impl Visitor {
     pub fn parse(_: &mut Context, frame: &mut Frame, reader: &mut Reader) -> Result<Protocol> {
         reader.forward(7);
-        frame.info.info = "IEEE 1905.1a";
+        // frame.info.info = "IEEE 1905.1a";
         Ok(Protocol::None)
     }
     pub fn detail(field: &mut Field, _: &Context, _: &Frame, reader: &mut Reader) -> Result<Protocol> {

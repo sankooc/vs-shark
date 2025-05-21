@@ -1,11 +1,11 @@
-
 use crate::{
     cache::intern,
     common::{
         concept::Field,
+        core::Context,
         enum_def::Protocol,
         io::{read_mac, Reader},
-        Context, Frame,
+        quick_hash, EthernetCache, Frame,
     },
     constants::etype_mapper,
     field_back_format,
@@ -17,20 +17,23 @@ use anyhow::Result;
 pub struct EthernetVisitor {}
 
 impl EthernetVisitor {
-    pub fn parse(_: &mut Context, frame: &mut Frame, _reader: &mut Reader) -> Result<Protocol> {
-        let mut reader = _reader.create_child_reader(14)?;
-        let source = read_mac(&mut reader)?;
-        let target = read_mac(&mut reader)?;
-        let mut ptype = reader.read16(true)?;
-        if reader.left() == ptype as usize {
-            ptype = 1010; // IEEE 802.3
+    pub fn parse(ctx: &mut Context, frame: &mut Frame, reader: &mut Reader) -> Result<Protocol> {
+        let mut _reader = reader.slice_as_reader(14)?;
+        let data = _reader.refer()?;
+        let key = quick_hash(data);
+        frame.ptr = Some(key);
+        if let Some(cache) = ctx.ethermap.get(&key) {
+            Ok(enthernet_protocol_mapper(cache.ptype))
+        } else {
+            let source = _reader.slice(6, true)?.try_into()?;
+            let target = _reader.slice(6, true)?.try_into()?;
+            let mut ptype = _reader.read16(true)?;
+            if reader.left() == ptype as usize {
+                ptype = 1010; // IEEE 802.3
+            }
+            ctx.ethermap.insert(key, EthernetCache::new(source, target, ptype));
+            Ok(enthernet_protocol_mapper(ptype))
         }
-        let info = intern(format!("Ethernet II, Src: {}, Dst: {}", source, target));
-
-        frame.info.info = info;
-        frame.info.source = source;
-        frame.info.dest = target;
-        Ok(enthernet_protocol_mapper(ptype))
     }
 
     pub fn detail(field: &mut Field, _: &Context, _: &Frame, reader: &mut Reader) -> Result<Protocol> {

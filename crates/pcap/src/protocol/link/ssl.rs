@@ -1,9 +1,8 @@
 use crate::common::concept::Field;
-use crate::common::Context;
+use crate::common::core::Context;
 use crate::constants::{link_type_mapper, ssl_type_mapper};
 use crate::{read_field_format, read_field_format_fn};
 use crate::{
-    cache::intern,
     common::{
         enum_def::Protocol,
         io::{read_mac, Reader},
@@ -36,13 +35,13 @@ impl Visitor {
         let source = read_mac(reader)?;
         reader.forward(2);
         let ptype = reader.read16(true)?;
-        let info = intern("Linux cooked capture v1".to_string());
-        frame.info.info = info;
-        frame.info.source = source;
+        // let info = intern("Linux cooked capture v1".to_string());
+        // frame.info.info = info;
+        // frame.info.source = source;
 
         Ok(enthernet_protocol_mapper(ptype))
     }
-    pub fn detail(field: &mut Field, _: &Context, _: &Frame, reader: &mut Reader) -> Result<Protocol> {
+    pub fn detail(field: &mut Field, ctx: &Context, _: &Frame, reader: &mut Reader) -> Result<Protocol> {
         let mut list = vec![];
         let _type = read_field_format_fn!(list, reader, reader.read16(true)?, typedesc);
         read_field_format_fn!(list, reader, reader.read16(true)?, link_address_type);
@@ -50,8 +49,8 @@ impl Visitor {
         read_field_format!(list, reader, read_mac(reader)?, "Source MAC: {}");
         reader.forward(2);
         let ptype = read_field_format_fn!(list, reader, reader.read16(true)?, ptype_str);
-        let info = intern("Linux cooked capture v1".to_string());
-        field.summary = info;
+        // let info = ctx.cache_str("Linux cooked capture v1".to_string());
+        // field.summary = info;
         field.children = Some(list);
         Ok(enthernet_protocol_mapper(ptype))
     }
