@@ -67,7 +67,7 @@ pub enum Protocol {
 //     UNKOWN(FieldElement),
 // }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub enum TCPDetail {
     KEEPALIVE,
     NOPREVCAPTURE,
@@ -92,9 +92,33 @@ pub enum TCPFLAG {
     REVERVED,
 }
 
-#[derive(Default, serde::Serialize)]
+#[derive(Default, Copy, Clone, serde::Serialize)]
 pub enum PacketStatus {
     #[default]
     NORNAL,
     ERROR,
+}
+
+#[derive(Default, PartialEq)]
+#[allow(non_camel_case_types)]
+pub enum TCPConnectStatus {
+    #[default]
+    INIT,
+    CLOSED,
+    LISTEN,
+    SYN_SENT,
+    SYN_RECEIVED,
+    ESTABLISHED,
+    FIN_WAIT_1,
+    FIN_WAIT_2,
+    CLOSE_WAIT,
+    LAST_ACK,
+    TIME_WAIT,
+}
+
+
+pub enum TCPProtocol {
+    HTTP,
+    HTTPS,
+    TLS,
 }

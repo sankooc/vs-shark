@@ -14,8 +14,7 @@ macro_rules! read_field_format {
         let start = $reader.cursor as u64;
         let content = ($body);
         let end = $reader.cursor as u64;
-        let msg = crate::cache::intern(format!($msg_template, content));
-        let ele = crate::common::concept::Field::label(msg, start, end);
+        let ele = crate::common::concept::Field::label(format!($msg_template, content), start, end);
         $list.push(ele);
         content
     }};
@@ -26,7 +25,7 @@ macro_rules! read_field_format_fn {
         let start = $reader.cursor as u64;
         let content = ($body);
         let end = $reader.cursor as u64;
-        let msg = crate::cache::intern($fn_ref(content));
+        let msg = $fn_ref(content);
         // let ele = crate::common::FieldElement::create(msg, Some(start..end));
         let ele = crate::common::concept::Field::label(msg, start, end);
         $list.push(ele);
@@ -38,7 +37,7 @@ macro_rules! read_field_format_fn {
 macro_rules! field_back_format {
     ($list:expr, $reader:expr, $inx:expr, $msg:expr) => {{
         let start = $reader.cursor as u64;
-        let ele = crate::common::concept::Field::label(crate::cache::intern($msg), start - $inx, start);
+        let ele = crate::common::concept::Field::label($msg, start - $inx, start);
         // let ele = crate::common::FieldElement::create(crate::cache::intern($msg), Some(start-$inx..start));
         $list.push(ele);
     }};
@@ -49,8 +48,7 @@ macro_rules! field_back_format_fn {
     ($list:expr, $reader:expr, $inx:expr, $body:expr) => {{
         let start = $reader.cursor as u64;
         let content = ($body);
-        let msg = crate::cache::intern(content);
-        let ele = crate::common::concept::Field::label(msg, start - $inx, start);
+        let ele = crate::common::concept::Field::label(content, start - $inx, start);
         // let ele = crate::common::FieldElement::create(msg, Some(start - $inx..start));
         $list.push(ele);
     }};

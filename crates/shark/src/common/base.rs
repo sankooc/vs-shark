@@ -540,7 +540,6 @@ impl Endpoint {
         if let Some(_ref) = frame_refer {
             let mut last_refer = _ref.as_ref().borrow_mut();
             let ts = last_refer.ts;
-
             if let Ok(result) = rs {
                 let mut _type = "";
                 if let ProtocolData::TLS(pcaket) = &result {

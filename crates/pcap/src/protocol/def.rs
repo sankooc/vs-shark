@@ -1,4 +1,4 @@
-use crate::common::{concept::Field, enum_def::Protocol, io::Reader, Context, Frame};
+use crate::common::{concept::Field, core::Context, enum_def::Protocol, io::Reader, Frame};
 
 use anyhow::Result;
 
@@ -13,7 +13,7 @@ impl DefaultParser {
         Ok(Protocol::None)
     }
     pub fn detail(field: &mut Field, _: &Context, _: &Frame, _: &mut Reader) -> Result<Protocol> {
-        field.summary = "parse failed";
+        field.summary = String::from("parse failed");
         // TODO 
         Ok(Protocol::None)
     }

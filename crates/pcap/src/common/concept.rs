@@ -1,6 +1,6 @@
 use serde::Serialize;
 
-use super::{enum_def::PacketStatus, NString};
+use super::enum_def::PacketStatus;
 
 pub struct Criteria {
     // pub criteria: String,
@@ -34,17 +34,38 @@ impl<T> ListResult<T> {
     }
 }
 
-#[derive(Serialize, Default)]
+#[derive(Default)]
+pub struct FrameInternInfo {
+    pub index: u32,
+    pub time: u64,
+    pub len: u32,
+    pub irtt: u16,
+    pub status: PacketStatus,
+}
+
+#[derive(Serialize, Default, Clone)]
 pub struct FrameInfo {
     pub index: u32,
     pub time: u64,
-    pub source: NString,
-    pub dest: NString,
+    pub source: String,
+    pub dest: String,
     pub protocol: String,
     pub len: u32,
     pub irtt: u16,
-    pub info: NString,
+    pub info: String,
     pub status: PacketStatus,
+}
+
+impl From<&FrameInternInfo> for FrameInfo {
+    fn from(value: &FrameInternInfo) -> Self {
+        let mut info = FrameInfo::default();
+        info.index = value.index;
+        info.time = value.time;
+        info.len = value.len;
+        info.irtt = value.irtt;
+        info.status = value.status;
+        info
+    }
 }
 
 
@@ -52,12 +73,12 @@ pub struct FrameInfo {
 pub struct Field {
     pub start: u64,
     pub size: u64,
-    pub summary: NString,
+    pub summary: String,
     pub children: Option<Vec<Field>>,
 }
 
 impl Field {
-    pub fn label(summary: NString, start: u64, end: u64) -> Field {
+    pub fn label(summary: String, start: u64, end: u64) -> Field {
         Field {
             start,
             size: end - start,
@@ -65,15 +86,7 @@ impl Field {
             children: None,
         }
     }
-    pub fn empty() -> Field {
-        Field {
-            start: 0,
-            size: 0,
-            summary: "",
-            children: None,
-        }
-    }
-    pub fn with_children(summary: NString, start: u64, size: u64) -> Field {
+    pub fn with_children(summary: String, start: u64, size: u64) -> Field {
         Field {
             start,
             size,
@@ -82,6 +95,6 @@ impl Field {
         }
     }
     pub fn with_children_reader(reader: &super::io::Reader) -> Field {
-        Field::with_children("", reader.cursor as u64, 0)
+        Field::with_children(String::from(""), reader.cursor as u64, 0)
     }
 }

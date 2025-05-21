@@ -1,11 +1,11 @@
 use crate::{
-    cache::intern,
     common::{
         concept::Field,
         connection::{TCPStat, TcpFlagField},
+        core::Context,
         enum_def::{PacketStatus, Protocol, TCPDetail},
         io::Reader,
-        Context, Frame,
+        Frame,
     },
     constants::ip_protocol_type_mapper,
     field_back_format, read_field_format,
@@ -17,13 +17,28 @@ pub fn t_protocol(protocol_type: u8) -> String {
     format!("Protocol: {} ({:#06x})", ip_protocol_type_mapper(protocol_type as u16), protocol_type)
 }
 impl Visitor {
+    pub fn info(_: &Context, frame: &Frame) -> Option<String> {
+        if let Some(stat) = &frame.tcp_info {
+            let mut source_port = 0;
+            let mut target_port = 0;
+            if let Some(ports) = &frame.ports {
+                source_port = ports.0;
+                target_port = ports.1;
+            }
+            let state = TcpFlagField::from(stat.flag_bit);
+            return Some(format!("{} -> {} {} Seq={} Len={} ", source_port, target_port, state.list_str(), stat.seq, stat.len));
+        }
+        None
+    }
     pub fn parse(ctx: &mut Context, frame: &mut Frame, reader: &mut Reader) -> Result<Protocol> {
-        let start = reader.left() as u16;
+        let index = frame.info.index;
+        let start = reader.left();
         let source_port = reader.read16(true)?;
         let target_port = reader.read16(true)?;
         let sequence = reader.read32(true)?;
         let ack = reader.read32(true)?;
-        let state = TcpFlagField::from(reader.read16(true)?);
+        let flag_bit = reader.read16(true)?;
+        let state = TcpFlagField::from(flag_bit);
         let _window = reader.read16(true)?;
         let crc = reader.read16(true)?;
         let _urgent = reader.read16(true)?;
@@ -32,24 +47,27 @@ impl Visitor {
             let skip = (len - 5) * 4;
             reader.forward(skip as usize);
         }
-        let mut left_size = reader.left() as u16;
-        let iplen = frame.iplen;
+        let mut left_size = reader.left();
+        let iplen = frame.iplen as usize;
         if iplen > 0 {
             if start > iplen {
                 left_size = iplen + left_size - start;
             }
         }
-        let flags = state.list_str();
-        // let _data_range = _start.._start + left_size;
-        let tcp_state = TCPStat::new(sequence, ack, crc, state, left_size);
-        let rely = ctx.get_connect(frame.source, source_port, frame.target, target_port, tcp_state);
+        // let flags = state.list_str();
+        let ds = reader.ds();
+        let range = reader.cursor..reader.cursor + left_size;
+        let tcp_state = TCPStat::new(index, sequence, ack, crc, state, left_size as u16);
 
-        frame.info.status = match &rely.status {
-            TCPDetail::NEXT | TCPDetail::KEEPALIVE => PacketStatus::NORNAL,
-            _ => PacketStatus::ERROR,
-        };
-        frame.info.info = intern(format!("{} -> {} {} Seq={} Win={} Len={} ", source_port, target_port, flags, rely.seq, _window, left_size));
-        frame.tcp_info = Some(rely);
+        if let Ok(mut rely) = ctx.get_connect(frame, source_port, target_port, tcp_state, ds, range) {
+            rely.flag_bit = flag_bit;
+            frame.info.status = match &rely.status {
+                TCPDetail::NEXT | TCPDetail::KEEPALIVE => PacketStatus::NORNAL,
+                _ => PacketStatus::ERROR,
+            };
+            frame.ports = Some((source_port, target_port));
+            frame.tcp_info = Some(rely);
+        }
         Ok(Protocol::None)
     }
     pub fn detail(field: &mut Field, _: &Context, frame: &Frame, reader: &mut Reader) -> Result<Protocol> {
@@ -63,7 +81,7 @@ impl Visitor {
         let sequence = reader.read32(true)?;
         field_back_format!(list, reader, 4, format!("Sequence Number: {}    (relative sequence number)", info.seq));
         field_back_format!(list, reader, 4, format!("Sequence Number (raw): {}", sequence));
-        list.push(Field::label(intern(format!("[Next Sequence Number: {}    (relative sequence number)]", info.next)), 0, 0));
+        list.push(Field::label(format!("[Next Sequence Number: {}    (relative sequence number)]", info.next), 0, 0));
         let ack = reader.read32(true)?;
         field_back_format!(list, reader, 4, format!("Acknowledgment Number: {}    (relative ack number)", info.ack));
         field_back_format!(list, reader, 4, format!("Acknowledgment Number (raw): {}", ack));
@@ -77,7 +95,12 @@ impl Visitor {
             let skip = (len - 5) * 4;
             reader.forward(skip as usize);
         }
-        field.summary = intern(format!("Transmission Control Protocol, Src Port: {}, Dst Port: {}, Len: {}", source_port, target_port, info.len));
+        let payload_len = info.len as usize;
+        if reader.forward(payload_len) {
+            field_back_format!(list, reader, payload_len as u64, format!("TCP payload ({} bytes)", payload_len));
+        }
+
+        field.summary = format!("Transmission Control Protocol, Src Port: {}, Dst Port: {}, Len: {}", source_port, target_port, info.len);
         field.children = Some(list);
         Ok(Protocol::None)
     }

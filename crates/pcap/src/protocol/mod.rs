@@ -1,16 +1,12 @@
-use anyhow::Result;
-use def::DefaultParser;
+use anyhow::{bail, Result};
 
 use crate::{
-    cache::intern,
     common::{
-        concept::Field,
-        enum_def::{FileType, Protocol},
-        io::Reader,
-        Context, Frame,
+        concept::Field, core::Context, enum_def::{FileType, Protocol}, io::Reader, Frame
     },
 };
 
+pub mod application;
 pub mod def;
 pub mod link;
 pub mod network;
@@ -28,7 +24,8 @@ pub fn parse(protocol: Protocol, ctx: &mut Context, frame: &mut Frame, reader: &
         // "arp" => network::arp::Visitor::parse(frame, reader),
         // "icmp" => network::icmp::V4Visitor::parse(frame, reader),
         _ => {
-            return DefaultParser::parse(frame, reader);
+            bail!("finish");
+            // return DefaultParser::parse(frame, reader);
         }
     }
 }
@@ -42,7 +39,7 @@ pub fn detail(protocol: Protocol, field: &mut Field, ctx: &Context, frame: &Fram
         Protocol::IP6 => network::ip6::Visitor::detail(field, ctx, frame, reader),
         Protocol::TCP => transport::tcp::Visitor::detail(field, ctx, frame, reader),
         _ => {
-            field.summary = intern(format!("Unimplement Protocol: {}", protocol));
+            field.summary = format!("Unimplement Protocol: {}", protocol);
             Ok(Protocol::None)
             // return DefaultParser::detail(field, ctx, frame, reader);
         }

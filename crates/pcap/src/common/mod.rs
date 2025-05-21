@@ -1,23 +1,67 @@
-use std::{cmp, collections::HashMap, hash::BuildHasherDefault, ops::Range, rc::Rc};
+use core::Context;
+use std::{
+    cmp,
+    collections::HashMap,
+    hash::{BuildHasherDefault, Hash, Hasher},
+    ops::Range,
+};
 
+use crate::{
+    files::{pcap::PCAP, pcapng::PCAPNG},
+    protocol::{detail, link_type_map, network, parse, transport::tcp},
+};
 use anyhow::{bail, Result};
-use concept::{Criteria, Field, FrameInfo, ListResult, ProgressStatus};
-use connection::{ConnectState, Connection, Endpoint, TCPStat, TmpConnection};
+use concept::{Criteria, Field, FrameInfo, FrameInternInfo, ListResult, ProgressStatus};
+use connection::ConnectState;
 use enum_def::{DataError, FileType, Protocol};
 use io::{DataSource, MacAddress, Reader, IO};
 use rustc_hash::FxHasher;
 use serde_json::Error;
 
 type FastHashMap<K, V> = HashMap<K, V, BuildHasherDefault<FxHasher>>;
+
 pub type NString = &'static str;
-use crate::{
-    files::{pcap::PCAP, pcapng::PCAPNG},
-    protocol::{detail, link_type_map, parse},
-};
+
+// pub const EP: String = String::from("");
 
 pub fn range64(range: Range<usize>) -> Range<u64> {
     range.start as u64..range.end as u64
 }
+
+pub fn quick_hash<T>(data: T) -> u64 where T: Hash {
+    let mut hasher = FxHasher::default();
+    data.hash(&mut hasher);
+    hasher.finish()
+}
+
+// fn quick_hash_str(s: &str) -> u64 {
+//     let mut hasher = FxHasher::default();
+//     s.hash(&mut hasher);
+//     hasher.finish()
+// }
+
+// pub trait FrameRefer {
+//     fn info(&self) -> String;
+// }
+
+// pub struct EthernetFrame {
+//     data: u64,
+// }
+
+// impl FrameRefer for EthernetFrame {
+//     fn info(&self) -> String {
+//         todo!()
+//     }
+// }
+// pub struct EthernetFrame2 {
+//     data: u64,
+// }
+
+// impl FrameRefer for EthernetFrame2 {
+//     fn info(&self) -> String {
+//         todo!()
+//     }
+// }
 
 pub struct Ethernet {
     pub source: MacAddress,
@@ -28,56 +72,37 @@ pub struct Ethernet {
 #[derive(Default)]
 pub struct Frame {
     pub range: Option<Range<usize>>,
-    pub info: FrameInfo,
+    pub info: FrameInternInfo,
     pub head: Protocol,
+    pub tail: Protocol,
     pub iplen: u16,
-    pub source: NString,
-    pub target: NString,
+
     pub tcp_info: Option<ConnectState>,
-    // pub element: Vec<FieldDef>,
+    pub ipv6: Option<u64>,
+    pub ipv4: Option<u64>,
+    pub ports: Option<(u16, u16)>,
+    pub ptr: Option<u64>
 }
 
 impl Frame {
     pub fn new() -> Self {
         Self { ..Default::default() }
     }
-    pub fn range(&self) -> Option<Range<usize>>{
+    pub fn range(&self) -> Option<Range<usize>> {
         self.range.clone()
     }
 }
 
-#[derive(Default)]
-pub struct Context {
-    file_type: FileType,
-    pub link_type: u32,
-    pub list: Vec<Frame>,
-    pub counter: u32,
-    pub ethernet: FastHashMap<u64, Rc<Ethernet>>,
-    pub connections: FastHashMap<(&'static str, u16, &'static str, u16), Connection>,
+pub struct EthernetCache {
+    pub source: MacAddress,
+    pub target: MacAddress,
+    // pub info: NString,
+    pub ptype: u16,
 }
 
-impl Context {
-    pub fn new() -> Self {
-        Self { ..Default::default() }
-    }
-    pub fn get_connect(&mut self, host1:&'static str, port1: u16, host2: &'static str, port2: u16, stat: TCPStat) -> ConnectState {
-        let mut key = (host1, port1, host2, port2);
-        let mut reverse = true;
-
-        if !self.connections.contains_key(&key) {
-            key = (host2, port2, host1, port1);
-            reverse = false;
-        }
-
-        if self.connections.contains_key(&key) {
-            // 
-        } else {
-            let connection = Connection::new(Endpoint::new(host1, port1), Endpoint::new(host2, port2));
-            self.connections.insert(key, connection);
-        }
-        let conn = self.connections.get_mut(&key).unwrap();
-        let mut tmp_conn = TmpConnection::new(conn, reverse);
-        tmp_conn.update(&stat)
+impl EthernetCache {
+    pub fn new(source: MacAddress, target: MacAddress, ptype: u16) -> Self {
+        Self { source, target, ptype }
     }
 }
 
@@ -87,85 +112,6 @@ pub struct Instance {
     ctx: Context,
     last: usize,
 }
-
-// #[enum_dispatch(FieldDef)]
-// pub trait Element {
-//     fn title(&self) -> NString;
-//     fn position(&self) -> Option<Range<u64>>;
-//     fn children(&self) -> Option<&[FieldDef]>;
-// }
-
-// #[derive(Default)]
-// pub struct FieldElement {
-//     pub title: NString,
-//     pub position: Option<Range<u64>>,
-//     pub children: Option<Vec<FieldDef>>,
-// }
-
-// impl FieldElement {
-//     pub fn create(title: NString, position: Option<Range<u64>>) -> Self {
-//         Self { title, position, children: None }
-//     }
-// }
-
-// impl Element for FieldElement {
-//     fn title(&self) -> NString {
-//         self.title
-//     }
-
-//     fn position(&self) -> Option<Range<u64>> {
-//         self.position.clone()
-//     }
-
-//     fn children(&self) -> Option<&[FieldDef]> {
-//         self.children.as_deref()
-//     }
-// }
-
-// pub struct ProtocolElement {
-//     pub protocol: Protocol,
-//     pub element: FieldElement,
-// }
-// impl ProtocolElement {
-//     pub fn new(protocol: Protocol) -> Self {
-//         Self {
-//             protocol,
-//             element: FieldElement::default(),
-//         }
-//     }
-// }
-// impl Element for ProtocolElement {
-//     fn title(&self) -> &'static str {
-//         self.element.title
-//     }
-
-//     fn position(&self) -> Option<Range<u64>> {
-//         self.element.position.clone()
-//     }
-
-//     fn children(&self) -> Option<&[FieldElement]> {
-//         self.element.children.as_deref()
-//     }
-// }
-
-// impl Into<Field> for &FieldDef {
-//     fn into(self) -> Field {
-//         let mut field = Field {
-//             start: 0,
-//             size: 0,
-//             summary: self.title(),
-//             children: None,
-//         };
-//         if let Some(range) = &self.position() {
-//             field.start = range.start;
-//             field.size = range.end - range.start;
-//         }
-//         if let Some(children) = self.children() {
-//             field.children = Some(children.iter().map(|f| f.into()).collect());
-//         }
-//         field
-//     }
-// }
 
 impl Instance {
     pub fn new() -> Instance {
@@ -237,10 +183,11 @@ impl Instance {
     }
     pub fn parse_packet(ctx: &mut Context, mut frame: Frame, ds: &DataSource) {
         if let Some(range) = &frame.range {
-            let mut _reader = Reader::new_sub(&ds, range.clone());
+            let mut _reader = Reader::new_sub(&ds, range.clone()).unwrap();
             let proto: Protocol = link_type_map(&ctx.file_type, ctx.link_type, &mut _reader);
             frame.range = Some(range.clone());
             frame.head = proto;
+            frame.tail = proto;
             frame.info.index = ctx.counter;
             ctx.counter += 1;
             let mut _next = proto;
@@ -250,12 +197,8 @@ impl Instance {
                         break;
                     }
                     _ => {
-                        frame.info.protocol = format!("{}", _next);
-                        // let _start = _reader.cursor;
                         if let Ok(next) = parse(_next, ctx, &mut frame, &mut _reader) {
-                            // let _end = _reader.cursor;
-                            // pe.element.position = Some(range64(_start.._end));
-                            // frame.element.push(pe);
+                            frame.tail = _next;
                             _next = next;
                         } else {
                             break;
@@ -263,33 +206,6 @@ impl Instance {
                     }
                 }
             }
-            // let mut _start = _reader.cursor;
-            // if let Ok((next, mut pe)) = parse(proto, &mut frame, &mut _reader) {
-            //     let mut _end = _reader.cursor;
-            //     pe.element.position = Some(range64(_start.._end));
-            //     frame.element.push(pe);
-            //     let mut _next = next;
-            //     loop {
-            //         match _next {
-            //             "none" => {
-            //                 break;
-            //             }
-            //             _ => {
-            //                 _start = _reader.cursor;
-            //                 if let Ok((next, mut pe)) = parse(next, &mut frame, &mut _reader){
-            //                     _end = _reader.cursor;
-            //                     _next = next;
-            //                     pe.element.position = Some(range64(_start.._end));
-            //                     frame.element.push(pe);
-            //                 } else {
-            //                     break;
-            //                 }
-            //             }
-            //         }
-            //     }
-            // }
-            // println!("proto: {}", _proto);
-            // frame.children = Vec::new();
         }
         ctx.list.push(frame);
     }
@@ -310,7 +226,7 @@ impl Instance {
             _ => 0,
         }
     }
-    pub fn frames_by(&self, cri: Criteria) -> ListResult<&FrameInfo> {
+    pub fn frames_by(&self, cri: Criteria) -> ListResult<FrameInfo> {
         // let Criteria { start, size } = cri;
         // let info = self.context().get_info();
         // let start_ts = info.start_time;
@@ -325,7 +241,30 @@ impl Instance {
         let end = cmp::min(start + size, total);
         let _data = &fs[start..end];
         for frame in _data.iter() {
-            items.push(&frame.info);
+            let mut info = FrameInfo::from(&frame.info);
+            if let Some(ip4) = frame.ipv4 {
+                if let Some((source, target)) = self.ctx.ipv4map.get(&ip4) {
+                    info.source = source.to_string();
+                    info.dest = target.to_string();
+                }
+            } else if let Some(ip6) = frame.ipv6 {
+                if let Some((_, source, target)) = self.ctx.ipv6map.get(&ip6) {
+                    info.source = source.to_string();
+                    info.dest = target.to_string();
+                }
+            }
+            // let last = frame.tail;
+            let frame_info = match frame.tail {
+                Protocol::TCP => tcp::Visitor::info(&self.ctx, frame),
+                Protocol::IP4 => network::ip4::Visitor::info(&self.ctx, frame),
+                Protocol::IP6 => network::ip6::Visitor::info(&self.ctx, frame),
+                _ => None
+            };
+            if let Some(summary) = frame_info {
+                info.info = summary;
+            }
+
+            items.push(info);
         }
         ListResult::new(start, total, items)
     }
@@ -350,7 +289,7 @@ impl Instance {
                             break;
                         }
                         _ => {
-                            let mut f = Field::empty();
+                            let mut f = Field::default();
                             f.start = reader.cursor as u64;
                             if let Ok(next) = detail(_next, &mut f, &self.ctx, &frame, &mut reader) {
                                 f.size = (reader.cursor as u64) - f.start;
@@ -362,23 +301,26 @@ impl Instance {
                         }
                     }
                 }
-                return Some(list)
+                return Some(list);
             }
         }
         None
     }
 
-    
     pub fn select_frame_json(&self, index: usize, data: Vec<u8>) -> Result<String, Error> {
         if let Some(list) = self.select_frame(index, data) {
             return serde_json::to_string(&list);
         }
-        Ok("{}".into())
+        Ok("[]".into())
+    }
+
+    pub fn connections_count(&self) -> usize {
+        self.ctx.connections.len()
     }
 }
 pub mod concept;
+pub mod connection;
 pub mod core;
 pub mod enum_def;
 pub mod io;
 pub mod macro_def;
-pub mod connection;

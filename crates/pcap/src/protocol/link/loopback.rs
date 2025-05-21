@@ -1,12 +1,16 @@
-use crate::{common::{concept::Field, enum_def::Protocol, io::Reader, Context, Frame}, read_field_format};
+use crate::{common::{concept::Field, enum_def::Protocol, io::Reader, core::Context, Frame}, read_field_format};
 use anyhow::Result;
 
+
+const SUMMARY: &'static str = "Null/Loopback";
 pub struct Visitor {}
 
 impl Visitor {
-    pub fn parse(_: &mut Context, frame: &mut Frame, reader: &mut Reader) -> Result<Protocol> {
+    pub fn info(_: &Context, _: &Frame) -> Option<String>{
+        Some(SUMMARY.to_string())
+    }
+    pub fn parse(_: &mut Context, _: &mut Frame, reader: &mut Reader) -> Result<Protocol> {
         reader.read32(false)?;
-        frame.info.info = "Null/Loopback";
         let _next = reader.next()?;
         if _next == 0x45 {
             Ok(Protocol::IP4)
@@ -18,7 +22,7 @@ impl Visitor {
         let mut list = vec![];
         read_field_format!(list, reader, reader.read32(false)?, "Family: {}");
         let _next = reader.next()?;
-        field.summary = "Null/Loopback";
+        field.summary = SUMMARY.to_string();
         field.children = Some(list);
         if _next == 0x45 {
             Ok(Protocol::IP4)

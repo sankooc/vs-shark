@@ -6,7 +6,7 @@ mod tests {
     };
     use std::time::Instant;
 
-    use pcap::{cache::intern, common::{connection::TcpFlagField, enum_def::Protocol, Instance}};
+    use pcap::{ common::{connection::TcpFlagField, enum_def::Protocol, Instance}};
     fn _parse(fname: &str) -> std::io::Result<Instance> {
         let mut ins = Instance::new();
         let path = Path::new(fname);
@@ -15,19 +15,21 @@ mod tests {
         }
         let file = File::open(fname)?;
         let mut reader = BufReader::new(file);
-        let mut buffer = Vec::with_capacity(1024 * 1024);
-        buffer.resize(1024 * 1024, 0);
+        let mut buffer = Vec::with_capacity(1024 * 1024 * 50);
+        buffer.resize(1024 * 1024 * 50, 0);
 
-        let start = Instant::now();
+        let mut total = 0;
         loop {
             let n = reader.read(&mut buffer)?;
             if n == 0 {
                 break;
             }
+            let start = Instant::now();
             ins.update(buffer[..n].to_vec()).unwrap();
+            total += start.elapsed().as_millis();
         }
-        let duration = start.elapsed();
-        println!("Elapsed: {} nanoseconds", duration.as_millis());
+        println!("Elapsed: {} nanoseconds", total);
+        
         Ok(ins)
     }
     
@@ -42,7 +44,7 @@ mod tests {
     }
     #[test]
     fn basic() -> std::io::Result<()> { 
-        let fname = "../../../pcaps/11.pcapng";
+        // let fname = "../../../pcaps/11.pcapng";
         // let fname = "../../../pcaps/c1.pcap";
         // let fname = "../../../pcaps/demo.pcapng";
         // let fname = "../../../pcaps/demo.pcap";
@@ -57,33 +59,45 @@ mod tests {
         // let fname = "../../../pcaps/pppoe.pcap";
         // let fname = "../../../pcaps/sip.pcap";
         // let fname = "../../../pcaps/slow.pcap";
+        let fname = "../../../pcaps/big-2.pcap";
         let _ins = _parse(fname)?;
         // print!("--finish-");
         let ctx = _ins.get_context();
         println!("total frames {}", ctx.counter);
-        let index = 13;
-        let f = _ins.frame(index).unwrap();
-        let range = f.range().unwrap();
+        println!("total conversations {}", _ins.connections_count());
+        println!("etch cache {}", ctx.ethermap.len());
+        println!("ipv6 cache {}", ctx.ipv6map.len());
 
-        println!("range  {} - {}", range.start, range.end);
-        let data = _seek(fname, range).unwrap();
-        let json = _ins.select_frame(index, data).unwrap();
-        crate::tc::print_fields(&json);
+
+        // {
+        //     let json = _ins.frames_list_json(Criteria{ start: 0, size: 10})?;
+        //     println!("{}", json);
+        //     // return;
+        // }
+        // {
+        //     let index = 13;
+        //     let f = _ins.frame(index).unwrap();
+        //     let range = f.range().unwrap();
+        //     println!("range  {} - {}", range.start, range.end);
+        //     let data = _seek(fname, range).unwrap();
+        //     let json = _ins.select_frame(index, data).unwrap();
+        //     crate::tc::print_fields(&json);
+        // }
         // println!("json {}", json);
         Ok(())
     }
 
-    #[test]
-    fn pooltest() {
-        let a1 = format!("{}-1k", "test");
-        let a2 = format!("{}-1k", "test");
+    // #[test]
+    // fn pooltest() {
+    //     let a1 = format!("{}-1k", "test");
+    //     let a2 = format!("{}-1k", "test");
         
-        println!("original: {:p} - {:p}", a1.as_ptr(), a2.as_ptr());
-        println!("reference: {:p} - {:p}", (&a1).as_ptr(), (&a2).as_ptr());
-        let c1 = intern(a1);
-        let c2 = intern(a2);
-        println!("cached: {:p} - {:p}", c1.as_ptr(), c2.as_ptr());
-    }
+    //     println!("original: {:p} - {:p}", a1.as_ptr(), a2.as_ptr());
+    //     println!("reference: {:p} - {:p}", (&a1).as_ptr(), (&a2).as_ptr());
+    //     let c1 = intern(a1);
+    //     let c2 = intern(a2);
+    //     println!("cached: {:p} - {:p}", c1.as_ptr(), c2.as_ptr());
+    // }
 
     #[test]
     fn pooltest2() {

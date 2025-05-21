@@ -1,6 +1,7 @@
+use std::net::Ipv4Addr;
+
 use crate::{
-    cache::{intern, intern_ip4},
-    common::{concept::Field, enum_def::Protocol, io::Reader, Context, Frame},
+    common::{concept::Field, core::Context, enum_def::Protocol, io::Reader, quick_hash, Frame},
     constants::ip_protocol_type_mapper,
     field_back_format, field_back_format_fn,
     protocol::ip4_mapper,
@@ -18,7 +19,15 @@ pub fn t_protocol(protocol_type: u8) -> String {
 pub struct Visitor {}
 
 impl Visitor {
-    pub fn parse(_: &mut Context, frame: &mut Frame, reader: &mut Reader) -> Result<Protocol> {
+    pub fn info(ctx: &Context, frame: &Frame) -> Option<String> {
+        if let Some(key) = frame.ptr {
+            if let Some((source, target)) = ctx.ipv4map.get(&key) {
+                return Some(format!("Internet Protocol Version 4, Src: {}, Dst: {}", source, target))
+            }
+        }
+        None
+    }
+    pub fn parse(ctx: &mut Context, frame: &mut Frame, reader: &mut Reader) -> Result<Protocol> {
         let _start = reader.left();
         let head = reader.read8()?;
         let head_len = head & 0x0f;
@@ -29,8 +38,17 @@ impl Visitor {
         reader.read8()?; // ttl
         let protocol_type = reader.read8()?; // protocol
         reader.read16(true)?; // checksum
-        let source = intern_ip4(reader)?; // source
-        let target = intern_ip4(reader)?; // target
+        let _data = reader.slice(8, true)?;
+        let key = quick_hash(_data);
+        frame.ipv4 = Some(key);
+        frame.ptr = Some(key);
+        if let None = ctx.ipv4map.get(&key) {
+            let source = Ipv4Addr::from(<[u8; 4]>::try_from(&_data[..4])?);
+            let target = Ipv4Addr::from(<[u8; 4]>::try_from(&_data[4..])?);
+            source.to_string();
+            target.to_string();
+            ctx.ipv4map.insert(key, (source, target));
+        }
         let ext = head_len - 5;
         if ext > 0 {
             reader.slice((ext * 4) as usize, true)?;
@@ -44,9 +62,11 @@ impl Visitor {
             }
             frame.iplen = total_len - (_start - _stop) as u16;
         }
-        frame.info.source = source;
-        frame.info.dest = target;
-        frame.info.info = intern(format!("Internet Protocol Version 4, Src: {}, Dst: {}", source, target));
+        // frame.source = source;
+        // frame.target = target;
+        // frame.info.source = source;
+        // frame.info.dest = target;
+        // frame.info.info = intern(format!("Internet Protocol Version 4, Src: {}, Dst: {}", source, target));
 
         Ok(ip4_mapper(protocol_type))
     }
@@ -64,8 +84,9 @@ impl Visitor {
         read_field_format!(list, reader, reader.read8()?, "Time To Live: {}");
         let protocol_type = read_field_format_fn!(list, reader, reader.read8()?, t_protocol);
         read_field_format!(list, reader, reader.read16(true)?, "Header Checksum: {}");
-        let source = read_field_format!(list, reader, intern_ip4(reader)?, "Source Address: {}");
-        let target = read_field_format!(list, reader, intern_ip4(reader)?, "Destination Address: {}");
+        reader.forward(8);
+        // let source = read_field_format!(list, reader, intern_ip4(reader)?, "Source Address: {}");
+        // let target = read_field_format!(list, reader, intern_ip4(reader)?, "Destination Address: {}");
         let ext = head_len - 5;
         if ext > 0 {
             reader.forward((ext * 4) as usize);
@@ -79,7 +100,8 @@ impl Visitor {
             }
             // let payload_len = Some(total_len - (_start - _stop) as u16);
         }
-        field.summary = intern(format!("Internet Protocol Version 4, Src: {}, Dst: {}", source, target));
+
+        // field.summary = ctx.cache_str(format!("Internet Protocol Version 4, Src: {}, Dst: {}", source, target));
         field.children = Some(list);
         Ok(ip4_mapper(protocol_type))
     }
