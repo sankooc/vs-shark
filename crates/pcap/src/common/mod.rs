@@ -253,6 +253,7 @@ impl Instance {
                     info.dest = target.to_string();
                 }
             }
+            info.protocol = frame.tail.to_string().to_lowercase();
             // let last = frame.tail;
             let frame_info = match frame.tail {
                 Protocol::TCP => tcp::Visitor::info(&self.ctx, frame),
