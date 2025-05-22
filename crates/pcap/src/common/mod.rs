@@ -8,12 +8,12 @@ use std::{
 
 use crate::{
     files::{pcap::PCAP, pcapng::PCAPNG},
-    protocol::{detail, link_type_map, network, parse, transport::tcp},
+    protocol::{application, detail, link_type_map, network, parse, transport::tcp},
 };
 use anyhow::{bail, Result};
 use concept::{Criteria, Field, FrameInfo, FrameInternInfo, ListResult, ProgressStatus};
 use connection::ConnectState;
-use enum_def::{DataError, FileType, Protocol};
+use enum_def::{DataError, FileType, InfoField, IpField, Protocol};
 use io::{DataSource, MacAddress, Reader, IO};
 use rustc_hash::FxHasher;
 use serde_json::Error;
@@ -78,10 +78,10 @@ pub struct Frame {
     pub iplen: u16,
 
     pub tcp_info: Option<ConnectState>,
-    pub ipv6: Option<u64>,
-    pub ipv4: Option<u64>,
     pub ports: Option<(u16, u16)>,
-    pub ptr: Option<u64>
+    
+    pub ip_field: IpField,
+    pub info_field: InfoField,
 }
 
 impl Frame {
@@ -242,23 +242,25 @@ impl Instance {
         let _data = &fs[start..end];
         for frame in _data.iter() {
             let mut info = FrameInfo::from(&frame.info);
-            if let Some(ip4) = frame.ipv4 {
-                if let Some((source, target)) = self.ctx.ipv4map.get(&ip4) {
-                    info.source = source.to_string();
-                    info.dest = target.to_string();
+            match &frame.ip_field {
+                IpField::IPv4(s, t) => {
+                    info.source = s.to_string();
+                    info.dest = t.to_string();
                 }
-            } else if let Some(ip6) = frame.ipv6 {
-                if let Some((_, source, target)) = self.ctx.ipv6map.get(&ip6) {
-                    info.source = source.to_string();
-                    info.dest = target.to_string();
+                IpField::IPv6(key) => {
+                    if let Some((_, s, t)) = self.ctx.ipv6map.get(key) {
+                        info.source = s.to_string();
+                        info.dest = t.to_string();
+                    }
                 }
+                _ => {}
             }
             info.protocol = frame.tail.to_string().to_lowercase();
-            // let last = frame.tail;
             let frame_info = match frame.tail {
                 Protocol::TCP => tcp::Visitor::info(&self.ctx, frame),
                 Protocol::IP4 => network::ip4::Visitor::info(&self.ctx, frame),
                 Protocol::IP6 => network::ip6::Visitor::info(&self.ctx, frame),
+                Protocol::HTTP => application::http::Visitor::info(&self.ctx, frame),
                 _ => None
             };
             if let Some(summary) = frame_info {

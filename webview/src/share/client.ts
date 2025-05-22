@@ -163,7 +163,7 @@ export abstract class PCAPClient {
         //   break;
         case ComType.PROCESS_DATA:
           const data = body.data as Uint8Array;
-          const rs = await this.update(data);
+          await this.update(data);
           // this.emitMessage(ComMessage.new(ComType.PRGRESS_STATUS, rs));
           break;
         case ComType.log:

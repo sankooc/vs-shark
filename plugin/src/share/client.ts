@@ -28,6 +28,7 @@ export abstract class PCAPClient {
         this.emitMessage(ComMessage.new(ComType.PRGRESS_STATUS, rs));
         return rs;
       } catch (e) {
+        console.error(e);
         this.emitMessage(new ComMessage(ComType.error, "failed to open file"));
       }
     }
@@ -163,7 +164,7 @@ export abstract class PCAPClient {
         case ComType.PROCESS_DATA:
           const data = body.data as Uint8Array;
           const rs = await this.update(data);
-          this.emitMessage(ComMessage.new(ComType.PRGRESS_STATUS, rs));
+          // this.emitMessage(ComMessage.new(ComType.PRGRESS_STATUS, rs));
           break;
         case ComType.log:
           this.printLog(body as ComLog);

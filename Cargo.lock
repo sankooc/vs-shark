@@ -705,6 +705,7 @@ dependencies = [
  "chrono",
  "enum_dispatch",
  "log",
+ "memchr",
  "once_cell",
  "pcap_derive",
  "rustc-hash",

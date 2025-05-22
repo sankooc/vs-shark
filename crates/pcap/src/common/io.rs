@@ -7,8 +7,11 @@ use std::{
 };
 
 use ahash::AHasher;
-use anyhow::{bail, Ok, Result};
-
+use anyhow::{ bail, Ok, Result};
+// use anyhow::{anyhow, Result};
+use memchr::memchr_iter;
+// use std::simd::Simd;
+// use std::simd::prelude::SimdPartialEq;
 use crate::common::enum_def::DataError;
 
 use super::{concept::ProgressStatus, NString};
@@ -39,6 +42,37 @@ impl IO {
     }
 }
 
+
+
+
+// pub fn find_crlf_simd(buf: &[u8]) -> Option<usize> {
+//     const LANES: usize = 16;
+//     type SimdU8 = Simd<u8, LANES>;
+
+//     let len = buf.len();
+//     let chunks = len / LANES;
+
+//     let target_r = SimdU8::splat(b'\r');
+//     let target_n = SimdU8::splat(b'\n');
+
+//     for i in 0..chunks {
+//         let offset = i * LANES;
+//         let chunk = SimdU8::from_slice(&buf[offset..offset + LANES]);
+//         let mask = chunk.simd_eq(target_r) | chunk.simd_eq(target_n);
+
+//         if mask.any() {
+//             return Some(offset + mask.to_bitmask().trailing_zeros() as usize);
+//         }
+//     }
+
+//     for i in chunks * LANES..len {
+//         if buf[i] == b'\r' || buf[i] == b'\n' {
+//             return Some(i);
+//         }
+//     }
+
+//     None
+// }
 pub struct DataSource {
     data: Vec<u8>,
     range: Range<usize>,
@@ -311,7 +345,28 @@ impl Reader<'_> {
         let ip = Ipv6Addr::from(<[u8; 16]>::try_from(data)?);
         Ok(ip)
     }
+    pub fn search_enter(&mut self, limit: usize)-> Option<usize> {
+        let _limit = cmp::min(self.left(), limit);
+        
+        let prdata = match self.preview(_limit) {
+            std::result::Result::Ok(data) => data,
+            _ => return None
+        };
+        find_crlf(prdata)
+    }
 }
+
+pub fn find_crlf(bytes: &[u8]) -> Option<usize> {
+    for pos in memchr_iter(b'\r', bytes) {
+        if pos + 1 < bytes.len() && bytes[pos + 1] == b'\n' {
+            return Some(pos);
+        }
+    }
+    None
+}
+// fn find_byte(slice: &[u8], byte: u8) -> Option<usize> {
+//     slice.iter().position(|&x| x == byte)
+// }
 
 pub fn read_mac(data: &[u8]) -> String {
     format!("{:02x?}:{:02x?}:{:02x?}:{:02x?}:{:02x?}:{:02x?}", data[0], data[1], data[2], data[3], data[4], data[5])

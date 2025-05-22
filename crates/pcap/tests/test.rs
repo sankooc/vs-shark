@@ -10,9 +10,9 @@ mod unit {
         common::{
             concept::Field,
             core::Context,
-            enum_def::Protocol,
+            enum_def::{IpField, Protocol},
             io::{DataSource, Reader},
-            quick_hash, Frame,
+            Frame,
         },
         protocol,
     };
@@ -117,14 +117,9 @@ mod unit {
         let (ds, mut cx, mut frame) = init("tcp");
         {
             let _data = [1, 3, 4, 5, 2, 3, 4, 5];
-            let key = quick_hash(&_data);
-            frame.ipv4 = Some(key);
-            frame.ptr = Some(key);
-            if let None = cx.ipv4map.get(&key) {
-                let source = Ipv4Addr::from(<[u8; 4]>::try_from(&_data[..4])?);
-                let target = Ipv4Addr::from(<[u8; 4]>::try_from(&_data[4..])?);
-                cx.ipv4map.insert(key, (source, target));
-            }
+            let source = Ipv4Addr::from(<[u8; 4]>::try_from(&_data[..4])?);
+            let target = Ipv4Addr::from(<[u8; 4]>::try_from(&_data[4..])?);
+            frame.ip_field = IpField::IPv4(source, target);
         }
         {
             let mut reader = Reader::new(&ds);

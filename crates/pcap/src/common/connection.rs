@@ -1,12 +1,16 @@
 // use crate::cache::intern;
 
-use std::{fmt::{Display, Write}, ops::Range};
+use std::{
+    fmt::{Display, Write},
+    ops::Range,
+};
 
 use crate::protocol;
 
 use super::{
-    enum_def::{TCPConnectStatus, TCPDetail, TCPProtocol, TCPFLAG},
+    enum_def::{Protocol, SegmentStatus, TCPConnectStatus, TCPDetail, TCPFLAG},
     io::{DataSource, Reader},
+    Frame,
 };
 
 #[derive(Debug)]
@@ -109,6 +113,7 @@ pub struct ConnectState {
     pub status: TCPDetail,
     pub flag_bit: u16,
     pub connect_finished: bool,
+    pub next_protocol: Protocol,
 }
 
 impl ConnectState {
@@ -121,6 +126,7 @@ impl ConnectState {
             status,
             flag_bit: 0,
             connect_finished: false,
+            next_protocol: Protocol::None
         }
     }
 }
@@ -148,6 +154,7 @@ pub struct Endpoint {
     ack: u32,
     _checksum: u16,
     statistic: TCPStatistic,
+    segment_status: SegmentStatus,
     _segments: Option<Vec<TCPSegment>>,
 }
 impl Endpoint {
@@ -281,23 +288,37 @@ impl Endpoint {
 pub struct Connection {
     primary: Endpoint,
     second: Endpoint,
-    pub protocol: Option<TCPProtocol>,
+    pub protocol: Protocol,
 }
 impl Connection {
     pub fn new(primary: Endpoint, second: Endpoint) -> Self {
-        Self { primary, second, protocol: None }
+        Self { primary, second, protocol: Protocol::None }
     }
 }
 
 pub struct TmpConnection<'a> {
     conn: &'a mut Connection,
+    pub frame: &'a mut Frame, //todo
     reverse: bool,
 }
 
 impl<'a> TmpConnection<'a> {
-    pub fn new(conn: &'a mut Connection, reverse: bool) -> Self {
-        Self { conn, reverse }
+    pub fn new(conn: &'a mut Connection, frame: &'a mut Frame, reverse: bool) -> Self {
+        Self { conn, frame, reverse }
     }
+
+    // pub fn source_endpoint(&mut self) -> &mut Endpoint{
+    //     match self.reverse {
+    //         true => &mut self.conn.primary,
+    //         false => &mut self.conn.second,
+    //     }
+    // }
+    // pub fn target_endpoint(&mut self) -> &mut Endpoint{
+    //     match self.reverse {
+    //         true => &mut self.conn.second,
+    //         false => &mut self.conn.primary,
+    //     }
+    // }
     pub fn update(&mut self, stat: &TCPStat, data_source: &DataSource, range: Range<usize>) -> anyhow::Result<ConnectState> {
         let mut _rs = TCPDetail::KEEPALIVE;
         let mut main = &mut self.conn.second;
@@ -323,12 +344,17 @@ impl<'a> TmpConnection<'a> {
                 if rs.status == TCPDetail::NEXT {
                     if rs.len > 0 {
                         let reader = Reader::new_sub(data_source, range.clone())?;
-                        if let Some(_protocol) = &self.conn.protocol {
-                        } else {
-                            if protocol::application::http::detect(&reader) {
-                                self.conn.protocol = Some(TCPProtocol::HTTP);
-                                // println!("--- http detect")
+                        rs.next_protocol = self.conn.protocol;
+                        match self.conn.protocol {
+                            Protocol::None => {
+                                if protocol::application::http::detect(&reader) {
+                                    self.conn.protocol = Protocol::HTTP;
+                                    main.segment_status = SegmentStatus::HttpDetected;
+                                    rs.next_protocol = Protocol::HTTP;
+                                }
+
                             }
+                            _ => {}
                         }
                     }
                 }

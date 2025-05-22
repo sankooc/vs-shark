@@ -1,5 +1,5 @@
 use crate::{
-    common::{concept::Field, core::Context, enum_def::Protocol, io::Reader, quick_hash, Frame},
+    common::{concept::Field, core::Context, enum_def::{IpField, Protocol}, io::Reader, quick_hash, Frame},
     constants::ip_protocol_type_mapper,
     protocol::ip4_mapper,
     read_field_format, read_field_format_fn,
@@ -12,8 +12,8 @@ pub fn t_protocol(protocol_type: u8) -> String {
 }
 impl Visitor {
     pub fn info(ctx: &Context, frame: &Frame) -> Option<String> {
-        if let Some(key) = frame.ptr {
-            if let Some((_, source, target)) = ctx.ipv6map.get(&key) {
+        if let IpField::IPv6(key) = &frame.ip_field {
+            if let Some((_, source, target)) = ctx.ipv6map.get(key) {
                 return Some(format!("Internet Protocol Version 6, Src: {}, Dst: {}", source, target));
             }
         }
@@ -23,14 +23,13 @@ impl Visitor {
         let mut reader = _reader.slice_as_reader(40)?;
         let data = reader.refer()?;
         let key = quick_hash(data);
-        frame.ipv6 = Some(key);
-        frame.ptr = Some(key);
+        frame.ip_field = IpField::IPv6(key);
 
         if let Some(enty) = ctx.ipv6map.get(&key) {
             Ok(ip4_mapper(enty.0))
         } else {
             reader.read32(true)?;
-            reader.read16(true)?;
+            frame.iplen = reader.read16(true)?;
             let protocol_type = reader.read8()?;
             reader.read8()?; //hop
             let source = reader.read_ip6()?;

@@ -21,11 +21,11 @@ pub fn parse(protocol: Protocol, ctx: &mut Context, frame: &mut Frame, reader: &
         Protocol::IP4 => network::ip4::Visitor::parse(ctx, frame, reader),
         Protocol::IP6 => network::ip6::Visitor::parse(ctx, frame, reader),
         Protocol::TCP => transport::tcp::Visitor::parse(ctx, frame, reader),
+        Protocol::HTTP => application::http::Visitor::parse(ctx, frame, reader),
         // "arp" => network::arp::Visitor::parse(frame, reader),
         // "icmp" => network::icmp::V4Visitor::parse(frame, reader),
         _ => {
             bail!("finish");
-            // return DefaultParser::parse(frame, reader);
         }
     }
 }

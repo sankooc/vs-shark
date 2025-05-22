@@ -95,7 +95,7 @@ mod benchmark {
 
     fn load_data(f: &str) {
         let fname = format!("../../../pcaps/{}", f);
-        let times = 10;
+        let times = 1;
         if let Ok(_) = fs::exists(&fname) {
             let data: Vec<u8> = fs::read(&fname).unwrap();
             let task = format!("{}", f).leak();
@@ -109,13 +109,13 @@ mod benchmark {
     #[test]
     fn load_bench() {
         // load_data("11.pcapng");
-        load_data("http.pcap");
-        load_data("tls.pcapng");
-        load_data("wifi.pcap");
-        load_data("dns.pcapng");
-        load_data("pppoe.pcap");
-        load_data("sip.pcap");
-        // load_data("slow.pcap");
+        // load_data("http.pcap");
+        // load_data("tls.pcapng");
+        // load_data("wifi.pcap");
+        // load_data("dns.pcapng");
+        // load_data("pppoe.pcap");
+        // load_data("sip.pcap");
+        load_data("big-2.pcap");
         arch_print!();
     }
 
