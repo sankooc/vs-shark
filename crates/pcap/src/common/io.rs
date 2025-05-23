@@ -1,9 +1,18 @@
-use std::{cmp, hash::{Hash, Hasher}, ops::Range, ptr };
+use std::{
+    cmp,
+    hash::{Hash, Hasher},
+    net::{Ipv4Addr, Ipv6Addr},
+    ops::Range,
+    ptr,
+};
 
 use ahash::AHasher;
-use anyhow::{bail, Ok, Result};
-
-use crate::{common::enum_def::DataError};
+use anyhow::{ bail, Ok, Result};
+// use anyhow::{anyhow, Result};
+use memchr::memchr_iter;
+// use std::simd::Simd;
+// use std::simd::prelude::SimdPartialEq;
+use crate::common::enum_def::DataError;
 
 use super::{concept::ProgressStatus, NString};
 
@@ -33,6 +42,37 @@ impl IO {
     }
 }
 
+
+
+
+// pub fn find_crlf_simd(buf: &[u8]) -> Option<usize> {
+//     const LANES: usize = 16;
+//     type SimdU8 = Simd<u8, LANES>;
+
+//     let len = buf.len();
+//     let chunks = len / LANES;
+
+//     let target_r = SimdU8::splat(b'\r');
+//     let target_n = SimdU8::splat(b'\n');
+
+//     for i in 0..chunks {
+//         let offset = i * LANES;
+//         let chunk = SimdU8::from_slice(&buf[offset..offset + LANES]);
+//         let mask = chunk.simd_eq(target_r) | chunk.simd_eq(target_n);
+
+//         if mask.any() {
+//             return Some(offset + mask.to_bitmask().trailing_zeros() as usize);
+//         }
+//     }
+
+//     for i in chunks * LANES..len {
+//         if buf[i] == b'\r' || buf[i] == b'\n' {
+//             return Some(i);
+//         }
+//     }
+
+//     None
+// }
 pub struct DataSource {
     data: Vec<u8>,
     range: Range<usize>,
@@ -45,7 +85,7 @@ impl DataSource {
     pub fn new() -> Self {
         Self { data: Vec::new(), range: 0..0 }
     }
-    pub fn range(&self) -> Range<usize>{
+    pub fn range(&self) -> Range<usize> {
         self.range.clone()
     }
     pub fn len(&self) -> usize {
@@ -54,7 +94,7 @@ impl DataSource {
     pub fn _data(&self, cursor: usize) -> Result<u8> {
         if self.range.contains(&cursor) {
             let start = self.range.start;
-            return Ok(self.data[cursor - start])
+            return Ok(self.data[cursor - start]);
         }
         bail!(DataError::BitSize);
     }
@@ -108,7 +148,7 @@ impl Into<ProgressStatus> for &Reader<'_> {
     fn into(self) -> ProgressStatus {
         let total = self.data.len();
         let cursor = self.cursor;
-        ProgressStatus{total, cursor, count: 0}
+        ProgressStatus { total, cursor, count: 0 }
     }
 }
 impl<'a> Reader<'a> {
@@ -124,7 +164,6 @@ impl<'a> Reader<'a> {
         }
         if data.range.end < range.end {
             bail!(DataError::BitSize)
-
         }
         Ok(Self { data, range, cursor })
     }
@@ -133,7 +172,7 @@ impl<'a> Reader<'a> {
     }
 
     pub fn preview(&self, len: usize) -> Result<&[u8]> {
-        self._slice( self.cursor..self.cursor + len)
+        self._slice(self.cursor..self.cursor + len)
     }
     pub fn ds(&self) -> &DataSource {
         self.data
@@ -151,16 +190,19 @@ impl Reader<'_> {
     //     Ok(Self { data: ds, range, cursor: self.range.start })
     // }
 
-    
     pub fn slice_as_reader(&mut self, len: usize) -> Result<Self> {
         if self.forward(len) {
-            let range = self.cursor-len..self.cursor;
-            Ok(Self { data: self.data, range, cursor: self.cursor-len })
+            let range = self.cursor - len..self.cursor;
+            Ok(Self {
+                data: self.data,
+                range,
+                cursor: self.cursor - len,
+            })
         } else {
             bail!(DataError::BitSize)
         }
     }
-    pub fn refer(&self) -> Result<&[u8]>{
+    pub fn refer(&self) -> Result<&[u8]> {
         self.data.slice(self.range.clone())
     }
     // pub fn create_range_reader(&mut self, range: Range<usize>)-> Result<Self> {
@@ -177,7 +219,7 @@ impl Reader<'_> {
     pub fn set(&mut self, pos: usize) -> bool {
         if pos == self.range.end || pos == self.data.range.end {
             self.cursor = pos;
-            return true
+            return true;
         }
         if !self.data.range.contains(&pos) {
             return false;
@@ -214,7 +256,7 @@ impl Reader<'_> {
         }
     }
 
-    pub fn next(&self) -> Result<u8>{
+    pub fn next(&self) -> Result<u8> {
         if self.left() > 0 {
             self.data._data(self.cursor)
         } else {
@@ -259,7 +301,6 @@ impl Reader<'_> {
             _val = unsafe { ptr::read_unaligned(bytes.as_ptr() as *const u32).to_le() }
         }
         Ok(_val)
-
     }
     pub fn read64(&mut self, endian: bool) -> Result<u64> {
         let len = 8;
@@ -293,21 +334,64 @@ impl Reader<'_> {
         }
         Ok(_val)
     }
+
+    pub fn read_ip4(&mut self) -> Result<Ipv4Addr> {
+        let data = self.slice(4, true)?;
+        let ip = Ipv4Addr::from(<[u8; 4]>::try_from(data)?);
+        Ok(ip)
+    }
+    pub fn read_ip6(&mut self) -> Result<Ipv6Addr> {
+        let data = self.slice(16, true)?;
+        let ip = Ipv6Addr::from(<[u8; 16]>::try_from(data)?);
+        Ok(ip)
+    }
+    pub fn search_enter(&mut self, limit: usize)-> Option<usize> {
+        let _limit = cmp::min(self.left(), limit);
+        
+        let prdata = match self.preview(_limit) {
+            std::result::Result::Ok(data) => data,
+            _ => return None
+        };
+        find_crlf(prdata)
+    }
+    pub fn extract_left(&mut self) -> Result<DataSource>{
+        let current = self.cursor;
+        let left = self.left();
+        let ext_data = self.slice(left, true)?;
+        Ok(DataSource::create(ext_data.to_vec(), current..current + left))
+    }
 }
 
+pub fn find_crlf(bytes: &[u8]) -> Option<usize> {
+    for pos in memchr_iter(b'\r', bytes) {
+        if pos + 1 < bytes.len() && bytes[pos + 1] == b'\n' {
+            return Some(pos);
+        }
+    }
+    None
+}
+pub struct TCPChunk {
+    pub ds: DataSource,
+    pub index: u32,
+}
+impl TCPChunk {
+    pub fn new(ds: DataSource, index: u32) -> Self {
+        Self { ds, index }
+    }
+}
+// fn find_byte(slice: &[u8], byte: u8) -> Option<usize> {
+//     slice.iter().position(|&x| x == byte)
+// }
 
 pub fn read_mac(data: &[u8]) -> String {
-    format!("{:02x?}:{:02x?}:{:02x?}:{:02x?}:{:02x?}:{:02x?}", data[0],data[1],data[2],data[3],data[4],data[5])
+    format!("{:02x?}:{:02x?}:{:02x?}:{:02x?}:{:02x?}:{:02x?}", data[0], data[1], data[2], data[3], data[4], data[5])
 }
-
-
 
 pub struct IP6 {
     pub str: NString,
     pub loopback: bool,
-    pub multicast: bool
+    pub multicast: bool,
 }
-
 
 impl std::fmt::Display for IP6 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -330,7 +414,7 @@ pub struct MacAddress {
 
 impl From<[u8; 6]> for MacAddress {
     fn from(data: [u8; 6]) -> Self {
-        Self{data}
+        Self { data }
     }
 }
 

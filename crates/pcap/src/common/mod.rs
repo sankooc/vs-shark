@@ -8,12 +8,12 @@ use std::{
 
 use crate::{
     files::{pcap::PCAP, pcapng::PCAPNG},
-    protocol::{detail, link_type_map, network, parse, transport::tcp},
+    protocol::{application, detail, link_type_map, network, parse, transport::tcp},
 };
 use anyhow::{bail, Result};
 use concept::{Criteria, Field, FrameInfo, FrameInternInfo, ListResult, ProgressStatus};
 use connection::ConnectState;
-use enum_def::{DataError, FileType, Protocol};
+use enum_def::{DataError, FileType, InfoField, IpField, Protocol};
 use io::{DataSource, MacAddress, Reader, IO};
 use rustc_hash::FxHasher;
 use serde_json::Error;
@@ -34,34 +34,41 @@ pub fn quick_hash<T>(data: T) -> u64 where T: Hash {
     hasher.finish()
 }
 
-// fn quick_hash_str(s: &str) -> u64 {
-//     let mut hasher = FxHasher::default();
-//     s.hash(&mut hasher);
-//     hasher.finish()
-// }
+pub fn quick_string(data: &[u8]) -> String {
+    unsafe { String::from_utf8_unchecked(data.to_vec()) }
+}
+pub fn std_string(data: &[u8]) -> Result<&str, std::str::Utf8Error>{
+    std::str::from_utf8(data)
+}
+pub fn trim_data(data: &[u8]) -> &[u8]{
+    let size = data.len();
+    let mut start = 0;
+    let mut end = size;
+    for inx in 0..size {
+        if data[inx] != b' ' {
+            start = inx;
+            break;
+        }
+    }
+    for inx in size..start {
+        if data[inx] != b' ' {
+            end = inx;
+            break;
+        }
+    }
+    &data[start..end]
+}
 
-// pub trait FrameRefer {
-//     fn info(&self) -> String;
-// }
+pub fn quick_trim_num(data: &[u8]) -> Result<usize> {
+    let v = trim_data(data);
+    let num_str = unsafe { std::str::from_utf8_unchecked(v) };
+    Ok(num_str.parse()?)
+}
 
-// pub struct EthernetFrame {
-//     data: u64,
-// }
-
-// impl FrameRefer for EthernetFrame {
-//     fn info(&self) -> String {
-//         todo!()
-//     }
-// }
-// pub struct EthernetFrame2 {
-//     data: u64,
-// }
-
-// impl FrameRefer for EthernetFrame2 {
-//     fn info(&self) -> String {
-//         todo!()
-//     }
-// }
+pub fn hex_num(data: &[u8]) -> Result<usize> {
+    let num_str = unsafe { std::str::from_utf8_unchecked(data) };
+    Ok(usize::from_str_radix(num_str, 16)?)
+}
 
 pub struct Ethernet {
     pub source: MacAddress,
@@ -78,10 +85,10 @@ pub struct Frame {
     pub iplen: u16,
 
     pub tcp_info: Option<ConnectState>,
-    pub ipv6: Option<u64>,
-    pub ipv4: Option<u64>,
     pub ports: Option<(u16, u16)>,
-    pub ptr: Option<u64>
+    
+    pub ip_field: IpField,
+    pub info_field: InfoField,
 }
 
 impl Frame {
@@ -242,22 +249,26 @@ impl Instance {
         let _data = &fs[start..end];
         for frame in _data.iter() {
             let mut info = FrameInfo::from(&frame.info);
-            if let Some(ip4) = frame.ipv4 {
-                if let Some((source, target)) = self.ctx.ipv4map.get(&ip4) {
-                    info.source = source.to_string();
-                    info.dest = target.to_string();
+            match &frame.ip_field {
+                IpField::IPv4(s, t) => {
+                    info.source = s.to_string();
+                    info.dest = t.to_string();
                 }
-            } else if let Some(ip6) = frame.ipv6 {
-                if let Some((_, source, target)) = self.ctx.ipv6map.get(&ip6) {
-                    info.source = source.to_string();
-                    info.dest = target.to_string();
+                IpField::IPv6(key) => {
+                    if let Some((_, s, t)) = self.ctx.ipv6map.get(key) {
+                        info.source = s.to_string();
+                        info.dest = t.to_string();
+                    }
                 }
+                _ => {}
             }
-            // let last = frame.tail;
+            info.protocol = frame.tail.to_string().to_lowercase();
             let frame_info = match frame.tail {
                 Protocol::TCP => tcp::Visitor::info(&self.ctx, frame),
                 Protocol::IP4 => network::ip4::Visitor::info(&self.ctx, frame),
                 Protocol::IP6 => network::ip6::Visitor::info(&self.ctx, frame),
+                Protocol::HTTP => application::http::Visitor::info(&self.ctx, frame),
+                Protocol::ICMP => network::icmp::Visitor::info(&self.ctx, frame),
                 _ => None
             };
             if let Some(summary) = frame_info {
@@ -290,9 +301,9 @@ impl Instance {
                         }
                         _ => {
                             let mut f = Field::default();
-                            f.start = reader.cursor as u64;
+                            f.start = reader.cursor;
                             if let Ok(next) = detail(_next, &mut f, &self.ctx, &frame, &mut reader) {
-                                f.size = (reader.cursor as u64) - f.start;
+                                f.size = reader.cursor - f.start;
                                 list.push(f);
                                 _next = next;
                             } else {

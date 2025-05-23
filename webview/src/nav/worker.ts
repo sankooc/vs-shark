@@ -26,7 +26,11 @@ class Client extends PCAPClient {
     console.log(log.level, log.msg);
   }
   appendData(data: Uint8Array): void {
-    this.data = Uint8Array.from([...this.data, ...data]);
+    const newData = new Uint8Array(this.data.length + data.length);
+    newData.set(this.data, 0);
+    newData.set(data, this.data.length);
+    this.data = newData;
+    // this.data = Uint8Array.from([...this.data, ...data]);
   }
 }
 

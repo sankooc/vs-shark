@@ -1,5 +1,6 @@
+use std::net::Ipv4Addr;
 
-use strum_macros::{EnumString, Display};
+use strum_macros::{Display, EnumString};
 use thiserror::Error;
 
 
@@ -27,7 +28,6 @@ pub enum DataError {
     #[error("bit error")]
     BitSize,
 }
-
 
 #[derive(Default, Clone, Copy)]
 pub enum FileType {
@@ -77,7 +77,6 @@ pub enum TCPDetail {
     NEXT,
 }
 
-
 #[derive(Display, Debug, Clone, Copy)]
 pub enum TCPFLAG {
     FIN = 0,
@@ -116,9 +115,39 @@ pub enum TCPConnectStatus {
     TIME_WAIT,
 }
 
-
 pub enum TCPProtocol {
     HTTP,
     HTTPS,
     TLS,
+}
+
+#[derive(Default, Clone)]
+pub enum SegmentStatus {
+    #[default]
+    Init,
+    HttpDetected(usize),
+    // HttpHeadParsing,
+    // HttpHeadParsed(usize, bool),
+    HttpContentContinue(usize, usize),
+    HttpChunkedContinue(usize, usize),
+    // HttpContentParsing,
+    Error,
+    Finish,
+}
+
+#[derive(Default)]
+pub enum IpField {
+    #[default]
+    None,
+    IPv4(Ipv4Addr, Ipv4Addr),
+    IPv6(u64),
+}
+#[derive(Default)]
+pub enum InfoField {
+    #[default]
+    None,
+    Ethernet(u64),
+    Http(Vec<u8>),
+    Icmp(u8, u8),
+    HttpSegment,
 }

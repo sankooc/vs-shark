@@ -43,8 +43,9 @@ mod tests {
         Ok(buffer)
     }
     #[test]
-    fn basic() -> std::io::Result<()> { 
-        // let fname = "../../../pcaps/11.pcapng";
+    fn basic() -> std::io::Result<()> {
+        let fname = "../../../pcaps/11.pcapng";
+        // let fname = "../../../pcaps/chunked.pcap";
         // let fname = "../../../pcaps/c1.pcap";
         // let fname = "../../../pcaps/demo.pcapng";
         // let fname = "../../../pcaps/demo.pcap";
@@ -59,7 +60,7 @@ mod tests {
         // let fname = "../../../pcaps/pppoe.pcap";
         // let fname = "../../../pcaps/sip.pcap";
         // let fname = "../../../pcaps/slow.pcap";
-        let fname = "../../../pcaps/big-2.pcap";
+        // let fname = "../../../pcaps/big-2.pcap";
         let _ins = _parse(fname)?;
         // print!("--finish-");
         let ctx = _ins.get_context();
@@ -70,35 +71,22 @@ mod tests {
 
 
         // {
-        //     let json = _ins.frames_list_json(Criteria{ start: 0, size: 10})?;
+        //     let json = _ins.frames_list_json(pcap::common::concept::Criteria{ start: 195, size: 10})?;
         //     println!("{}", json);
         //     // return;
         // }
-        // {
-        //     let index = 13;
-        //     let f = _ins.frame(index).unwrap();
-        //     let range = f.range().unwrap();
-        //     println!("range  {} - {}", range.start, range.end);
-        //     let data = _seek(fname, range).unwrap();
-        //     let json = _ins.select_frame(index, data).unwrap();
-        //     crate::tc::print_fields(&json);
-        // }
+        {
+            let index = 199;
+            let f = _ins.frame(index).unwrap();
+            let range = f.range().unwrap();
+            println!("range  {} - {}", range.start, range.end);
+            let data = _seek(fname, range).unwrap();
+            let json = _ins.select_frame(index, data).unwrap();
+            crate::tc::print_fields(&json);
+        }
         // println!("json {}", json);
         Ok(())
     }
-
-    // #[test]
-    // fn pooltest() {
-    //     let a1 = format!("{}-1k", "test");
-    //     let a2 = format!("{}-1k", "test");
-        
-    //     println!("original: {:p} - {:p}", a1.as_ptr(), a2.as_ptr());
-    //     println!("reference: {:p} - {:p}", (&a1).as_ptr(), (&a2).as_ptr());
-    //     let c1 = intern(a1);
-    //     let c2 = intern(a2);
-    //     println!("cached: {:p} - {:p}", c1.as_ptr(), c2.as_ptr());
-    // }
-
     #[test]
     fn pooltest2() {
         let ptoro = Protocol::SSL;
@@ -111,5 +99,7 @@ mod tests {
         println!("fin ack => {}", TcpFlagField::from(0x0011).list_str());
         println!("syn ack => {}", TcpFlagField::from(0x0012).list_str());
         println!("ret ack => {}", TcpFlagField::from(0x0014).list_str());
+
+        println!("a is {}", usize::from_str_radix("a", 16).unwrap());
     }
 }

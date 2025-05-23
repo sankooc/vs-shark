@@ -6,9 +6,7 @@ use crate::{
         enum_def::{PacketStatus, Protocol, TCPDetail},
         io::Reader,
         Frame,
-    },
-    constants::ip_protocol_type_mapper,
-    field_back_format, read_field_format,
+    }, constants::ip_protocol_type_mapper, field_back_format, field_forward_format, read_field_format
 };
 use anyhow::Result;
 
@@ -54,19 +52,19 @@ impl Visitor {
                 left_size = iplen + left_size - start;
             }
         }
-        // let flags = state.list_str();
         let ds = reader.ds();
         let range = reader.cursor..reader.cursor + left_size;
         let tcp_state = TCPStat::new(index, sequence, ack, crc, state, left_size as u16);
-
-        if let Ok(mut rely) = ctx.get_connect(frame, source_port, target_port, tcp_state, ds, range) {
-            rely.flag_bit = flag_bit;
-            frame.info.status = match &rely.status {
+        if let Ok(mut tcp_info) = ctx.get_connect(frame, source_port, target_port, tcp_state, ds, range) {
+            tcp_info.flag_bit = flag_bit;
+            frame.info.status = match &tcp_info.status {
                 TCPDetail::NEXT | TCPDetail::KEEPALIVE => PacketStatus::NORNAL,
                 _ => PacketStatus::ERROR,
             };
             frame.ports = Some((source_port, target_port));
-            frame.tcp_info = Some(rely);
+            let next = tcp_info.next_protocol;
+            frame.tcp_info = Some(tcp_info);
+            return Ok(next)
         }
         Ok(Protocol::None)
     }
@@ -96,12 +94,10 @@ impl Visitor {
             reader.forward(skip as usize);
         }
         let payload_len = info.len as usize;
-        if reader.forward(payload_len) {
-            field_back_format!(list, reader, payload_len as u64, format!("TCP payload ({} bytes)", payload_len));
-        }
-
+        field_forward_format!(list, reader, payload_len, format!("TCP payload ({} bytes)", payload_len));
+        
         field.summary = format!("Transmission Control Protocol, Src Port: {}, Dst Port: {}, Len: {}", source_port, target_port, info.len);
         field.children = Some(list);
-        Ok(Protocol::None)
+        Ok(info.next_protocol)
     }
 }
