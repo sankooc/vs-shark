@@ -23,6 +23,7 @@ pub fn parse(protocol: Protocol, ctx: &mut Context, frame: &mut Frame, reader: &
         Protocol::TCP => transport::tcp::Visitor::parse(ctx, frame, reader),
         Protocol::HTTP => application::http::Visitor::parse(ctx, frame, reader),
         Protocol::ICMP => network::icmp::Visitor::parse(ctx, frame, reader),
+        Protocol::ICMP6 => network::icmp6::Visitor::parse(ctx, frame, reader),
         // "arp" => network::arp::Visitor::parse(frame, reader),
         // "icmp" => network::icmp::V4Visitor::parse(frame, reader),
         _ => {
@@ -41,6 +42,7 @@ pub fn detail(protocol: Protocol, field: &mut Field, ctx: &Context, frame: &Fram
         Protocol::TCP => transport::tcp::Visitor::detail(field, ctx, frame, reader),
         Protocol::HTTP => application::http::Visitor::detail(field, ctx, frame, reader),
         Protocol::ICMP => network::icmp::Visitor::detail(field, ctx, frame, reader),
+        Protocol::ICMP6 => network::icmp6::Visitor::detail(field, ctx, frame, reader),
         _ => {
             field.summary = format!("Unimplement Protocol: {}", protocol);
             Ok(Protocol::None)
@@ -91,6 +93,7 @@ pub fn ip4_mapper(ipprototype: u8) -> Protocol {
         2 => Protocol::IGMP,
         6 => Protocol::TCP,
         17 => Protocol::UDP,
+        58 => Protocol::ICMP6,
         _ => Protocol::None,
     }
 }

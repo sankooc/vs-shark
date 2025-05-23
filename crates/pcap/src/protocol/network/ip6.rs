@@ -46,7 +46,7 @@ impl Visitor {
         read_field_format!(list, reader, reader.read8()?, "Hop Limit: {}");
         let source = read_field_format!(list, reader, reader.read_ip6()?, "Source Address: {}");
         let target = read_field_format!(list, reader, reader.read_ip6()?, "Destination Address: {}");
-        field.summary = format!("Internet Protocol Version 4, Src: {}, Dst: {}", source, target);
+        field.summary = format!("Internet Protocol Version 6, Src: {}, Dst: {}", source, target);
         field.children = Some(list);
         Ok(ip4_mapper(protocol_type))
     }

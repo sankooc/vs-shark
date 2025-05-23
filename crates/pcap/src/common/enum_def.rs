@@ -47,6 +47,7 @@ pub enum Protocol {
     IP4,
     IP6,
     ICMP,
+    ICMP6,
     ARP,
     RARP,
     RADIOTAP,
@@ -149,5 +150,6 @@ pub enum InfoField {
     Ethernet(u64),
     Http(Vec<u8>),
     Icmp(u8, u8),
+    Icmp6(u8, u8),
     HttpSegment,
 }

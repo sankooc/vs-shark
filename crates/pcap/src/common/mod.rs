@@ -269,6 +269,7 @@ impl Instance {
                 Protocol::IP6 => network::ip6::Visitor::info(&self.ctx, frame),
                 Protocol::HTTP => application::http::Visitor::info(&self.ctx, frame),
                 Protocol::ICMP => network::icmp::Visitor::info(&self.ctx, frame),
+                Protocol::ICMP6 => network::icmp6::Visitor::info(&self.ctx, frame),
                 _ => None
             };
             if let Some(summary) = frame_info {
