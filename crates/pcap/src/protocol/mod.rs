@@ -22,6 +22,7 @@ pub fn parse(protocol: Protocol, ctx: &mut Context, frame: &mut Frame, reader: &
         Protocol::IP6 => network::ip6::Visitor::parse(ctx, frame, reader),
         Protocol::TCP => transport::tcp::Visitor::parse(ctx, frame, reader),
         Protocol::HTTP => application::http::Visitor::parse(ctx, frame, reader),
+        Protocol::ICMP => network::icmp::Visitor::parse(ctx, frame, reader),
         // "arp" => network::arp::Visitor::parse(frame, reader),
         // "icmp" => network::icmp::V4Visitor::parse(frame, reader),
         _ => {
@@ -38,6 +39,8 @@ pub fn detail(protocol: Protocol, field: &mut Field, ctx: &Context, frame: &Fram
         Protocol::IP4 => network::ip4::Visitor::detail(field, ctx, frame, reader),
         Protocol::IP6 => network::ip6::Visitor::detail(field, ctx, frame, reader),
         Protocol::TCP => transport::tcp::Visitor::detail(field, ctx, frame, reader),
+        Protocol::HTTP => application::http::Visitor::detail(field, ctx, frame, reader),
+        Protocol::ICMP => network::icmp::Visitor::detail(field, ctx, frame, reader),
         _ => {
             field.summary = format!("Unimplement Protocol: {}", protocol);
             Ok(Protocol::None)

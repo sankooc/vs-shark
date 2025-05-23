@@ -6,9 +6,7 @@ use crate::{
         enum_def::{PacketStatus, Protocol, TCPDetail},
         io::Reader,
         Frame,
-    },
-    constants::ip_protocol_type_mapper,
-    field_back_format, read_field_format,
+    }, constants::ip_protocol_type_mapper, field_back_format, field_forward_format, read_field_format
 };
 use anyhow::Result;
 
@@ -96,12 +94,10 @@ impl Visitor {
             reader.forward(skip as usize);
         }
         let payload_len = info.len as usize;
-        if reader.forward(payload_len) {
-            field_back_format!(list, reader, payload_len as u64, format!("TCP payload ({} bytes)", payload_len));
-        }
-
+        field_forward_format!(list, reader, payload_len, format!("TCP payload ({} bytes)", payload_len));
+        
         field.summary = format!("Transmission Control Protocol, Src Port: {}, Dst Port: {}, Len: {}", source_port, target_port, info.len);
         field.children = Some(list);
-        Ok(Protocol::None)
+        Ok(info.next_protocol)
     }
 }

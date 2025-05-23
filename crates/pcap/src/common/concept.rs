@@ -71,14 +71,14 @@ impl From<&FrameInternInfo> for FrameInfo {
 
 #[derive(Default, Clone, Serialize)]
 pub struct Field {
-    pub start: u64,
-    pub size: u64,
+    pub start: usize,
+    pub size: usize,
     pub summary: String,
     pub children: Option<Vec<Field>>,
 }
 
 impl Field {
-    pub fn label(summary: String, start: u64, end: u64) -> Field {
+    pub fn label(summary: String, start: usize, end: usize) -> Field {
         Field {
             start,
             size: end - start,
@@ -86,7 +86,7 @@ impl Field {
             children: None,
         }
     }
-    pub fn with_children(summary: String, start: u64, size: u64) -> Field {
+    pub fn with_children(summary: String, start: usize, size: usize) -> Field {
         Field {
             start,
             size,
@@ -95,6 +95,6 @@ impl Field {
         }
     }
     pub fn with_children_reader(reader: &super::io::Reader) -> Field {
-        Field::with_children(String::from(""), reader.cursor as u64, 0)
+        Field::with_children(String::from(""), reader.cursor, 0)
     }
 }

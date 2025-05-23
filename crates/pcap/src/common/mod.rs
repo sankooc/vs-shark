@@ -268,6 +268,7 @@ impl Instance {
                 Protocol::IP4 => network::ip4::Visitor::info(&self.ctx, frame),
                 Protocol::IP6 => network::ip6::Visitor::info(&self.ctx, frame),
                 Protocol::HTTP => application::http::Visitor::info(&self.ctx, frame),
+                Protocol::ICMP => network::icmp::Visitor::info(&self.ctx, frame),
                 _ => None
             };
             if let Some(summary) = frame_info {
@@ -300,9 +301,9 @@ impl Instance {
                         }
                         _ => {
                             let mut f = Field::default();
-                            f.start = reader.cursor as u64;
+                            f.start = reader.cursor;
                             if let Ok(next) = detail(_next, &mut f, &self.ctx, &frame, &mut reader) {
-                                f.size = (reader.cursor as u64) - f.start;
+                                f.size = reader.cursor - f.start;
                                 list.push(f);
                                 _next = next;
                             } else {

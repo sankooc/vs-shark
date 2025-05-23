@@ -156,4 +156,21 @@ mod unit {
         }
         Ok(())
     }
+    #[test]
+    fn test_icmp4() -> Result<()> {
+        let (ds, mut cx, mut frame) = init("icmp");
+        {
+            let mut reader = Reader::new(&ds);
+            let next = protocol::network::icmp::Visitor::parse(&mut cx, &mut frame, &mut reader)?;
+            assert!(matches!(next, Protocol::None));
+        }
+        {
+            let mut reader = Reader::new(&ds);
+            let mut f = Field::default();
+            let next = protocol::network::icmp::Visitor::detail(&mut f, &mut cx, &mut frame, &mut reader)?;
+            assert!(matches!(next, Protocol::None));
+            print_field(1, &f);
+        }
+        Ok(())
+    }
 }

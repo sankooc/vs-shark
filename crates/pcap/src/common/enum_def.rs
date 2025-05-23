@@ -148,5 +148,6 @@ pub enum InfoField {
     None,
     Ethernet(u64),
     Http(Vec<u8>),
+    Icmp(u8, u8),
     HttpSegment,
 }
