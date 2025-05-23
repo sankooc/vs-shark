@@ -354,6 +354,12 @@ impl Reader<'_> {
         };
         find_crlf(prdata)
     }
+    pub fn extract_left(&mut self) -> Result<DataSource>{
+        let current = self.cursor;
+        let left = self.left();
+        let ext_data = self.slice(left, true)?;
+        Ok(DataSource::create(ext_data.to_vec(), current..current + left))
+    }
 }
 
 pub fn find_crlf(bytes: &[u8]) -> Option<usize> {
@@ -363,6 +369,15 @@ pub fn find_crlf(bytes: &[u8]) -> Option<usize> {
         }
     }
     None
+}
+pub struct TCPChunk {
+    pub ds: DataSource,
+    pub index: u32,
+}
+impl TCPChunk {
+    pub fn new(ds: DataSource, index: u32) -> Self {
+        Self { ds, index }
+    }
 }
 // fn find_byte(slice: &[u8], byte: u8) -> Option<usize> {
 //     slice.iter().position(|&x| x == byte)

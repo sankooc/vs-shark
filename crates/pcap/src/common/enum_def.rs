@@ -3,6 +3,7 @@ use std::net::Ipv4Addr;
 use strum_macros::{Display, EnumString};
 use thiserror::Error;
 
+
 #[derive(Debug, EnumString, Display)]
 #[strum(serialize_all = "camel_case")]
 pub enum PROPS {
@@ -120,12 +121,18 @@ pub enum TCPProtocol {
     TLS,
 }
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub enum SegmentStatus {
     #[default]
     Init,
-    HttpDetected,
-    HttpParsing,
+    HttpDetected(usize),
+    // HttpHeadParsing,
+    // HttpHeadParsed(usize, bool),
+    HttpContentContinue(usize, usize),
+    HttpChunkedContinue(usize, usize),
+    // HttpContentParsing,
+    Error,
+    Finish,
 }
 
 #[derive(Default)]
@@ -141,4 +148,5 @@ pub enum InfoField {
     None,
     Ethernet(u64),
     Http(Vec<u8>),
+    HttpSegment,
 }

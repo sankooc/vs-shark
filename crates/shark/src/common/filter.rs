@@ -109,7 +109,6 @@ impl<'a> Parser<'a> {
                 self.consume_char();
                 Ok(Expr::Group(Box::new(expr)))
             } else {
-                println!("--{}", self.peek_char().unwrap());
                 Err("Expected closing parenthesis".to_string())
             }
         } else {

@@ -43,8 +43,9 @@ mod tests {
         Ok(buffer)
     }
     #[test]
-    fn basic() -> std::io::Result<()> { 
+    fn basic() -> std::io::Result<()> {
         // let fname = "../../../pcaps/11.pcapng";
+        // let fname = "../../../pcaps/chunked.pcap";
         // let fname = "../../../pcaps/c1.pcap";
         // let fname = "../../../pcaps/demo.pcapng";
         // let fname = "../../../pcaps/demo.pcap";
@@ -98,5 +99,7 @@ mod tests {
         println!("fin ack => {}", TcpFlagField::from(0x0011).list_str());
         println!("syn ack => {}", TcpFlagField::from(0x0012).list_str());
         println!("ret ack => {}", TcpFlagField::from(0x0014).list_str());
+
+        println!("a is {}", usize::from_str_radix("a", 16).unwrap());
     }
 }

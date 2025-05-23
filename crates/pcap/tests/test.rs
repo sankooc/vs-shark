@@ -10,7 +10,7 @@ mod unit {
         common::{
             concept::Field,
             core::Context,
-            enum_def::{IpField, Protocol},
+            enum_def::{InfoField, IpField, Protocol},
             io::{DataSource, Reader},
             Frame,
         },
@@ -130,6 +130,27 @@ mod unit {
             let mut reader = Reader::new(&ds);
             let mut f = Field::default();
             let next = protocol::transport::tcp::Visitor::detail(&mut f, &mut cx, &mut frame, &mut reader)?;
+            assert!(matches!(next, Protocol::None));
+            print_field(1, &f);
+        }
+        Ok(())
+    }
+    #[test]
+    fn test_http() -> Result<()> {
+        let (ds, mut cx, mut frame) = init("http");
+        {
+            let mut reader = Reader::new(&ds);
+            let mut f = Field::default();
+            let next = protocol::application::http::Visitor::detail(&mut f, &mut cx, &mut frame, &mut reader)?;
+            assert!(matches!(next, Protocol::None));
+            print_field(1, &f);
+
+        }
+        {
+            frame.info_field = InfoField::Http(vec![]);
+            let mut reader = Reader::new(&ds);
+            let mut f = Field::default();
+            let next = protocol::application::http::Visitor::detail(&mut f, &mut cx, &mut frame, &mut reader)?;
             assert!(matches!(next, Protocol::None));
             print_field(1, &f);
         }

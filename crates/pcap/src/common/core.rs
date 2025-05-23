@@ -9,11 +9,22 @@ use crate::common::enum_def::IpField;
 
 use super::{
     connection::{ConnectState, Connection, Endpoint, TCPStat, TmpConnection},
-    enum_def::FileType,
+    enum_def::{FileType, Protocol},
     io::DataSource,
     quick_hash, EthernetCache, FastHashMap, Frame, NString,
 };
 
+
+pub struct Segment {
+    pub index: u32,
+    pub range: Range<usize>,
+}
+
+pub struct Segments {
+    pub message_type: Protocol,
+    pub tcp_index: usize,
+    pub segments: Vec<Segment>,
+}
 #[derive(Default)]
 pub struct Context {
     pub file_type: FileType,
@@ -22,9 +33,9 @@ pub struct Context {
     pub counter: u32,
     pub active_connection: FastHashMap<(u64, u16, u64, u16), usize>,
     pub connections: Vec<Connection>,
+    pub segment_messages: Vec<Segments>,
     pub ethermap: FastHashMap<u64, EthernetCache>,
     pub ipv6map: FastHashMap<u64, (u8, Ipv6Addr, Ipv6Addr)>,
-    // pub ipv4map: FastHashMap<u64, (Ipv4Addr, Ipv4Addr)>,
     pub string_map: FastHashMap<u64, NString>,
 }
 
@@ -37,6 +48,21 @@ impl Context {
         let static_ref: NString = Box::leak(s.into_boxed_str());
         self.string_map.insert(key, static_ref);
         static_ref
+    }
+    pub fn init_segment_message(&mut self, message_type: Protocol, tcp_index: usize) -> usize {
+        let _index = self.segment_messages.len();
+        self.segment_messages.push(Segments { message_type, tcp_index, segments: vec![] });
+        _index
+    }
+    pub fn create_segment_message(&mut self, message_type: Protocol, tcp_index: usize, segment: Segment) -> usize {
+        let _index = self.segment_messages.len();
+        self.segment_messages.push(Segments { message_type, tcp_index, segments: vec![segment] });
+        _index
+    }
+    pub fn add_segment_message(&mut self, message_index: usize, segment: Segment){
+        if let Some(msg) = self.segment_messages.get_mut(message_index) {
+            msg.segments.push(segment);
+        }
     }
 }
 
@@ -119,7 +145,7 @@ impl Context {
         // Self { ds, file_type: FileType::NONE, link_type:0, list: vec![], counter:0, active_connection: FastHashMap::default(), connections: vec![] }
     }
 
-    pub fn _get_connect<T>(&mut self, frame: &mut Frame, source: T, target: T, stat: TCPStat, data_source: &DataSource, range: Range<usize>) -> Result<ConnectState>
+    pub fn _get_connect<T>(&mut self, _: &mut Frame, source: T, target: T, stat: TCPStat, data_source: &DataSource, range: Range<usize>) -> Result<ConnectState>
     where
         T: Into<Endpoint> + PartialOrd + Factor,
     {
@@ -144,8 +170,9 @@ impl Context {
             self.active_connection.insert(key, _index);
         }
         let conn = self.connections.get_mut(_index).unwrap();
-        let mut tmp_conn = TmpConnection::new(conn, frame, reverse);
-        let rs = tmp_conn.update(&stat, data_source, range)?;
+        let mut tmp_conn = TmpConnection::new(conn, reverse);
+        let mut rs = tmp_conn.update(&stat, data_source, range)?;
+        rs.connection = Some((_index, reverse));
         // remove
         if rs.connect_finished {
             self.active_connection.remove(&key);
@@ -170,5 +197,16 @@ impl Context {
             }
             _ => bail!("c-1-0"),
         }
+    }
+
+    pub fn connection(&mut self, frame: &mut Frame) -> Option<(usize, TmpConnection)> {
+        if let Some(tcp_info) = &frame.tcp_info {
+            if let Some((index, reverse)) = tcp_info.connection {
+                if let Some(conn) = self.connections.get_mut(index) {
+                    return Some((index, TmpConnection::new(conn, reverse)));
+                }
+            }
+        }
+        None
     }
 }

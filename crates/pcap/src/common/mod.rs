@@ -34,34 +34,41 @@ pub fn quick_hash<T>(data: T) -> u64 where T: Hash {
     hasher.finish()
 }
 
-// fn quick_hash_str(s: &str) -> u64 {
-//     let mut hasher = FxHasher::default();
-//     s.hash(&mut hasher);
-//     hasher.finish()
-// }
+pub fn quick_string(data: &[u8]) -> String {
+    unsafe { String::from_utf8_unchecked(data.to_vec()) }
+}
+pub fn std_string(data: &[u8]) -> Result<&str, std::str::Utf8Error>{
+    std::str::from_utf8(data)
+}
+pub fn trim_data(data: &[u8]) -> &[u8]{
+    let size = data.len();
+    let mut start = 0;
+    let mut end = size;
+    for inx in 0..size {
+        if data[inx] != b' ' {
+            start = inx;
+            break;
+        }
+    }
+    for inx in size..start {
+        if data[inx] != b' ' {
+            end = inx;
+            break;
+        }
+    }
+    &data[start..end]
+}
 
-// pub trait FrameRefer {
-//     fn info(&self) -> String;
-// }
+pub fn quick_trim_num(data: &[u8]) -> Result<usize> {
+    let v = trim_data(data);
+    let num_str = unsafe { std::str::from_utf8_unchecked(v) };
+    Ok(num_str.parse()?)
+}
 
-// pub struct EthernetFrame {
-//     data: u64,
-// }
-
-// impl FrameRefer for EthernetFrame {
-//     fn info(&self) -> String {
-//         todo!()
-//     }
-// }
-// pub struct EthernetFrame2 {
-//     data: u64,
-// }
-
-// impl FrameRefer for EthernetFrame2 {
-//     fn info(&self) -> String {
-//         todo!()
-//     }
-// }
+pub fn hex_num(data: &[u8]) -> Result<usize> {
+    let num_str = unsafe { std::str::from_utf8_unchecked(data) };
+    Ok(usize::from_str_radix(num_str, 16)?)
+}
 
 pub struct Ethernet {
     pub source: MacAddress,
