@@ -10,7 +10,7 @@ mod unit {
         common::{
             concept::Field,
             core::Context,
-            enum_def::{InfoField, IpField, Protocol},
+            enum_def::{InfoField, AddressField, Protocol},
             io::{DataSource, Reader},
             Frame,
         },
@@ -101,13 +101,13 @@ mod unit {
         {
             let mut reader = Reader::new(&ds);
             let next = protocol::network::ip6::Visitor::parse(&mut cx, &mut frame, &mut reader)?;
-            assert!(matches!(next, Protocol::None));
+            assert!(matches!(next, Protocol::ICMP6));
         }
         {
             let mut reader = Reader::new(&ds);
             let mut f = Field::default();
             let next = protocol::network::ip6::Visitor::detail(&mut f, &mut cx, &mut frame, &mut reader)?;
-            assert!(matches!(next, Protocol::None));
+            assert!(matches!(next, Protocol::ICMP6));
             print_field(1, &f);
         }
         Ok(())
@@ -119,7 +119,7 @@ mod unit {
             let _data = [1, 3, 4, 5, 2, 3, 4, 5];
             let source = Ipv4Addr::from(<[u8; 4]>::try_from(&_data[..4])?);
             let target = Ipv4Addr::from(<[u8; 4]>::try_from(&_data[4..])?);
-            frame.ip_field = IpField::IPv4(source, target);
+            frame.ip_field = AddressField::IPv4(source, target);
         }
         {
             let mut reader = Reader::new(&ds);
@@ -168,6 +168,25 @@ mod unit {
             let mut reader = Reader::new(&ds);
             let mut f = Field::default();
             let next = protocol::network::icmp::Visitor::detail(&mut f, &mut cx, &mut frame, &mut reader)?;
+            assert!(matches!(next, Protocol::None));
+            print_field(1, &f);
+        }
+        Ok(())
+    }
+    #[test]
+    fn test_pppoes() -> Result<()> {
+        let (ds, mut cx, mut frame) = init("pppoes");
+        {
+            let mut reader = Reader::new(&ds);
+            let next = protocol::link::pppoes::Visitor::parse(&mut cx, &mut frame, &mut reader)?;
+            assert!(matches!(next, Protocol::None));
+            let info = protocol::link::pppoes::Visitor::info(&mut cx, &mut frame).unwrap();
+            println!("info [{}]", info);
+        }
+        {
+            let mut reader = Reader::new(&ds);
+            let mut f = Field::default();
+            let next = protocol::link::pppoes::Visitor::detail(&mut f, &mut cx, &mut frame, &mut reader)?;
             assert!(matches!(next, Protocol::None));
             print_field(1, &f);
         }

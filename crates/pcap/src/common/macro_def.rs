@@ -38,8 +38,9 @@ macro_rules! field_back_format {
     ($list:expr, $reader:expr, $inx:expr, $msg:expr) => {{
         let start = $reader.cursor;
         let ele = crate::common::concept::Field::label($msg, start - $inx, start);
-        // let ele = crate::common::FieldElement::create(crate::cache::intern($msg), Some(start-$inx..start));
+        let inx = $list.len();
         $list.push(ele);
+        inx
     }};
 }
 
@@ -50,6 +51,7 @@ macro_rules! field_rest_format {
             let start = $reader.cursor;
             let end = $reader.cursor + $reader.left();
             let ele = crate::common::concept::Field::label($msg, start, end);
+            // let inx = $list.len();
             $list.push(ele);
         }
     }};

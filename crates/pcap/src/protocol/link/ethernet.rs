@@ -2,7 +2,7 @@ use crate::{
     common::{
         concept::Field,
         core::Context,
-        enum_def::{InfoField, Protocol},
+        enum_def::{AddressField, InfoField, Protocol},
         io::{read_mac, Reader},
         quick_hash, EthernetCache, Frame,
     },
@@ -28,6 +28,7 @@ impl EthernetVisitor {
         let mut _reader = reader.slice_as_reader(14)?;
         let data = _reader.refer()?;
         let key = quick_hash(data);
+        frame.ip_field = AddressField::Mac(key);
         frame.info_field = InfoField::Ethernet(key);
         if let Some(cache) = ctx.ethermap.get(&key) {
             Ok(enthernet_protocol_mapper(cache.ptype))

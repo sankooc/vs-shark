@@ -1,7 +1,7 @@
 use std::net::Ipv4Addr;
 
 use crate::{
-    common::{concept::Field, core::Context, enum_def::{IpField, Protocol}, io::Reader, Frame},
+    common::{concept::Field, core::Context, enum_def::{AddressField, Protocol}, io::Reader, Frame},
     constants::ip_protocol_type_mapper,
     field_back_format, field_back_format_fn,
     protocol::ip4_mapper,
@@ -20,7 +20,7 @@ pub struct Visitor {}
 
 impl Visitor {
     pub fn info(_: &Context, frame: &Frame) -> Option<String> {
-        if let IpField::IPv4(s, t) = &frame.ip_field {
+        if let AddressField::IPv4(s, t) = &frame.ip_field {
             return Some(format!("Internet Protocol Version 4, Src: {}, Dst: {}", s, t));
         }
         None
@@ -39,7 +39,7 @@ impl Visitor {
         let _data = reader.slice(8, true)?;
         let source = Ipv4Addr::from(<[u8; 4]>::try_from(&_data[..4])?);
         let target = Ipv4Addr::from(<[u8; 4]>::try_from(&_data[4..])?);
-        frame.ip_field = IpField::IPv4(source, target);
+        frame.ip_field = AddressField::IPv4(source, target);
         
         let ext = head_len - 5;
         if ext > 0 {

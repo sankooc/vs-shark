@@ -1,5 +1,6 @@
 use std::net::Ipv4Addr;
 
+
 use strum_macros::{Display, EnumString};
 use thiserror::Error;
 
@@ -37,6 +38,31 @@ pub enum FileType {
     NONE,
 }
 
+// pub enum Visitor {
+//     ETHERNET(protocol::link::ethernet::Visitor),
+//     // ETHERNET(protocol::link::ethernet::Visitor),
+//     // SSL,
+//     // Loopback(protocol::link::loopback::Visitor),
+//     // PPPoES(protocol::link::pppoes::Visitor),
+//     // PPPoED,
+//     // IP4(protocol::network::ip4::Visitor),
+//     // IP6(protocol::network::ip6::Visitor),
+//     // ICMP(protocol::network::icmp::Visitor),
+//     // ICMP6(protocol::network::icmp6::Visitor),
+//     // ARP,
+//     // RARP,
+//     // RADIOTAP,
+//     // IEEE1905A(protocol::link::ieee1905a::Visitor),
+//     // IGMP,
+//     // UDP,
+//     // TCP(protocol::transport::tcp::Visitor),
+//     // DNS,
+//     // DHCP,
+//     // DHCPv6,
+//     // HTTP(protocol::application::http::Visitor),
+//     // HTTPS,
+//     // TLS,
+// }
 #[derive(Default, Display, Debug, Clone, Copy)]
 pub enum Protocol {
     #[default]
@@ -44,13 +70,16 @@ pub enum Protocol {
     ETHERNET,
     SSL,
     Loopback,
+    PPPoES,
+    PPPoED,
     IP4,
     IP6,
     ICMP,
+    ICMP6,
     ARP,
     RARP,
     RADIOTAP,
-    Ieee1905a,
+    IEEE1905A,
     IGMP,
     UDP,
     TCP,
@@ -136,9 +165,10 @@ pub enum SegmentStatus {
 }
 
 #[derive(Default)]
-pub enum IpField {
+pub enum AddressField {
     #[default]
     None,
+    Mac(u64),
     IPv4(Ipv4Addr, Ipv4Addr),
     IPv6(u64),
 }
@@ -149,5 +179,9 @@ pub enum InfoField {
     Ethernet(u64),
     Http(Vec<u8>),
     Icmp(u8, u8),
+    Icmp6(u8, u8),
     HttpSegment,
+    PPPoES(Option<u8>),
 }
+
+
