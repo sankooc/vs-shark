@@ -5,7 +5,7 @@ use std::{
 
 use anyhow::{bail, Result};
 
-use crate::common::enum_def::IpField;
+use crate::common::enum_def::AddressField;
 
 use super::{
     connection::{ConnectState, Connection, Endpoint, TCPStat, TmpConnection},
@@ -181,12 +181,12 @@ impl Context {
     }
     pub fn get_connect(&mut self, frame: &mut Frame, port1: u16, port2: u16, stat: TCPStat, data_source: &DataSource, range: Range<usize>) -> Result<ConnectState> {
         match &frame.ip_field {
-            IpField::IPv4(source, target) => {
+            AddressField::IPv4(source, target) => {
                 let s = IPV4Point::new(source, port1);
                 let t = IPV4Point::new(target, port2);
                 self._get_connect(frame, s, t, stat, data_source, range)
             }
-            IpField::IPv6(key) => {
+            AddressField::IPv6(key) => {
                 if let Some((_, source, target)) = self.ipv6map.get(key) {
                     let s = IPV6Point::new(source, port1);
                     let t = IPV6Point::new(target, port2);

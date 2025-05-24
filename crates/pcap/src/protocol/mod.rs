@@ -7,7 +7,6 @@ use crate::{
 };
 
 pub mod application;
-pub mod def;
 pub mod link;
 pub mod network;
 pub mod transport;
@@ -17,13 +16,14 @@ pub fn parse(protocol: Protocol, ctx: &mut Context, frame: &mut Frame, reader: &
         Protocol::ETHERNET => link::ethernet::EthernetVisitor::parse(ctx, frame, reader),
         Protocol::SSL => link::ssl::Visitor::parse(ctx, frame, reader),
         Protocol::Loopback => link::loopback::Visitor::parse(ctx, frame, reader),
-        Protocol::Ieee1905a => link::ieee1905a::Visitor::parse(ctx, frame, reader),
+        Protocol::IEEE1905A => link::ieee1905a::Visitor::parse(ctx, frame, reader),
         Protocol::IP4 => network::ip4::Visitor::parse(ctx, frame, reader),
         Protocol::IP6 => network::ip6::Visitor::parse(ctx, frame, reader),
         Protocol::TCP => transport::tcp::Visitor::parse(ctx, frame, reader),
         Protocol::HTTP => application::http::Visitor::parse(ctx, frame, reader),
         Protocol::ICMP => network::icmp::Visitor::parse(ctx, frame, reader),
         Protocol::ICMP6 => network::icmp6::Visitor::parse(ctx, frame, reader),
+        Protocol::PPPoES => link::pppoes::Visitor::parse(ctx, frame, reader),
         // "arp" => network::arp::Visitor::parse(frame, reader),
         // "icmp" => network::icmp::V4Visitor::parse(frame, reader),
         _ => {
@@ -36,13 +36,14 @@ pub fn detail(protocol: Protocol, field: &mut Field, ctx: &Context, frame: &Fram
         Protocol::ETHERNET => link::ethernet::EthernetVisitor::detail(field, ctx, frame, reader),
         Protocol::SSL => link::ssl::Visitor::detail(field, ctx, frame, reader),
         Protocol::Loopback => link::loopback::Visitor::detail(field, ctx, frame, reader),
-        Protocol::Ieee1905a => link::ieee1905a::Visitor::detail(field, ctx, frame, reader),
+        Protocol::IEEE1905A => link::ieee1905a::Visitor::detail(field, ctx, frame, reader),
         Protocol::IP4 => network::ip4::Visitor::detail(field, ctx, frame, reader),
         Protocol::IP6 => network::ip6::Visitor::detail(field, ctx, frame, reader),
         Protocol::TCP => transport::tcp::Visitor::detail(field, ctx, frame, reader),
         Protocol::HTTP => application::http::Visitor::detail(field, ctx, frame, reader),
         Protocol::ICMP => network::icmp::Visitor::detail(field, ctx, frame, reader),
         Protocol::ICMP6 => network::icmp6::Visitor::detail(field, ctx, frame, reader),
+        Protocol::PPPoES => link::pppoes::Visitor::detail(field, ctx, frame, reader),
         _ => {
             field.summary = format!("Unimplement Protocol: {}", protocol);
             Ok(Protocol::None)
@@ -76,12 +77,12 @@ pub fn link_type_map(file_type: &FileType, link_type: u32, reader: &mut Reader) 
 
 pub fn enthernet_protocol_mapper(ptype: u16) -> Protocol {
     match ptype {
-        0x893a => Protocol::Ieee1905a,
+        0x893a => Protocol::IEEE1905A,
         0x0800 => Protocol::IP4,
         0x086dd => Protocol::IP6,
         0x0806 => Protocol::ARP,
         0x8035 => Protocol::RARP,
-        // 0x8864 => "pppoes",
+        0x8864 => Protocol::PPPoES,
         // 0x8863 => "pppoed",
         _ => Protocol::None,
     }
