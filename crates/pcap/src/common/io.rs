@@ -335,6 +335,13 @@ impl Reader<'_> {
         Ok(_val)
     }
 
+    pub fn read_string(&mut self, len: usize) -> Result<String> {
+        let data = self.slice(len, true)?;
+        let _str = String::from_utf8_lossy(data);
+        Ok(_str.to_string())
+    }
+
+
     pub fn read_ip4(&mut self) -> Result<Ipv4Addr> {
         let data = self.slice(4, true)?;
         let ip = Ipv4Addr::from(<[u8; 4]>::try_from(data)?);

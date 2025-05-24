@@ -168,7 +168,7 @@ pub enum SegmentStatus {
 pub enum AddressField {
     #[default]
     None,
-    Mac(Vec<u8>, Vec<u8>),
+    Mac(u64),
     IPv4(Ipv4Addr, Ipv4Addr),
     IPv6(u64),
 }
