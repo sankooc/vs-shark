@@ -48,7 +48,7 @@ mod tests {
     fn basic() -> std::io::Result<()> {
         let fname = "../../../pcaps/11.pcapng";
         // let fname = "../../../pcaps/chunked.pcap";
-        // let fname = "../../../pcaps/c1.pcap";
+        // let fname = "../../../pcaps/c1.pcap"; 
         // let fname = "../../../pcaps/demo.pcapng";
         // let fname = "../../../pcaps/demo.pcap";
         // let fname = "../../../pcaps/dns.pcapng";
@@ -73,19 +73,19 @@ mod tests {
 
 
         {
-            let json = _ins.frames_list_json(pcap::common::concept::Criteria{ start: 3, size: 1})?;
+            let json = _ins.frames_list_json(pcap::common::concept::Criteria{ start: 94, size: 1})?;
             println!("{}", json);
             // return;
         }
-        // {
-        //     let index = 20;
-        //     let f = _ins.frame(index).unwrap();
-        //     let range = f.range().unwrap();
-        //     println!("range  {} - {}", range.start, range.end);
-        //     let data = _seek(fname, range).unwrap();
-        //     let json = _ins.select_frame(index, data).unwrap();
-        //     crate::tc::print_fields(&json);
-        // }
+        {
+            let index = 94;
+            let f = _ins.frame(index).unwrap();
+            let range = f.range().unwrap();
+            println!("range  {} - {}", range.start, range.end);
+            let data = _seek(fname, range).unwrap();
+            let json = _ins.select_frame(index, data).unwrap();
+            crate::tc::print_fields(&json);
+        }
         // println!("json {}", json);
         Ok(())
     }

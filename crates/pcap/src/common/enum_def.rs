@@ -4,6 +4,8 @@ use std::net::Ipv4Addr;
 use strum_macros::{Display, EnumString};
 use thiserror::Error;
 
+use super::io::MacAddress;
+
 
 #[derive(Debug, EnumString, Display)]
 #[strum(serialize_all = "camel_case")]
@@ -183,6 +185,8 @@ pub enum ProtocolInfoField {
     HttpSegment,
     PPPoES(Option<u8>),
     UDP(u16),
+    ARP(u16, u16, MacAddress, Ipv4Addr, MacAddress, Ipv4Addr),
+    RARP(u16, u16, MacAddress, Ipv4Addr, MacAddress, Ipv4Addr),
 }
 
 

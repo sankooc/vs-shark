@@ -26,6 +26,8 @@ pub fn parse(protocol: Protocol, ctx: &mut Context, frame: &mut Frame, reader: &
         Protocol::ICMP6 => network::icmp6::Visitor::parse(ctx, frame, reader),
         Protocol::PPPoES => link::pppoes::Visitor::parse(ctx, frame, reader),
         Protocol::PPPoED => link::pppoed::Visitor::parse(ctx, frame, reader),
+        Protocol::ARP => network::arp::Visitor::parse(ctx, frame, reader),
+        Protocol::RARP => network::rarp::Visitor::parse(ctx, frame, reader),
         // "arp" => network::arp::Visitor::parse(frame, reader),
         // "icmp" => network::icmp::V4Visitor::parse(frame, reader),
         _ => {
@@ -48,6 +50,8 @@ pub fn detail(protocol: Protocol, field: &mut Field, ctx: &Context, frame: &Fram
         Protocol::ICMP6 => network::icmp6::Visitor::detail(field, ctx, frame, reader),
         Protocol::PPPoES => link::pppoes::Visitor::detail(field, ctx, frame, reader),
         Protocol::PPPoED => link::pppoed::Visitor::detail(field, ctx, frame, reader),
+        Protocol::ARP => network::arp::Visitor::detail(field, ctx, frame, reader),
+        Protocol::RARP => network::rarp::Visitor::detail(field, ctx, frame, reader),
         _ => {
             field.summary = format!("Unimplement Protocol: {}", protocol);
             Ok(Protocol::None)
@@ -67,6 +71,8 @@ pub fn summary(protocol: Protocol, ctx: &Context, frame: &Frame) -> Option<Strin
         Protocol::ICMP6 => network::icmp6::Visitor::info(ctx, frame),
         Protocol::PPPoES => link::pppoes::Visitor::info(ctx, frame),
         Protocol::PPPoED => link::pppoed::Visitor::info(ctx, frame),
+        Protocol::ARP => network::arp::Visitor::info(ctx, frame),
+        Protocol::RARP => network::rarp::Visitor::info(ctx, frame),
         _ => None
     }
 }
