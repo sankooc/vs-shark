@@ -18,6 +18,7 @@ pub struct ProgressStatus {
     pub total: usize,
     pub cursor: usize,
     pub count: usize,
+    pub left: usize,
 }
 
 impl ProgressStatus {

@@ -125,7 +125,8 @@ pub struct Instance {
 
 impl Instance {
     pub fn new(batch_size: usize) -> Instance {
-        let ds = DataSource::new(batch_size, 0);
+        let size = cmp::max(batch_size, 1024 * 128);
+        let ds = DataSource::new(size, 0);
         Self {
             ds,
             file_type: FileType::NONE,
@@ -164,6 +165,9 @@ impl Instance {
         }
         let ds = &self.ds;
         let cxt = &mut self.ctx;
+        if reader.cursor == 1029431 { 
+            print!("")
+        }
         match self.file_type {
             FileType::PCAP => loop {
                 if let Ok((_next, f)) = PCAP::next(&mut reader) {
@@ -189,7 +193,8 @@ impl Instance {
         }
         let mut rs: ProgressStatus = (&reader).into();
         rs.count = self.ctx.list.len();
-        
+        rs.left = reader.left();
+
         let _cursor = self.last;
         let datasource = &mut self.ds;
         datasource.trim(_cursor)?;
@@ -224,6 +229,7 @@ impl Instance {
         ctx.list.push(frame);
     }
     pub fn update(&mut self, data: Vec<u8>) -> Result<ProgressStatus> {
+        println!("head {} --{}", data[0], data[data.len() - 1]);
         self.ds.update(data);
         self.parse()
     }

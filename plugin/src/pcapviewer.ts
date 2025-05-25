@@ -2,7 +2,7 @@ import * as vscode from "vscode";
 import { Disposable, disposeAll } from "./dispose";
 import { ComLog, ComMessage, ComType, PcapFile } from "./share/common";
 import { FileTailWatcher } from "./fswatcher";
-import { PCAPClient } from "./share/client";
+import { BATCH_SIZE, PCAPClient } from "./share/client";
 
 function getNonce() {
   let text = "";
@@ -53,7 +53,7 @@ class PcapDocument extends Disposable implements vscode.CustomDocument {
     const dataFile =
       typeof backupId === "string" ? vscode.Uri.parse(backupId) : uri;
     const watcher = new FileTailWatcher(dataFile.fsPath, {
-      chunkSize: 1024 * 1024,
+      chunkSize: BATCH_SIZE,
       intervalMs: 1000,
     });
 

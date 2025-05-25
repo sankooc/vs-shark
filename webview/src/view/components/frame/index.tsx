@@ -47,7 +47,6 @@ function FrameList() {
       param: compute(page, size),
     };
     _request<IListResult<IFrameInfo>>(data).then((rs) => {
-      // console.log('rs', rs);
       setResult(rs);
     });
   };

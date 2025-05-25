@@ -1,4 +1,4 @@
-import { PCAPClient } from "../share/client";
+import { BATCH_SIZE, PCAPClient } from "../share/client";
 import { ComLog, ComMessage, ComType, VRange } from "../share/common";
 import init from "rshark";
 import { _log } from "../view/util";
@@ -49,6 +49,20 @@ ctx.addEventListener("message", (event: MessageEvent<any>) => {
       ]);
     } else {
       ctx.postMessage({ type: ComType.RESPONSE, id });
+    }
+    return;
+  }
+  if (type == ComType.PROCESS_DATA) {
+    let body = event.data.body;
+    const data = body.data as Uint8Array;
+    if (data.length <= BATCH_SIZE) {
+      client.handle(event.data);
+    } else {
+      for (let i = 0; i < data.length; i += BATCH_SIZE) {
+        let _data = data.subarray(i, i + BATCH_SIZE);
+        const e = { id, type, body: { data: _data } };
+        client.handle(e);
+      }
     }
     return;
   }

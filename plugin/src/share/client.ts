@@ -2,6 +2,8 @@ import { load, WContext, Conf } from "rshark";
 import { ComLog, ComMessage, ComRequest, ComType, PcapFile } from "./common";
 import mitt, { Emitter } from "mitt";
 
+export const BATCH_SIZE = 1024 * 1024;
+
 export abstract class PCAPClient {
 
   private emitter: Emitter<any> = mitt();
@@ -14,7 +16,7 @@ export abstract class PCAPClient {
   info?: PcapFile;
   init(): void {
     if (!this.ctx) {
-      this.ctx = load(Conf.new(false));
+      this.ctx = load(Conf.new(false, BATCH_SIZE));
     }
   }
   private async update(data: Uint8Array): Promise<string> {
@@ -23,8 +25,8 @@ export abstract class PCAPClient {
     }
     if (this.ctx) {
       try {
-        this.appendData(data);
-        const rs = await this.ctx.update(data);
+        // this.appendData(data);
+        const rs = await this.ctx.update_slice(data);
         this.emitMessage(ComMessage.new(ComType.PRGRESS_STATUS, rs));
         return rs;
       } catch (e) {
@@ -163,7 +165,7 @@ export abstract class PCAPClient {
         //   break;
         case ComType.PROCESS_DATA:
           const data = body.data as Uint8Array;
-          const rs = await this.update(data);
+          await this.update(data);
           // this.emitMessage(ComMessage.new(ComType.PRGRESS_STATUS, rs));
           break;
         case ComType.log:

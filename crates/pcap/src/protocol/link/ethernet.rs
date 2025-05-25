@@ -33,8 +33,8 @@ impl EthernetVisitor {
         if let Some(cache) = ctx.ethermap.get(&key) {
             Ok(enthernet_protocol_mapper(cache.ptype))
         } else {
-            let source: [u8; 6] = _reader.slice(6, true)?.try_into()?;
             let target: [u8; 6] = _reader.slice(6, true)?.try_into()?;
+            let source: [u8; 6] = _reader.slice(6, true)?.try_into()?;
             let mut ptype = _reader.read16(true)?;
             if reader.left() == ptype as usize {
                 ptype = 1010; // IEEE 802.3
@@ -46,8 +46,8 @@ impl EthernetVisitor {
 
     pub fn detail(field: &mut Field, _: &Context, _: &Frame, reader: &mut Reader) -> Result<Protocol> {
         let mut list = Vec::new();
-        let source = read_field_format!(list, reader, read_mac(reader.slice(6, true)?), "Source: {}");
         let target = read_field_format!(list, reader, read_mac(reader.slice(6, true)?), "Destination: {}");
+        let source = read_field_format!(list, reader, read_mac(reader.slice(6, true)?), "Source: {}");
         let mut ptype = reader.read16(true)?;
         if reader.left() == ptype as usize {
             ptype = 1010; // IEEE 802.3

@@ -157,7 +157,7 @@ impl Into<ProgressStatus> for &Reader<'_> {
     fn into(self) -> ProgressStatus {
         let total = self.data.len();
         let cursor = self.cursor;
-        ProgressStatus { total, cursor, count: 0 }
+        ProgressStatus { total, cursor, count: 0, left: 0 }
     }
 }
 impl<'a> Reader<'a> {
