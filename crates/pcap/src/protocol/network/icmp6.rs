@@ -1,5 +1,5 @@
 use crate::{
-    common::{concept::Field, core::Context, enum_def::{InfoField, Protocol}, io::Reader, Frame},
+    common::{concept::Field, core::Context, enum_def::{ProtocolInfoField, Protocol}, io::Reader, Frame},
     field_back_format, field_rest_format, read_field_format, read_field_format_fn,
 };
 use anyhow::Result;
@@ -308,7 +308,7 @@ impl Visitor {
         let _start = reader.left();
         let _type = reader.read8()?;
         let code = reader.read8()?;
-        frame.info_field = InfoField::Icmp6(_type, code);
+        frame.protocol_field = ProtocolInfoField::Icmp6(_type, code);
         Ok(Protocol::None)
     }
 

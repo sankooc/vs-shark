@@ -2,7 +2,7 @@ use crate::{
     common::{
         concept::Field,
         core::Context,
-        enum_def::{InfoField, Protocol},
+        enum_def::{ProtocolInfoField, Protocol},
         io::Reader,
         Frame,
     },
@@ -119,8 +119,8 @@ pub struct Visitor;
 impl Visitor {
     pub fn info(_: &Context, frame: &Frame) -> Option<String> {
         // 根据 PPPoE Discovery 的代码返回相应的描述信息
-        match frame.info_field {
-            InfoField::PPPoES(Some(code)) => {
+        match frame.protocol_field {
+            ProtocolInfoField::PPPoES(Some(code)) => {
                 let msg = match code {
                     PADI => "Active Discovery Initiation (PADI)",
                     PADO => "Active Discovery Offer (PADO)",
@@ -140,7 +140,7 @@ impl Visitor {
         let code = reader.read8()?;
         reader.forward(4);
         
-        frame.info_field = InfoField::PPPoES(Some(code));
+        frame.protocol_field = ProtocolInfoField::PPPoES(Some(code));
         
         Ok(Protocol::None)
     }

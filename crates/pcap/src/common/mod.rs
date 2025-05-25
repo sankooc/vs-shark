@@ -13,7 +13,7 @@ use crate::{
 use anyhow::{bail, Result};
 use concept::{Criteria, Field, FrameInfo, FrameInternInfo, ListResult, ProgressStatus};
 use connection::ConnectState;
-use enum_def::{AddressField, DataError, FileType, InfoField, Protocol};
+use enum_def::{AddressField, DataError, FileType, ProtocolInfoField, Protocol};
 use io::{DataSource, MacAddress, Reader, IO};
 use rustc_hash::FxHasher;
 use serde_json::Error;
@@ -90,8 +90,8 @@ pub struct Frame {
     pub tcp_info: Option<ConnectState>,
     pub ports: Option<(u16, u16)>,
 
-    pub ip_field: AddressField,
-    pub info_field: InfoField,
+    pub address_field: AddressField,
+    pub protocol_field: ProtocolInfoField,
 }
 
 impl Frame {
@@ -252,7 +252,7 @@ impl Instance {
         let _data = &fs[start..end];
         for frame in _data.iter() {
             let mut info = FrameInfo::from(&frame.info);
-            match &frame.ip_field {
+            match &frame.address_field {
                 AddressField::IPv4(s, t) => {
                     info.source = s.to_string();
                     info.dest = t.to_string();

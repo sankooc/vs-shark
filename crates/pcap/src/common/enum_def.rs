@@ -173,7 +173,7 @@ pub enum AddressField {
     IPv6(u64),
 }
 #[derive(Default)]
-pub enum InfoField {
+pub enum ProtocolInfoField {
     #[default]
     None,
     Ethernet(u64),
@@ -182,6 +182,7 @@ pub enum InfoField {
     Icmp6(u8, u8),
     HttpSegment,
     PPPoES(Option<u8>),
+    UDP(u16),
 }
 
 

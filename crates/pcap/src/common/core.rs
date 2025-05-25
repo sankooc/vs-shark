@@ -180,7 +180,7 @@ impl Context {
         return Ok(rs);
     }
     pub fn get_connect(&mut self, frame: &mut Frame, port1: u16, port2: u16, stat: TCPStat, data_source: &DataSource, range: Range<usize>) -> Result<ConnectState> {
-        match &frame.ip_field {
+        match &frame.address_field {
             AddressField::IPv4(source, target) => {
                 let s = IPV4Point::new(source, port1);
                 let t = IPV4Point::new(target, port2);

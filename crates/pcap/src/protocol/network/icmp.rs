@@ -2,7 +2,7 @@ use crate::{
     common::{
         concept::Field,
         core::Context,
-        enum_def::{InfoField, Protocol},
+        enum_def::{ProtocolInfoField, Protocol},
         io::Reader,
         Frame,
     },
@@ -99,7 +99,7 @@ pub struct Visitor {}
 
 impl Visitor {
     pub fn info(_: &Context, frame: &Frame) -> Option<String> {
-        if let InfoField::Icmp(_type, _code) = &frame.info_field {
+        if let ProtocolInfoField::Icmp(_type, _code) = &frame.protocol_field {
             let type_str = icmp_type_mapper(*_type);
             let code_str = icmp_code_mapper(*_type, *_code);
             Some(format!("{} ({})", type_str, code_str))
@@ -112,7 +112,7 @@ impl Visitor {
         let _start = reader.left();
         let _type = reader.read8()?;
         let code = reader.read8()?;
-        frame.info_field = InfoField::Icmp(_type, code);
+        frame.protocol_field = ProtocolInfoField::Icmp(_type, code);
         Ok(Protocol::None)
     }
 
