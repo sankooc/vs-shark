@@ -2,7 +2,7 @@ use crate::{
     common::{
         concept::Field,
         core::Context,
-        enum_def::{InfoField, Protocol},
+        enum_def::{ProtocolInfoField, Protocol},
         io::Reader,
         Frame,
     },
@@ -473,8 +473,8 @@ pub struct Visitor;
 
 impl Visitor {
     pub fn info(_: &Context, frame: &Frame) -> Option<String> {
-        let msg = match frame.info_field {
-            InfoField::PPPoES(Some(code)) => ppp_lcp_type_mapper(code).to_string(),
+        let msg = match frame.protocol_field {
+            ProtocolInfoField::PPPoES(Some(code)) => ppp_lcp_type_mapper(code).to_string(),
             _ => SUMMARY.to_string(),
         };
         Some(msg)
@@ -491,10 +491,10 @@ impl Visitor {
         match protocol {
             0xc021 | 0x8021 | 0xc023 | 0x8057 => {
                 let code = reader.read8()?;
-                frame.info_field = InfoField::PPPoES(Some(code));
+                frame.protocol_field = ProtocolInfoField::PPPoES(Some(code));
             }
             _ => {
-                frame.info_field = InfoField::PPPoES(None);
+                frame.protocol_field = ProtocolInfoField::PPPoES(None);
             }
         }
 

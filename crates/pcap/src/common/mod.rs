@@ -13,7 +13,7 @@ use crate::{
 use anyhow::{bail, Result};
 use concept::{Criteria, Field, FrameInfo, FrameInternInfo, ListResult, ProgressStatus};
 use connection::ConnectState;
-use enum_def::{AddressField, DataError, FileType, InfoField, Protocol};
+use enum_def::{AddressField, DataError, FileType, Protocol, ProtocolInfoField};
 use io::{DataSource, MacAddress, Reader, IO};
 use rustc_hash::FxHasher;
 use serde_json::Error;
@@ -90,8 +90,8 @@ pub struct Frame {
     pub tcp_info: Option<ConnectState>,
     pub ports: Option<(u16, u16)>,
 
-    pub ip_field: AddressField,
-    pub info_field: InfoField,
+    pub address_field: AddressField,
+    pub protocol_field: ProtocolInfoField,
 }
 
 impl Frame {
@@ -124,8 +124,8 @@ pub struct Instance {
 }
 
 impl Instance {
-    pub fn new() -> Instance {
-        let ds = DataSource::new();
+    pub fn new(batch_size: usize) -> Instance {
+        let ds = DataSource::new(batch_size, 0);
         Self {
             ds,
             file_type: FileType::NONE,
@@ -189,6 +189,10 @@ impl Instance {
         }
         let mut rs: ProgressStatus = (&reader).into();
         rs.count = self.ctx.list.len();
+        
+        let _cursor = self.last;
+        let datasource = &mut self.ds;
+        datasource.trim(_cursor)?;
         Ok(rs)
     }
     pub fn parse_packet(ctx: &mut Context, mut frame: Frame, ds: &DataSource) {
@@ -223,6 +227,10 @@ impl Instance {
         self.ds.update(data);
         self.parse()
     }
+    pub fn update_slice(&mut self, data: &[u8]) -> Result<ProgressStatus> {
+        self.ds.update_slice(data);
+        self.parse()
+    }
     pub fn destroy(&mut self) -> bool {
         // TODO
         true
@@ -252,7 +260,7 @@ impl Instance {
         let _data = &fs[start..end];
         for frame in _data.iter() {
             let mut info = FrameInfo::from(&frame.info);
-            match &frame.ip_field {
+            match &frame.address_field {
                 AddressField::IPv4(s, t) => {
                     info.source = s.to_string();
                     info.dest = t.to_string();

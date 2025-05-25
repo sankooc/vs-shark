@@ -1,6 +1,6 @@
 use crate::common::concept::Field;
 use crate::common::core::{Context, Segment};
-use crate::common::enum_def::{InfoField, SegmentStatus};
+use crate::common::enum_def::{ProtocolInfoField, SegmentStatus};
 use crate::common::io::Reader;
 use crate::common::{enum_def::Protocol, Frame};
 use crate::common::{hex_num, quick_trim_num, std_string, trim_data};
@@ -167,7 +167,7 @@ fn read_line(reader: &mut Reader, len: usize) -> Result<String> {
 pub struct Visitor;
 impl Visitor {
     pub fn info(_: &Context, frame: &Frame) -> Option<String> {
-        if let InfoField::Http(data) = &frame.info_field {
+        if let ProtocolInfoField::Http(data) = &frame.protocol_field {
             return Some(String::from_utf8_lossy(data).to_string());
         } else {
             return Some("Http Segment".to_string());
@@ -193,7 +193,7 @@ impl Visitor {
                     if detect(&reader) {
                         if let Some(pos) = reader.search_enter(0xffff) {
                             let data = reader.slice(pos, true)?.to_vec();
-                            frame.info_field = InfoField::Http(data);
+                            frame.protocol_field = ProtocolInfoField::Http(data);
                             reader.forward(2);
                             endpoint.segment_status = parse(&mut reader, SegmentStatus::HttpDetected(0))?;
                             match endpoint.segment_status.clone() {
@@ -245,7 +245,7 @@ impl Visitor {
         Ok(Protocol::None)
     }
     pub fn detail(field: &mut Field, _: &Context, frame: &Frame, reader: &mut Reader) -> Result<Protocol> {
-        if let InfoField::Http(_) = &frame.info_field {
+        if let ProtocolInfoField::Http(_) = &frame.protocol_field {
             let mut list = Vec::new();
             loop {
                 let left = reader.left();

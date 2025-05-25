@@ -20,6 +20,7 @@ pub fn parse(protocol: Protocol, ctx: &mut Context, frame: &mut Frame, reader: &
         Protocol::IP4 => network::ip4::Visitor::parse(ctx, frame, reader),
         Protocol::IP6 => network::ip6::Visitor::parse(ctx, frame, reader),
         Protocol::TCP => transport::tcp::Visitor::parse(ctx, frame, reader),
+        Protocol::UDP => transport::udp::Visitor::parse(ctx, frame, reader),
         Protocol::HTTP => application::http::Visitor::parse(ctx, frame, reader),
         Protocol::ICMP => network::icmp::Visitor::parse(ctx, frame, reader),
         Protocol::ICMP6 => network::icmp6::Visitor::parse(ctx, frame, reader),
@@ -41,6 +42,7 @@ pub fn detail(protocol: Protocol, field: &mut Field, ctx: &Context, frame: &Fram
         Protocol::IP4 => network::ip4::Visitor::detail(field, ctx, frame, reader),
         Protocol::IP6 => network::ip6::Visitor::detail(field, ctx, frame, reader),
         Protocol::TCP => transport::tcp::Visitor::detail(field, ctx, frame, reader),
+        Protocol::UDP => transport::udp::Visitor::detail(field, ctx, frame, reader),
         Protocol::HTTP => application::http::Visitor::detail(field, ctx, frame, reader),
         Protocol::ICMP => network::icmp::Visitor::detail(field, ctx, frame, reader),
         Protocol::ICMP6 => network::icmp6::Visitor::detail(field, ctx, frame, reader),
@@ -57,6 +59,7 @@ pub fn detail(protocol: Protocol, field: &mut Field, ctx: &Context, frame: &Fram
 pub fn summary(protocol: Protocol, ctx: &Context, frame: &Frame) -> Option<String> {
     match protocol {
         Protocol::TCP => transport::tcp::Visitor::info(ctx, frame),
+        Protocol::UDP => transport::udp::Visitor::info(ctx, frame),
         Protocol::IP4 => network::ip4::Visitor::info(ctx, frame),
         Protocol::IP6 => network::ip6::Visitor::info(ctx, frame),
         Protocol::HTTP => application::http::Visitor::info(ctx, frame),

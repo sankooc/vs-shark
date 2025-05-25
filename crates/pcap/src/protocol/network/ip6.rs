@@ -12,7 +12,7 @@ pub fn t_protocol(protocol_type: u8) -> String {
 }
 impl Visitor {
     pub fn info(ctx: &Context, frame: &Frame) -> Option<String> {
-        if let AddressField::IPv6(key) = &frame.ip_field {
+        if let AddressField::IPv6(key) = &frame.address_field {
             if let Some((_, source, target)) = ctx.ipv6map.get(key) {
                 return Some(format!("Internet Protocol Version 6, Src: {}, Dst: {}", source, target));
             }
@@ -23,7 +23,7 @@ impl Visitor {
         let mut reader = _reader.slice_as_reader(40)?;
         let data = reader.refer()?;
         let key = quick_hash(data);
-        frame.ip_field = AddressField::IPv6(key);
+        frame.address_field = AddressField::IPv6(key);
 
         if let Some(enty) = ctx.ipv6map.get(&key) {
             Ok(ip4_mapper(enty.0))

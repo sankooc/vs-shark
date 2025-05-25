@@ -8,6 +8,11 @@ pub struct Criteria {
     pub start: usize,
 }
 
+#[derive(Default, Copy, Clone)]
+pub struct InstanceConfig {
+    pub batch_size: usize,
+}
+
 #[derive(Serialize)]
 pub struct ProgressStatus {
     pub total: usize,

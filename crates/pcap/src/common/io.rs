@@ -8,13 +8,10 @@ use std::{
 
 use ahash::AHasher;
 use anyhow::{ bail, Ok, Result};
-// use anyhow::{anyhow, Result};
 use memchr::memchr_iter;
-// use std::simd::Simd;
-// use std::simd::prelude::SimdPartialEq;
 use crate::common::enum_def::DataError;
 
-use super::{concept::ProgressStatus, NString};
+use super::{concept::{ProgressStatus}, NString};
 
 pub struct IO;
 
@@ -76,14 +73,20 @@ impl IO {
 pub struct DataSource {
     data: Vec<u8>,
     range: Range<usize>,
+    // pub config: InstanceConfig,
 }
 
 impl DataSource {
     pub fn create(data: Vec<u8>, range: Range<usize>) -> Self {
-        Self { data, range }
+        let size = data.len();
+        let mut rs = Self::new(size, range.start);
+        rs.update(data);
+        rs
     }
-    pub fn new() -> Self {
-        Self { data: Vec::new(), range: 0..0 }
+    pub fn new(init_size: usize, cursor: usize) -> Self {
+        let size = init_size + 65535;
+        let data =  Vec::with_capacity(size);
+        Self { data, range: cursor..cursor }
     }
     pub fn range(&self) -> Range<usize> {
         self.range.clone()
@@ -110,6 +113,12 @@ impl DataSource {
     pub fn update(&mut self, data: Vec<u8>) {
         self.data.extend(data);
         self.range.end = self.range.start + self.data.len();
+    }
+    #[inline(always)]
+    pub fn update_slice(&mut self, data: &[u8]) {
+        let len = data.len();
+        self.data.extend(data);
+        self.range.end = self.range.start + len;
     }
     pub fn trim(&mut self, cursor: usize) -> Result<()> {
         if cursor <= self.range.start {
@@ -190,6 +199,9 @@ impl Reader<'_> {
     //     Ok(Self { data: ds, range, cursor: self.range.start })
     // }
 
+    // pub fn trim(&mut self) -> Result<()> {
+    //     self.data.trim(cursor)
+    // }
     pub fn slice_as_reader(&mut self, len: usize) -> Result<Self> {
         if self.forward(len) {
             let range = self.cursor - len..self.cursor;

@@ -10,7 +10,7 @@ mod unit {
         common::{
             concept::Field,
             core::Context,
-            enum_def::{InfoField, AddressField, Protocol},
+            enum_def::{ProtocolInfoField, AddressField, Protocol},
             io::{DataSource, Reader},
             Frame,
         },
@@ -19,7 +19,7 @@ mod unit {
 
     fn init(name: &str) -> (DataSource, Context, Frame) {
         let data: Vec<u8> = build_reader(name);
-        let mut ds = DataSource::new();
+        let mut ds = DataSource::new(65535, 0);
         let cx: Context = Context::default();
         let frame = Frame::default();
         ds.update(data);
@@ -119,7 +119,7 @@ mod unit {
             let _data = [1, 3, 4, 5, 2, 3, 4, 5];
             let source = Ipv4Addr::from(<[u8; 4]>::try_from(&_data[..4])?);
             let target = Ipv4Addr::from(<[u8; 4]>::try_from(&_data[4..])?);
-            frame.ip_field = AddressField::IPv4(source, target);
+            frame.address_field = AddressField::IPv4(source, target);
         }
         {
             let mut reader = Reader::new(&ds);
@@ -147,7 +147,7 @@ mod unit {
 
         }
         {
-            frame.info_field = InfoField::Http(vec![]);
+            frame.protocol_field = ProtocolInfoField::Http(vec![]);
             let mut reader = Reader::new(&ds);
             let mut f = Field::default();
             let next = protocol::application::http::Visitor::detail(&mut f, &mut cx, &mut frame, &mut reader)?;
