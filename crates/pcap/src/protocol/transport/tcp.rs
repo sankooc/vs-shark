@@ -55,6 +55,7 @@ impl Visitor {
         let ds = reader.ds();
         let range = reader.cursor..reader.cursor + left_size;
         let tcp_state = TCPStat::new(index, sequence, ack, crc, state, left_size as u16);
+        
         if let Ok(mut tcp_info) = ctx.get_connect(frame, source_port, target_port, tcp_state, ds, range) {
             tcp_info.flag_bit = flag_bit;
             frame.info.status = match &tcp_info.status {

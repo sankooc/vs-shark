@@ -19,7 +19,7 @@ mod unit {
 
     fn init(name: &str) -> (DataSource, Context, Frame) {
         let data: Vec<u8> = build_reader(name);
-        let mut ds = DataSource::new();
+        let mut ds = DataSource::new(65535, 0);
         let cx: Context = Context::default();
         let frame = Frame::default();
         ds.update(data);

@@ -13,7 +13,7 @@ use crate::{
 use anyhow::{bail, Result};
 use concept::{Criteria, Field, FrameInfo, FrameInternInfo, ListResult, ProgressStatus};
 use connection::ConnectState;
-use enum_def::{AddressField, DataError, FileType, ProtocolInfoField, Protocol};
+use enum_def::{AddressField, DataError, FileType, Protocol, ProtocolInfoField};
 use io::{DataSource, MacAddress, Reader, IO};
 use rustc_hash::FxHasher;
 use serde_json::Error;
@@ -124,8 +124,8 @@ pub struct Instance {
 }
 
 impl Instance {
-    pub fn new() -> Instance {
-        let ds = DataSource::new();
+    pub fn new(batch_size: usize) -> Instance {
+        let ds = DataSource::new(batch_size, 0);
         Self {
             ds,
             file_type: FileType::NONE,
@@ -189,6 +189,10 @@ impl Instance {
         }
         let mut rs: ProgressStatus = (&reader).into();
         rs.count = self.ctx.list.len();
+        
+        let _cursor = self.last;
+        let datasource = &mut self.ds;
+        datasource.trim(_cursor)?;
         Ok(rs)
     }
     pub fn parse_packet(ctx: &mut Context, mut frame: Frame, ds: &DataSource) {
@@ -221,6 +225,10 @@ impl Instance {
     }
     pub fn update(&mut self, data: Vec<u8>) -> Result<ProgressStatus> {
         self.ds.update(data);
+        self.parse()
+    }
+    pub fn update_slice(&mut self, data: &[u8]) -> Result<ProgressStatus> {
+        self.ds.update_slice(data);
         self.parse()
     }
     pub fn destroy(&mut self) -> bool {

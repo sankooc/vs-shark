@@ -7,7 +7,7 @@ use crate::{
         Frame,
     },
     constants::ip_protocol_type_mapper,
-    field_forward_format, read_field_format,
+    read_field_format,
 };
 use anyhow::Result;
 
@@ -37,7 +37,7 @@ impl Visitor {
         None
     }
 
-    pub fn parse(ctx: &mut Context, frame: &mut Frame, reader: &mut Reader) -> Result<Protocol> {
+    pub fn parse(_: &mut Context, frame: &mut Frame, reader: &mut Reader) -> Result<Protocol> {
         let source_port = reader.read16(true)?;
         let target_port = reader.read16(true)?;
         let length = reader.read16(true)?;
@@ -55,7 +55,7 @@ impl Visitor {
         Ok(next_protocol)
     }
 
-    pub fn detail(field: &mut Field, _: &Context, frame: &Frame, reader: &mut Reader) -> Result<Protocol> {
+    pub fn detail(field: &mut Field, _: &Context, _: &Frame, reader: &mut Reader) -> Result<Protocol> {
         let mut list = Vec::new();
         
         let source_port = read_field_format!(list, reader, reader.read16(true)?, "Source Port: {}");

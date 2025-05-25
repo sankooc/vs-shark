@@ -8,15 +8,16 @@ mod tests {
 
     use pcap::{ common::{connection::TcpFlagField, enum_def::Protocol, Instance}};
     fn _parse(fname: &str) -> std::io::Result<Instance> {
-        let mut ins = Instance::new();
+        let batch_size = 1024 * 128;
+        let mut ins = Instance::new(batch_size);
         let path = Path::new(fname);
         if !path.exists() {
             return Err(std::io::Error::new(std::io::ErrorKind::NotFound, "File not found"));
         }
         let file = File::open(fname)?;
         let mut reader = BufReader::new(file);
-        let mut buffer = Vec::with_capacity(1024 * 1024 * 50);
-        buffer.resize(1024 * 1024 * 50, 0);
+        let mut buffer = Vec::with_capacity(batch_size);
+        buffer.resize(batch_size, 0);
 
         let mut total = 0;
         loop {
@@ -24,6 +25,7 @@ mod tests {
             if n == 0 {
                 break;
             }
+            // println!("read {} bytes", n);
             let start = Instant::now();
             ins.update(buffer[..n].to_vec()).unwrap();
             total += start.elapsed().as_millis();
@@ -44,20 +46,20 @@ mod tests {
     }
     #[test]
     fn basic() -> std::io::Result<()> {
-        // let fname = "../../../pcaps/11.pcapng";
+        let fname = "../../../pcaps/11.pcapng";
         // let fname = "../../../pcaps/chunked.pcap";
         // let fname = "../../../pcaps/c1.pcap";
         // let fname = "../../../pcaps/demo.pcapng";
         // let fname = "../../../pcaps/demo.pcap";
         // let fname = "../../../pcaps/dns.pcapng";
         // let fname = "../../../pcaps/ftp.pcapng";
-        // let fname = "../../../pcaps/http.pcapng";
+        // let fname = "../../../pcaps/http.pcapng"; 
         // let fname = "../../../pcaps/http.pcap";
         // let fname = "../../../pcaps/http2.pcap";
         // let fname = "../../../pcaps/http3.pcap";
         // let fname = "../../../pcaps/moden.pcapng";
         // let fname = "../../../pcaps/netbios.pcapng";
-        let fname = "../../../pcaps/pppoe.pcap";
+        // let fname = "../../../pcaps/pppoe.pcap";
         // let fname = "../../../pcaps/sip.pcap";
         // let fname = "../../../pcaps/slow.pcap";
         // let fname = "../../../pcaps/big-2.pcap";

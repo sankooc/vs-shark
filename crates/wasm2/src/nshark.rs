@@ -13,8 +13,8 @@ pub struct WContext {
 #[wasm_bindgen]
 impl WContext {
     #[wasm_bindgen(constructor)]
-    pub fn new(_: Conf) -> WContext {
-        let ins = Instance::new();
+    pub fn new(conf: Conf) -> WContext {
+        let ins = Instance::new(conf.batch_size());
         WContext {
             ctx: Box::new(ins),
         }
@@ -24,6 +24,10 @@ impl WContext {
     pub fn update(&mut self, s: &Uint8Array) -> String {
         let slice = s.to_vec();
         self.ctx.update(slice).unwrap().to_json()
+    }
+    #[wasm_bindgen]
+    pub fn update_slice(&mut self, s: &[u8]) -> String {
+        self.ctx.update_slice(s).unwrap().to_json()
     }
 
     
