@@ -31,6 +31,7 @@ pub fn parse(protocol: Protocol, ctx: &mut Context, frame: &mut Frame, reader: &
         Protocol::DHCP => network::dhcp::Visitor::parse(ctx, frame, reader),
         Protocol::DHCP6 => network::dhcp6::Visitor::parse(ctx, frame, reader),
         Protocol::DNS => application::dns::Visitor::parse(ctx, frame, reader),
+        Protocol::NBNS => application::nbns::Visitor::parse(ctx, frame, reader),
         // "arp" => network::arp::Visitor::parse(frame, reader),
         // "icmp" => network::icmp::V4Visitor::parse(frame, reader),
         _ => {
@@ -58,6 +59,7 @@ pub fn detail(protocol: Protocol, field: &mut Field, ctx: &Context, frame: &Fram
         Protocol::DHCP => network::dhcp::Visitor::detail(field, ctx, frame, reader),
         Protocol::DHCP6 => network::dhcp6::Visitor::detail(field, ctx, frame, reader),
         Protocol::DNS => application::dns::Visitor::detail(field, ctx, frame, reader),
+        Protocol::NBNS => application::nbns::Visitor::detail(field, ctx, frame, reader),
         _ => {
             field.summary = format!("Unimplement Protocol: {}", protocol);
             Ok(Protocol::None)
@@ -82,6 +84,7 @@ pub fn summary(protocol: Protocol, ctx: &Context, frame: &Frame) -> Option<Strin
         Protocol::DHCP => network::dhcp::Visitor::info(ctx, frame),
         Protocol::DHCP6 => network::dhcp6::Visitor::info(ctx, frame),
         Protocol::DNS => application::dns::Visitor::info(ctx, frame),
+        Protocol::NBNS => application::nbns::Visitor::info(ctx, frame),
         _ => None
     }
 }

@@ -86,6 +86,7 @@ pub enum Protocol {
     UDP,
     TCP,
     DNS,
+    NBNS,
     DHCP,
     DHCP6,
     HTTP,
@@ -191,6 +192,7 @@ pub enum ProtocolInfoField {
     DHCPv6(u8, u32),
     DnsQUERY(u16),
     DnsRESPONSE(u16),
+    NBNS(u16, bool, String)
 }
 
 

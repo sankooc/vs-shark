@@ -71,7 +71,7 @@ fn extract_method_or_status(first_line: &str) -> String {
     String::new()
 }
 
-pub struct Visitor
+pub struct Visitor;
 
 impl Visitor {
     pub fn info(_: &Context, frame: &Frame) -> Option<String> {

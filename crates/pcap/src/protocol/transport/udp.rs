@@ -20,6 +20,7 @@ pub fn t_protocol(protocol_type: u8) -> String {
 fn detect_protocol(source_port: u16, target_port: u16) -> Protocol {
     match (source_port, target_port) {
         (53, _) | (_, 53) => Protocol::DNS,
+        (137, _) | (_, 137) => Protocol::NBNS,
         (67, _) | (_, 67) | (68, _) | (_, 68) => Protocol::DHCP,
         // (123, _) | (_, 123) => Protocol::None,
         // (161, _) | (_, 161) | (162, _) | (_, 162) => Protocol::None,
