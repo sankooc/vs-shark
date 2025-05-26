@@ -212,7 +212,6 @@ impl Visitor {
             list.push(queries_field);
         }
 
-        
         if answer_count > 0 && reader.left() > 0 {
             let mut answers_field = Field::with_children(format!("Answers ({})", answer_count), reader.cursor, 0);
             let mut answers_list = vec![];
@@ -229,6 +228,44 @@ impl Visitor {
             answers_field.size = reader.cursor - answers_field.start;
             answers_field.children = Some(answers_list);
             list.push(answers_field);
+        }
+
+        // Parse authority records
+        if authority_count > 0 && reader.left() > 0 {
+            let mut authority_field = Field::with_children(format!("Authority ({})", authority_count), reader.cursor, 0);
+            let mut authority_list = vec![];
+
+            for _ in 0..authority_count {
+                if reader.left() < 10 {
+                    break;
+                }
+                if let Ok(field) = read_resource_record(start_offset, reader) {
+                    authority_list.push(field);
+                }
+            }
+
+            authority_field.size = reader.cursor - authority_field.start;
+            authority_field.children = Some(authority_list);
+            list.push(authority_field);
+        }
+
+        // Parse additional records
+        if additional_count > 0 && reader.left() > 0 {
+            let mut additional_field = Field::with_children(format!("Additional ({})", additional_count), reader.cursor, 0);
+            let mut additional_list = vec![];
+
+            for _ in 0..additional_count {
+                if reader.left() < 10 {
+                    break;
+                }
+                if let Ok(field) = read_resource_record(start_offset, reader) {
+                    additional_list.push(field);
+                }
+            }
+
+            additional_field.size = reader.cursor - additional_field.start;
+            additional_field.children = Some(additional_list);
+            list.push(additional_field);
         }
 
         // Set summary
@@ -256,68 +293,176 @@ fn read_query_record(start_offset: usize, reader: &mut Reader) -> Result<Field> 
     let record_type = read_field_format_fn!(list, reader, reader.read16(true)?, rr_type);
     let record_class = read_field_format_fn!(list, reader, reader.read16(true)?, rr_class);
     let end = reader.cursor;
-    let title = format!(
-        "{}, type {}, class {}",
-        name,
-        dns_type_mapper(record_type),
-        dns_class_mapper(record_class)
-    );
+    let title = format!("{}, type {}, class {}", name, dns_type_mapper(record_type), dns_class_mapper(record_class));
     let field = Field::new(title, start, end, list);
     Ok(field)
 }
 
-
 fn read_resource_record(start_offset: usize, reader: &mut Reader) -> Result<Field> {
     let start = reader.cursor;
-    let mut list = vec![];
+    let mut field = Field::new("".to_string(), start, start, vec![]);
+    let list = field.children.as_mut().unwrap();
+
     let name = read_field_format!(list, reader, parse_dns_name(reader, start_offset)?, "Name: {}");
     let record_type = read_field_format_fn!(list, reader, reader.read16(true)?, rr_type);
-    let record_class = read_field_format_fn!(list, reader, reader.read16(true)?, rr_class);
-    read_field_format_fn!(list, reader, reader.read32(true)?, rr_ttl);
-    let data_len = read_field_format!(list, reader, reader.read16(true)? as usize, "Data length: {} bytes");
-    let finish = reader.cursor + data_len;
-    let record_data = match record_type {
-        1 => {
-            // A record
-            if data_len == 4 {
-                let _cotent = reader.slice(data_len, true)?;
-                let ip = Ipv4Addr::from(<[u8; 4]>::try_from(_cotent).unwrap());
-                format!("IPv4 address: {}", ip)
-            } else {
-                format!("Data (length: {})", data_len)
-            }
-        }
-        28 => {
-            if data_len == 16 {
-                let _cotent = reader.slice(data_len, true)?;
-                let ip_data = Ipv6Addr::from(<[u8; 16]>::try_from(_cotent).unwrap());
-                format!("IPv6 address: {}", ip_data)
-            } else {
-                format!("Data (length: {})", data_len)
-            }
-        }
-        5 => {
-            if let Ok(cname) = parse_dns_name(reader, start_offset) {
-                format!("CNAME: {}", cname)
-            } else {
-                format!("Data (length: {})", data_len)
-            }
-        }
+    match record_type {
+        41 => {
+            read_field_format!(list, reader, reader.read16(true)?, "UDP payload size: {} bytes");
+            field.summary = "Type: OPT (41)".into();
+        },
+        3 | 4 | 20 => {
+            // dep
+            field.summary = "Deprecated".into();
+        },
+        249 | 250 => {
+            field.summary = "Type: DDNS".into();
+        },
+        255 => {
+            field.summary = "Type: ANY".into();
+        },
+        46 | 47 | 48 => {
+            field.summary = "Type: DNSSEC".into();
+        },
         _ => {
-            format!("Data (length: {})", data_len)
-        }
-    };
-    reader.set(finish);
-    field_back_format!(list, reader, data_len, record_data.clone());
+            let record_class = read_field_format_fn!(list, reader, reader.read16(true)?, rr_class);
+            read_field_format_fn!(list, reader, reader.read32(true)?, rr_ttl);
+            let data_len = read_field_format!(list, reader, reader.read16(true)? as usize, "Data length: {} bytes");
+            let finish = reader.cursor + data_len;
+            let record_data = match record_type {
+                1 => {
+                    // A record
+                    if data_len == 4 {
+                        let _cotent = reader.slice(data_len, true)?;
+                        let ip = Ipv4Addr::from(<[u8; 4]>::try_from(_cotent).unwrap());
+                        format!("IPv4 address: {}", ip)
+                    } else {
+                        format!("Data (length: {})", data_len)
+                    }
+                }
+                28 => {
+                    // AAAA record
+                    if data_len == 16 {
+                        let _cotent = reader.slice(data_len, true)?;
+                        let ip_data = Ipv6Addr::from(<[u8; 16]>::try_from(_cotent).unwrap());
+                        format!("IPv6 address: {}", ip_data)
+                    } else {
+                        format!("Data (length: {})", data_len)
+                    }
+                }
+                5 => {
+                    // CNAME record
+                    if let Ok(cname) = parse_dns_name(reader, start_offset) {
+                        format!("CNAME: {}", cname)
+                    } else {
+                        format!("Data (length: {})", data_len)
+                    }
+                }
+                2 => {
+                    // NS record
+                    if let Ok(ns) = parse_dns_name(reader, start_offset) {
+                        format!("Name Server: {}", ns)
+                    } else {
+                        format!("Data (length: {})", data_len)
+                    }
+                }
+                6 => {
+                    // SOA record
+                    if reader.left() >= 22 {
+                        // Minimum SOA record size
+                        // let mut soa_data = String::new();
+                        read_field_format!(list, reader, parse_dns_name(reader, start_offset)?, "Primary NS: {}");
+                        read_field_format!(list, reader, parse_dns_name(reader, start_offset)?, "Responsible: {}");
+                        read_field_format!(list, reader, reader.read32(true)?, "Serial: {}");
+                        read_field_format!(list, reader, reader.read32(true)?, "Refresh: {} seconds");
+                        read_field_format!(list, reader, reader.read32(true)?, "Retry: {} seconds");
+                        read_field_format!(list, reader, reader.read32(true)?, "Expire: {} seconds");
+                        read_field_format!(list, reader, reader.read32(true)?, "Minimum: {} seconds");
+                        "".into()
+                    } else {
+                        "".into()
+                    }
+                }
+                12 => {
+                    // PTR record
+                    if let Ok(ptr) = parse_dns_name(reader, start_offset) {
+                        format!("Domain name pointer: {}", ptr)
+                    } else {
+                        format!("Data (length: {})", data_len)
+                    }
+                }
+                15 => {
+                    // MX record
+                    if reader.left() >= 2 {
+                        let preference = reader.read16(true)?;
+                        if let Ok(exchange) = parse_dns_name(reader, start_offset) {
+                            format!("Mail exchange: {} (preference: {})", exchange, preference)
+                        } else {
+                            format!("Preference: {}, Data (length: {})", preference, data_len - 2)
+                        }
+                    } else {
+                        format!("Data (length: {})", data_len)
+                    }
+                }
+                16 => {
+                    // TXT record
+                    let mut txt_data = String::new();
+                    let mut remaining = data_len;
+                    let _data_start = reader.cursor;
 
-    let end = reader.cursor;
-    let title = format!(
-        "{}, type {}, class {}, {}",
-        name,
-        dns_type_mapper(record_type),
-        dns_class_mapper(record_class),
-        record_data
-    );
-    let field = Field::new(title, start, end, list);
+                    while remaining > 0 && reader.left() > 0 {
+                        if reader.left() < 1 {
+                            break;
+                        }
+
+                        let str_len = reader.read8()? as usize;
+                        if str_len > remaining - 1 || str_len > reader.left() {
+                            break;
+                        }
+
+                        let txt_bytes = reader.slice(str_len, true)?;
+                        if let Ok(txt) = std::str::from_utf8(txt_bytes) {
+                            if !txt_data.is_empty() {
+                                txt_data.push_str(", ");
+                            }
+                            txt_data.push_str(&format!("\"{}\"", txt));
+                        }
+
+                        remaining -= str_len + 1; // +1 for length byte
+                    }
+
+                    if !txt_data.is_empty() {
+                        format!("Text: {}", txt_data)
+                    } else {
+                        format!("Data (length: {})", data_len)
+                    }
+                }
+                33 => {
+                    // SRV record
+                    if reader.left() >= 6 {
+                        // Priority, weight, port
+                        let priority = reader.read16(true)?;
+                        let weight = reader.read16(true)?;
+                        let port = reader.read16(true)?;
+                        if let Ok(target) = parse_dns_name(reader, start_offset) {
+                            format!("Service: {}:{} (priority: {}, weight: {})", target, port, priority, weight)
+                        } else {
+                            format!("Priority: {}, Weight: {}, Port: {}, Data (length: {})", priority, weight, port, data_len - 6)
+                        }
+                    } else {
+                        format!("Data (length: {})", data_len)
+                    }
+                }
+                _ => {
+                    format!("Data (length: {})", data_len)
+                }
+            };
+            reader.set(finish);
+            if record_data.len() > 0 {
+                field_back_format!(list, reader, data_len, record_data.clone());
+            }
+            field.summary  = format!("{}, type {}, class {}, {}", name, dns_type_mapper(record_type), dns_class_mapper(record_class), record_data);
+        }
+    }
+    field.size = reader.cursor - start;
     Ok(field)
 }
