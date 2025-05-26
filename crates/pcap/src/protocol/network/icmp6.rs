@@ -290,7 +290,7 @@ fn format_mac_address(reader: &mut Reader, len: usize) -> Result<String> {
     Ok(format!("{:02x}:{:02x}:{:02x}:{:02x}:{:02x}:{:02x}", b1, b2, b3, b4, b5, b6))
 }
 
-pub struct Visitor {}
+pub struct Visitor;
 
 impl Visitor {
     pub fn info(_: &Context, _: &Frame) -> Option<String> {

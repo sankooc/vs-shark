@@ -95,7 +95,7 @@ pub fn t_icmp_code(type_code: u8, code: u8) -> String {
     format!("Code: {} ({})", icmp_code_mapper(type_code, code), code)
 }
 
-pub struct Visitor {}
+pub struct Visitor;
 
 impl Visitor {
     pub fn info(_: &Context, frame: &Frame) -> Option<String> {

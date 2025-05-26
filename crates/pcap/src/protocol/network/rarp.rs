@@ -23,7 +23,7 @@ pub fn operation_str(operation: u16) -> String {
     format!("Operation: {} ({:#06x})", arp_oper_type_mapper(operation), operation)
 }
 
-pub struct Visitor {}
+pub struct Visitor;
 
 impl Visitor {
     pub fn info(_: &Context, frame: &Frame) -> Option<String> {

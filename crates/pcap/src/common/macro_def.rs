@@ -45,6 +45,18 @@ macro_rules! field_back_format {
 }
 
 #[macro_export]
+macro_rules! field_back_format_with_list {
+    ($list:expr, $reader:expr, $inx:expr, $msg:expr, $sub_list:expr) => {{
+        let start = $reader.cursor;
+        let mut ele = crate::common::concept::Field::label($msg, start - $inx, start);
+        ele.children = Some($sub_list);
+        let inx = $list.len();
+        $list.push(ele);
+        inx
+    }};
+}
+
+#[macro_export]
 macro_rules! field_rest_format {
     ($list:expr, $reader:expr, $msg:expr) => {{
         if $reader.left() > 0 {

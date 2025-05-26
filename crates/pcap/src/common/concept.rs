@@ -84,6 +84,14 @@ pub struct Field {
 }
 
 impl Field {
+    pub fn new(summary: String, start: usize, end: usize, children: Vec<Field>) -> Field {
+        Field {
+            start,
+            size: end - start,
+            summary,
+            children: Some(children),
+        }
+    }
     pub fn label(summary: String, start: usize, end: usize) -> Field {
         Field {
             start,

@@ -18,7 +18,7 @@ class Client extends PCAPClient {
   emitMessage(msg: ComMessage<any>): void {
     ctx.postMessage(msg);
   }
-  data: Uint8Array = new Uint8Array();
+  public data: Uint8Array = new Uint8Array();
   constructor() {
     super();
   }
@@ -55,6 +55,7 @@ ctx.addEventListener("message", (event: MessageEvent<any>) => {
   if (type == ComType.PROCESS_DATA) {
     let body = event.data.body;
     const data = body.data as Uint8Array;
+    client.data = data;
     if (data.length <= BATCH_SIZE) {
       client.handle(event.data);
     } else {

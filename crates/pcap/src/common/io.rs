@@ -147,6 +147,7 @@ impl DataSource {
     }
 }
 
+#[derive(Clone)]
 pub struct Reader<'a> {
     data: &'a DataSource,
     pub range: Range<usize>,

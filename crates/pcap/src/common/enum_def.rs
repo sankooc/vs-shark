@@ -87,7 +87,7 @@ pub enum Protocol {
     TCP,
     DNS,
     DHCP,
-    DHCPv6,
+    DHCP6,
     HTTP,
     HTTPS,
     TLS,
@@ -187,6 +187,10 @@ pub enum ProtocolInfoField {
     UDP(u16),
     ARP(u16, u16, MacAddress, Ipv4Addr, MacAddress, Ipv4Addr),
     RARP(u16, u16, MacAddress, Ipv4Addr, MacAddress, Ipv4Addr),
+    DHCP(u8),
+    DHCPv6(u8, u32),
+    DnsQUERY(u16),
+    DnsRESPONSE(u16),
 }
 
 

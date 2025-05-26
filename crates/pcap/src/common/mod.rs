@@ -18,7 +18,7 @@ use io::{DataSource, MacAddress, Reader, IO};
 use rustc_hash::FxHasher;
 use serde_json::Error;
 
-type FastHashMap<K, V> = HashMap<K, V, BuildHasherDefault<FxHasher>>;
+pub type FastHashMap<K, V> = HashMap<K, V, BuildHasherDefault<FxHasher>>;
 
 pub type NString = &'static str;
 
@@ -165,9 +165,6 @@ impl Instance {
         }
         let ds = &self.ds;
         let cxt = &mut self.ctx;
-        if reader.cursor == 1029431 { 
-            print!("")
-        }
         match self.file_type {
             FileType::PCAP => loop {
                 if let Ok((_next, f)) = PCAP::next(&mut reader) {
@@ -229,7 +226,6 @@ impl Instance {
         ctx.list.push(frame);
     }
     pub fn update(&mut self, data: Vec<u8>) -> Result<ProgressStatus> {
-        println!("head {} --{}", data[0], data[data.len() - 1]);
         self.ds.update(data);
         self.parse()
     }

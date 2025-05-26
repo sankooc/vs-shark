@@ -4,3 +4,5 @@ pub mod icmp;
 pub mod icmp6;
 pub mod arp;
 pub mod rarp;
+pub mod dhcp;
+pub mod dhcp6;
