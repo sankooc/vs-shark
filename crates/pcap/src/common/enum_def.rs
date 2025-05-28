@@ -4,7 +4,9 @@ use std::net::Ipv4Addr;
 use strum_macros::{Display, EnumString};
 use thiserror::Error;
 
-use super::io::MacAddress;
+use crate::protocol::transport::tls::TLSList;
+
+use super::{connection::{TCPSegment, TLSSegment}, io::MacAddress};
 
 
 #[derive(Debug, EnumString, Display)]
@@ -165,6 +167,8 @@ pub enum SegmentStatus {
     // HttpContentParsing,
     Error,
     Finish,
+    TlsHead(TCPSegment, Vec<u8>),
+    TlsSegment(TLSSegment)
 }
 
 #[derive(Default)]
@@ -192,7 +196,8 @@ pub enum ProtocolInfoField {
     DHCPv6(u8, u32),
     DnsQUERY(u16),
     DnsRESPONSE(u16),
-    NBNS(u16, bool, String)
+    NBNS(u16, bool, String),
+    TLS(TLSList),
 }
 
 

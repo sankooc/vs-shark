@@ -71,7 +71,7 @@ impl IO {
 //     None
 // }
 pub struct DataSource {
-    data: Vec<u8>,
+    pub data: Vec<u8>,
     range: Range<usize>,
     // pub config: InstanceConfig,
 }

@@ -5,7 +5,7 @@ members = [
   # "crates/derive",
   # "crates/wasm"
 "crates/wasm2",
-# , "crates/tui", 
+# "crates/tui", 
 # "crates/benchmark",
  "crates/pcap"]
 

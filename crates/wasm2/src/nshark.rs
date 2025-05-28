@@ -53,13 +53,6 @@ impl WContext {
             }
         }
         Range::empty()
-        // match catelog.as_str() {
-        //     "frame" => {
-        //         let slice = s.to_vec();
-        //         self.ctx.select_frame_json(index, slice).unwrap()
-        //     }, 
-        //     _ => "{}".into()
-        // }
     }
 
     #[wasm_bindgen]
@@ -68,9 +61,23 @@ impl WContext {
             "frame" => {
                 let slice = s.to_vec();
                 self.ctx.select_frame_json(index, slice).unwrap()
-            }, 
+            },
             _ => "{}".into()
         }
+    }
+    
+    #[wasm_bindgen]
+    pub fn select_frame(&self, index: usize, s: &Uint8Array) -> Uint8Array {
+        let slice = s.to_vec();
+        if let Some(_list) = self.ctx.select_frame(index, slice) {
+            // let data = serde_json::to_string(&list).unwrap();
+        }
+
+        // self.ctx.select_frame_json(index, slice).unwrap();
+        // vec![1, 2].into()ddasddsadsadas dwq
+        let aa:Vec<u8> = vec![1, 2];
+        let bb: &[u8] = &aa;
+        Uint8Array::from(bb)
     }
 }
 

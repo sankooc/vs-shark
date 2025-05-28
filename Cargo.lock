@@ -586,6 +586,8 @@ dependencies = [
  "js-sys",
  "log",
  "pcap",
+ "serde",
+ "serde_json",
  "wasm-bindgen",
 ]
 

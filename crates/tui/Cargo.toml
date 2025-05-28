@@ -8,6 +8,6 @@ clap = { workspace = true, features = ["derive"] }
 log.workspace = true
 crossterm.workspace = true
 ratatui.workspace = true
-shark = { path = "../shark"}
+# shark = { path = "../shark"}
 anyhow.workspace = true
 tui-tree-widget.workspace = true

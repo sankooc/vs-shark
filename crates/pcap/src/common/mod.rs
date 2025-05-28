@@ -99,6 +99,23 @@ impl Frame {
         Self { ..Default::default() }
     }
     pub fn range(&self) -> Option<Range<usize>> {
+        match &self.protocol_field {
+            ProtocolInfoField::TLS(tls_list) => {
+                if tls_list.list.len() > 0 {
+                    let mut start = tls_list.list.first().unwrap().segments.first().unwrap().range.start;
+                    let mut end = tls_list.list.last().unwrap().segments.last().unwrap().range.end;
+                    if let Some(r) = &self.range {
+                        start = cmp::min(start, r.start);
+                        end = cmp::max(end, r.end);
+                    }
+                    return Some(start..end)
+                }
+            }
+            _ => {}
+        }
+        self.range.clone()
+    }
+    pub fn frame_range(&self) -> Option<Range<usize>> {
         self.range.clone()
     }
 }
@@ -303,9 +320,10 @@ impl Instance {
     }
     pub fn select_frame(&self, index: usize, data: Vec<u8>) -> Option<Vec<Field>> {
         if let Some(frame) = self.frame(index) {
-            if let Some(range) = &frame.range {
-                let ds: DataSource = DataSource::create(data, range.clone());
-                let mut reader = Reader::new(&ds);
+            if let Some(range) = frame.range() {
+                let ds: DataSource = DataSource::create(data, range);
+                let rg = frame.frame_range().unwrap();
+                let mut reader = Reader::new_sub(&ds, rg).unwrap();
                 let mut list = vec![];
                 let mut _next = frame.head;
                 loop {

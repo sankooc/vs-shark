@@ -9,7 +9,7 @@ use crate::protocol;
 
 use super::{
     enum_def::{Protocol, SegmentStatus, TCPConnectStatus, TCPDetail, TCPFLAG},
-    io::{DataSource, Reader}
+    io::{DataSource, Reader},
 };
 
 #[derive(Debug)]
@@ -132,9 +132,98 @@ impl ConnectState {
     }
 }
 
+#[derive(Clone)]
 pub struct TCPSegment {
     pub index: u32,
     pub range: Range<usize>,
+}
+
+impl TCPSegment {
+    pub fn size(&self) -> usize {
+        if self.range.start > self.range.end {
+            0
+        } else {
+            self.range.end - self.range.start
+        }
+    }
+}
+
+#[derive(Clone)]
+pub struct TlsData {
+    pub content_type: u8,
+    pub total: usize,
+    pub segments: Vec<TCPSegment>,
+}
+
+impl TlsData {
+    pub fn new(content_type: u8) -> Self {
+        Self {
+            content_type,
+            total: 0,
+            segments: vec![],
+        }
+    }
+    pub fn single(content_type: u8, segment: TCPSegment) -> Self {
+        Self {
+            content_type,
+            total: segment.size(),
+            segments: vec![segment],
+        }
+    }
+    pub fn append(&mut self, segment: TCPSegment) {
+        self.total += segment.size();
+        self.segments.push(segment);
+    }
+    pub fn combind(&self, ds: &DataSource) -> Vec<u8> {
+        let total: usize = self.segments.iter().map(|item| item.size()).sum();
+        let mut buffer= Vec::with_capacity(total);
+        for seg in &self.segments {
+            let mut reader = Reader::new_sub(ds, seg.range.clone()).unwrap();
+            let length = seg.range.end - seg.range.start;
+            if length > 0 {
+                buffer.extend(reader.slice(length, true).unwrap())
+            }
+        }
+        buffer
+    }
+}
+
+#[derive(Clone)]
+pub struct TLSSegment {
+    pub content_type: u8,
+    pub total: u16,
+    pub len: u16,
+    pub segments: Vec<TCPSegment>,
+}
+impl TLSSegment {
+    pub fn new(content_type: u8, len: u16) -> Self {
+        Self {
+            content_type,
+            len,
+            total: len,
+            segments: vec![],
+        }
+    }
+    pub fn append(&mut self, segment: TCPSegment) -> anyhow::Result<()> {
+        let _len = segment.size() as u16;
+        if _len <= self.len {
+            self.segments.push(segment);
+            self.len -= _len;
+            Ok(())
+        } else {
+            Err(anyhow::anyhow!("tls segment append error"))
+        }
+    }
+}
+
+impl Into<TlsData> for TLSSegment {
+    fn into(self) -> TlsData {
+        TlsData {
+            content_type: self.content_type,
+            segments: self.segments,
+            total: self.total as usize,
+        }
+    }
 }
 
 impl TCPSegment {
@@ -293,7 +382,11 @@ pub struct Connection {
 }
 impl Connection {
     pub fn new(primary: Endpoint, second: Endpoint) -> Self {
-        Self { primary, second, protocol: Protocol::None }
+        Self {
+            primary,
+            second,
+            protocol: Protocol::None,
+        }
     }
 }
 
@@ -308,13 +401,13 @@ impl<'a> TmpConnection<'a> {
         Self { conn, reverse }
     }
 
-    pub fn source_endpoint(&mut self) -> &mut Endpoint{
+    pub fn source_endpoint(&mut self) -> &mut Endpoint {
         match self.reverse {
             true => &mut self.conn.primary,
             false => &mut self.conn.second,
         }
     }
-    pub fn target_endpoint(&mut self) -> &mut Endpoint{
+    pub fn target_endpoint(&mut self) -> &mut Endpoint {
         match self.reverse {
             true => &mut self.conn.second,
             false => &mut self.conn.primary,
@@ -349,6 +442,10 @@ impl<'a> TmpConnection<'a> {
                             Protocol::None => {
                                 if protocol::application::http::detect(&reader) {
                                     self.conn.protocol = Protocol::HTTP;
+                                    main.segment_status = SegmentStatus::Init;
+                                }
+                                 else if protocol::transport::tls::detect(&reader) {
+                                    self.conn.protocol = Protocol::TLS;
                                     main.segment_status = SegmentStatus::Init;
                                 }
                             }

@@ -77,6 +77,8 @@ impl From<&FrameInternInfo> for FrameInfo {
 
 #[derive(Default, Clone, Serialize)]
 pub struct Field {
+    #[serde(skip)]
+    pub extra_data: Option<Vec<u8>>,
     pub start: usize,
     pub size: usize,
     pub summary: String,
@@ -87,6 +89,7 @@ impl Field {
     pub fn new(summary: String, start: usize, end: usize, children: Vec<Field>) -> Field {
         Field {
             start,
+            extra_data: None,
             size: end - start,
             summary,
             children: Some(children),
@@ -95,6 +98,7 @@ impl Field {
     pub fn label(summary: String, start: usize, end: usize) -> Field {
         Field {
             start,
+            extra_data: None,
             size: end - start,
             summary,
             children: None,
@@ -104,6 +108,7 @@ impl Field {
         Field {
             start,
             size,
+            extra_data: None,
             summary,
             children: Some(Vec::new()),
         }
