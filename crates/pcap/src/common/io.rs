@@ -156,7 +156,7 @@ pub struct Reader<'a> {
 
 impl Into<ProgressStatus> for &Reader<'_> {
     fn into(self) -> ProgressStatus {
-        let total = self.data.len();
+        let total = self.data.range.end;
         let cursor = self.cursor;
         ProgressStatus { total, cursor, count: 0, left: 0 }
     }

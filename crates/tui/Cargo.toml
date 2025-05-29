@@ -9,5 +9,7 @@ log.workspace = true
 crossterm.workspace = true
 ratatui.workspace = true
 # shark = { path = "../shark"}
+pcap = { path = "../pcap" }
 anyhow.workspace = true
 tui-tree-widget.workspace = true
+tokio = { version = "1", features = ["full"] }

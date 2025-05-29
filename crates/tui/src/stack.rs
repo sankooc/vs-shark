@@ -4,7 +4,7 @@ use crossterm::event::{Event, KeyCode};
 use ratatui::{
     layout::{Constraint, Layout, Rect}, style::Modifier, widgets::{Block, Scrollbar, ScrollbarOrientation, StatefulWidget, Widget}
 };
-use shark::common::{base::Instance, concept::Field};
+// use shark::common::{base::Instance, concept::Field};
 use tui_tree_widget::{Tree, TreeItem, TreeState};
 
 use crate::{hex::HexView, theme::get_active_tab_color, ControlPanel};

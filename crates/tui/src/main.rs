@@ -1,15 +1,10 @@
-use shark::common::base::Configuration;
-use shark::common::base::Instance;
-use shark::entry::load_data;
-use pcaps::ui::MainUI;
-use std::fs;
-use std::process;
-use std::rc::Rc;
-use std::time::SystemTime;
-use std::time::UNIX_EPOCH;
-use pcaps::Result;
-// use color_eyre::Result;
+use std::{fs::{self, File}, sync::mpsc};
+
 use clap::Parser;
+use pcaps::{engine::{PcapCommand, PcapEvent, Service}, ui};
+
+
+
 
 /// ----- pcapviewer ------
 #[derive(Parser, Debug)]
@@ -18,36 +13,29 @@ struct Args {
     #[arg(short, long)]
     file: String,
 }
-
-fn main() -> Result<()> { 
-    let args = Args::parse();
-    let fname = args.file;
-    // let fname = "./sandbox/11.pcapng"; 
-    // let fname = "./sandbox/dns.pcapng";
-    if !fs::exists(fname.clone()).unwrap() {
+fn main() -> anyhow::Result<()> {
+    // let args = Args::parse();
+    // let fname = args.file;
+    // let fname = "./sandbox/11.pcapng";
+    let fname = "/home/sankooc/repo/pcapview/crates/tui/sandbox/ww.pcap";
+    // let fname = "/home/sankooc/repo/pcaps/big-2.pcap";
+    // let fname = "/home/sankooc/repo/pcapview/crates/tui/sandbox/11.pcapng";
+    if !fs::exists(fname).unwrap() {
         eprintln!("File [{fname}] not exists");
-        process::exit(1);
+        std::process::exit(1);
     }
-    let data: Vec<u8> = fs::read(fname).unwrap();
-    let start = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis() as usize;
-    if let Ok(mut _ctx) = load_data(data,Configuration::new(false)) {
-        let end = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis() as usize;
-        let ctx = &mut _ctx.ctx;
-        ctx.cost = end - start;
-        show(_ctx);
-    } else {
-        show_error();
-    }
-    Ok(()) 
+    start(fname)
 }
 
-
-fn show (instance: Instance) {
-    let mut ui = MainUI::new(Rc::new(instance));
-    ui.run();
-}
-
-
-fn show_error() {
-
+fn start(_fname: &str) -> anyhow::Result<()> {
+    let (etx, erx) = mpsc::channel::<PcapEvent>();
+    let (ptx, prx) = mpsc::channel::<PcapCommand>();
+    let ui = ui::UI::new(ptx, erx);
+    let mut engine = Service::new(_fname.to_string(), etx, prx);
+    let logic_handle = std::thread::spawn(move || {
+        engine.run().unwrap();
+    });
+    ui.run()?;
+    logic_handle.join().unwrap();
+    Ok(())
 }

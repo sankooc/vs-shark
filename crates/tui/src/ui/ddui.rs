@@ -1,4 +1,4 @@
-use std::{fmt::Display, rc::Rc, time::Duration};
+use std::{fmt::Display, time::Duration};
 
 use crate::{
     theme::{get_active_tab_color, get_color, get_protocol_color, ACTIVE_TAB_COLOR},
@@ -18,7 +18,7 @@ use ratatui::{
     widgets::{Block, BorderType, Padding, Tabs, Widget},
     DefaultTerminal,
 };
-use shark::common::base::Instance;
+// use shark::common::base::Instance;
 
 enum AppState {
     RUNNING,
@@ -28,22 +28,22 @@ enum AppState {
 pub struct MainUI {
     selected: u8,
     state: AppState,
-    overview_page: super::overview::App,
+    // overview_page: super::overview::App,
     frame_page: super::frames::App,
-    tcp_page: super::tcp::TCPList,
+    // tcp_page: super::tcp::TCPList,
 }
 
 impl MainUI {
-    pub fn new(instance: Rc<Instance>) -> Self {
-        let frame_page = super::frames::App::new(instance.clone());
-        let overview_page = super::overview::App::new(instance.clone());
-        let tcp_page = super::tcp::TCPList::new(instance.clone());
+    pub fn new() -> Self {
+        let frame_page = super::frames::App::new();
+        // let overview_page = super::overview::App::new(instance.clone());
+        // let tcp_page = super::tcp::TCPList::new(instance.clone());
         // let stack_page = super::stack::StackView::new();
         Self {
             // instance,
             state: AppState::RUNNING,
-            tcp_page,
-            overview_page,
+            // tcp_page,
+            // overview_page,
             frame_page,
             selected: 0,
         }
@@ -87,9 +87,9 @@ impl MainUI {
     
     fn get_view(&mut self) -> &mut dyn ControlPanel {
         match self.selected {
-            1 => &mut self.frame_page,
-            2 => &mut self.tcp_page,
-            _ => &mut self.overview_page,
+            _ => &mut self.frame_page,
+            // 2 => &mut self.tcp_page,
+            // _ => &mut self.overview_page,
         }
     }
 
@@ -166,15 +166,15 @@ impl Widget for &mut MainUI {
         let _inner_area = block.inner(inner_area);
         block.render(inner_area, buf);
         match self.selected {
-            1 => {
+            _ => {
                 self.frame_page.render(_inner_area, buf);
             }
-            2 => {
-                self.tcp_page.render(_inner_area, buf);
-            }
-            _ => {
-                self.overview_page.render(_inner_area, buf);
-            }
+            // 2 => {
+            //     self.tcp_page.render(_inner_area, buf);
+            // }
+            // _ => {
+            //     self.overview_page.render(_inner_area, buf);
+            // }
         }
         self.render_footer(footer_area, buf);
     }
