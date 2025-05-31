@@ -184,6 +184,9 @@ impl<'a> Reader<'a> {
     pub fn preview(&self, len: usize) -> Result<&[u8]> {
         self._slice(self.cursor..self.cursor + len)
     }
+    pub fn dump_as_vec(&self) -> Result<Vec<u8>>{
+        self._slice(self.range.clone()).map(|v| v.to_vec())
+    }
     pub fn ds(&self) -> &DataSource {
         self.data
     }

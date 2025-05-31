@@ -1,18 +1,23 @@
-use std::{cmp, rc::Rc};
-
 use crate::{
-    theme::{get_frame_color, get_header_style, get_select},
-    ControlPanel,
+    engine::PcapCommand,
+    theme::{get_frame_color, get_header_style, get_select, ACTIVE_TAB_COLOR, ICMPV6_FG},
 };
 
-use crossterm::event::{Event, KeyCode, KeyEventKind, KeyModifiers};
-use pcap::common::concept::{Field, FrameInfo, ListResult};
+use crossterm::event::{KeyCode, KeyEvent};
+use pcap::common::concept::{FrameInfo, ListResult};
 use ratatui::{
-    buffer::Buffer, layout::{Alignment, Constraint, Layout, Rect}, style::{Modifier, Stylize}, text::Text, widgets::{Cell, HighlightSpacing, Paragraph, Row, Scrollbar, ScrollbarOrientation, ScrollbarState, StatefulWidget, Table, TableState, Widget}
+    buffer::Buffer,
+    layout::{Alignment, Constraint, Layout, Rect},
+    style::{Modifier, Stylize},
+    symbols,
+    text::Text,
+    widgets::{Block, Cell, HighlightSpacing, Padding, Paragraph, Row, Scrollbar, ScrollbarOrientation, ScrollbarState, StatefulWidget, Table, TableState, Widget},
 };
-use tui_tree_widget::TreeItem;
 
-use super::stack::{StackState, StackView};
+use super::{
+    stack::{StackState, StackView},
+    store::ControlState,
+};
 
 // const INFO_TEXT: [&str; 2] = ["(Esc) quit | (↑) scroll up | (↓) scroll down | (←) prev page | (→) next page", "(Shift + →) next color | (Shift + ←) previous color"];
 
@@ -33,15 +38,17 @@ impl FrameState {
             field: None,
         }
     }
-    pub fn next(&mut self) {
+    pub fn next(&mut self) -> usize {
         if self.select < self.list.items.len() - 1 {
             self.select += 1;
         }
+        self.select
     }
-    pub fn previous(&mut self) {
+    pub fn previous(&mut self) -> usize {
         if self.select > 0 {
             self.select -= 1;
         }
+        self.select
     }
     pub fn get_selection(&self) -> TableState {
         TableState::default().with_selected(self.select)
@@ -51,15 +58,52 @@ impl FrameState {
         ss.position(self.select * ITEM_HEIGHT)
     }
 }
+
+impl ControlState for FrameState {
+    fn control(&mut self, _: bool, event: KeyEvent) -> PcapCommand {
+        match event.code {
+            KeyCode::Enter => {
+                self.cursor = SelectPanel::STACK;
+                return PcapCommand::FrameData(self.select as u32);
+            }
+            KeyCode::Down => {
+                self.next();
+                self.field = None;
+            }
+            KeyCode::Up => {
+                self.previous();
+                self.field = None;
+            }
+            KeyCode::Right => {
+                let total = self.list.total;
+                let start = (self.list.items.last().unwrap().index + 1) as usize;
+                if start < total {
+                    let len = std::cmp::min(total - start, 100);
+                    return PcapCommand::FrameList(start, len);
+                }
+            }
+            KeyCode::Left => {
+                let start = self.list.items.first().unwrap().index as usize;
+                if start > 0 {
+                    let _start = std::cmp::max(100, start);
+                    return PcapCommand::FrameList(_start - 100, 100);
+                }
+            }
+            _ => {}
+        }
+        PcapCommand::None
+    }
+}
 const ITEM_HEIGHT: usize = 1;
 // const FOOTER_BORDER_COLOR: Color = tailwind::BLUE.c400;
 
+#[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum SelectPanel {
     LIST,
     STACK,
 }
 pub struct App<'a> {
-    state: &'a  FrameState,
+    state: &'a mut FrameState,
 }
 
 impl App<'_> {
@@ -70,7 +114,7 @@ impl App<'_> {
         let frames = &self.state.list.items;
         let rows = frames.iter().map(|data| {
             let mut rs: Vec<Cell> = Vec::new();
-            rs.push(format!("{}", data.index).into());
+            rs.push(format!("{}", data.index + 1).into());
             rs.push(data.source.clone().into());
             rs.push(data.dest.clone().into());
             rs.push(data.protocol.clone().into());
@@ -104,29 +148,39 @@ impl App<'_> {
     }
 }
 
+use Constraint::{Length, Min};
 impl Widget for &mut App<'_> {
     fn render(self, area: Rect, buf: &mut Buffer) {
         let vertical = Layout::vertical([Constraint::Min(4), Constraint::Min(5)]);
         let rects = vertical.split(area);
-        self.render_table(buf, rects[0]);
-        if let Some(field) = &self.state.field {
-            // let ch:[Rect; 2] = Layout::horizontal([Constraint::Min(5), Constraint::Min(5)]).areas(rects[1]);
-            // self.stack_page.render(rects[1], buf);
-            // super::hex::HexView::new().render(ch[1], buf);
-            StackView::from(field).render(rects[1], buf);
-        } else {
-            let text = Text::from("No Data");
-            let paragraph = Paragraph::new(text).alignment(Alignment::Center);
-            paragraph.render(rects[1], buf);
+        {
+            let _area = get_erea(buf, rects[0], self.state.cursor == SelectPanel::LIST);
+            self.render_table(buf, _area);
         }
-        // let ch:[Rect; 2] = Layout::horizontal([Constraint::Fill(1); 2]).areas(rects[1]);
-        // self.stack_page.render(rects[1], buf);
-        // super::hex::HexView::new().render(ch[1], buf);
+
+        if let Some(field) = self.state.field.as_mut() {
+            let _area = get_erea(buf, rects[1], self.state.cursor == SelectPanel::STACK);
+            StackView::from(field).render(_area, buf);
+        } else {
+            let _area = get_erea(buf, rects[1], false);
+            let layout = Layout::vertical([Length(2), Min(0)]);
+            let [_, _area] = layout.areas(_area);
+            let text = Text::from("Press <Enter> to Detail");
+            let paragraph = Paragraph::new(text).alignment(Alignment::Center);
+            paragraph.render(_area, buf);
+        }
     }
 }
 
-impl<'a> From<&'a FrameState> for App<'a> {
-    fn from(state: &'a FrameState) -> Self {
+fn get_erea(buf: &mut Buffer, area: Rect, active: bool) -> Rect {
+    let color = if active { ACTIVE_TAB_COLOR } else { ICMPV6_FG };
+    let block = Block::bordered().border_set(symbols::border::ROUNDED).padding(Padding::new(0, 0, 0, 0)).border_style(color);
+    let inner_area = block.inner(area);
+    block.render(area, buf);
+    inner_area
+}
+impl<'a> From<&'a mut FrameState> for App<'a> {
+    fn from(state: &'a mut FrameState) -> Self {
         Self { state }
     }
 }

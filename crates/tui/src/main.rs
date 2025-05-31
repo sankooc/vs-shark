@@ -1,4 +1,4 @@
-use std::{fs::{self, File}, sync::mpsc};
+use std::{fs::{self}, sync::mpsc};
 
 use clap::Parser;
 use pcaps::{engine::{PcapCommand, PcapEvent, Service}, ui};
@@ -14,17 +14,13 @@ struct Args {
     file: String,
 }
 fn main() -> anyhow::Result<()> {
-    // let args = Args::parse();
-    // let fname = args.file;
-    // let fname = "./sandbox/11.pcapng";
-    let fname = "/home/sankooc/repo/pcapview/crates/tui/sandbox/ww.pcap";
-    // let fname = "/home/sankooc/repo/pcaps/big-2.pcap";
-    // let fname = "/home/sankooc/repo/pcapview/crates/tui/sandbox/11.pcapng";
-    if !fs::exists(fname).unwrap() {
-        eprintln!("File [{fname}] not exists");
+    let args = Args::parse();
+    let fname = args.file;
+    if !fs::exists(&fname).unwrap() {
+        eprintln!("File [{}] not exists", fname);
         std::process::exit(1);
     }
-    start(fname)
+    start(&fname)
 }
 
 fn start(_fname: &str) -> anyhow::Result<()> {

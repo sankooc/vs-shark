@@ -1,55 +1,71 @@
-use std::sync::mpsc::Sender;
 
-use pcap::common::{concept::{Field, FrameInfo, ListResult, ProgressStatus}, Frame};
+use crossterm::event::KeyEvent;
+use pcap::common::concept::ProgressStatus;
 
 use crate::engine::{PcapCommand, PcapEvent};
 
-use super::{frames::FrameState, stack::StackState};
+use super::{frames::{FrameState, SelectPanel}, stack::StackState};
 
 
-pub struct Store<'a> {
-    pub sender: &'a Sender<PcapCommand>,
+#[derive(Default)]
+pub struct Store {
     pub progress: Option<ProgressStatus>,
     pub init: bool,
     pub frame_data: Option<FrameState>
 }
 
+pub trait ControlState {
+    fn control(&mut self, shift_pressed: bool, event: KeyEvent) -> PcapCommand;
+}
 
-impl Store<'_> {
-    pub fn new<'a>(sender: &'a Sender<PcapCommand>) -> Store<'a> {
-        Store {
-            sender,
-            progress: None,
-            init: false,
-            frame_data: None
-        }
+impl Store {
+    pub fn frame_data(&mut self) -> Option<&mut FrameState>{
+        self.frame_data.as_mut()
     }
-    pub fn select(&mut self){
-        if let Some(frame_data) = &self.frame_data {
-            let index = frame_data.select;
-            if let Some(frame) = frame_data.list.items.get(index) {
-                self.sender.send(PcapCommand::FrameData(frame.index)).unwrap();
-            }
-        }
-    }
-    pub fn update(&mut self, event: PcapEvent) {
+    pub fn update(&mut self, event: PcapEvent) -> PcapCommand {
         match event {
             PcapEvent::ProgressStatus(status) => {
                 if let None = self.progress {
-                    self.sender.send(PcapCommand::FrameList(0, 100)).unwrap();
+                    self.progress = Some(status);
+                    PcapCommand::FrameList(0, 100)
+                } else {
+                    self.progress = Some(status);
+                    PcapCommand::None
                 }
-                self.progress = Some(status);
+                // self.progress = Some(status);
             },
             PcapEvent::FrameList(list) => {
+                // let index = list.items.get(0).unwrap().index;
                 self.frame_data = Some(FrameState::new(list));
-                self.select();
+                PcapCommand::None
             },
-            PcapEvent::FrameData(fields) => {
+            PcapEvent::FrameData(fields, ds,  extra) => {
                 if let Some(frame_data) = &mut self.frame_data {
-                    frame_data.field = Some(StackState::new(fields));
+                    frame_data.field = Some(StackState::new(fields, ds, extra));
                 }
+                PcapCommand::None
             },
-            _ => {}
+            _ => PcapCommand::None
+        }
+    }
+    pub fn selection(&mut self) -> Option<Box<&mut dyn ControlState>> {
+        if let Some(frame_data) = &mut self.frame_data {
+            match frame_data.cursor {
+                SelectPanel::LIST => {
+                    return Some(Box::new(frame_data));
+                },
+                SelectPanel::STACK => {
+                    if let Some(field) = &mut frame_data.field {
+                        return Some(Box::new(field));
+                    }
+                }
+            }
+        }
+        None
+    }
+    pub fn select_panel(&mut self, panel: SelectPanel) {
+        if let Some(frame_data) = &mut self.frame_data {
+            frame_data.cursor = panel;
         }
     }
 }

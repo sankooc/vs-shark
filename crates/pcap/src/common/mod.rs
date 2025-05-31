@@ -318,12 +318,15 @@ impl Instance {
     pub fn frame(&self, index: usize) -> Option<&Frame> {
         self.ctx.list.get(index)
     }
-    pub fn select_frame(&self, index: usize, data: Vec<u8>) -> Option<Vec<Field>> {
+    pub fn select_frame(&self, index: usize, data: Vec<u8>) -> Option<(Vec<Field>, Option<Vec<u8>>, Option<Vec<u8>>)> {
+        let mut extra_data = None;
+
         if let Some(frame) = self.frame(index) {
             if let Some(range) = frame.range() {
                 let ds: DataSource = DataSource::create(data, range);
                 let rg = frame.frame_range().unwrap();
                 let mut reader = Reader::new_sub(&ds, rg).unwrap();
+                let source = reader.dump_as_vec().ok();
                 let mut list = vec![];
                 let mut _next = frame.head;
                 loop {
@@ -334,24 +337,27 @@ impl Instance {
                         _ => {
                             let mut f = Field::default();
                             f.start = reader.cursor;
-                            if let Ok(next) = detail(_next, &mut f, &self.ctx, &frame, &mut reader) {
+                            if let Ok((next, _extra_data)) = detail(_next, &mut f, &self.ctx, &frame, &mut reader) {
                                 f.size = reader.cursor - f.start;
                                 list.push(f);
                                 _next = next;
+                                if let Some(data) = _extra_data {
+                                    extra_data = Some(data);
+                                }
                             } else {
                                 break;
                             }
                         }
                     }
                 }
-                return Some(list);
+                return Some((list, source, extra_data));
             }
         }
         None
     }
 
     pub fn select_frame_json(&self, index: usize, data: Vec<u8>) -> Result<String, Error> {
-        if let Some(list) = self.select_frame(index, data) {
+        if let Some((list, _, _)) = self.select_frame(index, data) {
             return serde_json::to_string(&list);
         }
         Ok("[]".into())

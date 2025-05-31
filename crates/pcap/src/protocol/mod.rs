@@ -40,8 +40,8 @@ pub fn parse(protocol: Protocol, ctx: &mut Context, frame: &mut Frame, reader: &
         }
     }
 }
-pub fn detail(protocol: Protocol, field: &mut Field, ctx: &Context, frame: &Frame, reader: &mut crate::common::io::Reader) -> Result<Protocol> {
-    match &protocol {
+pub fn detail(protocol: Protocol, field: &mut Field, ctx: &Context, frame: &Frame, reader: &mut crate::common::io::Reader) -> Result<(Protocol, Option<Vec<u8>>)> {
+    let protocol = match &protocol {
         Protocol::ETHERNET => link::ethernet::EthernetVisitor::detail(field, ctx, frame, reader),
         Protocol::SSL => link::ssl::Visitor::detail(field, ctx, frame, reader),
         Protocol::Loopback => link::loopback::Visitor::detail(field, ctx, frame, reader),
@@ -61,13 +61,15 @@ pub fn detail(protocol: Protocol, field: &mut Field, ctx: &Context, frame: &Fram
         Protocol::DHCP6 => network::dhcp6::Visitor::detail(field, ctx, frame, reader),
         Protocol::DNS => application::dns::Visitor::detail(field, ctx, frame, reader),
         Protocol::NBNS => application::nbns::Visitor::detail(field, ctx, frame, reader),
-        Protocol::TLS => transport::tls::Visitor::detail(field, ctx, frame, reader),
+        Protocol::TLS => {
+            return transport::tls::Visitor::detail(field, ctx, frame, reader);
+        },
         _ => {
             field.summary = format!("Unimplement Protocol: {}", protocol);
-            Ok(Protocol::None)
-            // return DefaultParser::detail(field, ctx, frame, reader);
+            return Ok((Protocol::None, None));
         }
-    }
+    };
+    Ok((protocol?, None))
 }
 
 pub fn summary(protocol: Protocol, ctx: &Context, frame: &Frame) -> Option<String> {

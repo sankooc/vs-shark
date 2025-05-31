@@ -6,6 +6,7 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use std::{fs::File, io::BufReader};
 
 use pcap::common::concept::{Criteria, Field, FrameInfo, ListResult, ProgressStatus};
+use pcap::common::io::DataSource;
 use pcap::common::Instance;
 use std::sync::mpsc::Sender;
 
@@ -13,11 +14,12 @@ pub enum PcapEvent {
     Quit,
     ProgressStatus(ProgressStatus),
     FrameList(ListResult<FrameInfo>),
-    FrameData(Vec<Field>),
+    FrameData(Vec<Field>, Option<DataSource>, Option<Vec<u8>>),
 }
 
 pub enum PcapCommand {
     Quit,
+    None,
     FrameList(usize, usize),
     FrameData(u32)
 }
@@ -60,7 +62,8 @@ impl Service {
         let mut pos = 0;
         let mut buffer = Vec::with_capacity(batch_size);
         buffer.resize(batch_size, 0);
-        loop {
+        'main: loop {
+            let start_loop = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis();
             match self.receiver.try_recv() {
                 Ok(cmd) => match cmd {
                     PcapCommand::Quit => break,
@@ -73,8 +76,15 @@ impl Service {
                         if let Some(frame) = ins.frame(index as usize) {
                             if let Some(range) = frame.range() {
                                 let data = seek2(&self.fname, range)?;
-                                if let Some(rs) = ins.select_frame(index as usize, data) {
-                                    self.sender.send(PcapEvent::FrameData(rs)).unwrap();
+                                if let Some((rs, source, extra)) = ins.select_frame(index as usize, data) {
+                                    let ds = if let Some(_source) = source {
+                                        let range = frame.frame_range().unwrap();
+                                        let data_source = DataSource::create(_source, range);
+                                        Some(data_source)                                     
+                                    } else {
+                                        None
+                                    };
+                                    self.sender.send(PcapEvent::FrameData(rs, ds, extra)).unwrap();
                                 }
                             }
                             // self.sender.send(PcapEvent::FrameData(frame)).unwrap();
@@ -96,20 +106,29 @@ impl Service {
                 }
                 pos += n as u64;
 
-                let _rs = ins.update(buffer[..n].to_vec()).unwrap();
-                let timestamp = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis();
-                if _next < timestamp {
-                    // _pro = Some(_rs);
-                    self.sender.send(PcapEvent::ProgressStatus(_rs)).unwrap();
-                    _next = timestamp + 450;
+                if let Ok(_rs) = ins.update(buffer[..n].to_vec()) {
+                    let timestamp = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis();
+                    if _next < timestamp {
+                        // _pro = Some(_rs);
+                        self.sender.send(PcapEvent::ProgressStatus(_rs)).unwrap();
+                        _next = timestamp + 450;
+                    } else {
+                        _pro = Some(_rs);
+                    }    
                 } else {
-                    _pro = Some(_rs);
+                    self.sender.send(PcapEvent::Quit).unwrap();
+                    break 'main;
                 }
+                // let _rs = ins.update(buffer[..n].to_vec()).unwrap();
+                
             }
             if let Some(rs) = _pro.take() {
                 self.sender.send(PcapEvent::ProgressStatus(rs)).unwrap();
             }
-            thread::sleep(Duration::from_millis(100));
+            let _next_loop = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis();
+            if start_loop + 166 > _next_loop {
+                thread::sleep(Duration::from_millis((166 + start_loop - _next_loop) as u64));
+            }
         }
         Ok(())
     }
