@@ -25,7 +25,7 @@ pub struct FrameState {
     pub cursor: SelectPanel,
     pub list: ListResult<FrameInfo>,
     pub select: usize,
-    pub data: Vec<FrameInfo>,
+    // pub data: Vec<FrameInfo>,
     pub field: Option<StackState>,
 }
 impl FrameState {
@@ -34,7 +34,6 @@ impl FrameState {
             list,
             cursor: SelectPanel::LIST,
             select: 0,
-            data: Vec::new(),
             field: None,
         }
     }
@@ -64,7 +63,10 @@ impl ControlState for FrameState {
         match event.code {
             KeyCode::Enter => {
                 self.cursor = SelectPanel::STACK;
-                return PcapCommand::FrameData(self.select as u32);
+                if let Some(finfo) = self.list.items.get(self.select) {
+                    return PcapCommand::FrameData(finfo.index);
+                }
+                return PcapCommand::None;
             }
             KeyCode::Down => {
                 self.next();

@@ -336,6 +336,7 @@ impl Instance {
                         }
                         _ => {
                             let mut f = Field::default();
+                            f.children = Some(vec![]);
                             f.start = reader.cursor;
                             if let Ok((next, _extra_data)) = detail(_next, &mut f, &self.ctx, &frame, &mut reader) {
                                 f.size = reader.cursor - f.start;
