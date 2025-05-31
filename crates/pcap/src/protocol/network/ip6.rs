@@ -6,7 +6,7 @@ use crate::{
 };
 use anyhow::Result;
 
-pub struct Visitor {}
+pub struct Visitor;
 pub fn t_protocol(protocol_type: u8) -> String {
     format!("Protocol: {} ({:#06x})", ip_protocol_type_mapper(protocol_type as u16), protocol_type)
 }

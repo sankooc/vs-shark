@@ -97,127 +97,73 @@ fn parse_icmpv6_options(list: &mut Vec<Field>, reader: &mut Reader) -> Result<()
         let option_len = reader.read8()? as usize;
         
         if option_len == 0 {
-            // 无效选项长度
+            
             break;
         }
         
-        let total_len = option_len * 8; // 选项长度以8字节为单位
-        let data_len = total_len - 2; // 减去类型和长度字段
+        let total_len = option_len * 8;
+        let data_len = total_len - 2; 
         
         if reader.left() < data_len {
-            // 选项数据不完整
+            
             break;
         }
         
-        let mut option_field = Field {
-            start: option_start,
-            size: total_len,
-            summary: format!("Option: Type {} (Length: {} bytes)", option_type_to_string(option_type), total_len),
-            children: Some(Vec::new()),
-        };
-        
+        let mut option_field = Field::with_children(format!("Option: Type {} (Length: {} bytes)", option_type_to_string(option_type), total_len), option_start, total_len); 
         match option_type {
             1 => {
-                // 源链路层地址选项
                 if let Some(children) = &mut option_field.children {
-                    children.push(Field {
-                        start: reader.cursor,
-                        size: data_len,
-                        summary: format!("Source Link-layer Address: {}", format_mac_address(reader, data_len)?),
-                        children: None,
-                    });
+                    children.push(Field::label(format!("Source Link-layer Address: {}", format_mac_address(reader, data_len)?), reader.cursor, reader.cursor + data_len));
                 }
                 reader.forward(data_len);
             },
             2 => {
-                // 目标链路层地址选项
                 if let Some(children) = &mut option_field.children {
-                    children.push(Field {
-                        start: reader.cursor,
-                        size: data_len,
-                        summary: format!("Target Link-layer Address: {}", format_mac_address(reader, data_len)?),
-                        children: None,
-                    });
+                    children.push(Field::label(format!("Target Link-layer Address: {}", format_mac_address(reader, data_len)?), reader.cursor, reader.cursor + data_len));
                 }
                 reader.forward(data_len);
             },
             3 => {
-                // 前缀信息选项
                 if let Some(children) = &mut option_field.children {
                     let prefix_len = reader.read8()?;
                     let flags = reader.read8()?;
                     let l_flag = (flags >> 7) & 0x01;
                     let a_flag = (flags >> 6) & 0x01;
                     
-                    children.push(Field {
-                        start: reader.cursor - 2,
-                        size: 2,
-                        summary: format!("Prefix Length: {}", prefix_len),
-                        children: None,
-                    });
+                    children.push(Field::label(format!("Prefix Length: {}", prefix_len), reader.cursor - 2, reader.cursor));
                     
-                    children.push(Field {
-                        start: reader.cursor - 1,
-                        size: 1,
-                        summary: format!("Flags: {:#04x} (L:{}, A:{})", flags, l_flag, a_flag),
-                        children: None,
-                    });
+                    children.push(Field::label(format!("Flags: {:#04x} (L:{}, A:{})", flags, l_flag, a_flag), reader.cursor - 1, reader.cursor));
+                    
                     
                     let valid_lifetime = reader.read32(true)?;
-                    children.push(Field {
-                        start: reader.cursor - 4,
-                        size: 4,
-                        summary: format!("Valid Lifetime: {} seconds", valid_lifetime),
-                        children: None,
-                    });
+                    children.push(Field::label(format!("Valid Lifetime: {} seconds", valid_lifetime), reader.cursor - 4, reader.cursor));
+                    
                     
                     let preferred_lifetime = reader.read32(true)?;
-                    children.push(Field {
-                        start: reader.cursor - 4,
-                        size: 4,
-                        summary: format!("Preferred Lifetime: {} seconds", preferred_lifetime),
-                        children: None,
-                    });
-                    
-                    reader.forward(4); // 保留字段
+                    children.push(Field::label(format!("Preferred Lifetime: {} seconds", preferred_lifetime), reader.cursor - 4, reader.cursor));
+
+                    reader.forward(4); 
                     
                     let prefix = reader.read_ip6()?;
-                    children.push(Field {
-                        start: reader.cursor - 16,
-                        size: 16,
-                        summary: format!("Prefix: {}", prefix),
-                        children: None,
-                    });
+                    children.push(Field::label(format!("Prefix: {}", prefix), reader.cursor - 16, reader.cursor));
                 }
             },
             4 => {
-                // 重定向头部选项
-                reader.forward(6); // 保留字段
+                reader.forward(6);
                 if let Some(children) = &mut option_field.children {
-                    children.push(Field {
-                        start: reader.cursor,
-                        size: data_len - 6,
-                        summary: format!("Redirected Header: {} bytes", data_len - 6),
-                        children: None,
-                    });
+                    children.push(Field::label(format!("Redirected Header: {} bytes", data_len - 6), reader.cursor, reader.cursor + data_len - 6));
                 }
                 reader.forward(data_len - 6);
             },
             5 => {
-                // MTU选项
-                reader.forward(2); // 保留字段
+                reader.forward(2); 
                 let mtu = reader.read32(true)?;
                 if let Some(children) = &mut option_field.children {
-                    children.push(Field {
-                        start: reader.cursor - 4,
-                        size: 4,
-                        summary: format!("MTU: {}", mtu),
-                        children: None,
-                    });
+                    children.push(Field::label(format!("MTU: {}", mtu), reader.cursor - 4, reader.cursor));
                 }
             },
             _ => {
-                // 其他选项类型
+                
                 reader.forward(data_len);
             }
         }
@@ -226,19 +172,13 @@ fn parse_icmpv6_options(list: &mut Vec<Field>, reader: &mut Reader) -> Result<()
     }
     
     if !options_list.is_empty() {
-        let options_field = Field {
-            start: options_start,
-            size: reader.cursor - options_start,
-            summary: format!("Options: {} bytes", reader.cursor - options_start),
-            children: Some(options_list),
-        };
+        let options_field = Field::new(format!("Options: {} bytes", reader.cursor - options_start), options_start, reader.cursor, options_list);
         list.push(options_field);
     }
     
     Ok(())
 }
 
-// 将选项类型转换为字符串描述
 fn option_type_to_string(option_type: u8) -> &'static str {
     match option_type {
         1 => "Source Link-layer Address",
@@ -269,7 +209,6 @@ fn option_type_to_string(option_type: u8) -> &'static str {
     }
 }
 
-// 格式化MAC地址
 fn format_mac_address(reader: &mut Reader, len: usize) -> Result<String> {
     if len < 6 {
         return Ok("Invalid MAC Address".to_string());
@@ -282,7 +221,6 @@ fn format_mac_address(reader: &mut Reader, len: usize) -> Result<String> {
     let b5 = reader.read8()?;
     let b6 = reader.read8()?;
     
-    // 如果长度大于6，跳过剩余字节
     if len > 6 {
         reader.forward(len - 6);
     }
@@ -290,7 +228,7 @@ fn format_mac_address(reader: &mut Reader, len: usize) -> Result<String> {
     Ok(format!("{:02x}:{:02x}:{:02x}:{:02x}:{:02x}:{:02x}", b1, b2, b3, b4, b5, b6))
 }
 
-pub struct Visitor {}
+pub struct Visitor;
 
 impl Visitor {
     pub fn info(_: &Context, _: &Frame) -> Option<String> {

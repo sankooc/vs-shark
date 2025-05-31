@@ -18,6 +18,7 @@ pub struct ProgressStatus {
     pub total: usize,
     pub cursor: usize,
     pub count: usize,
+    pub left: usize,
 }
 
 impl ProgressStatus {
@@ -76,6 +77,9 @@ impl From<&FrameInternInfo> for FrameInfo {
 
 #[derive(Default, Clone, Serialize)]
 pub struct Field {
+    // #[serde(skip)]
+    // pub extra_data: Option<Vec<u8>>,
+    pub source: u8,
     pub start: usize,
     pub size: usize,
     pub summary: String,
@@ -83,9 +87,19 @@ pub struct Field {
 }
 
 impl Field {
+    pub fn new(summary: String, start: usize, end: usize, children: Vec<Field>) -> Field {
+        Field {
+            start,
+            source: 0,
+            size: end - start,
+            summary,
+            children: Some(children),
+        }
+    }
     pub fn label(summary: String, start: usize, end: usize) -> Field {
         Field {
             start,
+            source: 0,
             size: end - start,
             summary,
             children: None,
@@ -93,6 +107,7 @@ impl Field {
     }
     pub fn with_children(summary: String, start: usize, size: usize) -> Field {
         Field {
+            source: 0,
             start,
             size,
             summary,

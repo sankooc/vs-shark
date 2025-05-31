@@ -1,4 +1,4 @@
-use std::{cmp, rc::Rc};
+use std::cmp;
 
 use ratatui::{
     style::{Modifier, Stylize}, text::{Line, Span}, widgets::{Block, Padding, Paragraph, Widget}
@@ -6,30 +6,41 @@ use ratatui::{
 
 use crate::theme::get_protocol_color;
 
-pub struct HexView {
-    data: Option<(usize, usize, Rc<Vec<u8>>)>
+pub struct HexState<'a> {
+    start: usize,
+    size: usize,
+    data: &'a [u8]
 }
 
-impl HexView {
-    pub fn new() -> Self {
-        Self {data: None}
-    }
-    pub fn set_data(&mut self, data: Option<(usize, usize, Rc<Vec<u8>>)>) {
-        self.data = data;
+impl <'a>HexState<'a> {
+    pub fn new(start: usize, size: usize, data: &'a [u8]) -> Self {
+        Self { start, size, data }
     }
 }
 
 
-impl Widget for &mut HexView {
+
+pub struct HexView<'a> {
+    state: &'a HexState<'a>,
+    // data: Option<(usize, usize, Rc<Vec<u8>>)>
+}
+
+impl<'a> From<&'a HexState<'a>> for HexView<'a> {
+    fn from(state: &'a HexState<'a>) -> Self {
+        Self { state }
+    }
+}
+
+impl Widget for &mut HexView<'_> {
     fn render(self, area: ratatui::prelude::Rect, buf: &mut ratatui::prelude::Buffer) {
-        if let None = self.data {
-            return;
-        }
-        let _data = self.data.as_ref().unwrap();
-        let start = _data.0;
-        let size = _data.1;
+        // if let None = self.state {
+        //     return;
+        // }
+        let data = self.state.data;
+        let start = self.state.start;
+        let size = self.state.size;
         let range = start..start+size;
-        let data = _data.2.clone();
+        // let data = _data.2.clone();
         let len = data.len();
         if len <= 0 {
             return;
@@ -37,11 +48,18 @@ impl Widget for &mut HexView {
         let line_count: usize = (len - 1) / 16 + 1;
         let mut lines = Vec::new();
         let mut _cursor = 0;
+        let mut head = None;
         for inx in 0..line_count {
             let index:Span = format!("  {:#07x}0  ", inx).into();
             let mut ll = vec![index.style(get_protocol_color("tcp"))];
-            let size = cmp::min(8, len - _cursor);
+            let size: usize = cmp::min(8, len - _cursor);
+            // let _data_range = _cursor.._cursor + size;
             let _data = &data[_cursor.._cursor + size];
+            if  (_cursor.._cursor + 16).contains(&range.start){
+                if let None = &head {
+                    head = Some(inx);
+                }
+            }
 
             // let mut hex_style = get_protocol_color("tls");
             let get_style = |s| {
@@ -78,7 +96,13 @@ impl Widget for &mut HexView {
             lines.push(Line::from(ll));
             // let txt = Text::from(ll);
         }
-        let _top = Paragraph::new(lines).block(Block::bordered().padding(Padding::ZERO));
-        _top.render(area, buf);
+        let mut _top = Paragraph::new(lines).block(Block::bordered().padding(Padding::ZERO));
+        if let Some(offset) = head {
+            let _offset = std::cmp::max(2, offset) as u16;
+            _top.scroll((_offset - 2, 0)).render(area, buf);
+        } else {
+            _top.render(area, buf);
+        }
+        
     }
 }

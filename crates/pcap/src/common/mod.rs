@@ -18,7 +18,7 @@ use io::{DataSource, MacAddress, Reader, IO};
 use rustc_hash::FxHasher;
 use serde_json::Error;
 
-type FastHashMap<K, V> = HashMap<K, V, BuildHasherDefault<FxHasher>>;
+pub type FastHashMap<K, V> = HashMap<K, V, BuildHasherDefault<FxHasher>>;
 
 pub type NString = &'static str;
 
@@ -99,6 +99,23 @@ impl Frame {
         Self { ..Default::default() }
     }
     pub fn range(&self) -> Option<Range<usize>> {
+        match &self.protocol_field {
+            ProtocolInfoField::TLS(tls_list) => {
+                if tls_list.list.len() > 0 {
+                    let mut start = tls_list.list.first().unwrap().segments.first().unwrap().range.start;
+                    let mut end = tls_list.list.last().unwrap().segments.last().unwrap().range.end;
+                    if let Some(r) = &self.range {
+                        start = cmp::min(start, r.start);
+                        end = cmp::max(end, r.end);
+                    }
+                    return Some(start..end)
+                }
+            }
+            _ => {}
+        }
+        self.range.clone()
+    }
+    pub fn frame_range(&self) -> Option<Range<usize>> {
         self.range.clone()
     }
 }
@@ -125,7 +142,8 @@ pub struct Instance {
 
 impl Instance {
     pub fn new(batch_size: usize) -> Instance {
-        let ds = DataSource::new(batch_size, 0);
+        let size = cmp::max(batch_size, 1024 * 128);
+        let ds = DataSource::new(size, 0);
         Self {
             ds,
             file_type: FileType::NONE,
@@ -189,7 +207,8 @@ impl Instance {
         }
         let mut rs: ProgressStatus = (&reader).into();
         rs.count = self.ctx.list.len();
-        
+        rs.left = reader.left();
+
         let _cursor = self.last;
         let datasource = &mut self.ds;
         datasource.trim(_cursor)?;
@@ -299,11 +318,15 @@ impl Instance {
     pub fn frame(&self, index: usize) -> Option<&Frame> {
         self.ctx.list.get(index)
     }
-    pub fn select_frame(&self, index: usize, data: Vec<u8>) -> Option<Vec<Field>> {
+    pub fn select_frame(&self, index: usize, data: Vec<u8>) -> Option<(Vec<Field>, Option<Vec<u8>>, Option<Vec<u8>>)> {
+        let mut extra_data = None;
+
         if let Some(frame) = self.frame(index) {
-            if let Some(range) = &frame.range {
-                let ds: DataSource = DataSource::create(data, range.clone());
-                let mut reader = Reader::new(&ds);
+            if let Some(range) = frame.range() {
+                let ds: DataSource = DataSource::create(data, range);
+                let rg = frame.frame_range().unwrap();
+                let mut reader = Reader::new_sub(&ds, rg).unwrap();
+                let source = reader.dump_as_vec().ok();
                 let mut list = vec![];
                 let mut _next = frame.head;
                 loop {
@@ -314,24 +337,27 @@ impl Instance {
                         _ => {
                             let mut f = Field::default();
                             f.start = reader.cursor;
-                            if let Ok(next) = detail(_next, &mut f, &self.ctx, &frame, &mut reader) {
+                            if let Ok((next, _extra_data)) = detail(_next, &mut f, &self.ctx, &frame, &mut reader) {
                                 f.size = reader.cursor - f.start;
                                 list.push(f);
                                 _next = next;
+                                if let Some(data) = _extra_data {
+                                    extra_data = Some(data);
+                                }
                             } else {
                                 break;
                             }
                         }
                     }
                 }
-                return Some(list);
+                return Some((list, source, extra_data));
             }
         }
         None
     }
 
     pub fn select_frame_json(&self, index: usize, data: Vec<u8>) -> Result<String, Error> {
-        if let Some(list) = self.select_frame(index, data) {
+        if let Some((list, _, _)) = self.select_frame(index, data) {
             return serde_json::to_string(&list);
         }
         Ok("[]".into())

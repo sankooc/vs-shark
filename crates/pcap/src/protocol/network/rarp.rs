@@ -4,7 +4,7 @@ use crate::{
     common::{
         concept::Field,
         core::Context,
-        enum_def::{Protocol, ProtocolInfoField},
+        enum_def::{ Protocol, ProtocolInfoField},
         io::{MacAddress, Reader},
         Frame,
     },
@@ -18,9 +18,6 @@ pub fn hardware_type_str(hw_type: u16) -> String {
     format!("Hardware type: {} ({:#06x})", arp_hardware_type_mapper(hw_type), hw_type)
 }
 
-pub fn protocol_type_str(_: u16) -> String {
-    format!("Protocol type: IPv4 (0x0800)")
-}
 
 pub fn operation_str(operation: u16) -> String {
     format!("Operation: {} ({:#06x})", arp_oper_type_mapper(operation), operation)
@@ -30,9 +27,9 @@ pub struct Visitor;
 
 impl Visitor {
     pub fn info(_: &Context, frame: &Frame) -> Option<String> {
-        if let ProtocolInfoField::ARP(_hw_type, operation, sender_mac, sender_ip, target_mac, target_ip) = &frame.protocol_field {
+        if let ProtocolInfoField::RARP(_, operation, sender_mac, sender_ip, target_mac, target_ip) = &frame.protocol_field {
             let op_str = arp_oper_type_mapper(*operation);
-            return Some(format!("Address Resolution Protocol ({} {:#06x}), Sender: {} ({}), Target: {} ({})",
+            return Some(format!("Reverse Address Resolution Protocol ({} {:#06x}), Sender: {} ({}), Target: {} ({})",
                 op_str, operation, sender_ip, sender_mac, target_ip, target_mac));
         }
         None
@@ -40,8 +37,8 @@ impl Visitor {
 
     pub fn parse(_: &mut Context, frame: &mut Frame, reader: &mut Reader) -> Result<Protocol> {
         let hw_type = reader.read16(true)?;
-        let _proto_type = reader.read16(true)?;
-        let hw_size = reader.read8()?;
+        reader.read16(true)?; 
+        let hw_size = reader.read8()?; 
         let proto_size = reader.read8()?;
         let operation = reader.read16(true)?;
         
@@ -57,7 +54,7 @@ impl Visitor {
         let target_ip_data = reader.slice(proto_size as usize, true)?;
         let target_ip = Ipv4Addr::from(<[u8; 4]>::try_from(target_ip_data)?);
         
-        frame.protocol_field = ProtocolInfoField::ARP(
+        frame.protocol_field = ProtocolInfoField::RARP(
             hw_type,
             operation,
             sender_mac,
@@ -97,7 +94,7 @@ impl Visitor {
         field_back_format!(list, reader, 4, format!("Target IP address: {}", target_ip));
         
         let op_str = arp_oper_type_mapper(operation);
-        field.summary = format!("Address Resolution Protocol ({} {:#06x})", op_str, operation);
+        field.summary = format!("Reverse Address Resolution Protocol ({} {:#06x})", op_str, operation);
         field.children = Some(list);
         
         Ok(Protocol::None)

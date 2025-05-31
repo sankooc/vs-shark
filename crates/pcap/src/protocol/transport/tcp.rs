@@ -6,11 +6,13 @@ use crate::{
         enum_def::{PacketStatus, Protocol, TCPDetail},
         io::Reader,
         Frame,
-    }, constants::ip_protocol_type_mapper, field_back_format, field_forward_format, read_field_format
+    },
+    constants::ip_protocol_type_mapper,
+    field_back_format, field_forward_format, read_field_format,
 };
 use anyhow::Result;
 
-pub struct Visitor {}
+pub struct Visitor;
 pub fn t_protocol(protocol_type: u8) -> String {
     format!("Protocol: {} ({:#06x})", ip_protocol_type_mapper(protocol_type as u16), protocol_type)
 }
@@ -46,16 +48,24 @@ impl Visitor {
             reader.forward(skip as usize);
         }
         let mut left_size = reader.left();
+        // if left_size == 0 {
+        //     return Ok(Protocol::None);
+        // }
+        // if index == 2 {
+        //     println!("")
+        // }
         let iplen = frame.iplen as usize;
         if iplen > 0 {
             if start > iplen {
-                left_size = iplen + left_size - start;
+                if iplen + left_size >= start {
+                    left_size = iplen + left_size - start;
+                }
             }
         }
         let ds = reader.ds();
         let range = reader.cursor..reader.cursor + left_size;
         let tcp_state = TCPStat::new(index, sequence, ack, crc, state, left_size as u16);
-        
+
         if let Ok(mut tcp_info) = ctx.get_connect(frame, source_port, target_port, tcp_state, ds, range) {
             tcp_info.flag_bit = flag_bit;
             frame.info.status = match &tcp_info.status {
@@ -63,9 +73,14 @@ impl Visitor {
                 _ => PacketStatus::ERROR,
             };
             frame.ports = Some((source_port, target_port));
-            let next = tcp_info.next_protocol;
+            let mut next = tcp_info.next_protocol;
+
+            if tcp_info.len == 0 {
+                next = Protocol::None;
+            }
             frame.tcp_info = Some(tcp_info);
-            return Ok(next)
+
+            return Ok(next);
         }
         Ok(Protocol::None)
     }
@@ -96,7 +111,7 @@ impl Visitor {
         }
         let payload_len = info.len as usize;
         field_forward_format!(list, reader, payload_len, format!("TCP payload ({} bytes)", payload_len));
-        
+
         field.summary = format!("Transmission Control Protocol, Src Port: {}, Dst Port: {}, Len: {}", source_port, target_port, info.len);
         field.children = Some(list);
         Ok(info.next_protocol)

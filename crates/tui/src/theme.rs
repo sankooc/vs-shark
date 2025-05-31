@@ -1,5 +1,6 @@
+use pcap::common::concept::FrameInfo;
 use ratatui::style::{Color, Style};
-use shark::common::concept::FrameInfo;
+// use shark::common::concept::FrameInfo;
 // https://github.com/morhetz/gruvbox
 pub const GRUVBOX_FG :Color = Color::from_u32(0xebdbb2);
 pub const GRUVBOX_FG_0 :Color = Color::from_u32(0xfbf1c7);

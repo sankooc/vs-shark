@@ -16,7 +16,7 @@ pub fn t_protocol(protocol_type: u8) -> String {
     format!("Protocol: {} ({:#06x})", ip_protocol_type_mapper(protocol_type as u16), protocol_type)
 }
 
-pub struct Visitor {}
+pub struct Visitor;
 
 impl Visitor {
     pub fn info(_: &Context, frame: &Frame) -> Option<String> {
@@ -40,7 +40,9 @@ impl Visitor {
         let source = Ipv4Addr::from(<[u8; 4]>::try_from(&_data[..4])?);
         let target = Ipv4Addr::from(<[u8; 4]>::try_from(&_data[4..])?);
         frame.address_field = AddressField::IPv4(source, target);
-        
+        if head_len < 5 {
+            bail!("ip4.head_len < 5")
+        }
         let ext = head_len - 5;
         if ext > 0 {
             reader.slice((ext * 4) as usize, true)?;

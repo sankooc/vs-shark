@@ -26,6 +26,13 @@ pub fn parse(protocol: Protocol, ctx: &mut Context, frame: &mut Frame, reader: &
         Protocol::ICMP6 => network::icmp6::Visitor::parse(ctx, frame, reader),
         Protocol::PPPoES => link::pppoes::Visitor::parse(ctx, frame, reader),
         Protocol::PPPoED => link::pppoed::Visitor::parse(ctx, frame, reader),
+        Protocol::ARP => network::arp::Visitor::parse(ctx, frame, reader),
+        Protocol::RARP => network::rarp::Visitor::parse(ctx, frame, reader),
+        Protocol::DHCP => network::dhcp::Visitor::parse(ctx, frame, reader),
+        Protocol::DHCP6 => network::dhcp6::Visitor::parse(ctx, frame, reader),
+        Protocol::DNS => application::dns::Visitor::parse(ctx, frame, reader),
+        Protocol::NBNS => application::nbns::Visitor::parse(ctx, frame, reader),
+        Protocol::TLS => transport::tls::Visitor::parse(ctx, frame, reader),
         // "arp" => network::arp::Visitor::parse(frame, reader),
         // "icmp" => network::icmp::V4Visitor::parse(frame, reader),
         _ => {
@@ -33,8 +40,8 @@ pub fn parse(protocol: Protocol, ctx: &mut Context, frame: &mut Frame, reader: &
         }
     }
 }
-pub fn detail(protocol: Protocol, field: &mut Field, ctx: &Context, frame: &Frame, reader: &mut crate::common::io::Reader) -> Result<Protocol> {
-    match &protocol {
+pub fn detail(protocol: Protocol, field: &mut Field, ctx: &Context, frame: &Frame, reader: &mut crate::common::io::Reader) -> Result<(Protocol, Option<Vec<u8>>)> {
+    let protocol = match &protocol {
         Protocol::ETHERNET => link::ethernet::EthernetVisitor::detail(field, ctx, frame, reader),
         Protocol::SSL => link::ssl::Visitor::detail(field, ctx, frame, reader),
         Protocol::Loopback => link::loopback::Visitor::detail(field, ctx, frame, reader),
@@ -48,12 +55,21 @@ pub fn detail(protocol: Protocol, field: &mut Field, ctx: &Context, frame: &Fram
         Protocol::ICMP6 => network::icmp6::Visitor::detail(field, ctx, frame, reader),
         Protocol::PPPoES => link::pppoes::Visitor::detail(field, ctx, frame, reader),
         Protocol::PPPoED => link::pppoed::Visitor::detail(field, ctx, frame, reader),
+        Protocol::ARP => network::arp::Visitor::detail(field, ctx, frame, reader),
+        Protocol::RARP => network::rarp::Visitor::detail(field, ctx, frame, reader),
+        Protocol::DHCP => network::dhcp::Visitor::detail(field, ctx, frame, reader),
+        Protocol::DHCP6 => network::dhcp6::Visitor::detail(field, ctx, frame, reader),
+        Protocol::DNS => application::dns::Visitor::detail(field, ctx, frame, reader),
+        Protocol::NBNS => application::nbns::Visitor::detail(field, ctx, frame, reader),
+        Protocol::TLS => {
+            return transport::tls::Visitor::detail(field, ctx, frame, reader);
+        },
         _ => {
             field.summary = format!("Unimplement Protocol: {}", protocol);
-            Ok(Protocol::None)
-            // return DefaultParser::detail(field, ctx, frame, reader);
+            return Ok((Protocol::None, None));
         }
-    }
+    };
+    Ok((protocol?, None))
 }
 
 pub fn summary(protocol: Protocol, ctx: &Context, frame: &Frame) -> Option<String> {
@@ -67,6 +83,13 @@ pub fn summary(protocol: Protocol, ctx: &Context, frame: &Frame) -> Option<Strin
         Protocol::ICMP6 => network::icmp6::Visitor::info(ctx, frame),
         Protocol::PPPoES => link::pppoes::Visitor::info(ctx, frame),
         Protocol::PPPoED => link::pppoed::Visitor::info(ctx, frame),
+        Protocol::ARP => network::arp::Visitor::info(ctx, frame),
+        Protocol::RARP => network::rarp::Visitor::info(ctx, frame),
+        Protocol::DHCP => network::dhcp::Visitor::info(ctx, frame),
+        Protocol::DHCP6 => network::dhcp6::Visitor::info(ctx, frame),
+        Protocol::DNS => application::dns::Visitor::info(ctx, frame),
+        Protocol::NBNS => application::nbns::Visitor::info(ctx, frame),
+        Protocol::TLS => transport::tls::Visitor::info(ctx, frame),
         _ => None
     }
 }

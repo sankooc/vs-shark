@@ -71,7 +71,7 @@ impl IO {
 //     None
 // }
 pub struct DataSource {
-    data: Vec<u8>,
+    pub data: Vec<u8>,
     range: Range<usize>,
     // pub config: InstanceConfig,
 }
@@ -147,6 +147,7 @@ impl DataSource {
     }
 }
 
+#[derive(Clone)]
 pub struct Reader<'a> {
     data: &'a DataSource,
     pub range: Range<usize>,
@@ -155,9 +156,9 @@ pub struct Reader<'a> {
 
 impl Into<ProgressStatus> for &Reader<'_> {
     fn into(self) -> ProgressStatus {
-        let total = self.data.len();
+        let total = self.data.range.end;
         let cursor = self.cursor;
-        ProgressStatus { total, cursor, count: 0 }
+        ProgressStatus { total, cursor, count: 0, left: 0 }
     }
 }
 impl<'a> Reader<'a> {
@@ -182,6 +183,9 @@ impl<'a> Reader<'a> {
 
     pub fn preview(&self, len: usize) -> Result<&[u8]> {
         self._slice(self.cursor..self.cursor + len)
+    }
+    pub fn dump_as_vec(&self) -> Result<Vec<u8>>{
+        self._slice(self.range.clone()).map(|v| v.to_vec())
     }
     pub fn ds(&self) -> &DataSource {
         self.data

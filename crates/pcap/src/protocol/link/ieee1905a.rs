@@ -4,7 +4,7 @@ use crate::{
 };
 use anyhow::Result;
 
-pub struct Visitor {}
+pub struct Visitor;
 impl Visitor {
     pub fn parse(_: &mut Context, _: &mut Frame, reader: &mut Reader) -> Result<Protocol> {
         reader.forward(7);

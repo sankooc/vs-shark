@@ -3,7 +3,7 @@ use anyhow::Result;
 
 
 const SUMMARY: &'static str = "Null/Loopback";
-pub struct Visitor {}
+pub struct Visitor;
 
 impl Visitor {
     pub fn info(_: &Context, _: &Frame) -> Option<String>{
