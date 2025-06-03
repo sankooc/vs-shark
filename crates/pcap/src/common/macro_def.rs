@@ -25,14 +25,27 @@ macro_rules! add_field_format_fn {
     ($field:expr, $reader:expr, $body:expr, $fn_ref:expr) => {{
         let start = $reader.cursor;
         let content = ($body);
-        let end = $reader.cursor;
         let msg = $fn_ref(content);
+        let end = $reader.cursor;
         let mut ele = crate::common::concept::Field::label(msg, start, end);
         ele.source = $field.source;
         $field.children.as_mut().unwrap().push(ele);
         content
     }};
 }
+#[macro_export]
+macro_rules! add_field_format_fn_nors {
+    ($field:expr, $reader:expr, $body:expr, $fn_ref:expr) => {{
+        let start = $reader.cursor;
+        let content = ($body);
+        let msg = $fn_ref(content);
+        let end = $reader.cursor;
+        let mut ele = crate::common::concept::Field::label(msg, start, end);
+        ele.source = $field.source;
+        $field.children.as_mut().unwrap().push(ele);
+    }};
+}
+
 
 #[macro_export]
 macro_rules! add_field_rest_format {
@@ -44,6 +57,53 @@ macro_rules! add_field_rest_format {
             ele.source = $field.source;
             $field.children.as_mut().unwrap().push(ele);
         }
+    }};
+}
+
+#[macro_export]
+macro_rules! add_sub_field {
+    ($field:expr, $reader:expr, $body:expr, $fn_ref:expr) => {{
+        let mut _field = Field::with_children("".into(), $reader.cursor, 0);
+        _field.source = $field.source;
+        let content = ($body);
+        $fn_ref(content, &mut _field);
+        _field.size = $reader.cursor - _field.start;
+        $field.children.as_mut().unwrap().push(_field);
+        // content
+    }};
+}
+
+#[macro_export]
+macro_rules! add_sub_field_with_reader {
+    ($field:expr, $reader:expr, $fn_ref:expr) => {{
+        let mut _field = Field::with_children("".into(), $reader.cursor, 0);
+        _field.source = $field.source;
+        if let std::result::Result::Ok(_) = $fn_ref($reader, &mut _field) {}
+        _field.size = $reader.cursor - _field.start;
+        $field.children.as_mut().unwrap().push(_field);
+    }};
+}
+
+
+#[macro_export]
+macro_rules! add_field_backstep {
+    ($field:expr, $reader:expr, $inx:expr, $msg:expr) => {{
+        let start = $reader.cursor;
+        let mut ele = crate::common::concept::Field::label($msg, start - $inx, start);
+        ele.source = $field.source;
+        let inx = $field.children.as_ref().unwrap().len();
+        $field.children.as_mut().unwrap().push(ele);
+        inx
+    }};
+}
+#[macro_export]
+macro_rules! add_field_backstep_fn {
+    ($field:expr, $reader:expr, $inx:expr, $body:expr) => {{
+        let start = $reader.cursor;
+        let content = ($body);
+        let mut ele = crate::common::concept::Field::label(content, start - $inx, start);
+        ele.source = $field.source;
+        $field.children.as_mut().unwrap().push(ele);
     }};
 }
 

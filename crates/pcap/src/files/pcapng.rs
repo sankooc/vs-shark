@@ -25,6 +25,9 @@ fn _parse_head(_data: &[u8]) {
 
 impl PCAPNG {
     pub fn next(ctx: &mut Context, reader: &mut Reader) -> Result<(usize, Option<Frame>)> {
+        if reader.left() < 8 {
+            bail!("end");
+        }
         let block_type = format!("{:#010x}", reader.read32(false)?);
         let len = reader.read32(false)?;
         let packet_size = len as usize - 12;

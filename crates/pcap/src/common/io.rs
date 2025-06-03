@@ -218,6 +218,14 @@ impl Reader<'_> {
             bail!(DataError::BitSize)
         }
     }
+    pub fn slice_rest_as_reader(&mut self) -> Result<Self> {
+        let left = self.left();
+        if left > 0 {
+            self.slice_as_reader(left)
+        } else {
+            bail!(DataError::BitSize)
+        }
+    }
     pub fn refer(&self) -> Result<&[u8]> {
         self.data.slice(self.range.clone())
     }
