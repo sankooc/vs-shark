@@ -4,8 +4,11 @@ use crate::common::core::Context;
 use crate::common::enum_def::{ProtocolInfoField, SegmentStatus};
 use crate::common::io::DataSource;
 use crate::common::{enum_def::Protocol, io::Reader, Frame};
-use crate::{add_field_format, add_field_format_fn, add_field_rest_format};
+use crate::{add_field_format, add_field_format_fn};
 use anyhow::Result;
+use record::parse_record_detail;
+mod record;
+mod extension;
 
 #[derive(Default)]
 pub struct TLSList {
@@ -172,7 +175,7 @@ fn field_tls_type(content_type: u8) -> String {
     format!("Content Type: {} ({})", tls_type(content_type), content_type)
 }
 
-fn field_tls_version(val: u16) -> String {
+pub fn field_tls_version(val: u16) -> String {
     format!("Version: {} ({:#06x})", tls_version(val), val)
 }
 fn tls_version(val: u16) -> String {
@@ -194,11 +197,14 @@ fn parse_segment(mut reader: Reader, source: u8) -> Result<Field> {
     let version = add_field_format_fn!(field, reader, reader.read16(true)?, field_tls_version);
     let _len = add_field_format!(field, reader, reader.read16(true)?, "Length:{}");
     field.size = _len as usize + 5;
-    match content_type {
-        _ => {
-            add_field_rest_format!(field, reader, "Application Data".into())
-        }
-    }
+
+    // let _reader_record = |reader: &mut Reader, field: &mut Field| parse_record(content_type, version, reader, field);
+    let mut record_reader = reader.slice_as_reader(_len as usize)?;
+    let mut record_field = Field::with_children("".to_string(), reader.cursor, _len as usize);
+    record_field.source = field.source;
+    parse_record_detail(content_type, version, &mut record_reader, &mut record_field)?;
+    field.children.as_mut().unwrap().push(record_field);
+
     field.summary = format!("{} Record Layer: {}", tls_version(version), tls_type(content_type));
     Ok(field)
 }
