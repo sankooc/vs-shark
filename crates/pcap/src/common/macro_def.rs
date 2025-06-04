@@ -7,6 +7,15 @@ macro_rules! with_range {
         (start..end, result)
     }};
 }
+#[macro_export]
+macro_rules! add_field_label {
+    ($field:expr, $msg:expr) => {{
+        let start = $field.start;
+        let mut ele = crate::common::concept::Field::label($msg, start, start + $field.size);
+        ele.source = $field.source;
+        $field.children.as_mut().unwrap().push(ele);
+    }};
+}
 
 #[macro_export]
 macro_rules! add_field_format {
@@ -66,10 +75,10 @@ macro_rules! add_sub_field {
         let mut _field = Field::with_children("".into(), $reader.cursor, 0);
         _field.source = $field.source;
         let content = ($body);
-        $fn_ref(content, &mut _field);
         _field.size = $reader.cursor - _field.start;
+        let _ = $fn_ref(content, &mut _field);
         $field.children.as_mut().unwrap().push(_field);
-        // content
+        content
     }};
 }
 
@@ -78,7 +87,7 @@ macro_rules! add_sub_field_with_reader {
     ($field:expr, $reader:expr, $fn_ref:expr) => {{
         let mut _field = Field::with_children("".into(), $reader.cursor, 0);
         _field.source = $field.source;
-        if let std::result::Result::Ok(_) = $fn_ref($reader, &mut _field) {}
+        let _ = $fn_ref($reader, &mut _field);
         _field.size = $reader.cursor - _field.start;
         $field.children.as_mut().unwrap().push(_field);
     }};
