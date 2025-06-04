@@ -198,6 +198,7 @@ pub enum ProtocolInfoField {
     DnsRESPONSE(u16),
     NBNS(u16, bool, String),
     TLS(TLSList),
+    TLSSegment,
 }
 
 

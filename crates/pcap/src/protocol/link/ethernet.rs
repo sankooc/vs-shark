@@ -1,15 +1,11 @@
 use crate::{
-    common::{
+    add_field_backstep, add_field_format, common::{
         concept::Field,
         core::Context,
-        enum_def::{AddressField, ProtocolInfoField, Protocol},
+        enum_def::{AddressField, Protocol, ProtocolInfoField},
         io::{read_mac, Reader},
         quick_hash, EthernetCache, Frame,
-    },
-    constants::etype_mapper,
-    field_back_format,
-    protocol::enthernet_protocol_mapper,
-    read_field_format,
+    }, constants::etype_mapper, protocol::enthernet_protocol_mapper
 };
 use anyhow::Result;
 
@@ -45,18 +41,16 @@ impl EthernetVisitor {
     }
 
     pub fn detail(field: &mut Field, _: &Context, _: &Frame, reader: &mut Reader) -> Result<Protocol> {
-        let mut list = Vec::new();
-        let target = read_field_format!(list, reader, read_mac(reader.slice(6, true)?), "Destination: {}");
-        let source = read_field_format!(list, reader, read_mac(reader.slice(6, true)?), "Source: {}");
+        let target = add_field_format!(field, reader, read_mac(reader.slice(6, true)?), "Destination: {}");
+        let source = add_field_format!(field, reader, read_mac(reader.slice(6, true)?), "Source: {}");
         let mut ptype = reader.read16(true)?;
         if reader.left() == ptype as usize {
             ptype = 1010; // IEEE 802.3
-            field_back_format!(list, reader, 2, format!("Length: {}", ptype));
+            add_field_backstep!(field, reader, 2, format!("Length: {}", ptype));
         } else {
-            field_back_format!(list, reader, 2, format!("Type: {} ({:#06x})", etype_mapper(ptype), ptype));
+            add_field_backstep!(field, reader, 2, format!("Type: {} ({:#06x})", etype_mapper(ptype), ptype));
         }
         field.summary = format!("Ethernet II, Src: {}, Dst: {}", source, target);
-        field.children = Some(list);
         Ok(enthernet_protocol_mapper(ptype))
     }
 }

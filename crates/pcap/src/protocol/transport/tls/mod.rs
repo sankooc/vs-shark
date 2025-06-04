@@ -47,14 +47,14 @@ pub struct Visitor;
 
 impl Visitor {
     pub fn info(_: &Context, frame: &Frame) -> Option<String> {
-        if let ProtocolInfoField::TLS(list) = &frame.protocol_field {
-            let str = tls_type(list.get(0).unwrap().content_type);
-            // for inx in 1..list.len() {
-            //     str.push_str(format!(", {}", list.get(inx).unwrap().content_type).as_str());
-            // }
-            return Some(str);
+        match &frame.protocol_field {
+            ProtocolInfoField::TLS(list) => {
+                let str = tls_type(list.get(0).unwrap().content_type);
+                Some(str)
+            },
+            ProtocolInfoField::TLSSegment => frame.tcp_descripion(),
+            _ => None,
         }
-        None
     }
     pub fn parse(ctx: &mut Context, frame: &mut Frame, _reader: &mut Reader) -> Result<Protocol> {
         let mut left = _reader.left();
@@ -138,6 +138,8 @@ impl Visitor {
 
         if list.len() > 0 {
             frame.protocol_field = ProtocolInfoField::TLS(list);
+        } else {
+            frame.protocol_field = ProtocolInfoField::TLSSegment;
         }
         Ok(Protocol::None)
     }

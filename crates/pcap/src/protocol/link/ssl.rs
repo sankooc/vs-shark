@@ -1,7 +1,7 @@
 use crate::common::concept::Field;
 use crate::common::core::Context;
 use crate::constants::{link_type_mapper, ssl_type_mapper};
-use crate::{read_field_format, read_field_format_fn};
+use crate::{add_field_format, add_field_format_fn};
 use crate::{
     common::{
         enum_def::Protocol,
@@ -44,15 +44,13 @@ impl Visitor {
         Ok(enthernet_protocol_mapper(ptype))
     }
     pub fn detail(field: &mut Field, _: &Context, _: &Frame, reader: &mut Reader) -> Result<Protocol> {
-        let mut list = vec![];
-        let _type = read_field_format_fn!(list, reader, reader.read16(true)?, typedesc);
-        read_field_format_fn!(list, reader, reader.read16(true)?, link_address_type);
-        read_field_format!(list, reader, reader.read16(true)?, "Link-layer address length: {}");
-        read_field_format!(list, reader, read_mac(reader.slice(6, true)?), "Source MAC: {}");
+        let _type = add_field_format_fn!(field, reader, reader.read16(true)?, typedesc);
+        add_field_format_fn!(field, reader, reader.read16(true)?, link_address_type);
+        add_field_format!(field, reader, reader.read16(true)?, "Link-layer address length: {}");
+        add_field_format!(field, reader, read_mac(reader.slice(6, true)?), "Source MAC: {}");
         reader.forward(2);
-        let ptype = read_field_format_fn!(list, reader, reader.read16(true)?, ptype_str);
+        let ptype = add_field_format_fn!(field, reader, reader.read16(true)?, ptype_str);
         field.summary = SUMMARY.to_string();
-        field.children = Some(list);
         Ok(enthernet_protocol_mapper(ptype))
     }
 }
