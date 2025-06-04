@@ -5,7 +5,7 @@ use std::{
     ops::Range,
 };
 
-use crate::protocol;
+use crate::{common::concept::FrameIndex, protocol};
 
 use super::{
     enum_def::{Protocol, SegmentStatus, TCPConnectStatus, TCPDetail, TCPFLAG},
@@ -134,7 +134,7 @@ impl ConnectState {
 
 #[derive(Clone)]
 pub struct TCPSegment {
-    pub index: u32,
+    pub index: FrameIndex,
     pub range: Range<usize>,
 }
 
@@ -227,7 +227,7 @@ impl Into<TlsData> for TLSSegment {
 }
 
 impl TCPSegment {
-    pub fn new(index: u32, range: Range<usize>) -> Self {
+    pub fn new(index: FrameIndex, range: Range<usize>) -> Self {
         Self { index, range }
     }
 }
@@ -257,7 +257,7 @@ impl Endpoint {
     pub fn clear_segment(&mut self) {
         self._segments = None;
     }
-    pub fn add_segment(&mut self, index: u32, range: Range<usize>) {
+    pub fn add_segment(&mut self, index: FrameIndex, range: Range<usize>) {
         if let None = self._segments {
             self._segments = Some(vec![]);
         }
@@ -471,7 +471,7 @@ impl<'a> TmpConnection<'a> {
 }
 
 pub struct TCPStat {
-    pub index: u32,
+    pub index: FrameIndex,
     sequence: u32,
     ack: u32,
     crc: u16,
@@ -483,7 +483,7 @@ pub struct TCPStat {
 }
 
 impl TCPStat {
-    pub fn new(index: u32, sequence: u32, ack: u32, crc: u16, state: TcpFlagField, payload_len: u16) -> Self {
+    pub fn new(index: FrameIndex, sequence: u32, ack: u32, crc: u16, state: TcpFlagField, payload_len: u16) -> Self {
         Self {
             index,
             sequence,

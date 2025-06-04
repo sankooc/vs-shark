@@ -6,12 +6,12 @@ use std::{
     ptr,
 };
 
-use ahash::AHasher;
-use anyhow::{ bail, Ok, Result};
-use memchr::memchr_iter;
 use crate::common::enum_def::DataError;
+use ahash::AHasher;
+use anyhow::{bail, Ok, Result};
+use memchr::memchr_iter;
 
-use super::{concept::{ProgressStatus}, NString};
+use super::{concept::ProgressStatus, NString};
 
 pub struct IO;
 
@@ -38,9 +38,6 @@ impl IO {
         Ok(u16::from_ne_bytes(_data))
     }
 }
-
-
-
 
 // pub fn find_crlf_simd(buf: &[u8]) -> Option<usize> {
 //     const LANES: usize = 16;
@@ -85,7 +82,7 @@ impl DataSource {
     }
     pub fn new(init_size: usize, cursor: usize) -> Self {
         let size = init_size + 65535;
-        let data =  Vec::with_capacity(size);
+        let data = Vec::with_capacity(size);
         Self { data, range: cursor..cursor }
     }
     pub fn range(&self) -> Range<usize> {
@@ -184,7 +181,7 @@ impl<'a> Reader<'a> {
     pub fn preview(&self, len: usize) -> Result<&[u8]> {
         self._slice(self.cursor..self.cursor + len)
     }
-    pub fn dump_as_vec(&self) -> Result<Vec<u8>>{
+    pub fn dump_as_vec(&self) -> Result<Vec<u8>> {
         self._slice(self.range.clone()).map(|v| v.to_vec())
     }
     pub fn ds(&self) -> &DataSource {
@@ -365,6 +362,10 @@ impl Reader<'_> {
         Ok(_str.to_string())
     }
 
+    pub fn read_mac(&mut self) -> Result<MacAddress> {
+        let _data: [u8; 6] = self.slice(6, true)?.try_into()?;
+        Ok(MacAddress::from(_data))
+    }
 
     pub fn read_ip4(&mut self) -> Result<Ipv4Addr> {
         let data = self.slice(4, true)?;
@@ -376,16 +377,16 @@ impl Reader<'_> {
         let ip = Ipv6Addr::from(<[u8; 16]>::try_from(data)?);
         Ok(ip)
     }
-    pub fn search_enter(&mut self, limit: usize)-> Option<usize> {
+    pub fn search_enter(&mut self, limit: usize) -> Option<usize> {
         let _limit = cmp::min(self.left(), limit);
-        
+
         let prdata = match self.preview(_limit) {
             std::result::Result::Ok(data) => data,
-            _ => return None
+            _ => return None,
         };
         find_crlf(prdata)
     }
-    pub fn extract_left(&mut self) -> Result<DataSource>{
+    pub fn extract_left(&mut self) -> Result<DataSource> {
         let current = self.cursor;
         let left = self.left();
         let ext_data = self.slice(left, true)?;

@@ -94,6 +94,7 @@ pub enum Protocol {
     HTTP,
     HTTPS,
     TLS,
+    IEEE802_11,
 }
 
 // #[enum_dispatch]
@@ -178,6 +179,7 @@ pub enum AddressField {
     Mac(u64),
     IPv4(Ipv4Addr, Ipv4Addr),
     IPv6(u64),
+    Ieee80211(u64),
 }
 #[derive(Default)]
 pub enum ProtocolInfoField {
@@ -198,6 +200,8 @@ pub enum ProtocolInfoField {
     DnsRESPONSE(u16),
     NBNS(u16, bool, String),
     TLS(TLSList),
+    TLSSegment,
+    Ieee80211(u16),
 }
 
 

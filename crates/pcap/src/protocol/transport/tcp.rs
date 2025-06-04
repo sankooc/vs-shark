@@ -18,17 +18,7 @@ pub fn t_protocol(protocol_type: u8) -> String {
 }
 impl Visitor {
     pub fn info(_: &Context, frame: &Frame) -> Option<String> {
-        if let Some(stat) = &frame.tcp_info {
-            let mut source_port = 0;
-            let mut target_port = 0;
-            if let Some(ports) = &frame.ports {
-                source_port = ports.0;
-                target_port = ports.1;
-            }
-            let state = TcpFlagField::from(stat.flag_bit);
-            return Some(format!("{} -> {} {} Seq={} Len={} ", source_port, target_port, state.list_str(), stat.seq, stat.len));
-        }
-        None
+        frame.tcp_descripion()
     }
     pub fn parse(ctx: &mut Context, frame: &mut Frame, reader: &mut Reader) -> Result<Protocol> {
         let index = frame.info.index;

@@ -1,4 +1,4 @@
-use crate::common::concept::Field;
+use crate::common::concept::{Field, FrameIndex};
 use crate::common::connection::{TCPSegment, TLSSegment, TlsData};
 use crate::common::core::Context;
 use crate::common::enum_def::{ProtocolInfoField, SegmentStatus};
@@ -27,7 +27,7 @@ impl TLSList {
     }
 }
 
-fn stamp(index: u32, reader: &Reader) -> TCPSegment {
+fn stamp(index: FrameIndex, reader: &Reader) -> TCPSegment {
     let start = reader.range.start;
     let end = reader.cursor;
     TCPSegment { index, range: start..end }
@@ -47,14 +47,14 @@ pub struct Visitor;
 
 impl Visitor {
     pub fn info(_: &Context, frame: &Frame) -> Option<String> {
-        if let ProtocolInfoField::TLS(list) = &frame.protocol_field {
-            let str = tls_type(list.get(0).unwrap().content_type);
-            // for inx in 1..list.len() {
-            //     str.push_str(format!(", {}", list.get(inx).unwrap().content_type).as_str());
-            // }
-            return Some(str);
+        match &frame.protocol_field {
+            ProtocolInfoField::TLS(list) => {
+                let str = tls_type(list.get(0).unwrap().content_type);
+                Some(str)
+            },
+            ProtocolInfoField::TLSSegment => frame.tcp_descripion(),
+            _ => None,
         }
-        None
     }
     pub fn parse(ctx: &mut Context, frame: &mut Frame, _reader: &mut Reader) -> Result<Protocol> {
         let mut left = _reader.left();
@@ -138,6 +138,8 @@ impl Visitor {
 
         if list.len() > 0 {
             frame.protocol_field = ProtocolInfoField::TLS(list);
+        } else {
+            frame.protocol_field = ProtocolInfoField::TLSSegment;
         }
         Ok(Protocol::None)
     }
@@ -222,7 +224,7 @@ pub fn detect(reader: &Reader) -> bool {
     }
 }
 
-fn recycle(index: u32, _reader: &mut Reader, list: &mut TLSList) -> Result<SegmentStatus> {
+fn recycle(index: FrameIndex, _reader: &mut Reader, list: &mut TLSList) -> Result<SegmentStatus> {
     let _left = _reader.left();
     if _left == 0 {
         return Ok(SegmentStatus::Init);

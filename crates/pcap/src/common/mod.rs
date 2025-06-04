@@ -7,8 +7,7 @@ use std::{
 };
 
 use crate::{
-    files::{pcap::PCAP, pcapng::PCAPNG},
-    protocol::{detail, link_type_map, parse, summary},
+    common::{connection::TcpFlagField}, files::{pcap::PCAP, pcapng::PCAPNG}, protocol::{detail, link_type_map, parse, summary}
 };
 use anyhow::{bail, Result};
 use concept::{Criteria, Field, FrameInfo, FrameInternInfo, ListResult, ProgressStatus};
@@ -117,6 +116,19 @@ impl Frame {
     }
     pub fn frame_range(&self) -> Option<Range<usize>> {
         self.range.clone()
+    }
+    pub fn tcp_descripion(&self) -> Option<String> {
+        if let Some(stat) = &self.tcp_info {
+            let mut source_port = 0;
+            let mut target_port = 0;
+            if let Some(ports) = &self.ports {
+                source_port = ports.0;
+                target_port = ports.1;
+            }
+            let state = TcpFlagField::from(stat.flag_bit);
+            return Some(format!("{} -> {} {} Seq={} Len={} ", source_port, target_port, state.list_str(), stat.seq, stat.len));
+        }
+        None
     }
 }
 

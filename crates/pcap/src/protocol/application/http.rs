@@ -4,7 +4,7 @@ use crate::common::enum_def::{ProtocolInfoField, SegmentStatus};
 use crate::common::io::Reader;
 use crate::common::{enum_def::Protocol, Frame};
 use crate::common::{hex_num, quick_trim_num, std_string, trim_data};
-use crate::read_field_format;
+use crate::{add_field_format};
 use anyhow::{bail, Result};
 
 pub fn detect<'a>(reader: &'a Reader) -> bool {
@@ -157,9 +157,6 @@ pub fn parse(reader: &mut Reader, segment_status: SegmentStatus) -> Result<Segme
     }
 }
 
-// pub fn test(ctx: &mut Context, frame: &mut Frame, reader: &mut Reader, segment_status: SegmentStatus) {
-// }
-
 fn read_line(reader: &mut Reader, len: usize) -> Result<String> {
     let data = reader.slice(len, true)?;
     Ok(std_string(&data)?.to_string())
@@ -246,13 +243,12 @@ impl Visitor {
     }
     pub fn detail(field: &mut Field, _: &Context, frame: &Frame, reader: &mut Reader) -> Result<Protocol> {
         if let ProtocolInfoField::Http(_) = &frame.protocol_field {
-            let mut list = Vec::new();
+            // let mut list = Vec::new();
             loop {
                 let left = reader.left();
                 if left >= 2 {
                     match reader.preview(2)? {
                         b"\r\n" => {
-                            // read_field_format!(list, reader, reader.forward(2), "");
                             reader.forward(2);
                             //todo header parse finish
                             break;
@@ -261,14 +257,13 @@ impl Visitor {
                     }
                 }
                 if let Some(pos) = reader.search_enter(0xffff) {
-                    read_field_format!(list, reader, read_line(reader, pos)?, "{}");
+                    add_field_format!(field, reader, read_line(reader, pos)?, "{}");
                     reader.forward(2);
                 } else {
                     break;
                 }
             }
             field.summary = "Hypertext Transfer Protocol".to_string();
-            field.children = Some(list);
         } else {
             let left = reader.left();
             reader.forward(left);

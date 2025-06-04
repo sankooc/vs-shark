@@ -5,7 +5,7 @@ use std::{
 
 use anyhow::{bail, Result};
 
-use crate::common::enum_def::AddressField;
+use crate::common::{concept::FrameIndex, enum_def::AddressField};
 
 use super::{
     connection::{ConnectState, Connection, Endpoint, TCPStat, TmpConnection},
@@ -16,7 +16,7 @@ use super::{
 
 
 pub struct Segment {
-    pub index: u32,
+    pub index: FrameIndex,
     pub range: Range<usize>,
 }
 
@@ -30,7 +30,7 @@ pub struct Context {
     pub file_type: FileType,
     pub link_type: u32,
     pub list: Vec<Frame>,
-    pub counter: u32,
+    pub counter: FrameIndex,
     pub active_connection: FastHashMap<(u64, u16, u64, u16), usize>,
     pub connections: Vec<Connection>,
     pub segment_messages: Vec<Segments>,

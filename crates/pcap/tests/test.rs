@@ -192,4 +192,44 @@ mod unit {
         }
         Ok(())
     }
+    #[test]
+    fn test_802_11() -> Result<()> {
+        let (ds, mut cx, mut frame) = init("ieee802.11-1");
+        // {
+        //     let mut reader = Reader::new(&ds);
+        //     let next = protocol::link::pppoes::Visitor::parse(&mut cx, &mut frame, &mut reader)?;
+        //     assert!(matches!(next, Protocol::None));
+        //     let info = protocol::link::pppoes::Visitor::info(&mut cx, &mut frame).unwrap();
+        //     println!("info [{}]", info);
+        // }
+        {
+            let mut reader = Reader::new(&ds);
+            let mut f = Field::default();
+            f.children = Some(vec![]);
+            let next = protocol::link::ieee802_11::link_105::Visitor::detail(&mut f, &mut cx, &mut frame, &mut reader)?;
+            print_field(1, &f);
+            assert!(matches!(next, Protocol::None));
+        }
+        Ok(())
+    }
+    #[test]
+    fn test_radiotap() -> Result<()> {
+        let (ds, mut cx, mut frame) = init("radiotap");
+        // {
+        //     let mut reader = Reader::new(&ds);
+        //     let next = protocol::link::ieee802_11::link_127::Visitor::parse(&mut cx, &mut frame, &mut reader)?;
+        //     assert!(matches!(next, Protocol::None));
+        //     let info = protocol::link::ieee802_11::link_127::Visitor::info(&mut cx, &mut frame).unwrap();
+        //     println!("info [{}]", info);
+        // }
+        {
+            let mut reader = Reader::new(&ds);
+            let mut f = Field::default();
+            f.children = Some(vec![]);
+            let next = protocol::link::ieee802_11::link_127::Visitor::detail(&mut f, &mut cx, &mut frame, &mut reader)?;
+            print_field(1, &f);
+            assert!(matches!(next, Protocol::None));
+        }
+        Ok(())
+    }
 }
