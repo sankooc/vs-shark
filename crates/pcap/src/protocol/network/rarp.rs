@@ -4,7 +4,7 @@ use crate::{
     common::{
         concept::Field,
         core::Context,
-        enum_def::{ Protocol, ProtocolInfoField},
+        enum_def::{ AddressField, Protocol, ProtocolInfoField},
         io::{MacAddress, Reader},
         Frame,
     },
@@ -62,6 +62,7 @@ impl Visitor {
             target_mac,
             target_ip,
         );
+        frame.address_field = AddressField::IPv4(sender_ip, target_ip);
         
         Ok(Protocol::None)
     }
