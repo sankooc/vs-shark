@@ -5,7 +5,7 @@ use std::thread;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use std::{fs::File, io::BufReader};
 
-use pcap::common::concept::{Criteria, Field, FrameInfo, ListResult, ProgressStatus};
+use pcap::common::concept::{Criteria, Field, FrameIndex, FrameInfo, ListResult, ProgressStatus};
 use pcap::common::io::DataSource;
 use pcap::common::Instance;
 use std::sync::mpsc::Sender;
@@ -21,7 +21,7 @@ pub enum PcapCommand {
     Quit,
     None,
     FrameList(usize, usize),
-    FrameData(u32)
+    FrameData(FrameIndex)
 }
 
 pub struct Service {

@@ -2,6 +2,9 @@ use serde::Serialize;
 
 use super::enum_def::PacketStatus;
 
+
+
+pub type FrameIndex = u32;
 pub struct Criteria {
     // pub criteria: String,
     pub size: usize,
@@ -42,7 +45,7 @@ impl<T> ListResult<T> {
 
 #[derive(Default)]
 pub struct FrameInternInfo {
-    pub index: u32,
+    pub index: FrameIndex,
     pub time: u64,
     pub len: u32,
     pub irtt: u16,
@@ -51,7 +54,7 @@ pub struct FrameInternInfo {
 
 #[derive(Serialize, Default, Clone)]
 pub struct FrameInfo {
-    pub index: u32,
+    pub index: FrameIndex,
     pub time: u64,
     pub source: String,
     pub dest: String,

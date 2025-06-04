@@ -1,4 +1,4 @@
-use crate::common::concept::Field;
+use crate::common::concept::{Field, FrameIndex};
 use crate::common::connection::{TCPSegment, TLSSegment, TlsData};
 use crate::common::core::Context;
 use crate::common::enum_def::{ProtocolInfoField, SegmentStatus};
@@ -27,7 +27,7 @@ impl TLSList {
     }
 }
 
-fn stamp(index: u32, reader: &Reader) -> TCPSegment {
+fn stamp(index: FrameIndex, reader: &Reader) -> TCPSegment {
     let start = reader.range.start;
     let end = reader.cursor;
     TCPSegment { index, range: start..end }
@@ -224,7 +224,7 @@ pub fn detect(reader: &Reader) -> bool {
     }
 }
 
-fn recycle(index: u32, _reader: &mut Reader, list: &mut TLSList) -> Result<SegmentStatus> {
+fn recycle(index: FrameIndex, _reader: &mut Reader, list: &mut TLSList) -> Result<SegmentStatus> {
     let _left = _reader.left();
     if _left == 0 {
         return Ok(SegmentStatus::Init);

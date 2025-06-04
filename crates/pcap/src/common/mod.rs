@@ -7,7 +7,7 @@ use std::{
 };
 
 use crate::{
-    common::connection::TcpFlagField, files::{pcap::PCAP, pcapng::PCAPNG}, protocol::{detail, link_type_map, parse, summary}
+    common::{connection::TcpFlagField}, files::{pcap::PCAP, pcapng::PCAPNG}, protocol::{detail, link_type_map, parse, summary}
 };
 use anyhow::{bail, Result};
 use concept::{Criteria, Field, FrameInfo, FrameInternInfo, ListResult, ProgressStatus};
