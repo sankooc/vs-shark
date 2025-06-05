@@ -88,6 +88,7 @@ pub enum Protocol {
     UDP,
     TCP,
     DNS,
+    MDNS,
     NBNS,
     DHCP,
     DHCP6,

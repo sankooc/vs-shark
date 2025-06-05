@@ -118,7 +118,6 @@ pub struct Visitor;
 
 impl Visitor {
     pub fn info(_: &Context, frame: &Frame) -> Option<String> {
-        // 根据 PPPoE Discovery 的代码返回相应的描述信息
         match frame.protocol_field {
             ProtocolInfoField::PPPoES(Some(code)) => {
                 let msg = match code {

@@ -156,7 +156,7 @@ impl Visitor {
         let head = reader.read16(false)?;
 
         let fc_info = FrameControlInfo::from(head);
-        field.summary = frame_subtype_to_str(fc_info.frame_type, fc_info.frame_subtype);
+        field.summary = format!("IEEE 802.11: {}", frame_subtype_to_str(fc_info.frame_type, fc_info.frame_subtype));
         // 2. Duration/ID (2 bytes, Little Endian)
         add_field_format!(field, reader, reader.read16(false)?, "Duration: {} microseconds");
 
