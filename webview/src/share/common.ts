@@ -74,11 +74,13 @@ export interface IField {
   summary: string;
   start?: number;
   size?: number;
+  source?: number;
   children: IField[] | null;
 }
 
 export interface Cursor {
   scope: VRange;
+  data?: Uint8Array;
   selected?: {
     start: number;
     size: number;
@@ -165,6 +167,15 @@ export interface IResult {
   total: number;
   page: number;
   size: number;
+}
+
+
+export interface IFrameSelect {
+  data: Uint8Array;
+  start: number;
+  end: number;
+  fields: IField[];
+  extra?: Uint8Array; 
 }
 
 // export interface CField {

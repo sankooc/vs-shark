@@ -39,10 +39,10 @@ export abstract class PCAPClient {
   abstract printLog(log: ComLog): void;
   abstract emitMessage(msg: ComMessage<any>): void;
   abstract pickData(start: number, end: number): Promise<Uint8Array>;
-  private async frameData(index: number): Promise<Uint8Array> {
-    const range = this.ctx!.frame_range(index);
-    return this.pickData(range.start, range.end);
-  }
+  // private async frameData(index: number): Promise<Uint8Array> {
+  //   const range = this.ctx!.frame_range(index);
+  //   return this.pickData(range.data.start, range.data.end);
+  // }
 
   private touchFile(fileInfo: PcapFile): void {
     this.info = fileInfo;
@@ -77,11 +77,26 @@ export abstract class PCAPClient {
   private async select(requestId: string, catelog: string, index: number): Promise<void> {
     if (this.ctx) {
       try {
-        let rs;
+        // let rs;
         switch (catelog) {
           case "frame":
-            let data = await this.frameData(index);
-            rs = this.ctx.select("frame", index, data);
+            const range = this.ctx!.frame_range(index);
+            const data = await this.pickData(range.data.start, range.data.end);
+            const frameResult = this.ctx.select_frame(index, data);
+            const rs:any = {};
+            if(range.compact()) {
+              rs.data = data;
+            } else {
+              const _start = range.frame.start - range.data.start;
+              const _end = range.data.end - range.frame.start;
+              rs.data = data.slice(_start, _end);
+            }
+            rs.start = range.frame.start;
+            rs.end = range.frame.end;
+            rs.liststr = frameResult.list();
+            if (frameResult.extra()?.length > 0 ) {
+              rs.extra = frameResult.extra();
+            }
             this.emitMessage(
               ComMessage.new(ComType.FRAMES_SELECT, rs, requestId),
             );
@@ -98,28 +113,28 @@ export abstract class PCAPClient {
     );
   }
 
-  private async scope(requestId: string, catelog: string, index: number): Promise<void> {
-    if (this.ctx) {
-      try {
-        switch (catelog) {
-          case "frame":
-            const range = this.ctx!.frame_range(index);
-            this.emitMessage(
-              ComMessage.new(ComType.FRAME_SCOPE_RES, {start: range.start, end: range.end}, requestId),
-            );
-            return;
-          default:
-            return;
-        }
-      } catch (e) {
-        console.error(e);
-      }
-    }
-    this.emitMessage(
-      ComMessage.new(ComType.error, "failed", requestId),
-    );
-    return;
-  }
+  // private async scope(requestId: string, catelog: string, index: number): Promise<void> {
+  //   if (this.ctx) {
+  //     try {
+  //       switch (catelog) {
+  //         case "frame":
+  //           const range = this.ctx!.frame_range(index);
+  //           this.emitMessage(
+  //             ComMessage.new(ComType.FRAME_SCOPE_RES, {start: range.start, end: range.end}, requestId),
+  //           );
+  //           return;
+  //         default:
+  //           return;
+  //       }
+  //     } catch (e) {
+  //       console.error(e);
+  //     }
+  //   }
+  //   this.emitMessage(
+  //     ComMessage.new(ComType.error, "failed", requestId),
+  //   );
+  //   return;
+  // }
   private async process(): Promise<void> {
     if (this.isPendding) {
       return;
@@ -180,9 +195,9 @@ export abstract class PCAPClient {
             case "select":
               this.select(id, catelog, param.index);
               break;
-            case "scope":
-              this.scope(id, catelog, param.index);
-              break;
+            // case "scope":
+            //   this.scope(id, catelog, param.index);
+            //   break;
           }
           break;
         default:
