@@ -2,7 +2,7 @@ use js_sys::Uint8Array;
 use pcap::common::{concept::Criteria, Instance};
 use wasm_bindgen::prelude::*;
 
-use crate::entity::{Conf, Range};
+use crate::entity::{Conf, FrameRange, FrameResult};
 
 #[wasm_bindgen]
 pub struct WContext {
@@ -46,13 +46,17 @@ impl WContext {
     }
 
     #[wasm_bindgen]
-    pub fn frame_range(&self, index: usize) -> Range {
+    pub fn frame_range(&self, index: usize) -> FrameRange {
+        let mut rs = FrameRange::new();
         if let Some(f) = self.ctx.frame(index) {
+            if let Some(range) = f.frame_range() {
+                rs.frame = range.into();
+            }
             if let Some(range) = f.range() {
-                return range.into();
+                rs.data = range.into();
             }
         }
-        Range::empty()
+        rs
     }
 
     #[wasm_bindgen]
@@ -67,17 +71,14 @@ impl WContext {
     }
     
     #[wasm_bindgen]
-    pub fn select_frame(&self, index: usize, s: &Uint8Array) -> Uint8Array {
+    pub fn select_frame(&self, index: usize, s: &Uint8Array) -> FrameResult {
         let slice = s.to_vec();
-        if let Some(_list) = self.ctx.select_frame(index, slice) {
-            // let data = serde_json::to_string(&list).unwrap();
+        if let Some((list, _, extra)) = self.ctx.select_frame(index, slice) {
+            let data = serde_json::to_string(&list).unwrap();
+            let rs = FrameResult::new(data, extra);
+            return rs;
         }
-
-        // self.ctx.select_frame_json(index, slice).unwrap();
-        // vec![1, 2].into()ddasddsadsadas dwq
-        let aa:Vec<u8> = vec![1, 2];
-        let bb: &[u8] = &aa;
-        Uint8Array::from(bb)
+        FrameResult::empty()
     }
 }
 

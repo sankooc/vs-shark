@@ -4,7 +4,7 @@ use std::net::Ipv4Addr;
 use strum_macros::{Display, EnumString};
 use thiserror::Error;
 
-use crate::protocol::transport::tls::TLSList;
+use crate::{common::concept::HttpHeadContinue, protocol::transport::tls::TLSList};
 
 use super::{connection::{TCPSegment, TLSSegment}, io::MacAddress};
 
@@ -88,6 +88,7 @@ pub enum Protocol {
     UDP,
     TCP,
     DNS,
+    MDNS,
     NBNS,
     DHCP,
     DHCP6,
@@ -163,6 +164,7 @@ pub enum SegmentStatus {
     HttpDetected(usize),
     // HttpHeadParsing,
     // HttpHeadParsed(usize, bool),
+    HttpHeaderContinue(HttpHeadContinue),
     HttpContentContinue(usize, usize),
     HttpChunkedContinue(usize, usize),
     // HttpContentParsing,
@@ -186,10 +188,11 @@ pub enum ProtocolInfoField {
     #[default]
     None,
     Ethernet(u64),
-    Http(Vec<u8>),
+    Http(Vec<u8>, Option<usize>),
+    HttpSegment(usize),
     Icmp(u8, u8),
     Icmp6(u8, u8),
-    HttpSegment,
+    // HttpSegment,
     PPPoES(Option<u8>),
     UDP(u16),
     ARP(u16, u16, MacAddress, Ipv4Addr, MacAddress, Ipv4Addr),

@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Tree, TreeNodeClickEvent } from "primereact/tree";
 import { TreeNode } from "primereact/treenode";
 import "./app.scss";
-import { Cursor, IField, VRange } from "../../../../share/common";
+import { Cursor, IField, IFrameSelect, VRange } from "../../../../share/common";
 import { useStore } from "../../../store";
 
 const className = "vector";
@@ -12,28 +12,25 @@ interface StackProps {
   onSelect: (cursor: Cursor) => void;
 }
 export default function Stack(props: StackProps) {
-  const [fields, setField] = useState<IField[]>([]);
+  const [data, setData] = useState<IFrameSelect>({ fields: [], start: 0, end: 0, data: new Uint8Array() });
+  // const [fields, setField] = useState<IField[]>([]);
   const [select, setSelect] = useState<string>("");
-  const [scope, setScope] = useState<VRange>(new VRange(0,0));
+  // const [scope, setScope] = useState<VRange>(new VRange(0,0));
   const _request = useStore((state) => state.request);
   useEffect(() => {
     if (props.select < 0) {
       return;
     }
-    _request<IField[]>({
+    _request<IFrameSelect>({
       catelog: "frame",
       type: "select",
       param: { index: props.select },
     }).then((rs) => {
-      setField(rs);
-    });
-    
-    _request<VRange>({
-      catelog: "frame",
-      type: "scope",
-      param: { index: props.select },
-    }).then((rs) => {
-      setScope(rs);
+      setData(rs);
+      // let fs: IFrameSelect = rs;
+      // console.log(rs);
+      // setField(rs.fields);
+      // setScope(new VRange(rs.start, rs.end));
       // setField(rs);
     });
   }, [props.select]);
@@ -58,21 +55,37 @@ export default function Stack(props: StackProps) {
     }
     return rs;
   };
-  const items = fields;
+  const items = data.fields || [];
   const stacks: TreeNode[] = items.map((item, inx) => {
     return mapper(item, inx + "");
   });
   const onSelect = (e: TreeNodeClickEvent) => {
     const { node } = e;
+    const selected: IField = node.data;
     setSelect(node.key + "");
-    const cursor = {
-      scope,
-      selected: {
-        start: node.data.start || 0,
-        size: node.data.size || 0,
-      },
-    };
-    props.onSelect(cursor);
+    // console.log(selected);
+    if(selected.source){
+      let extra = data.extra;
+      const cursor = {
+        scope: new VRange(0, extra?.length || 0),
+        data: extra,
+        selected: {
+          start: selected.start || 0,
+          size: selected.size || 0,
+        }
+      };
+      props.onSelect(cursor);
+    } else {
+      const cursor = {
+        scope: new VRange(data.start, data.end),
+        data: data.data,
+        selected: {
+          start: selected.start || 0,
+          size: selected.size || 0,
+        },
+      };
+      props.onSelect(cursor);
+    }
   };
   return (
     <div

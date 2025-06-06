@@ -7,6 +7,7 @@ import {
   ComType,
   DataResponse,
   deserialize,
+  IFrameSelect,
   PcapFile,
   VRange,
 } from "../share/common";
@@ -69,8 +70,12 @@ export const useStore = create<PcapState>()((set) => {
       // case ComType.FRAME_SCOPE_RES:
       //   const range = body as VRange;
       //   break;
-      case ComType.FRAMES:
+      
       case ComType.FRAMES_SELECT:
+        let fr: IFrameSelect = { start: body.start, end: body.end, data: body.data, fields: deserialize(body.liststr), extra: body.extra };
+        emitter.emit(id, fr);
+        break;
+      case ComType.FRAMES:
         emitter.emit(id, deserialize(body));
         break;
       case ComType.FRAME_SCOPE_RES:

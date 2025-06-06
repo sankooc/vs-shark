@@ -152,7 +152,7 @@ impl Visitor {
             reader.slice((ext * 4) as usize, true)?;
         }
         let _stop = reader.left();
-        if head_len == 0 {
+        if total_len == 0 {
             //  payload_len is None;
         } else {
             if total_len < (_start - _stop) as u16 {

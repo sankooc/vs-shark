@@ -77,6 +77,21 @@ impl From<&FrameInternInfo> for FrameInfo {
     }
 }
 
+#[derive(Clone)]
+pub struct HttpHeadContinue {
+    pub message_index: usize,
+    pub frame_index: FrameIndex,
+    pub length: usize,
+    pub chunked: bool,
+    pub extra: Vec<u8>,
+}
+
+impl HttpHeadContinue {
+    pub fn new(length: usize, chunked: bool, extra: Vec<u8>) -> HttpHeadContinue {
+        HttpHeadContinue { message_index: 0, frame_index: 0, length, chunked, extra }
+    }
+}
+
 
 #[derive(Default, Clone, Serialize)]
 pub struct Field {

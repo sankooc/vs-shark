@@ -7,6 +7,17 @@ macro_rules! with_range {
         (start..end, result)
     }};
 }
+
+#[macro_export]
+macro_rules! add_field_label_no_range {
+    ($field:expr, $msg:expr) => {{
+        let start = $field.start;
+        let mut ele = crate::common::concept::Field::label($msg, start, start);
+        ele.source = $field.source;
+        $field.children.as_mut().unwrap().push(ele);
+    }};
+}
+
 #[macro_export]
 macro_rules! add_field_label {
     ($field:expr, $msg:expr) => {{
