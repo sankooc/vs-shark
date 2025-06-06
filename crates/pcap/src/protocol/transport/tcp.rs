@@ -38,12 +38,6 @@ impl Visitor {
             reader.forward(skip as usize);
         }
         let mut left_size = reader.left();
-        // if left_size == 0 {
-        //     return Ok(Protocol::None);
-        // }
-        // if index == 2 {
-        //     println!("")
-        // }
         let iplen = frame.iplen as usize;
         if iplen > 0 {
             if start > iplen {
