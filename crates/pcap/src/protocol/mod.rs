@@ -131,7 +131,7 @@ pub fn enthernet_protocol_mapper(ptype: u16) -> Protocol {
     match ptype {
         0x893a => Protocol::IEEE1905A,
         0x0800 => Protocol::IP4,
-        0x086dd => Protocol::IP6,
+        0x86dd => Protocol::IP6,
         0x0806 => Protocol::ARP,
         0x8035 => Protocol::RARP,
         0x8864 => Protocol::PPPoES,
