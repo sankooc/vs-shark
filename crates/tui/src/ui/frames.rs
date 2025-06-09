@@ -4,7 +4,7 @@ use crate::{
 };
 
 use crossterm::event::{KeyCode, KeyEvent};
-use pcap::common::concept::{FrameInfo, ListResult};
+use pcap::common::{concept::{FrameInfo, ListResult}, util::{date_sim_str}};
 use ratatui::{
     buffer::Buffer,
     layout::{Alignment, Constraint, Layout, Rect},
@@ -111,12 +111,13 @@ pub struct App<'a> {
 impl App<'_> {
     fn render_table(&mut self, buf: &mut Buffer, area: Rect) {
         let header_style = get_header_style();
-        let cols = ["Index", "Source", "Target", "Protocol", "Length", "Info"];
+        let cols = ["Index", "Time", "Source", "Target", "Protocol", "Length", "Info"];
         let header = cols.into_iter().map(Cell::from).collect::<Row>().style(header_style).height(1);
         let frames = &self.state.list.items;
         let rows = frames.iter().map(|data| {
             let mut rs: Vec<Cell> = Vec::new();
             rs.push(format!("{}", data.index + 1).into());
+            rs.push(date_sim_str(data.time).into());
             rs.push(data.source.clone().into());
             rs.push(data.dest.clone().into());
             rs.push(data.protocol.clone().into());
@@ -131,6 +132,7 @@ impl App<'_> {
             rows,
             [
                 Constraint::Length(5),
+                Constraint::Length(10),
                 Constraint::Max(20),
                 Constraint::Max(20),
                 Constraint::Max(10),
