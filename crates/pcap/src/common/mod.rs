@@ -7,7 +7,7 @@ use std::{
 };
 
 use crate::{
-    common::{connection::TcpFlagField}, files::{pcap::PCAP, pcapng::PCAPNG}, protocol::{detail, link_type_map, parse, summary}
+    add_field_label_no_range, common::{connection::TcpFlagField, util::date_str}, files::{pcap::PCAP, pcapng::PCAPNG}, protocol::{detail, link_type_map, parse, summary}
 };
 use anyhow::{bail, Result};
 use concept::{Criteria, Field, FrameInfo, FrameInternInfo, ListResult, ProgressStatus};
@@ -194,28 +194,37 @@ impl Instance {
         }
         let ds = &self.ds;
         let cxt = &mut self.ctx;
-        match self.file_type {
-            FileType::PCAP => loop {
-                if let Ok((_next, f)) = PCAP::next(&mut reader) {
-                    Instance::parse_packet(cxt, f, ds);
-                    reader.cursor = _next;
-                } else {
-                    self.last = reader.cursor;
-                    break;
+        loop {
+            let rs = match self.file_type {
+                FileType::PCAP => PCAP::next(&mut reader).map(|(_next,frame)| (_next, Some(frame))),
+                FileType::PCAPNG => PCAPNG::next(cxt, &mut reader),
+                _ => {
+                    bail!(DataError::UnsupportFileType)
                 }
-            },
-            FileType::PCAPNG => loop {
-                if let Ok((_next, f)) = PCAPNG::next(cxt, &mut reader) {
-                    if let Some(frame) = f {
+            };
+            match rs {
+                Ok((next, _frame)) => {
+                    if let Some(frame) = _frame {
                         Instance::parse_packet(cxt, frame, ds);
                     }
-                    reader.cursor = _next;
-                } else {
-                    self.last = reader.cursor;
-                    break;
+                    reader.cursor = next;
                 }
-            },
-            _ => {}
+                Err(e) => {
+                    self.last = reader.cursor;
+                    if e.is::<DataError>() {
+                        let tp = e.downcast::<DataError>().unwrap();
+                        match tp {
+                            DataError::EndOfStream => {
+                                break; 
+                            }
+                            _ => {
+                                bail!(DataError::FormatMissMatch); 
+                            }
+                        }
+                    }
+                    bail!(DataError::FormatMissMatch); 
+                }
+            }
         }
         let mut rs: ProgressStatus = (&reader).into();
         rs.count = self.ctx.list.len();
@@ -330,6 +339,26 @@ impl Instance {
     pub fn frame(&self, index: usize) -> Option<&Frame> {
         self.ctx.list.get(index)
     }
+    fn frame_field(&self, frame: &Frame) -> Field {
+        let mut f = Field::default();
+        f.start = 0;
+        f.size = 0;
+        if let Some(range) = frame.range.as_ref() {
+            f.start = range.start;
+            f.size = range.end - range.start;
+        }
+        let _index = frame.info.index + 1;
+        let size = frame.info.len;
+        let interface_type = self.ctx.link_type;
+        f.summary = format!("Frame {}: {} bytes on wire ({} bits), {} bytes captured ({} bits) on interface {}", _index, size, size * 8, size, size * 8, interface_type );
+        f.children = Some(vec![]); 
+        add_field_label_no_range!(f, format!("Frame number: {}", _index));
+        add_field_label_no_range!(f, format!("Epoch Arrival Time: {}", date_str(frame.info.time)));
+        add_field_label_no_range!(f, format!("Interface id: {}", interface_type));
+        add_field_label_no_range!(f, format!("Frame length: {}", size));
+        add_field_label_no_range!(f, format!("Capture length: {}", size));
+        f
+    }
     pub fn select_frame(&self, index: usize, data: Vec<u8>) -> Option<(Vec<Field>, Option<Vec<u8>>, Option<Vec<u8>>)> {
         let mut extra_data = None;
 
@@ -341,6 +370,7 @@ impl Instance {
                 let source = reader.dump_as_vec().ok();
                 let mut list = vec![];
                 let mut _next = frame.head;
+                list.push(self.frame_field(frame));
                 loop {
                     match &_next {
                         Protocol::None => {
@@ -386,3 +416,4 @@ pub mod core;
 pub mod enum_def;
 pub mod io;
 pub mod macro_def;
+pub mod util;

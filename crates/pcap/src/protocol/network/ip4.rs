@@ -1,7 +1,7 @@
 use std::net::Ipv4Addr;
 
 use crate::{
-    add_field_backstep, add_field_backstep_fn, add_field_format, add_field_format_fn, add_sub_field, common::{concept::Field, core::Context, enum_def::{AddressField, Protocol}, io::Reader, Frame}, constants::ip_protocol_type_mapper, protocol::ip4_mapper
+    add_field_backstep, add_field_backstep_fn, add_field_format, add_field_format_fn, add_sub_field, common::{concept::Field, core::Context, enum_def::{AddressField, DataError, Protocol}, io::Reader, Frame}, constants::ip_protocol_type_mapper, protocol::ip4_mapper
 };
 use anyhow::{bail, Result};
 
@@ -145,7 +145,7 @@ impl Visitor {
         let target = Ipv4Addr::from(<[u8; 4]>::try_from(&_data[4..])?);
         frame.address_field = AddressField::IPv4(source, target);
         if head_len < 5 {
-            bail!("ip4.head_len < 5")
+            bail!(DataError::Ipv4HeadLengthInvalid)
         }
         let ext = head_len - 5;
         if ext > 0 {
@@ -190,9 +190,8 @@ impl Visitor {
             //  payload_len is None;
         } else {
             if total_len < (_start - _stop) as u16 {
-                bail!("error_len");
+                bail!(DataError::Ipv4TotalLengthInvalid);
             }
-            // let payload_len = Some(total_len - (_start - _stop) as u16);
         }
 
         field.summary = format!("Internet Protocol Version 4, Src: {}, Dst: {}", source, target);

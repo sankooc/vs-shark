@@ -1,5 +1,8 @@
 use crate::common::{
-    core::Context, io::{Reader, IO}, Frame
+    core::Context,
+    enum_def::DataError,
+    io::{Reader, IO},
+    Frame,
 };
 use anyhow::{bail, Result};
 
@@ -26,7 +29,7 @@ fn _parse_head(_data: &[u8]) {
 impl PCAPNG {
     pub fn next(ctx: &mut Context, reader: &mut Reader) -> Result<(usize, Option<Frame>)> {
         if reader.left() < 8 {
-            bail!("end");
+            bail!(DataError::EndOfStream)
         }
         let block_type = format!("{:#010x}", reader.read32(false)?);
         let len = reader.read32(false)?;
@@ -34,7 +37,7 @@ impl PCAPNG {
         //
         if reader.left() < packet_size {
             reader.back(8);
-            bail!("end");
+            bail!(DataError::EndOfStream)
         }
         match block_type.as_str() {
             "0x0a0d0d0a" => {
@@ -58,14 +61,17 @@ impl PCAPNG {
                 let finish = reader.cursor + packet_size;
                 let _interface_id = reader.read32(false)?;
                 // let t = reader.slice(8, true)?.to_vec();
-                
+
                 let mut ts = reader.read32(false)? as u64;
                 let low_ts = reader.read32(false)? as u64;
                 ts = (ts << 32) + low_ts;
 
-
                 let _captured = reader.read32(false)?;
                 let origin = reader.read32(false)?;
+
+                if _captured != origin {
+                    bail!(DataError::FormatMissMatch);
+                }
                 let mut f = Frame::new();
                 f.info.len = origin;
                 f.info.time = ts;

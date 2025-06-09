@@ -1,5 +1,5 @@
 use anyhow::{bail, Result};
-use crate::common::{io::Reader, Frame};
+use crate::common::{enum_def::DataError, io::Reader, Frame};
 
 pub struct PCAP {}
 
@@ -7,7 +7,7 @@ impl PCAP {
 
     pub fn next(reader: &mut Reader) -> Result<(usize, Frame)> {
         if reader.left() < 16 {
-            bail!("end")
+            bail!(DataError::EndOfStream)
         }
 
         // let t = reader.slice(8, true)?.to_vec();
@@ -18,11 +18,11 @@ impl PCAP {
         let captured = reader.read32(false)?;
         let origin = reader.read32(false)?;
         if captured != origin {
-            bail!("nomatch")
+            bail!(DataError::FormatMissMatch);
         }
         if reader.left() < (origin as usize) {
             reader.back(16);
-            bail!("end of stream")
+            bail!(DataError::EndOfStream)
         }
         let mut f = Frame::new();
         f.info.len = origin;

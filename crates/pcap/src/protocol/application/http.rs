@@ -1,7 +1,7 @@
 use crate::{add_field_format, add_field_label_no_range};
 use crate::common::concept::{Field, HttpHeadContinue};
 use crate::common::core::{Context, Segment};
-use crate::common::enum_def::{ProtocolInfoField, SegmentStatus};
+use crate::common::enum_def::{DataError, ProtocolInfoField, SegmentStatus};
 use crate::common::io::Reader;
 use crate::common::{enum_def::Protocol, Frame};
 use crate::common::{hex_num, quick_trim_num, std_string, trim_data};
@@ -134,7 +134,7 @@ pub fn parse_chunked(reader: &mut Reader, tcp_index: usize, left: usize) -> Resu
     }
     if left > 0 {
         if !reader.forward(left) {
-            bail!("forward error")
+            bail!(DataError::HttpChunkForwardErr)
         }
     }
     loop {

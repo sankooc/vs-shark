@@ -26,12 +26,24 @@ pub enum PROPS {
     IpDestination,
 }
 
-#[derive(Error, Debug)]
+#[derive(Error, Debug, Copy, Clone, PartialEq)]
 pub enum DataError {
     #[error("unsupport file type")]
     UnsupportFileType,
     #[error("bit error")]
     BitSize,
+    #[error("end of stream")]
+    EndOfStream,
+    #[error("format miss match")]
+    FormatMissMatch,
+    #[error("unimplemented")]
+    Unimplemented,
+    #[error("ipv4 head length invalid")]
+    Ipv4HeadLengthInvalid,
+    #[error("ipv4 total length invalid")]
+    Ipv4TotalLengthInvalid,
+    #[error("http chunk forward error")]
+    HttpChunkForwardErr,
 }
 
 #[derive(Default, Clone, Copy)]
