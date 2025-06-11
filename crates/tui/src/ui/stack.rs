@@ -1,70 +1,50 @@
-
 use crossterm::event::{KeyCode, KeyEvent};
+use pcap::common::{concept::Field, io::DataSource};
 use ratatui::{
+    buffer::Buffer,
     layout::{Constraint, Layout, Rect},
     style::Modifier,
-    widgets::{Scrollbar, ScrollbarOrientation, StatefulWidget, Widget},
+    widgets::{Block, Padding, Scrollbar, ScrollbarOrientation, StatefulWidget, Widget},
 };
-use pcap::common::{concept::Field, io::DataSource};
 use tui_tree_widget::{Tree, TreeItem, TreeState};
 
-use crate::{engine::PcapCommand, theme::get_active_tab_color};
+use crate::{
+    engine::{PcapEvent, PcapUICommand},
+    theme::get_active_tab_color,
+    ui::ControlState,
+};
 
-use super::{hex::{HexState, HexView}, store::ControlState};
-
+use super::hex::{HexState, HexView};
 
 type Indendity = (usize, usize, usize, u8);
 
-
-pub struct StackState {
+#[derive(Default)]
+pub struct StackView {
     data_source: Option<DataSource>,
     extra: Option<Vec<u8>>,
     items: Vec<Field>,
     tree_state: TreeState<Indendity>,
 }
 
-impl StackState {
-    pub fn new(items: Vec<Field>, data_source: Option<DataSource>, extra: Option<Vec<u8>>) -> Self {
-        Self {
-            data_source,
-            extra,
-            items,
-            tree_state: TreeState::default(),
-        }
-    }
-
+impl StackView {
     pub fn items(&self) -> Vec<TreeItem<'static, Indendity>> {
         convert_fields(&self.items)
     }
-}
-
-impl ControlState for StackState {
-    fn control(&mut self, _: bool, event: KeyEvent) -> PcapCommand {
-        let state = &mut self.tree_state;
-        match event.code {
-            KeyCode::Down => {state.key_down();},
-            KeyCode::Up => {state.key_up();},
-            KeyCode::Left => {state.key_left();},
-            KeyCode::Right => {state.key_right();},
-            _ => {},
-        };
-        
-        PcapCommand::None
+    pub fn reset(&mut self, items: Vec<Field>, data_source: Option<DataSource>, extra: Option<Vec<u8>>) {
+        self.items = items;
+        self.data_source = data_source;
+        self.extra = extra;
     }
 }
 
-pub struct StackView<'a> {
-    state: &'a mut StackState,
-}
-
-impl Widget for StackView<'_> {
+impl Widget for &mut StackView {
     fn render(self, area: ratatui::prelude::Rect, buf: &mut ratatui::prelude::Buffer)
     where
         Self: Sized,
     {
         let ch: [Rect; 2] = Layout::horizontal([Constraint::Fill(1); 2]).areas(area);
 
-        let list = self.state.items();
+        let list = self.items();
         let widget = Tree::new(&list)
             .expect("all item identifiers are unique")
             .experimental_scrollbar(Some(
@@ -72,35 +52,74 @@ impl Widget for StackView<'_> {
             ))
             .highlight_style(get_active_tab_color().add_modifier(Modifier::BOLD))
             .highlight_symbol("");
-        StatefulWidget::render(widget, ch[0], buf, &mut self.state.tree_state);
-        let selected = self.state.tree_state.selected();
+        
+            let mut _top = widget.block(Block::bordered().padding(Padding::ZERO));
+
+        StatefulWidget::render(_top, ch[0], buf, &mut self.tree_state);
+        
+
+        let selected = self.tree_state.selected();
         if selected.len() > 0 {
-            let (_, start,size,source) = selected.last().unwrap().clone();
+            let (_, start, size, source) = selected.last().unwrap().clone();
             if source == 0 {
-                if let Some(ds) = &self.state.data_source {
+                if let Some(ds) = &self.data_source {
                     let _start = start - std::cmp::min(start, ds.range().start);
                     let state = HexState::new(_start, size, &ds.data);
                     let mut _hex = HexView::from(&state);
                     _hex.render(ch[1], buf);
                 }
             } else {
-                if let Some(extra) = &self.state.extra {
+                if let Some(extra) = &self.extra {
                     let state = HexState::new(start, size, extra);
                     let mut _hex = HexView::from(&state);
                     _hex.render(ch[1], buf);
                 }
             }
-            
         }
     }
 }
 
-impl<'a> From<&'a mut StackState> for StackView<'a> {
-    fn from(state: &'a mut StackState) -> Self {
-        Self { state }
+impl ControlState for StackView {
+    fn control(&mut self, _: bool, event: KeyEvent) -> PcapUICommand {
+        let state = &mut self.tree_state;
+        match event.code {
+            KeyCode::Down => {
+                state.key_down();
+            }
+            KeyCode::Up => {
+                state.key_up();
+            }
+            KeyCode::Left => {
+                state.key_left();
+            }
+            KeyCode::Right => {
+                state.key_right();
+            }
+            _ => {
+                return PcapUICommand::None
+            }
+        };
+
+        PcapUICommand::Refresh
+    }
+
+    fn do_render(&mut self, area: Rect, buf: &mut Buffer) {
+        self.render(area, buf);
+    }
+
+    fn update(&mut self, event: PcapEvent) -> PcapUICommand {
+        match event {
+            PcapEvent::FrameData(fields, ds,  extra) => {
+                self.items = fields;
+                self.data_source = ds;
+                self.extra = extra;
+                self.tree_state.close_all();
+                PcapUICommand::Refresh
+            },
+            _ => PcapUICommand::None
+        }
     }
 }
-
 fn convert_fields(list: &[Field]) -> Vec<TreeItem<'static, Indendity>> {
     let mut rs = Vec::new();
     let mut count = 0;

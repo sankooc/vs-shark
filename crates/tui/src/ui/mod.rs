@@ -1,13 +1,16 @@
 use std::{
-    sync::{mpsc::Receiver, mpsc::Sender},
+    sync::mpsc::{Receiver, Sender},
     time::Duration,
 };
 
-use crossterm::event::{self, Event, KeyCode, KeyEventKind, KeyModifiers};
-use frames::SelectPanel;
+use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
+use enum_dispatch::enum_dispatch;
+use ratatui::{buffer::Buffer, layout::Rect};
 use window::MainUI;
 
-use crate::engine::{PcapCommand, PcapEvent};
+use crate::{
+    engine::{PcapEvent, PcapUICommand},
+};
 
 // use crate::loading;
 
@@ -15,82 +18,103 @@ mod frames;
 mod hex;
 mod popup;
 mod stack;
-mod store;
 mod window;
+mod loading;
 
 pub struct UI {
-    sender: Sender<PcapCommand>,
+    sender: Sender<PcapUICommand>,
     receiver: Receiver<PcapEvent>,
 }
 
+fn try_handle_event(app: &mut MainUI) -> PcapUICommand {
+    if event::poll(Duration::from_millis(10)).unwrap() {
+        if let Ok(event) = event::read() {
+            if let Event::Key(key) = event {
+                let shift_pressed = key.modifiers.contains(KeyModifiers::SHIFT);
+                match key.kind {
+                    KeyEventKind::Press => match key.code {
+                        KeyCode::Char('q') | KeyCode::Esc => {
+                            return PcapUICommand::Quit;
+                        }
+                        _ => {}
+                    },
+                    _ => {}
+                }
+                return app.control(shift_pressed, key);
+            }
+        }
+    }
+    PcapUICommand::None
+}
+
+
+#[enum_dispatch]
+pub enum TabContainer {
+    Frame(frames::App)
+}
+
+#[enum_dispatch(TabContainer)]
+pub trait ControlState {
+    fn control(&mut self, shift_pressed: bool, event: KeyEvent) -> PcapUICommand;
+    fn do_render(&mut self, area: Rect, buf: &mut Buffer);
+    fn update(&mut self, event: PcapEvent) -> PcapUICommand;
+}
+
 impl UI {
-    pub fn new(sender: Sender<PcapCommand>, receiver: Receiver<PcapEvent>) -> Self {
+    pub fn new(sender: Sender<PcapUICommand>, receiver: Receiver<PcapEvent>) -> Self {
         Self { sender, receiver }
     }
     pub fn run(&self) -> anyhow::Result<()> {
+        let mut app = MainUI::new();
         let mut terminal = ratatui::init();
-        let mut store = store::Store::default();
         let mut quiting = false;
+        terminal.draw(|f| f.render_widget(&mut app, f.area())).unwrap();
         loop {
-            if event::poll(Duration::from_millis(10)).unwrap() {
-                if let Ok(event) = event::read() {
-                    if let Event::Key(key) = event {
-                        let shift_pressed = key.modifiers.contains(KeyModifiers::SHIFT);
-                        if shift_pressed {
-                            match key.code {
-                                KeyCode::Up => {
-                                    store.select_panel(SelectPanel::LIST);
-                                }
-                                _ => {}
-                            }
-                        } else {
-                            match key.kind {
-                                KeyEventKind::Press => match key.code {
-                                    KeyCode::Char('q') | KeyCode::Esc => {
-                                        self.sender.send(PcapCommand::Quit).unwrap();
-                                        break;
-                                    }
-                                    _ => {}
-                                },
-                                _ => {}
-                            }
-
-                            if let Some(mut sel) = store.selection() {
-                                let cmd = sel.as_mut().control(shift_pressed, key);
-                                match &cmd {
-                                    PcapCommand::None => {}
-                                    _ => {
-                                        self.sender.send(cmd).unwrap();
-                                        continue;
-                                    }
-                                }
-                            }
-                        }
-                    }
+            let cmd = try_handle_event(&mut app);
+            match &cmd {
+                PcapUICommand::Quit => {
+                    self.sender.send(cmd).unwrap();
+                    break;
+                }
+                PcapUICommand::None => {
+                }
+                PcapUICommand::Refresh => {
+                    terminal.draw(|f| f.render_widget(&mut app, f.area())).unwrap();
+                    continue;
+                }
+                _ => {
+                    self.sender.send(cmd).unwrap();
+                    continue;
                 }
             }
 
-            match self.receiver.try_recv() {
+            let react = match self.receiver.try_recv() {
                 Ok(event) => {
                     if let PcapEvent::Quit = event {
                         quiting = true;
                         // println!("failed to parse file");
                         break;
                     }
-                    let cmd = store.update(event);
-                    match &cmd {
-                        PcapCommand::None => {}
-                        _ => {
-                            self.sender.send(cmd).unwrap();
-                        }
-                    }
+                    app.update(event)
+                }
+                _ => PcapUICommand::None,
+            };
+            match &react {
+                PcapUICommand::Quit => {
+                    self.sender.send(react).unwrap();
+                    break;
+                }
+                PcapUICommand::Refresh => {
+                    terminal.draw(|f| f.render_widget(&mut app, f.area())).unwrap();
+                }
+                PcapUICommand::None => {
+                    continue;
                 }
                 _ => {
-                    // println!("no event");
+                    self.sender.send(react).unwrap();
+                    continue;
                 }
             }
-            let mut app = MainUI::from(&mut store);
-            terminal.draw(|f| f.render_widget(&mut app, f.area())).unwrap();
         }
         while quiting {
             if event::poll(Duration::from_millis(10)).unwrap() {
@@ -99,7 +123,7 @@ impl UI {
                         match key.kind {
                             KeyEventKind::Press => match key.code {
                                 _ => {
-                                    let _ = self.sender.send(PcapCommand::Quit);
+                                    let _ = self.sender.send(PcapUICommand::Quit);
                                     break;
                                 }
                             },
