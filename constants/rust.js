@@ -68,6 +68,6 @@ const code = items.map((item) => create_fn(item[0], item[1], item[2], item[3], i
 
 // console.log(code);
 
-fs.writeFileSync('../crates/shark/src/constants.rs', code);
+fs.writeFileSync('../crates/pcap/src/constants.rs', code);
 
 console.log('complete');

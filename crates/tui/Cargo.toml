@@ -12,4 +12,6 @@ ratatui.workspace = true
 pcap = { path = "../pcap" }
 anyhow.workspace = true
 tui-tree-widget.workspace = true
+enum_dispatch.workspace = true
+
 # tokio = { version = "1", features = ["full"] }

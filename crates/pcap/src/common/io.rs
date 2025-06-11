@@ -142,6 +142,11 @@ impl DataSource {
         let _range = (range.start - _start)..(range.end - _start);
         Ok(&self.data[_range])
     }
+
+    pub fn destroy(&mut self) {
+        self.data.clear();
+        self.range = 0..0;
+    }
 }
 
 #[derive(Clone)]

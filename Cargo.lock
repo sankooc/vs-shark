@@ -635,6 +635,7 @@ dependencies = [
  "anyhow",
  "clap",
  "crossterm",
+ "enum_dispatch",
  "log",
  "pcap",
  "ratatui",

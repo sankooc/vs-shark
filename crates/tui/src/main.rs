@@ -1,7 +1,7 @@
 use std::{fs::{self}, sync::mpsc};
 
 use clap::Parser;
-use pcaps::{engine::{PcapCommand, PcapEvent, Service}, ui};
+use pcaps::{engine::{PcapUICommand, PcapEvent, Service}, ui};
 
 
 
@@ -25,7 +25,7 @@ fn main() -> anyhow::Result<()> {
 
 fn start(_fname: &str) -> anyhow::Result<()> {
     let (etx, erx) = mpsc::channel::<PcapEvent>();
-    let (ptx, prx) = mpsc::channel::<PcapCommand>();
+    let (ptx, prx) = mpsc::channel::<PcapUICommand>();
     let ui = ui::UI::new(ptx, erx);
     let mut engine = Service::new(_fname.to_string(), etx, prx);
     let logic_handle = std::thread::spawn(move || {

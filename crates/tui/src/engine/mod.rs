@@ -17,9 +17,10 @@ pub enum PcapEvent {
     FrameData(Vec<Field>, Option<DataSource>, Option<Vec<u8>>),
 }
 
-pub enum PcapCommand {
+pub enum PcapUICommand {
     Quit,
     None,
+    Refresh,
     FrameList(usize, usize),
     FrameData(FrameIndex)
 }
@@ -28,7 +29,7 @@ pub struct Service {
     file: File,
     fname: String,
     sender: Sender<PcapEvent>,
-    receiver: Receiver<PcapCommand>,
+    receiver: Receiver<PcapUICommand>,
 }
 
 
@@ -43,7 +44,7 @@ pub fn seek2(fname: &str, range: Range<usize>) -> anyhow::Result<Vec<u8>>{
 }
 
 impl Service {
-    pub fn new(fname: String, sender: Sender<PcapEvent>, receiver: Receiver<PcapCommand>) -> Self {
+    pub fn new(fname: String, sender: Sender<PcapEvent>, receiver: Receiver<PcapUICommand>) -> Self {
         let file = File::open(fname.clone()).unwrap();
         Self { fname, file, sender, receiver }
     }
@@ -66,13 +67,13 @@ impl Service {
             let start_loop = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis();
             match self.receiver.try_recv() {
                 Ok(cmd) => match cmd {
-                    PcapCommand::Quit => break,
-                    PcapCommand::FrameList(start, size) => {
+                    PcapUICommand::Quit => break,
+                    PcapUICommand::FrameList(start, size) => {
                         let cri = Criteria { start, size };
                         let result_list = ins.frames_by(cri);
                         self.sender.send(PcapEvent::FrameList(result_list)).unwrap();
                     }
-                    PcapCommand::FrameData(index) => {
+                    PcapUICommand::FrameData(index) => {
                         if let Some(frame) = ins.frame(index as usize) {
                             if let Some(range) = frame.range() {
                                 let data = seek2(&self.fname, range)?;

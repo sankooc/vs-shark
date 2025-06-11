@@ -1,5 +1,7 @@
 use serde::Serialize;
 
+use crate::common::{connection::{Connection, ConversationKey}, enum_def::Protocol, util::tuple_to_str};
+
 use super::enum_def::PacketStatus;
 
 
@@ -40,6 +42,9 @@ pub struct ListResult<T> {
 impl<T> ListResult<T> {
     pub fn new(start: usize, total: usize, items: Vec<T>) -> Self {
         Self { start, total, items }
+    }
+    pub fn empty() -> Self {
+        Self { start: 0, total: 0, items: vec![] }
     }
 }
 
@@ -135,4 +140,125 @@ impl Field {
     pub fn with_children_reader(reader: &super::io::Reader) -> Field {
         Field::with_children(String::from(""), reader.cursor, 0)
     }
+}
+
+
+pub struct Conversation {
+    pub key: ConversationKey,
+    pub primary: String,
+    pub second: String,
+    pub primary_statistic: TCPStatistic,
+    pub second_statistic: TCPStatistic,
+    pub connections: Vec<Connection>,
+}
+
+impl Conversation {
+    pub fn new(key: ConversationKey, primary: String, second: String) -> Self {
+        Self {
+            key,
+            primary,
+            second,
+            primary_statistic: TCPStatistic::default(),
+            second_statistic: TCPStatistic::default(),
+            connections: Vec::new(),
+        }
+    }
+    pub fn add_connection(&mut self, conn: Connection) -> usize {
+        let index = self.connections.len();
+        self.connections.push(conn);
+        index
+    }
+    pub fn connection(&mut self, index: usize) -> Option<&mut Connection> {
+        self.connections.get_mut(index)
+    }
+    pub fn statistic(&mut self, reverse: bool) -> &mut TCPStatistic {
+        match reverse {
+            true => &mut self.primary_statistic,
+            false => &mut self.primary_statistic,
+        }
+    }
+}
+
+impl Into<VConversation> for &Conversation {
+    fn into(self) -> VConversation {
+        let key = tuple_to_str(self.key);
+        let sender_packets = self.primary_statistic.count;
+        let receiver_packets = self.second_statistic.count;
+        let sender_bytes = self.primary_statistic.throughput;
+        let receiver_bytes = self.second_statistic.throughput;
+        let connects = self.connections.len();
+        VConversation {
+            key,
+            sender: self.primary.clone(),
+            receiver: self.second.clone(),
+            sender_packets,
+            receiver_packets,
+            sender_bytes,
+            receiver_bytes,
+            connects,
+        }
+    }
+}
+
+pub struct VConversation {
+    pub key: String,
+    pub sender: String,
+    pub receiver: String,
+    pub sender_packets: u32,
+    pub receiver_packets: u32,
+    pub sender_bytes: u64,
+    pub receiver_bytes: u64,
+    pub connects: usize,
+}
+
+
+
+#[derive(Serialize, Default, Clone)]
+pub struct TCPStatistic {
+    pub count: u32,
+    pub throughput: u64,
+    pub clean_throughput: u64,
+    pub retransmission: u32,
+    pub invalid: u32,
+}
+
+
+impl TCPStatistic {
+    pub fn append(&mut self, other: &TCPStatistic) {
+        self.count += other.count;
+        self.throughput += other.throughput;
+        self.clean_throughput += other.clean_throughput;
+        self.retransmission += other.retransmission;
+        self.invalid += other.invalid;
+    }
+}
+
+#[derive(Serialize, Default, Clone)]
+pub struct VConnection {
+    pub primary: VEndpoint,
+    pub second: VEndpoint,
+    pub protocol: String,
+}
+
+impl From<&Connection> for VConnection {
+    fn from(value: &Connection) -> Self {
+        let protocol = match value.protocol {
+            Protocol::HTTP => "http".into(),
+            Protocol::TLS => "tls".into(),
+            _ => "".into()
+        };
+        Self {
+            primary: value.primary().into(),
+            second: value.second().into(),
+            protocol,
+        }
+    }
+}
+
+
+#[derive(Serialize, Default, Clone)]
+pub struct VEndpoint {
+    pub host: String,
+    pub port: u16,
+    pub statistic: TCPStatistic,
 }

@@ -5,7 +5,7 @@ use std::{
 
 use anyhow::{bail, Result};
 
-use crate::common::{concept::FrameIndex, enum_def::AddressField};
+use crate::common::{concept::{Conversation, FrameIndex}, connection::ConversationKey, enum_def::AddressField};
 
 use super::{
     connection::{ConnectState, Connection, Endpoint, TCPStat, TmpConnection},
@@ -32,7 +32,9 @@ pub struct Context {
     pub list: Vec<Frame>,
     pub counter: FrameIndex,
     pub active_connection: FastHashMap<(u64, u16, u64, u16), usize>,
-    pub connections: Vec<Connection>,
+    pub conversation_map: FastHashMap<ConversationKey, usize>,
+    pub conversation_list: Vec<Conversation>,
+    // pub connections: Vec<Connection>,
     pub segment_messages: Vec<Segments>,
     pub ethermap: FastHashMap<u64, EthernetCache>,
     pub ipv6map: FastHashMap<u64, (u8, Ipv6Addr, Ipv6Addr)>,
@@ -68,6 +70,7 @@ impl Context {
 
 pub trait Factor {
     fn get(&self) -> (u64, u16);
+    fn host(&self) -> String;
 }
 
 #[derive(PartialEq)]
@@ -93,6 +96,9 @@ impl Into<Endpoint> for IPV4Point {
 impl Factor for IPV4Point {
     fn get(&self) -> (u64, u16) {
         (self.ip_hash, self.port)
+    }
+    fn host(&self) -> String {
+        self.ip.to_string()
     }
 }
 impl PartialOrd for IPV4Point {
@@ -128,6 +134,9 @@ impl Factor for IPV6Point {
     fn get(&self) -> (u64, u16) {
         (self.ip_hash, self.port)
     }
+    fn host(&self) -> String {
+        self.ip.to_string()
+    }
 }
 
 impl PartialOrd for IPV6Point {
@@ -142,7 +151,6 @@ impl PartialOrd for IPV6Point {
 impl Context {
     pub fn new() -> Self {
         Self::default()
-        // Self { ds, file_type: FileType::NONE, link_type:0, list: vec![], counter:0, active_connection: FastHashMap::default(), connections: vec![] }
     }
 
     pub fn _get_connect<T>(&mut self, _: &mut Frame, source: T, target: T, stat: TCPStat, data_source: &DataSource, range: Range<usize>) -> Result<ConnectState>
@@ -156,23 +164,34 @@ impl Context {
             true => (s.0, s.1, t.0, t.1),
             false => (t.0, t.1, s.0, s.1),
         };
+        let conversation_key = match reverse {
+            true => (s.0, t.0),
+            false => (t.0, s.0),
+        };
+        let eps = match reverse {
+            true => (source, target),
+            false => (target, source),
+        };
+        let conversation_index = self.conversation_map.entry(conversation_key)
+            .or_insert_with(|| -> usize {
+                let index = self.conversation_list.len();
+                self.conversation_list.push(Conversation::new(conversation_key,eps.0.host(), eps.1.host()));
+                index
+            });
+        let conversation = self.conversation_list.get_mut(*conversation_index).unwrap();
+
         let mut _index: usize = 0;
 
         if let Some(index) = self.active_connection.get(&key) {
             _index = index.clone();
         } else {
-            let connection = match reverse {
-                true => Connection::new(source.into(), target.into()),
-                false => Connection::new(target.into(), source.into()),
-            };
-            _index = self.connections.len();
-            self.connections.push(connection);
+            let connection = Connection::new(eps.0.into(), eps.1.into());
+            _index = conversation.add_connection(connection);
             self.active_connection.insert(key, _index);
         }
-        let conn = self.connections.get_mut(_index).unwrap();
-        let mut tmp_conn = TmpConnection::new(conn, reverse);
+        let mut tmp_conn = TmpConnection::new(conversation, _index, reverse);
         let mut rs = tmp_conn.update(&stat, data_source, range)?;
-        rs.connection = Some((_index, reverse));
+        rs.connection = Some(((*conversation_index, _index), reverse));
         // remove
         if rs.connect_finished {
             self.active_connection.remove(&key);
@@ -199,11 +218,17 @@ impl Context {
         }
     }
 
-    pub fn connection(&mut self, frame: &mut Frame) -> Option<(usize, TmpConnection)> {
+    pub fn connection(&mut self, frame: &mut Frame) -> Option<(usize, &mut Endpoint)> {
         if let Some(tcp_info) = &frame.tcp_info {
-            if let Some((index, reverse)) = tcp_info.connection {
-                if let Some(conn) = self.connections.get_mut(index) {
-                    return Some((index, TmpConnection::new(conn, reverse)));
+            if let Some(((conversation_index, connect_index), reverse)) = tcp_info.connection {
+                if let Some(conversation) = self.conversation_list.get_mut(conversation_index) {
+                //     // let sec = reverse ^ is_source;
+                    if let Some(conn) = conversation.connection(connect_index) {
+                        return match reverse {
+                            true => Some((connect_index, &mut conn.primary)),
+                            false => Some((connect_index, &mut conn.second)),
+                        };
+                    }
                 }
             }
         }

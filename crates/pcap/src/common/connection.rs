@@ -5,12 +5,17 @@ use std::{
     ops::Range,
 };
 
-use crate::{common::concept::FrameIndex, protocol};
+use crate::{common::concept::{Conversation, FrameIndex, TCPStatistic, VEndpoint}, protocol};
 
 use super::{
     enum_def::{Protocol, SegmentStatus, TCPConnectStatus, TCPDetail, TCPFLAG},
     io::{DataSource, Reader},
 };
+
+
+pub type ConnectionIndex = (usize, usize);
+
+pub type ConversationKey = (u64, u64);
 
 #[derive(Debug)]
 pub struct TcpFlagField {
@@ -96,14 +101,6 @@ impl TcpFlagField {
     }
 }
 
-#[derive(Default)]
-pub struct TCPStatistic {
-    pub count: u16,
-    pub throughput: u32,
-    pub retransmission: u16,
-    pub invalid: u16,
-}
-
 pub struct ConnectState {
     pub seq: u32,
     pub ack: u32,
@@ -113,7 +110,7 @@ pub struct ConnectState {
     pub flag_bit: u16,
     pub connect_finished: bool,
     pub next_protocol: Protocol,
-    pub connection: Option<(usize, bool)>,
+    pub connection: Option<(ConnectionIndex, bool)>,
 }
 
 impl ConnectState {
@@ -234,8 +231,8 @@ impl TCPSegment {
 
 #[derive(Default)]
 pub struct Endpoint {
-    host: String,
-    port: u16,
+    pub host: String,
+    pub port: u16,
     pub status: TCPConnectStatus,
     seq: u32,
     _seq: u32,
@@ -243,9 +240,19 @@ pub struct Endpoint {
     _ack: u32,
     ack: u32,
     _checksum: u16,
-    statistic: TCPStatistic,
+    pub statistic: TCPStatistic,
     pub segment_status: SegmentStatus,
     _segments: Option<Vec<TCPSegment>>,
+}
+
+impl Into<VEndpoint> for &Endpoint {
+    fn into(self) -> VEndpoint {
+        VEndpoint {
+            host: self.host.clone(),
+            port: self.port,
+            statistic: self.statistic.clone(),
+        }
+    }
 }
 impl Endpoint {
     pub fn new(host: String, port: u16) -> Self {
@@ -288,18 +295,19 @@ impl Endpoint {
         // let same = acknowledge == self.ack;
         self.ack = acknowledge;
     }
-    pub fn update(&mut self, stat: &TCPStat) -> TCPDetail {
+    pub fn update(&mut self, stat: &TCPStat) -> (TCPDetail, TCPStatistic) {
         let sequence = stat.sequence;
-        let statistic = &mut self.statistic;
-        statistic.count = statistic.count + 1;
-        statistic.throughput += stat.payload_len as u32;
+        let mut statistic = TCPStatistic::default();
+        statistic.count = 1;
+        statistic.throughput = stat.payload_len as u64;
+
         if self.seq == sequence && stat.payload_len == 0 {
-            return TCPDetail::NEXT;
+            return (TCPDetail::NEXT, statistic);
         }
         if stat.state.contain(TCPFLAG::RESET) {
             self.clear_segment();
             self.status = TCPConnectStatus::CLOSED;
-            return TCPDetail::RESET;
+            return (TCPDetail::RESET, statistic);
         }
         let mut _tcp_len = 0;
         if stat.state.contain(TCPFLAG::SYNC) {
@@ -320,36 +328,37 @@ impl Endpoint {
             self.seq = sequence;
             self.next = sequence + _tcp_len;
             self._checksum = stat.crc;
-            return TCPDetail::NEXT;
+            statistic.clean_throughput = _tcp_len as u64;
+            return (TCPDetail::NEXT, statistic);
         }
         if sequence > self.next {
             self.seq = sequence;
             self.next = sequence + _tcp_len;
             self._checksum = stat.crc;
-            statistic.invalid += 1;
+            statistic.invalid = 1;
             self.clear_segment();
-            return TCPDetail::NOPREVCAPTURE;
+            return (TCPDetail::NOPREVCAPTURE, statistic);
         } else if sequence == self.next {
             self.seq = sequence;
             self._checksum = stat.crc;
             if _tcp_len == 0 {
-                return TCPDetail::NEXT;
+                return (TCPDetail::NEXT, statistic);
             }
             self.next = sequence + _tcp_len;
-            return TCPDetail::NEXT;
+            statistic.clean_throughput = _tcp_len as u64;
+            return (TCPDetail::NEXT, statistic);
         } else {
             if sequence == self.next - 1 && (_tcp_len == 1 || _tcp_len == 0) && stat.state.extact_match(TCPFLAG::ACK) {
                 self._checksum = stat.crc;
-                return TCPDetail::KEEPALIVE;
+                return (TCPDetail::KEEPALIVE, statistic);
             }
             if self.seq == sequence + _tcp_len {
-                statistic.retransmission += 1;
-                return TCPDetail::RETRANSMISSION;
+                statistic.retransmission = 1;
+                return (TCPDetail::RETRANSMISSION, statistic);
             }
-            statistic.invalid += 1;
-            return TCPDetail::DUMP;
+            statistic.invalid = 1;
+            return (TCPDetail::DUMP, statistic);
         }
-        // todo
     }
 
     pub fn ack(&self) -> u32 {
@@ -376,8 +385,8 @@ impl Endpoint {
 }
 
 pub struct Connection {
-    primary: Endpoint,
-    second: Endpoint,
+    pub primary: Endpoint,
+    pub second: Endpoint,
     pub protocol: Protocol,
 }
 impl Connection {
@@ -388,41 +397,57 @@ impl Connection {
             protocol: Protocol::None,
         }
     }
+    pub fn primary(&self) -> &Endpoint {
+        &self.primary
+    }
+    pub fn second(&self) -> &Endpoint {
+        &self.second
+    }
+    pub fn do_match(&self) -> bool{
+        true
+    }
 }
 
 pub struct TmpConnection<'a> {
-    conn: &'a mut Connection,
-    // pub frame: &'a mut Frame, //todo
+    connection_index: usize,
+    conversation: &'a mut Conversation,
     reverse: bool,
 }
 
 impl<'a> TmpConnection<'a> {
-    pub fn new(conn: &'a mut Connection, reverse: bool) -> Self {
-        Self { conn, reverse }
+    pub fn new(conversation: &'a mut Conversation, connection_index: usize, reverse: bool) -> Self {
+        Self { connection_index, conversation, reverse }
     }
 
     pub fn source_endpoint(&mut self) -> &mut Endpoint {
+        let conn = self.conversation.connection(self.connection_index).unwrap();
         match self.reverse {
-            true => &mut self.conn.primary,
-            false => &mut self.conn.second,
+            true => &mut conn.primary,
+            false => &mut conn.second,
         }
     }
     pub fn target_endpoint(&mut self) -> &mut Endpoint {
+        let conn = self.conversation.connection(self.connection_index).unwrap();
         match self.reverse {
-            true => &mut self.conn.second,
-            false => &mut self.conn.primary,
+            true => &mut conn.second,
+            false => &mut conn.primary,
         }
     }
     pub fn update(&mut self, stat: &TCPStat, data_source: &DataSource, range: Range<usize>) -> anyhow::Result<ConnectState> {
         let mut _rs = TCPDetail::KEEPALIVE;
-        let mut main = &mut self.conn.second;
-        let mut rev = &mut self.conn.primary;
+        let conn = self.conversation.connection(self.connection_index).unwrap();
+        let mut main = &mut conn.second;
+        let mut rev = &mut conn.primary;
+        
+        // let conv = &mut self.conversation.primary_statistic;
         if self.reverse {
-            main = &mut self.conn.primary;
-            rev = &mut self.conn.second;
+            main = &mut conn.primary;
+            rev = &mut conn.second;
         }
 
-        let status: TCPDetail = main.update(&stat);
+        let (status, statistic) = main.update(&stat);
+        main.statistic.append(&statistic);
+
         rev.confirm(&stat);
         let mut rs = ConnectState::new(main.seq(), rev.ack(), main.next(), stat.payload_len, status);
         match &rs.status {
@@ -438,20 +463,20 @@ impl<'a> TmpConnection<'a> {
                 if rs.status == TCPDetail::NEXT {
                     if rs.len > 0 {
                         let reader = Reader::new_sub(data_source, range.clone())?;
-                        match self.conn.protocol {
+                        match conn.protocol {
                             Protocol::None => {
                                 if protocol::application::http::detect(&reader) {
-                                    self.conn.protocol = Protocol::HTTP;
+                                    conn.protocol = Protocol::HTTP;
                                     main.segment_status = SegmentStatus::Init;
                                 }
                                  else if protocol::transport::tls::detect(&reader) {
-                                    self.conn.protocol = Protocol::TLS;
+                                    conn.protocol = Protocol::TLS;
                                     main.segment_status = SegmentStatus::Init;
                                 }
                             }
                             _ => {}
                         }
-                        rs.next_protocol = self.conn.protocol;
+                        rs.next_protocol = conn.protocol;
                     }
                 }
                 // // process
@@ -466,6 +491,7 @@ impl<'a> TmpConnection<'a> {
                 }
             }
         }
+        self.conversation.statistic(self.reverse).append(&statistic);
         Ok(rs)
     }
 }
