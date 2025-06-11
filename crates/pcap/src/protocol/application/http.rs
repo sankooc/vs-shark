@@ -208,8 +208,8 @@ impl Visitor {
         }
         let mut reader = _reader.slice_as_reader(left)?;
         let mut next_status = SegmentStatus::Init;
-        if let Some((tcp_index, mut conn)) = ctx.connection(frame) {
-            let endpoint = conn.source_endpoint();
+        if let Some((tcp_index, endpoint)) = ctx.connection(frame) {
+            // let endpoint = conn2.source_endpoint();
 
             let mut _status = std::mem::replace(&mut endpoint.segment_status, SegmentStatus::Init);
             match _status {
@@ -308,8 +308,8 @@ impl Visitor {
             };
         }
 
-        if let Some((_, mut conn)) = ctx.connection(frame) {
-            let endpoint = conn.source_endpoint();
+        if let Some((_, endpoint)) = ctx.connection(frame) {
+            // let endpoint = conn.source_endpoint();
             endpoint.segment_status = next_status;
         }
         Ok(Protocol::None)

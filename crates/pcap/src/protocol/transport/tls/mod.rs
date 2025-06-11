@@ -74,8 +74,8 @@ impl Visitor {
         let mut reader = _reader.slice_as_reader(left)?;
         let mut list = TLSList::default();
 
-        if let Some((_, mut conn)) = ctx.connection(frame) {
-            let endpoint = conn.source_endpoint();
+        if let Some((_, endpoint)) = ctx.connection(frame) {
+            // let endpoint = conn.source_endpoint();
             let mut _status = std::mem::replace(&mut endpoint.segment_status, SegmentStatus::Init);
             match _status {
                 SegmentStatus::Init => endpoint.segment_status = recycle(index, &mut reader, &mut list)?,

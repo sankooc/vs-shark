@@ -22,8 +22,6 @@ fn parse_dns_name(_reader: &mut Reader, start_offset: usize) -> Result<String> {
     // let arch = reader.cursor - start_offset;
     loop {
         let len = reader.read8()? as usize;
-
-        // todo!()
         // Check for DNS name compression
         if (len & 0xC0) == 0xC0 {
             // This is a pointer to another location in the packet

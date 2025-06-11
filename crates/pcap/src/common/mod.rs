@@ -7,7 +7,14 @@ use std::{
 };
 
 use crate::{
-    add_field_label_no_range, common::{connection::TcpFlagField, util::date_str}, files::{pcap::PCAP, pcapng::PCAPNG}, protocol::{detail, link_type_map, parse, summary}
+    add_field_label_no_range,
+    common::{
+        concept::VConversation,
+        connection::TcpFlagField,
+        util::date_str,
+    },
+    files::{pcap::PCAP, pcapng::PCAPNG},
+    protocol::{detail, link_type_map, parse, summary},
 };
 use anyhow::{bail, Result};
 use concept::{Criteria, Field, FrameInfo, FrameInternInfo, ListResult, ProgressStatus};
@@ -107,7 +114,7 @@ impl Frame {
                         start = cmp::min(start, r.start);
                         end = cmp::max(end, r.end);
                     }
-                    return Some(start..end)
+                    return Some(start..end);
                 }
             }
             _ => {}
@@ -196,7 +203,7 @@ impl Instance {
         let cxt = &mut self.ctx;
         loop {
             let rs = match self.file_type {
-                FileType::PCAP => PCAP::next(&mut reader).map(|(_next,frame)| (_next, Some(frame))),
+                FileType::PCAP => PCAP::next(&mut reader).map(|(_next, frame)| (_next, Some(frame))),
                 FileType::PCAPNG => PCAPNG::next(cxt, &mut reader),
                 _ => {
                     bail!(DataError::UnsupportFileType)
@@ -215,14 +222,14 @@ impl Instance {
                         let tp = e.downcast::<DataError>().unwrap();
                         match tp {
                             DataError::EndOfStream => {
-                                break; 
+                                break;
                             }
                             _ => {
-                                bail!(DataError::FormatMissMatch); 
+                                bail!(DataError::FormatMissMatch);
                             }
                         }
                     }
-                    bail!(DataError::FormatMissMatch); 
+                    bail!(DataError::FormatMissMatch);
                 }
             }
         }
@@ -272,7 +279,10 @@ impl Instance {
         self.parse()
     }
     pub fn destroy(&mut self) -> bool {
-        // TODO
+        self.ds.destroy();
+        self.ctx = Context::new();
+        self.last = 0;
+        self.file_type = FileType::NONE;
         true
     }
 }
@@ -350,8 +360,16 @@ impl Instance {
         let _index = frame.info.index + 1;
         let size = frame.info.len;
         let interface_type = self.ctx.link_type;
-        f.summary = format!("Frame {}: {} bytes on wire ({} bits), {} bytes captured ({} bits) on interface {}", _index, size, size * 8, size, size * 8, interface_type );
-        f.children = Some(vec![]); 
+        f.summary = format!(
+            "Frame {}: {} bytes on wire ({} bits), {} bytes captured ({} bits) on interface {}",
+            _index,
+            size,
+            size * 8,
+            size,
+            size * 8,
+            interface_type
+        );
+        f.children = Some(vec![]);
         add_field_label_no_range!(f, format!("Frame number: {}", _index));
         add_field_label_no_range!(f, format!("Epoch Arrival Time: {}", date_str(frame.info.time)));
         add_field_label_no_range!(f, format!("Interface id: {}", interface_type));
@@ -406,8 +424,25 @@ impl Instance {
         Ok("[]".into())
     }
 
-    pub fn connections_count(&self) -> usize {
-        self.ctx.connections.len()
+    // pub fn connection_count(&self) -> usize {
+    //     self.ctx.connections.len()
+    // }
+    pub fn conversation_count(&self) -> usize {
+        self.ctx.conversation_list.len()
+    }
+    pub fn conversations(&self, cri: Criteria) -> ListResult<VConversation> {
+        let Criteria { start, size } = cri;
+        let total = self.ctx.conversation_list.len();
+        let end = cmp::min(start + size, total);
+        if end <= start {
+            return ListResult::new(start, 0, vec![]);
+        }
+        let _data = &self.ctx.conversation_list[start..end];
+        let mut list = vec![];
+        for item in _data {
+            list.push(item.into());
+        }
+        ListResult::new(start, total, list)
     }
 }
 pub mod concept;
