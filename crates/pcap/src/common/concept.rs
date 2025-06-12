@@ -1,6 +1,6 @@
 use serde::Serialize;
 
-use crate::common::{connection::{Connection, ConversationKey}, enum_def::Protocol, util::tuple_to_str};
+use crate::common::{connection::{Connection}, enum_def::Protocol};
 
 use super::enum_def::PacketStatus;
 
@@ -144,7 +144,7 @@ impl Field {
 
 
 pub struct Conversation {
-    pub key: ConversationKey,
+    pub key: usize,
     pub primary: String,
     pub second: String,
     pub primary_statistic: TCPStatistic,
@@ -153,7 +153,7 @@ pub struct Conversation {
 }
 
 impl Conversation {
-    pub fn new(key: ConversationKey, primary: String, second: String) -> Self {
+    pub fn new(key: usize, primary: String, second: String) -> Self {
         Self {
             key,
             primary,
@@ -181,7 +181,7 @@ impl Conversation {
 
 impl Into<VConversation> for &Conversation {
     fn into(self) -> VConversation {
-        let key = tuple_to_str(self.key);
+        let key = self.key;
         let sender_packets = self.primary_statistic.count;
         let receiver_packets = self.second_statistic.count;
         let sender_bytes = self.primary_statistic.throughput;
@@ -201,7 +201,7 @@ impl Into<VConversation> for &Conversation {
 }
 
 pub struct VConversation {
-    pub key: String,
+    pub key: usize,
     pub sender: String,
     pub receiver: String,
     pub sender_packets: u32,

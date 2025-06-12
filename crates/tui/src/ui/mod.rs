@@ -6,22 +6,29 @@ use std::{
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
 use enum_dispatch::enum_dispatch;
 use pcap::common::concept::ListResult;
-use ratatui::{buffer::Buffer, layout::{Constraint, Rect}, style::{Modifier, Style, Stylize}, symbols, widgets::{Block, Cell, HighlightSpacing, Padding, Row, Scrollbar, ScrollbarOrientation, ScrollbarState, StatefulWidget, Table, TableState, Widget}};
+use ratatui::{
+    buffer::Buffer,
+    layout::{Constraint, Rect},
+    style::{Modifier, Style, Stylize},
+    symbols,
+    widgets::{Block, Cell, HighlightSpacing, Padding, Row, Scrollbar, ScrollbarOrientation, ScrollbarState, StatefulWidget, Table, TableState, Widget},
+};
 use window::MainUI;
 
 use crate::{
-    engine::{PcapEvent, PcapUICommand}, theme::ICMPV6_FG,
+    engine::{PcapEvent, PcapUICommand},
+    theme::ICMPV6_FG,
 };
 
 // use crate::loading;
 
+mod conversation;
 mod frames;
 mod hex;
+mod loading;
 mod popup;
 mod stack;
 mod window;
-mod conversation;
-mod loading;
 
 pub struct UI {
     sender: Sender<PcapUICommand>,
@@ -49,11 +56,10 @@ fn try_handle_event(app: &mut MainUI) -> PcapUICommand {
     PcapUICommand::None
 }
 
-
 #[enum_dispatch]
 pub enum TabContainer {
     Frame(frames::App),
-    Conversation(conversation::Conversation)
+    Conversation(conversation::Conversation),
 }
 
 #[enum_dispatch(TabContainer)]
@@ -79,8 +85,7 @@ impl UI {
                     self.sender.send(cmd).unwrap();
                     break;
                 }
-                PcapUICommand::None => {
-                }
+                PcapUICommand::None => {}
                 PcapUICommand::Refresh => {
                     terminal.draw(|f| f.render_widget(&mut app, f.area())).unwrap();
                     continue;
@@ -144,8 +149,6 @@ impl UI {
     }
 }
 
-
-
 const ITEM_HEIGHT: usize = 1;
 pub struct CustomTableState<T> {
     loading: bool,
@@ -160,7 +163,7 @@ impl<T> CustomTableState<T> {
             select: 0,
         }
     }
-    pub fn update(&mut self, list: ListResult<T>){
+    pub fn update(&mut self, list: ListResult<T>) {
         self.list = list;
         self.select = 0;
         self.loading = false;
@@ -185,8 +188,6 @@ impl<T> CustomTableState<T> {
         self.select
     }
 }
-    
-
 
 pub trait TableStyle<T> {
     fn get_header_style(&self) -> Style;
@@ -196,12 +197,11 @@ pub trait TableStyle<T> {
     fn get_row(&self, data: &T) -> Vec<String>;
     fn get_row_width(&self) -> Vec<Constraint>;
 }
-pub fn render_table<T>(ts: impl TableStyle<T>,state: &CustomTableState<T>, _area: Rect, buf: &mut Buffer) {
-    
+pub fn render_table<T>(ts: impl TableStyle<T>, state: &CustomTableState<T>, _area: Rect, buf: &mut Buffer) {
     let block = Block::bordered()
-    .border_set(symbols::border::PLAIN)
-    .padding(Padding::new(0, 0, 0, 0))
-    .border_style(ICMPV6_FG);
+        .border_set(symbols::border::ONE_EIGHTH_WIDE)
+        .padding(Padding::new(0, 0, 0, 0))
+        .border_style(ICMPV6_FG);
     let area = block.inner(_area);
     block.render(_area, buf);
 
@@ -216,17 +216,23 @@ pub fn render_table<T>(ts: impl TableStyle<T>,state: &CustomTableState<T>, _area
     });
 
     let select_row_style = ts.get_select_style();
-    let t: Table<'_> = Table::new(
-        rows,
-        ts.get_row_width(),
-    )
-    .header(header)
-    .highlight_style(select_row_style)
-    .highlight_spacing(HighlightSpacing::Always);
+    let t: Table<'_> = Table::new(rows, ts.get_row_width())
+        .header(header)
+        .highlight_style(select_row_style)
+        .highlight_spacing(HighlightSpacing::Always);
     let mut t_area = area.clone();
     t_area.width -= 1;
     StatefulWidget::render(t, t_area, buf, &mut state.get_selection());
     let scroll = Scrollbar::new(ScrollbarOrientation::VerticalRight);
     scroll.render(area, buf, &mut state.scroll_state());
 }
-    
+
+pub fn add_border(area: Rect, buf: &mut Buffer) -> Rect {
+    let block = Block::bordered()
+        .border_set(symbols::border::PLAIN)
+        .padding(Padding::new(0, 0, 0, 0))
+        .border_style(ICMPV6_FG);
+    let rs = block.inner(area);
+    block.render(area, buf);
+    rs
+}

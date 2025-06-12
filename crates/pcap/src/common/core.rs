@@ -175,7 +175,7 @@ impl Context {
         let conversation_index = self.conversation_map.entry(conversation_key)
             .or_insert_with(|| -> usize {
                 let index = self.conversation_list.len();
-                self.conversation_list.push(Conversation::new(conversation_key,eps.0.host(), eps.1.host()));
+                self.conversation_list.push(Conversation::new(index,eps.0.host(), eps.1.host()));
                 index
             });
         let conversation = self.conversation_list.get_mut(*conversation_index).unwrap();
@@ -222,7 +222,6 @@ impl Context {
         if let Some(tcp_info) = &frame.tcp_info {
             if let Some(((conversation_index, connect_index), reverse)) = tcp_info.connection {
                 if let Some(conversation) = self.conversation_list.get_mut(conversation_index) {
-                //     // let sec = reverse ^ is_source;
                     if let Some(conn) = conversation.connection(connect_index) {
                         return match reverse {
                             true => Some((connect_index, &mut conn.primary)),

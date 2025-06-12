@@ -106,3 +106,6 @@ pub fn get_color(class_name: &'static str) -> Style {
 pub fn panel_color() -> Style {
     Style::new().fg(GRUVBOX_FG)
 }
+pub fn title_color() -> Style {
+    Style::new().bg(GRUVBOX_BG_0).fg(GRUVBOX_FG)
+}
