@@ -1,18 +1,18 @@
+use std::fmt::Display;
+
 use crate::{
     engine::{PcapEvent, PcapUICommand},
-    theme::GRUVBOX_FG, ui::{loading, ControlState, TabContainer},
+    theme::{get_active_tab_color, get_color, ACTIVE_TAB_COLOR, GRUVBOX_FG}, ui::{conversation, loading, ControlState, TabContainer},
 };
 use crossterm::event::{KeyCode, KeyEvent};
-use pcap::common::concept::ProgressStatus;
+use pcap::common::{concept::ProgressStatus, util::format_bytes_single_unit_int};
 use ratatui::{
-    buffer::Buffer,
-    layout::{Alignment, Constraint, Layout, Rect},
-    style::{Color, Style},
-    text::{Line, Span},
-    widgets::{Block, Paragraph, Widget},
+    buffer::Buffer, layout::{Alignment, Constraint, Layout, Rect}, style::{Color, Style, Styled}, symbols, text::{Line, Span}, widgets::{Block, Borders, Padding, Paragraph, Tabs, Widget}
 };
 
 use super::frames;
+
+const TAB_NAMES: [&str; 2] = ["Frame", "Conversation"];
 
 pub struct MainUI {
     progress: Option<ProgressStatus>,
@@ -23,12 +23,18 @@ pub struct MainUI {
 impl Widget for &mut MainUI {
     fn render(self, area: Rect, buf: &mut Buffer) {
         use Constraint::{Length, Min};
-        let [inner_area, footer_area] = Layout::vertical([Min(0), Length(1)]).areas(area);
-
+        let [tab_area,inner_area, footer_area] = Layout::vertical([Length(2), Min(0), Length(1)]).areas(area);
+        
+        let block = Block::new().borders(Borders::BOTTOM).border_set(symbols::border::QUADRANT_INSIDE).padding(Padding::ZERO).border_style(ACTIVE_TAB_COLOR);
+        let _inner_area = block.inner(tab_area);
+        block.render(tab_area, buf);
+        self.render_tab_view(_inner_area, buf);
         self.render_main_view(inner_area, buf);
-
         self.render_status_bar(footer_area, buf);
     }
+}
+fn create_tab_title(title: impl Display) -> Line<'static> {
+    format!("  {}  ", title).set_style(get_color("tab")).into()
 }
 
 impl MainUI {
@@ -37,8 +43,12 @@ impl MainUI {
             container: TabContainer::Frame(frames::App::new()),
             active_tab: 0,
             progress: None,
-            // loaded: false,
         }
+    }
+    fn render_tab_view(&mut self, area: Rect, buf: &mut Buffer){
+        let titles = TAB_NAMES.iter().map(create_tab_title);
+        let selected_tab_index = self.active_tab;
+        Tabs::new(titles).highlight_style(get_active_tab_color()).select(selected_tab_index).padding("", "").divider(" ").render(area, buf);
     }
     fn render_main_view(&mut self, area: Rect, buf: &mut Buffer) {
         if let Some(_) = &self.progress {
@@ -47,7 +57,6 @@ impl MainUI {
         }
         self.render_loading(area, buf);
     }
-
     fn render_status_bar(&self, area: Rect, buf: &mut Buffer) {
         use Constraint::{Length, Min};
         let horizontal = Layout::horizontal([Min(0), Length(45)]);
@@ -79,11 +88,27 @@ impl MainUI {
         left_paragraph.render(left_area, buf);
         right_paragraph.render(right_area, buf);
     }
-
     fn render_loading(&self, area: Rect, buf: &mut Buffer) {
         loading::line("Waiting for parsing...", area, buf);
     }
 
+    fn tab_select(&mut self, active_tab: usize) -> PcapUICommand {
+        match active_tab {
+            0 => {
+                self.active_tab = active_tab;
+                self.container = TabContainer::Frame(frames::App::new());
+                self.container.update(PcapEvent::Init)
+            },
+            1 => {
+                self.active_tab = active_tab;
+                self.container = TabContainer::Conversation(conversation::Conversation::new());
+                self.container.update(PcapEvent::Init)
+            },
+            _ => {
+                PcapUICommand::None
+            }
+        }
+    }
 }
 
 impl ControlState for MainUI {
@@ -91,8 +116,14 @@ impl ControlState for MainUI {
         if shift_pressed {
             match event.code {
                 KeyCode::Left => {
-                    if self.active_tab < 1 {
-                        self.active_tab = 0;
+                    if self.active_tab > 0 {
+                        return self.tab_select(self.active_tab - 1);
+                    }
+                }
+                KeyCode::Right => {
+                    let len = TAB_NAMES.len();
+                    if self.active_tab < len - 1 {
+                        return self.tab_select(self.active_tab + 1);
                     }
                 }
                 _ => {
@@ -113,40 +144,13 @@ impl ControlState for MainUI {
             PcapEvent::ProgressStatus(status) => {
                 if let None = self.progress {
                     self.progress = Some(status);
-                    PcapUICommand::FrameList(0, 100)
+                    self.container.update(PcapEvent::Init)
                 } else {
                     self.progress = Some(status);
                     PcapUICommand::None
                 }
-                // self.progress = Some(status);
             },
-            // PcapEvent::FrameList(list) => {
-            //     // let index = list.items.get(0).unwrap().index;
-            //     // self.frame_data = Some(FrameState::new(list));
-            //     PcapUICommand::None
-            // },
-            // PcapEvent::FrameData(fields, ds,  extra) => {
-            //     if let Some(frame_data) = &mut self.frame_data {
-            //         frame_data.field = Some(StackState::new(fields, ds, extra));
-            //     }
-            //     PcapUICommand::None
-            // },
             _ => self.container.update(event)
         }
     }
-}
-
-fn format_bytes_single_unit_int(bytes: usize) -> String {
-    const UNITS: [&str; 6] = ["B", "KB", "MB", "GB", "TB", "PB"];
-    let mut size = bytes;
-    let mut low = 0;
-    let mut unit_index = 0;
-
-    while size >= 1024 && unit_index < UNITS.len() - 1 {
-        low = size % 1024;
-        size /= 1024;
-        unit_index += 1;
-    }
-
-    format!("{}.{} {}", size, low, UNITS[unit_index])
 }

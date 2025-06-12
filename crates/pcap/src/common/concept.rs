@@ -174,7 +174,7 @@ impl Conversation {
     pub fn statistic(&mut self, reverse: bool) -> &mut TCPStatistic {
         match reverse {
             true => &mut self.primary_statistic,
-            false => &mut self.primary_statistic,
+            false => &mut self.second_statistic,
         }
     }
 }

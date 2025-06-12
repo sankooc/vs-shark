@@ -192,6 +192,9 @@ impl ControlState for App {
 
     fn update(&mut self, event: PcapEvent) -> PcapUICommand {
         match event {
+            PcapEvent::Init => {
+                PcapUICommand::FrameList(0, 100)
+            }
             PcapEvent::FrameList(list) => {
                 self.list = list;
                 self.cursor = SelectPanel::LIST;
