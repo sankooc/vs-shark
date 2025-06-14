@@ -17,18 +17,20 @@ use window::MainUI;
 
 use crate::{
     engine::{PcapEvent, PcapUICommand},
-    theme::ICMPV6_FG,
+    theme::ICMPV6_FG, ui::block::content_border,
 };
 
 // use crate::loading;
 
 mod conversation;
+mod http;
 mod frames;
 mod hex;
 mod loading;
 mod popup;
 mod stack;
 mod window;
+mod block;
 
 pub struct UI {
     sender: Sender<PcapUICommand>,
@@ -60,6 +62,7 @@ fn try_handle_event(app: &mut MainUI) -> PcapUICommand {
 pub enum TabContainer {
     Frame(frames::App),
     Conversation(conversation::Conversation),
+    Http(http::Page),
 }
 
 #[enum_dispatch(TabContainer)]
@@ -151,9 +154,9 @@ impl UI {
 
 const ITEM_HEIGHT: usize = 1;
 pub struct CustomTableState<T> {
-    loading: bool,
-    list: ListResult<T>,
-    select: usize,
+    pub loading: bool,
+    pub list: ListResult<T>,
+    pub select: usize,
 }
 impl<T> CustomTableState<T> {
     pub fn new() -> Self {
@@ -191,33 +194,27 @@ impl<T> CustomTableState<T> {
 
 pub trait TableStyle<T> {
     fn get_header_style(&self) -> Style;
-    fn get_row_style(&self, data: &T) -> Style;
+    fn get_row_style(&self, data: &T, status: usize) -> Style;
     fn get_select_style(&self) -> Style;
     fn get_cols(&self) -> Vec<&str>;
     fn get_row(&self, data: &T) -> Vec<String>;
     fn get_row_width(&self) -> Vec<Constraint>;
 }
-pub fn render_table<T>(ts: impl TableStyle<T>, state: &CustomTableState<T>, _area: Rect, buf: &mut Buffer) {
-    let block = Block::bordered()
-        .border_set(symbols::border::ONE_EIGHTH_WIDE)
-        .padding(Padding::new(0, 0, 0, 0))
-        .border_style(ICMPV6_FG);
-    let area = block.inner(_area);
-    block.render(_area, buf);
-
+pub fn render_table<T>(ts: impl TableStyle<T>, state: &CustomTableState<T>, area: Rect, buf: &mut Buffer, status: usize) {
     let header_style = ts.get_header_style();
     let cols = ts.get_cols();
     let header = cols.into_iter().map(Cell::from).collect::<Row>().style(header_style).height(1);
     let frames = &state.list.items;
     let rows = frames.iter().map(|data| {
         let rs: Vec<Cell> = ts.get_row(data).iter().map(|s| s.clone().into()).collect();
-        let row_style = ts.get_row_style(data);
+        let row_style = ts.get_row_style(data, status);
         rs.into_iter().collect::<Row>().add_modifier(Modifier::BOLD).style(row_style).height(1)
     });
 
     let select_row_style = ts.get_select_style();
     let t: Table<'_> = Table::new(rows, ts.get_row_width())
         .header(header)
+        .block(content_border())
         .highlight_style(select_row_style)
         .highlight_spacing(HighlightSpacing::Always);
     let mut t_area = area.clone();

@@ -5,11 +5,11 @@ use std::{
 
 use anyhow::{bail, Result};
 
-use crate::common::{concept::{Conversation, FrameIndex}, connection::ConversationKey, enum_def::AddressField};
+use crate::common::{concept::{ConnectionIndex, Conversation, ConversationKey, FrameIndex, HttpConnectIndex, MessageIndex, Timestamp, VHttpConnection}, enum_def::AddressField};
 
 use super::{
     connection::{ConnectState, Connection, Endpoint, TCPStat, TmpConnection},
-    enum_def::{FileType, Protocol},
+    enum_def::FileType,
     io::DataSource,
     quick_hash, EthernetCache, FastHashMap, Frame, NString,
 };
@@ -20,22 +20,149 @@ pub struct Segment {
     pub range: Range<usize>,
 }
 
-pub struct Segments {
-    pub message_type: Protocol,
-    pub tcp_index: usize,
-    pub segments: Vec<Segment>,
+#[derive(Default)]
+pub enum SegmentData {
+    #[default]
+    None,
+    Single(Segment),
+    Multiple(Vec<Segment>),
 }
+
+impl SegmentData {
+    pub fn to_vec(&self) -> Vec<(usize, usize)> {
+        match self {
+            SegmentData::None => vec![],
+            SegmentData::Single(segment) => vec![(segment.range.start, segment.range.end)],
+            SegmentData::Multiple(segments) => segments.iter().map(|segment| (segment.range.start, segment.range.end)).collect(),
+        }
+    }
+}
+
+fn segment_append(data: SegmentData, segment: Segment) -> SegmentData {
+    match data {
+        SegmentData::None => SegmentData::Single(segment),
+        SegmentData::Single(_segment) => SegmentData::Multiple(vec![_segment, segment]),
+        SegmentData::Multiple(mut segments) => {
+            segments.push(segment);
+            SegmentData::Multiple(segments)
+        }
+    }
+}
+
+#[derive(Default)]
+pub struct HttpMessage {
+    pub frame_index: FrameIndex,
+    pub host: String,
+    pub length: Option<usize>,
+    pub chunked: bool,
+    pub content_type: Option<String>,
+    pub headers: SegmentData,
+    pub content: SegmentData,
+}
+
+impl HttpMessage {
+    pub fn append_body(&mut self, index: FrameIndex, range: Range<usize>) {
+        let segment = Segment{
+            index,
+            range,
+        };
+        let orgin = std::mem::take(&mut self.content);
+        self.content = segment_append(orgin, segment);
+    }
+}
+
+#[derive(Default)]
+pub struct HttpConntect {
+    pub index: ConnectionIndex,
+    pub request: Option<MessageIndex>,
+    pub response: Option<MessageIndex>,
+    pub rt: Timestamp,
+}
+
+impl HttpConntect {
+    pub fn into(&self, ctx: &Context) -> VHttpConnection {
+        let mut rs = VHttpConnection::default();
+        if let Some(request_index) = &self.request {
+            if let Some(message) = ctx.http_messages.get(*request_index as usize) {
+                rs.request_headers = message.headers.to_vec();
+                rs.request_body = message.content.to_vec();
+                if let Some(ll) = &message.length {
+                    rs.length = *ll;
+                }
+                if let Some(ct) = &message.content_type {
+                    rs.content_type = ct.clone();
+                }
+                let tokens = message.host.split_whitespace().collect::<Vec<&str>>();
+                if tokens.len() > 2 {
+                    rs.method = tokens[0].to_string();
+                    rs.url = tokens[1].to_string();
+                }
+            }
+        }
+        if let Some(response_index) = &self.response {
+            if let Some(message) = ctx.http_messages.get(*response_index as usize) {
+                rs.response_headers = message.headers.to_vec();
+                rs.response_body = message.content.to_vec();
+                if let Some(ll) = message.length {
+                    rs.length = ll;
+                }
+                if let Some(ct) = &message.content_type {
+                    rs.content_type = ct.clone();
+                }
+                let tokens = message.host.split_whitespace().collect::<Vec<&str>>();
+                if tokens.len() >= 2 {
+                    rs.status = tokens[1].to_string();
+                }
+            }
+        }
+        if rs.status.len() == 0 {
+            rs.status = "N/A".to_string();
+        }
+        rs.rt = if self.rt > 0 {
+            format!("{}µs", self.rt)
+        } else {
+            "N/A".to_string()
+        };
+        rs
+    }
+}
+    
+
+impl HttpConntect {
+    fn request(index: ConnectionIndex, message_index: MessageIndex) -> Self {
+        let mut rs = Self::default();
+        rs.request = Some(message_index);
+        rs.index = index;
+        rs           
+    }
+    fn response(index: ConnectionIndex, message_index: MessageIndex) -> Self {
+        let mut rs = Self::default();
+        rs.response = Some(message_index);
+        rs.index = index;
+        rs           
+    }
+    fn add_response(&mut self, message_index: MessageIndex, ts: Timestamp) {
+        self.response = Some(message_index);
+        self.rt = ts;
+    }
+}
+
 #[derive(Default)]
 pub struct Context {
     pub file_type: FileType,
     pub link_type: u32,
     pub list: Vec<Frame>,
     pub counter: FrameIndex,
+    // tcp
     pub active_connection: FastHashMap<(u64, u16, u64, u16), usize>,
     pub conversation_map: FastHashMap<ConversationKey, usize>,
     pub conversation_list: Vec<Conversation>,
     // pub connections: Vec<Connection>,
-    pub segment_messages: Vec<Segments>,
+    // http
+    pub http_connections_map: FastHashMap<ConnectionIndex, (HttpConnectIndex, Timestamp)>,
+    pub http_connections: Vec<HttpConntect>,
+    pub http_messages: Vec<HttpMessage>,
+    // ethernet
     pub ethermap: FastHashMap<u64, EthernetCache>,
     pub ipv6map: FastHashMap<u64, (u8, Ipv6Addr, Ipv6Addr)>,
     pub string_map: FastHashMap<u64, NString>,
@@ -51,20 +178,33 @@ impl Context {
         self.string_map.insert(key, static_ref);
         static_ref
     }
-    pub fn init_segment_message(&mut self, message_type: Protocol, tcp_index: usize) -> usize {
-        let _index = self.segment_messages.len();
-        self.segment_messages.push(Segments { message_type, tcp_index, segments: vec![] });
-        _index
-    }
-    pub fn create_segment_message(&mut self, message_type: Protocol, tcp_index: usize, segment: Segment) -> usize {
-        let _index = self.segment_messages.len();
-        self.segment_messages.push(Segments { message_type, tcp_index, segments: vec![segment] });
-        _index
-    }
-    pub fn add_segment_message(&mut self, message_index: usize, segment: Segment){
-        if let Some(msg) = self.segment_messages.get_mut(message_index) {
-            msg.segments.push(segment);
+    pub fn init_segment_message(&mut self, frame_index: FrameIndex, host: String, is_request: bool, connect_index: ConnectionIndex, timestamp: Timestamp) -> MessageIndex {
+        let message_index = self.http_messages.len() as MessageIndex;
+        let mut sg = HttpMessage::default();
+        sg.frame_index = frame_index;
+        sg.host = host;
+        self.http_messages.push(sg);
+        
+        if is_request {
+            let http_connect_index = self.http_connections.len() as HttpConnectIndex;
+            let connect = HttpConntect::request(connect_index, message_index);
+            self.http_connections.push(connect);
+            self.http_connections_map.insert(connect_index, (http_connect_index, timestamp));
+        } else {
+            if let Some((http_connect_index, ts)) = self.http_connections_map.get(&connect_index) {
+                if let Some(connect) = self.http_connections.get_mut(*http_connect_index as usize) {
+                    let fd = if *ts < timestamp { timestamp - * ts } else {0};
+                    connect.add_response(message_index, fd);
+                    self.http_connections_map.remove(&connect_index);
+                }
+            } else {
+                self.http_connections.push(HttpConntect::response(connect_index, message_index));
+            }
         }
+        message_index
+    }
+    pub fn get_http_message(&mut self, message_index: MessageIndex) -> Option<&mut HttpMessage> {
+        self.http_messages.get_mut(message_index as usize)
     }
 }
 
@@ -218,14 +358,14 @@ impl Context {
         }
     }
 
-    pub fn connection(&mut self, frame: &mut Frame) -> Option<(usize, &mut Endpoint)> {
+    pub fn connection(&mut self, frame: &mut Frame) -> Option<(ConnectionIndex, &mut Endpoint)> {
         if let Some(tcp_info) = &frame.tcp_info {
             if let Some(((conversation_index, connect_index), reverse)) = tcp_info.connection {
                 if let Some(conversation) = self.conversation_list.get_mut(conversation_index) {
                     if let Some(conn) = conversation.connection(connect_index) {
                         return match reverse {
-                            true => Some((connect_index, &mut conn.primary)),
-                            false => Some((connect_index, &mut conn.second)),
+                            true => Some(((conversation_index, connect_index), &mut conn.primary)),
+                            false => Some(((conversation_index, connect_index), &mut conn.second)),
                         };
                     }
                 }

@@ -147,7 +147,7 @@ mod unit {
 
         }
         {
-            frame.protocol_field = ProtocolInfoField::Http(vec![], None);
+            frame.protocol_field = ProtocolInfoField::Http("".to_string(), 0);
             let mut reader = Reader::new(&ds);
             let mut f = Field::default();
             let next = protocol::application::http::Visitor::detail(&mut f, &mut cx, &mut frame, &mut reader)?;

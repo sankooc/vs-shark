@@ -5,7 +5,7 @@ use std::thread;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use std::{fs::File, io::BufReader};
 
-use pcap::common::concept::{Criteria, Field, FrameIndex, FrameInfo, ListResult, ProgressStatus, VConnection, VConversation};
+use pcap::common::concept::{Criteria, Field, FrameIndex, FrameInfo, ListResult, ProgressStatus, VConnection, VConversation, VHttpConnection};
 use pcap::common::io::DataSource;
 use pcap::common::Instance;
 use std::sync::mpsc::Sender;
@@ -18,6 +18,7 @@ pub enum PcapEvent {
     FrameData(Vec<Field>, Option<DataSource>, Option<Vec<u8>>),
     ConversationList(ListResult<VConversation>),
     ConnectionList(ListResult<VConnection>),
+    HttpConnectionList(ListResult<VHttpConnection>),
 }
 
 pub enum PcapUICommand {
@@ -27,7 +28,9 @@ pub enum PcapUICommand {
     FrameList(usize, usize),
     FrameData(FrameIndex),
     ConversationList(usize, usize),
-    ConnectionList(usize, usize, usize)
+    ConnectionList(usize, usize, usize),
+    HttpConnectionList(usize, usize),
+    HttpContent(Vec<(usize, usize)>, Vec<(usize, usize)>, Vec<(usize, usize)>, Vec<(usize, usize)>),
 }
 
 pub struct Service {
@@ -46,6 +49,28 @@ pub fn seek2(fname: &str, range: Range<usize>) -> anyhow::Result<Vec<u8>>{
     let mut buffer = vec![0; size];
     file.read_exact(&mut buffer)?;
     Ok(buffer)
+}
+pub fn concat_data(file: &mut File, ranges: Vec<(usize, usize)>, len: Option<usize>) -> anyhow::Result<Vec<u8>>{
+    let max = if let Some(length) = len {
+        length
+    } else {
+        ranges.iter().map(|(start, end)| end - start).sum()
+    };
+    let mut rs = Vec::with_capacity(max);
+    for (start, end) in ranges {
+        file.seek(SeekFrom::Start(start as u64))?;
+        let left = max - rs.len();
+        let _size = end - start;
+        let size = std::cmp::min(left, _size);
+        let mut buffer = vec![0; size];
+        file.read_exact(&mut buffer)?;
+        rs.extend_from_slice(&buffer);
+        if rs.len() >= max {
+            break;
+        }
+    }
+    
+    Ok(rs)
 }
 
 impl Service {
@@ -105,6 +130,14 @@ impl Service {
                         let cri = Criteria { start, size };
                         let result_list = ins.connections(key, cri);
                         self.sender.send(PcapEvent::ConnectionList(result_list)).unwrap();
+                    }
+                    PcapUICommand::HttpConnectionList(start, size) => {
+                        let cri = Criteria { start, size };
+                        let result_list = ins.http_connections(cri);
+                        self.sender.send(PcapEvent::HttpConnectionList(result_list)).unwrap();
+                    }
+                    PcapUICommand::HttpContent(_request_headers, _request_body, _response_headers, _response_body) => {
+                        
                     }
                     _ => {}
                 },

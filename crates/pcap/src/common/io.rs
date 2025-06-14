@@ -260,6 +260,9 @@ impl Reader<'_> {
         let _cursor = cmp::min(self.range.end, self.cursor);
         return self.range.end - _cursor;
     }
+    pub fn left_range(&self) -> Range<usize> {
+        self.cursor..self.range.end
+    }
     pub fn forward(&mut self, len: usize) -> bool {
         return self.set(self.cursor + len);
     }

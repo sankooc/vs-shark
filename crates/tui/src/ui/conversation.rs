@@ -4,11 +4,11 @@ use pcap::common::{
     util::format_bytes_single_unit_int,
 };
 use ratatui::{
-    buffer::Buffer, layout::{Alignment, Constraint, Layout, Rect}, text::Text, widgets::{Paragraph, Widget}
+    buffer::Buffer, layout::{Constraint, Rect}, widgets::Widget
 };
 
 use crate::{
-    engine::{PcapEvent, PcapUICommand}, theme::title_color, ui::{add_border, loading, render_table, ControlState, CustomTableState, TableStyle}
+    engine::{PcapEvent, PcapUICommand}, ui::{loading, render_table, ControlState, CustomTableState, TableStyle}
 };
 
 pub struct Conversation {
@@ -21,8 +21,11 @@ impl TableStyle<VConversation> for ConversationStyle {
         crate::theme::get_header_style()
     }
 
-    fn get_row_style(&self, _: &VConversation) -> ratatui::prelude::Style {
-        crate::theme::DNS_BG.into()
+    fn get_row_style(&self, _: &VConversation, status: usize) -> ratatui::prelude::Style {
+        match status {
+            1 => crate::theme::BLANK_FROZEN,
+            _ => crate::theme::BLANK
+        }
     }
 
     fn get_select_style(&self) -> ratatui::prelude::Style {
@@ -30,7 +33,7 @@ impl TableStyle<VConversation> for ConversationStyle {
     }
 
     fn get_cols(&self) -> Vec<&str> {
-        vec!["Count", "Sender", "Receiver", "Packets", "Bytes", "TX Packets", "RX Packets", "TX Bytes", "RX Bytes"]
+        vec!["", "Count", "Sender", "Receiver", "Packets", "Bytes", "TX Packets", "RX Packets", "TX Bytes", "RX Bytes"]
     }
 
     fn get_row(&self, data: &VConversation) -> Vec<String> {
@@ -39,6 +42,7 @@ impl TableStyle<VConversation> for ConversationStyle {
         let rx_p = data.sender_packets;
         let rx_b = data.sender_bytes;
         vec![
+            "⏎".into(),
             format!("{}", data.connects),
             data.sender.clone(),
             data.receiver.clone(),
@@ -53,6 +57,7 @@ impl TableStyle<VConversation> for ConversationStyle {
 
     fn get_row_width(&self) -> Vec<Constraint> {
         vec![
+            Constraint::Length(1),
             Constraint::Length(6),
             Constraint::Min(15),
             Constraint::Min(15),
@@ -72,7 +77,7 @@ impl TableStyle<VConnection> for ConnectionStyle {
         crate::theme::get_header_style()
     }
 
-    fn get_row_style(&self, _: &VConnection) -> ratatui::prelude::Style {
+    fn get_row_style(&self, _: &VConnection, _: usize) -> ratatui::prelude::Style {
         crate::theme::DNS_BG.into()
     }
 
@@ -81,11 +86,12 @@ impl TableStyle<VConnection> for ConnectionStyle {
     }
 
     fn get_cols(&self) -> Vec<&str> {
-        vec!["Protocol", "S-port", "R-port", "TX-Packets", "TX-Bytes", "TX-Used", "RX-Packets", "RX-Bytes", "RX-Used"]
+        vec!["", "Protocol", "S-port", "R-port", "TX-Packets", "TX-Bytes", "TX-Used", "RX-Packets", "RX-Bytes", "RX-Used"]
     }
 
     fn get_row(&self, data: &VConnection) -> Vec<String> {
         vec![
+            "⌫".into(),
             data.protocol.clone(),
             format!("{}", data.primary.port),
             format!("{}", data.second.port),
@@ -100,9 +106,10 @@ impl TableStyle<VConnection> for ConnectionStyle {
 
     fn get_row_width(&self) -> Vec<Constraint> {
         vec![
+            Constraint::Length(2),
+            Constraint::Length(8),
             Constraint::Length(6),
-            Constraint::Min(15),
-            Constraint::Min(15),
+            Constraint::Length(6),
             Constraint::Min(10),
             Constraint::Min(12),
             Constraint::Min(10),
@@ -128,20 +135,13 @@ impl Widget for &mut Conversation {
             loading::line("Loading conversation...", area, buf);
             return;
         }
-        if let Some((_,title, state)) = &self.detail {
-            let vertical = Layout::vertical([Constraint::Length(3), Constraint::Min(5)]);
-            let rects = vertical.split(area);
-            {
-                let target = add_border(rects[0], buf);
-                let text = Text::from(title.as_str());
-                let paragraph = Paragraph::new(text).alignment(Alignment::Left).style(title_color());
-                paragraph.render(target, buf);
-            }
-
-            render_table(ConnectionStyle, state, rects[1], buf);
+        if let Some((_,_, state)) = &self.detail {
+            let rects = ratatui::layout::Layout::vertical([Constraint::Length(8), Constraint::Min(10)]).split(area);
+            render_table(ConversationStyle, &self.state, rects[0], buf,1);
+            render_table(ConnectionStyle, state, rects[1], buf, 0);
             return;
         }
-        render_table(ConversationStyle, &self.state, area, buf);
+        render_table(ConversationStyle, &self.state, area, buf, 0);
     }
 }
 

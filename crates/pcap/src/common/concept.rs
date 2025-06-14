@@ -7,6 +7,14 @@ use super::enum_def::PacketStatus;
 
 
 pub type FrameIndex = u32;
+pub type MessageIndex = u64;
+pub type HttpConnectIndex = u64;
+
+pub type ConnectionIndex = (usize, usize);
+pub type ConversationKey = (u64, u64);
+
+pub type Timestamp = u64;
+
 pub struct Criteria {
     // pub criteria: String,
     pub size: usize,
@@ -261,4 +269,18 @@ pub struct VEndpoint {
     pub host: String,
     pub port: u16,
     pub statistic: TCPStatistic,
+}
+
+#[derive(Serialize, Default)]
+pub struct VHttpConnection {
+    pub status: String,
+    pub method: String,
+    pub url: String,
+    pub rt: String,
+    pub content_type: String,
+    pub length: usize,
+    pub request_headers: Vec<(usize, usize)>,
+    pub request_body: Vec<(usize, usize)>,
+    pub response_headers: Vec<(usize, usize)>,
+    pub response_body: Vec<(usize, usize)>,
 }

@@ -4,14 +4,14 @@ use ratatui::{
     buffer::Buffer,
     layout::{Constraint, Layout, Rect},
     style::Modifier,
-    widgets::{Block, Padding, Scrollbar, ScrollbarOrientation, StatefulWidget, Widget},
+    widgets::{Scrollbar, ScrollbarOrientation, StatefulWidget, Widget},
 };
 use tui_tree_widget::{Tree, TreeItem, TreeState};
 
 use crate::{
     engine::{PcapEvent, PcapUICommand},
     theme::get_active_tab_color,
-    ui::ControlState,
+    ui::{block::{content_border, content_inner_border}, ControlState},
 };
 
 use super::hex::{HexState, HexView};
@@ -52,8 +52,7 @@ impl Widget for &mut StackView {
             ))
             .highlight_style(get_active_tab_color().add_modifier(Modifier::BOLD))
             .highlight_symbol("");
-        
-            let mut _top = widget.block(Block::bordered().padding(Padding::ZERO));
+            let mut _top = widget.block(content_border());
 
         StatefulWidget::render(_top, ch[0], buf, &mut self.tree_state);
         
@@ -75,6 +74,8 @@ impl Widget for &mut StackView {
                     _hex.render(ch[1], buf);
                 }
             }
+        } else {
+            content_inner_border().render(ch[1], buf);
         }
     }
 }

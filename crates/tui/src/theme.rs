@@ -109,3 +109,24 @@ pub fn panel_color() -> Style {
 pub fn title_color() -> Style {
     Style::new().bg(GRUVBOX_BG_0).fg(GRUVBOX_FG)
 }
+
+pub const BACK_COLOR: Color = GRUVBOX_BG_0;
+pub const FRONT_COLOR: Color = GRUVBOX_FG_0;
+
+
+pub const POSITIVE_STYLE: Style = Style::new().fg(HEAD_FG).bg(ACTIVE_TAB_COLOR);
+pub const DESELECT_BG: Color =  GRUVBOX_BG_4;
+pub const NAGETIVE_STYLE: Style = Style::new().fg(GRUVBOX_FG_0).bg(GRUVBOX_D_BLUE);
+
+pub const BLANK: Style = Style::new().fg(FRONT_COLOR).bg(GRUVBOX_BG_H_0);
+pub const BLANK_FROZEN: Style = Style::new().fg(FRONT_COLOR).bg(GRUVBOX_FG_4);
+
+
+pub const REVERT_STYLE: Style = Style::new().fg(ACTIVE_TAB_COLOR).bg(GRUVBOX_BG_H_0);
+
+
+pub const REVERT_STYLE2: Style = Style::new().fg(ACTIVE_TAB_COLOR).bg(GRUVBOX_BG_S_0);
+
+pub const STATUS_HINT_STYLE: Style = Style::new().fg(GRUVBOX_FG).bg(GRUVBOX_BG_H_0);
+
+pub const STATUS_PROGS_STYLE: Style = Style::new().fg(GRUVBOX_FG).bg(HEAD_FG);
