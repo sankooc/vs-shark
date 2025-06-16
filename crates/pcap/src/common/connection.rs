@@ -5,17 +5,12 @@ use std::{
     ops::Range,
 };
 
-use crate::{common::concept::{Conversation, FrameIndex, TCPStatistic, VEndpoint}, protocol};
+use crate::{common::concept::{ConnectionIndex, Conversation, FrameIndex, TCPStatistic, VEndpoint}, protocol};
 
 use super::{
     enum_def::{Protocol, SegmentStatus, TCPConnectStatus, TCPDetail, TCPFLAG},
     io::{DataSource, Reader},
 };
-
-
-pub type ConnectionIndex = (usize, usize);
-
-pub type ConversationKey = (u64, u64);
 
 #[derive(Debug)]
 pub struct TcpFlagField {
@@ -465,7 +460,7 @@ impl<'a> TmpConnection<'a> {
                         let reader = Reader::new_sub(data_source, range.clone())?;
                         match conn.protocol {
                             Protocol::None => {
-                                if protocol::application::http::detect(&reader) {
+                                if protocol::application::http::detect(&reader).0 {
                                     conn.protocol = Protocol::HTTP;
                                     main.segment_status = SegmentStatus::Init;
                                 }

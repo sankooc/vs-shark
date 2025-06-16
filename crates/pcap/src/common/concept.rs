@@ -1,12 +1,20 @@
 use serde::Serialize;
 
-use crate::common::{connection::{Connection, ConversationKey}, enum_def::Protocol, util::tuple_to_str};
+use crate::common::{connection::{Connection}, enum_def::Protocol};
 
 use super::enum_def::PacketStatus;
 
 
 
 pub type FrameIndex = u32;
+pub type MessageIndex = u64;
+pub type HttpConnectIndex = u64;
+
+pub type ConnectionIndex = (usize, usize);
+pub type ConversationKey = (u64, u64);
+
+pub type Timestamp = u64;
+
 pub struct Criteria {
     // pub criteria: String,
     pub size: usize,
@@ -144,7 +152,7 @@ impl Field {
 
 
 pub struct Conversation {
-    pub key: ConversationKey,
+    pub key: usize,
     pub primary: String,
     pub second: String,
     pub primary_statistic: TCPStatistic,
@@ -153,7 +161,7 @@ pub struct Conversation {
 }
 
 impl Conversation {
-    pub fn new(key: ConversationKey, primary: String, second: String) -> Self {
+    pub fn new(key: usize, primary: String, second: String) -> Self {
         Self {
             key,
             primary,
@@ -174,14 +182,14 @@ impl Conversation {
     pub fn statistic(&mut self, reverse: bool) -> &mut TCPStatistic {
         match reverse {
             true => &mut self.primary_statistic,
-            false => &mut self.primary_statistic,
+            false => &mut self.second_statistic,
         }
     }
 }
 
 impl Into<VConversation> for &Conversation {
     fn into(self) -> VConversation {
-        let key = tuple_to_str(self.key);
+        let key = self.key;
         let sender_packets = self.primary_statistic.count;
         let receiver_packets = self.second_statistic.count;
         let sender_bytes = self.primary_statistic.throughput;
@@ -201,7 +209,7 @@ impl Into<VConversation> for &Conversation {
 }
 
 pub struct VConversation {
-    pub key: String,
+    pub key: usize,
     pub sender: String,
     pub receiver: String,
     pub sender_packets: u32,
@@ -262,3 +270,52 @@ pub struct VEndpoint {
     pub port: u16,
     pub statistic: TCPStatistic,
 }
+
+#[derive(Serialize, Default, Clone)]
+pub struct VHttpConnection {
+    // pub status: String,
+    // pub method: String,
+    // pub url: String,
+    pub request: Option<String>,
+    pub response: Option<String>,
+    pub rt: String,
+    pub content_type: String,
+    pub length: usize,
+    pub request_headers: Vec<(usize, usize)>,
+    pub request_body: Vec<(usize, usize)>,
+    pub response_headers: Vec<(usize, usize)>,
+    pub response_body: Vec<(usize, usize)>,
+}
+
+const NA: &'static str = "N/A";
+
+impl VHttpConnection {
+    pub fn status(&self) -> &str {
+        if let Some(response) = &self.response {
+            let tokens = response.split_whitespace().collect::<Vec<&str>>();
+            if tokens.len() > 1 {
+                return tokens[1];
+            }
+        }
+        NA
+    }
+    pub fn method(&self) -> &str {
+        if let Some(request) = &self.request {
+            let tokens = request.split_whitespace().collect::<Vec<&str>>();
+            if tokens.len() > 2 {
+                return tokens[0];
+            }
+        }
+        NA
+    }
+    pub fn url(&self) -> &str {
+        if let Some(request) = &self.request {
+            let tokens = request.split_whitespace().collect::<Vec<&str>>();
+            if tokens.len() > 2 {
+                return tokens[1];
+            }
+        }
+        NA
+    }
+}
+

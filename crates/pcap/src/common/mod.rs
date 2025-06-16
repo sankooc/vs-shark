@@ -8,11 +8,7 @@ use std::{
 
 use crate::{
     add_field_label_no_range,
-    common::{
-        concept::VConversation,
-        connection::TcpFlagField,
-        util::date_str,
-    },
+    common::{concept::{VConnection, VConversation, VHttpConnection}, connection::TcpFlagField, util::date_str},
     files::{pcap::PCAP, pcapng::PCAPNG},
     protocol::{detail, link_type_map, parse, summary},
 };
@@ -441,6 +437,38 @@ impl Instance {
         let mut list = vec![];
         for item in _data {
             list.push(item.into());
+        }
+        ListResult::new(start, total, list)
+    }
+    pub fn connections(&self, conversation_index: usize, cri: Criteria) -> ListResult<VConnection> {
+        if let Some(connects) = self.ctx.conversation_list.get(conversation_index) {
+            let Criteria { start, size } = cri;
+            let total = connects.connections.len();
+            let end = cmp::min(start + size, total);
+            if end <= start {
+                return ListResult::empty();
+            }
+            let _data = &connects.connections[start..end];
+            let mut list = vec![];
+            for item in _data {
+                list.push(item.into());
+            }
+            return ListResult::new(start, total, list);
+        }
+
+        ListResult::empty()
+    }
+    pub fn http_connections(&self, cri: Criteria) -> ListResult<VHttpConnection> {
+        let Criteria { start, size } = cri;
+        let total = self.ctx.http_connections.len();
+        let end = cmp::min(start + size, total);
+        if end <= start {
+            return ListResult::new(start, 0, vec![]);
+        }
+        let _data = &self.ctx.http_connections[start..end];
+        let mut list = vec![];
+        for item in _data {
+            list.push(item.into(&self.ctx));
         }
         ListResult::new(start, total, list)
     }

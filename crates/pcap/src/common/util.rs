@@ -26,4 +26,19 @@ pub fn parse_tuple<T: std::str::FromStr>(s: &str) -> Option<(T, T)> {
 pub fn tuple_to_str<T: std::fmt::Display>(t: (T, T)) -> String {
     format!("{},{}", t.0, t.1)
 }
-    
+
+const UNITS: [&str; 6] = ["B", "KB", "MB", "GB", "TB", "PB"];
+
+pub fn format_bytes_single_unit_int(bytes: usize) -> String {
+    let mut size = bytes;
+    let mut low = 0;
+    let mut unit_index = 0;
+
+    while size >= 1024 && unit_index < UNITS.len() - 1 {
+        low = size % 1024;
+        size /= 1024;
+        unit_index += 1;
+    }
+
+    format!("{}.{} {}", size, low, UNITS[unit_index])
+}

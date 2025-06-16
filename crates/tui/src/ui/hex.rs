@@ -1,10 +1,10 @@
 use std::cmp;
 
 use ratatui::{
-    style::{Modifier, Stylize}, text::{Line, Span}, widgets::{Block, Padding, Paragraph, Widget}
+    style::{Modifier, Stylize}, text::{Line, Span}, widgets::{Paragraph, Widget}
 };
 
-use crate::theme::get_protocol_color;
+use crate::{theme::get_protocol_color, ui::block::content_inner_border};
 
 pub struct HexState<'a> {
     start: usize,
@@ -96,7 +96,7 @@ impl Widget for &mut HexView<'_> {
             lines.push(Line::from(ll));
             // let txt = Text::from(ll);
         }
-        let mut _top = Paragraph::new(lines).block(Block::bordered().padding(Padding::ZERO));
+        let mut _top = Paragraph::new(lines).block(content_inner_border());
         if let Some(offset) = head {
             let _offset = std::cmp::max(2, offset) as u16;
             _top.scroll((_offset - 2, 0)).render(area, buf);
