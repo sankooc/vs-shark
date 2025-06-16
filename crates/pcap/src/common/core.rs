@@ -5,7 +5,10 @@ use std::{
 
 use anyhow::{bail, Result};
 
-use crate::common::{concept::{ConnectionIndex, Conversation, ConversationKey, FrameIndex, HttpConnectIndex, MessageIndex, Timestamp, VHttpConnection}, enum_def::AddressField};
+use crate::common::{
+    concept::{ConnectionIndex, Conversation, ConversationKey, FrameIndex, HttpConnectIndex, MessageIndex, Timestamp, VHttpConnection},
+    enum_def::AddressField,
+};
 
 use super::{
     connection::{ConnectState, Connection, Endpoint, TCPStat, TmpConnection},
@@ -13,7 +16,6 @@ use super::{
     io::DataSource,
     quick_hash, EthernetCache, FastHashMap, Frame, NString,
 };
-
 
 pub struct Segment {
     pub index: FrameIndex,
@@ -62,10 +64,7 @@ pub struct HttpMessage {
 
 impl HttpMessage {
     pub fn append_body(&mut self, index: FrameIndex, range: Range<usize>) {
-        let segment = Segment{
-            index,
-            range,
-        };
+        let segment = Segment { index, range };
         let orgin = std::mem::take(&mut self.content);
         self.content = segment_append(orgin, segment);
     }
@@ -92,11 +91,7 @@ impl HttpConntect {
                 if let Some(ct) = &message.content_type {
                     rs.content_type = ct.clone();
                 }
-                let tokens = message.host.split_whitespace().collect::<Vec<&str>>();
-                if tokens.len() > 2 {
-                    rs.method = tokens[0].to_string();
-                    rs.url = tokens[1].to_string();
-                }
+                rs.request = Some(message.host.clone());
             }
         }
         if let Some(response_index) = &self.response {
@@ -109,37 +104,26 @@ impl HttpConntect {
                 if let Some(ct) = &message.content_type {
                     rs.content_type = ct.clone();
                 }
-                let tokens = message.host.split_whitespace().collect::<Vec<&str>>();
-                if tokens.len() >= 2 {
-                    rs.status = tokens[1].to_string();
-                }
+                rs.response = Some(message.host.clone());
             }
         }
-        if rs.status.len() == 0 {
-            rs.status = "N/A".to_string();
-        }
-        rs.rt = if self.rt > 0 {
-            format!("{}µs", self.rt)
-        } else {
-            "N/A".to_string()
-        };
+        rs.rt = if self.rt > 0 { format!("{}µs", self.rt) } else { "N/A".to_string() };
         rs
     }
 }
-    
 
 impl HttpConntect {
     fn request(index: ConnectionIndex, message_index: MessageIndex) -> Self {
         let mut rs = Self::default();
         rs.request = Some(message_index);
         rs.index = index;
-        rs           
+        rs
     }
     fn response(index: ConnectionIndex, message_index: MessageIndex) -> Self {
         let mut rs = Self::default();
         rs.response = Some(message_index);
         rs.index = index;
-        rs           
+        rs
     }
     fn add_response(&mut self, message_index: MessageIndex, ts: Timestamp) {
         self.response = Some(message_index);
@@ -184,7 +168,7 @@ impl Context {
         sg.frame_index = frame_index;
         sg.host = host;
         self.http_messages.push(sg);
-        
+
         if is_request {
             let http_connect_index = self.http_connections.len() as HttpConnectIndex;
             let connect = HttpConntect::request(connect_index, message_index);
@@ -193,7 +177,7 @@ impl Context {
         } else {
             if let Some((http_connect_index, ts)) = self.http_connections_map.get(&connect_index) {
                 if let Some(connect) = self.http_connections.get_mut(*http_connect_index as usize) {
-                    let fd = if *ts < timestamp { timestamp - * ts } else {0};
+                    let fd = if *ts < timestamp { timestamp - *ts } else { 0 };
                     connect.add_response(message_index, fd);
                     self.http_connections_map.remove(&connect_index);
                 }
@@ -312,12 +296,11 @@ impl Context {
             true => (source, target),
             false => (target, source),
         };
-        let conversation_index = self.conversation_map.entry(conversation_key)
-            .or_insert_with(|| -> usize {
-                let index = self.conversation_list.len();
-                self.conversation_list.push(Conversation::new(index,eps.0.host(), eps.1.host()));
-                index
-            });
+        let conversation_index = self.conversation_map.entry(conversation_key).or_insert_with(|| -> usize {
+            let index = self.conversation_list.len();
+            self.conversation_list.push(Conversation::new(index, eps.0.host(), eps.1.host()));
+            index
+        });
         let conversation = self.conversation_list.get_mut(*conversation_index).unwrap();
 
         let mut _index: usize = 0;

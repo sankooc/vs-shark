@@ -129,11 +129,12 @@ pub fn parse_http_header(record: &mut HttpMessage, reader: &mut Reader, message_
 }
 
 pub fn parse_http_chunked(record: &mut HttpMessage, index: FrameIndex, reader: &mut Reader, message_index: MessageIndex, left: usize) -> Result<SegmentStatus> {
-    // let mut total = 0;
     let _left = reader.left();
     if left >= _left {
-        if _left > 2 {
-            record.append_body(index, reader.cursor..reader.cursor + _left - 2);
+        if left > _left + 2 {
+            record.append_body(index, reader.cursor..reader.cursor + _left);
+        } else {
+            record.append_body(index, reader.cursor..reader.cursor + left - 2);
         }
         return Ok(SegmentStatus::HttpChunkedContinue(message_index, left - _left));
     } else if left > 0 {

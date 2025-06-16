@@ -31,6 +31,7 @@ mod popup;
 mod stack;
 mod window;
 mod block;
+mod code;
 
 pub struct UI {
     sender: Sender<PcapUICommand>,

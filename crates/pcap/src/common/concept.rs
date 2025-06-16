@@ -271,11 +271,13 @@ pub struct VEndpoint {
     pub statistic: TCPStatistic,
 }
 
-#[derive(Serialize, Default)]
+#[derive(Serialize, Default, Clone)]
 pub struct VHttpConnection {
-    pub status: String,
-    pub method: String,
-    pub url: String,
+    // pub status: String,
+    // pub method: String,
+    // pub url: String,
+    pub request: Option<String>,
+    pub response: Option<String>,
     pub rt: String,
     pub content_type: String,
     pub length: usize,
@@ -284,3 +286,36 @@ pub struct VHttpConnection {
     pub response_headers: Vec<(usize, usize)>,
     pub response_body: Vec<(usize, usize)>,
 }
+
+const NA: &'static str = "N/A";
+
+impl VHttpConnection {
+    pub fn status(&self) -> &str {
+        if let Some(response) = &self.response {
+            let tokens = response.split_whitespace().collect::<Vec<&str>>();
+            if tokens.len() > 1 {
+                return tokens[1];
+            }
+        }
+        NA
+    }
+    pub fn method(&self) -> &str {
+        if let Some(request) = &self.request {
+            let tokens = request.split_whitespace().collect::<Vec<&str>>();
+            if tokens.len() > 2 {
+                return tokens[0];
+            }
+        }
+        NA
+    }
+    pub fn url(&self) -> &str {
+        if let Some(request) = &self.request {
+            let tokens = request.split_whitespace().collect::<Vec<&str>>();
+            if tokens.len() > 2 {
+                return tokens[1];
+            }
+        }
+        NA
+    }
+}
+

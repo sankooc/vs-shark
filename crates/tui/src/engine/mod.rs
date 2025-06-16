@@ -7,8 +7,10 @@ use std::{fs::File, io::BufReader};
 
 use pcap::common::concept::{Criteria, Field, FrameIndex, FrameInfo, ListResult, ProgressStatus, VConnection, VConversation, VHttpConnection};
 use pcap::common::io::DataSource;
-use pcap::common::Instance;
+use pcap::common::{trim_data, Instance};
 use std::sync::mpsc::Sender;
+
+use crate::MAX_CONTENT_SIZE;
 
 pub enum PcapEvent {
     Quit,
@@ -19,6 +21,7 @@ pub enum PcapEvent {
     ConversationList(ListResult<VConversation>),
     ConnectionList(ListResult<VConnection>),
     HttpConnectionList(ListResult<VHttpConnection>),
+    HttpContent(Option<HttpMessageWrap>, Option<HttpMessageWrap>),
 }
 
 pub enum PcapUICommand {
@@ -30,7 +33,20 @@ pub enum PcapUICommand {
     ConversationList(usize, usize),
     ConnectionList(usize, usize, usize),
     HttpConnectionList(usize, usize),
-    HttpContent(Vec<(usize, usize)>, Vec<(usize, usize)>, Vec<(usize, usize)>, Vec<(usize, usize)>),
+    HttpContent(VHttpConnection),
+}
+
+
+pub struct HttpMessageWrap {
+    pub headers: Vec<String>,
+    pub mime: Language,
+    pub parsed_content: Option<String>,
+}
+
+impl HttpMessageWrap {
+    pub fn new(headers: Vec<String>, mime: Language, parsed_content: Option<String>) -> Self {
+        Self { headers, mime, parsed_content }
+    }
 }
 
 pub struct Service {
@@ -39,9 +55,20 @@ pub struct Service {
     sender: Sender<PcapEvent>,
     receiver: Receiver<PcapUICommand>,
 }
+#[derive(Clone, Copy)]
+pub enum Language {
+    Text,
+    Json,
+    JavaScript,
+    Css,
+    Html,
+    Xml,
+    Csv,
+    Yaml,
+    Binary,
+}
 
-
-pub fn seek2(fname: &str, range: Range<usize>) -> anyhow::Result<Vec<u8>>{
+pub fn seek2(fname: &str, range: Range<usize>) -> anyhow::Result<Vec<u8>> {
     let offset = range.start as u64;
     let size = range.end - range.start;
     let mut file = File::open(fname).unwrap();
@@ -50,7 +77,10 @@ pub fn seek2(fname: &str, range: Range<usize>) -> anyhow::Result<Vec<u8>>{
     file.read_exact(&mut buffer)?;
     Ok(buffer)
 }
-pub fn concat_data(file: &mut File, ranges: Vec<(usize, usize)>, len: Option<usize>) -> anyhow::Result<Vec<u8>>{
+pub fn concat_data(file: &mut File, ranges: Vec<(usize, usize)>, len: Option<usize>) -> anyhow::Result<Vec<u8>> {
+    if ranges.len() == 0 {
+        return Ok(vec![]);
+    }
     let max = if let Some(length) = len {
         length
     } else {
@@ -69,7 +99,7 @@ pub fn concat_data(file: &mut File, ranges: Vec<(usize, usize)>, len: Option<usi
             break;
         }
     }
-    
+
     Ok(rs)
 }
 
@@ -78,7 +108,7 @@ impl Service {
         let file = File::open(fname.clone()).unwrap();
         Self { fname, file, sender, receiver }
     }
-    pub fn seek(&mut self, range: Range<usize>) -> anyhow::Result<Vec<u8>>{
+    pub fn seek(&mut self, range: Range<usize>) -> anyhow::Result<Vec<u8>> {
         let offset = range.start as u64;
         let size = range.end - range.start;
         self.file.seek(SeekFrom::Start(offset))?;
@@ -111,7 +141,7 @@ impl Service {
                                     let ds = if let Some(_source) = source {
                                         let range = frame.frame_range().unwrap();
                                         let data_source = DataSource::create(_source, range);
-                                        Some(data_source)                                     
+                                        Some(data_source)
                                     } else {
                                         None
                                     };
@@ -136,8 +166,24 @@ impl Service {
                         let result_list = ins.http_connections(cri);
                         self.sender.send(PcapEvent::HttpConnectionList(result_list)).unwrap();
                     }
-                    PcapUICommand::HttpContent(_request_headers, _request_body, _response_headers, _response_body) => {
-                        
+                    PcapUICommand::HttpContent(http_connection) => {
+                        if let Ok(mut file) = File::open(&self.fname) {
+                            let request = if let Some(req) = &http_connection.request {
+                                let header = concat_data(&mut file, http_connection.request_headers, None).unwrap_or(vec![]);
+                                let entity = concat_data(&mut file, http_connection.request_body, Some(MAX_CONTENT_SIZE)).unwrap_or(vec![]);
+                                Some(parse_http_message(req, header, entity))
+                            } else {
+                                None
+                            };
+                            let response = if let Some(res) = &http_connection.response {
+                                let header = concat_data(&mut file, http_connection.response_headers, None).unwrap_or(vec![]);
+                                let entity = concat_data(&mut file, http_connection.response_body, Some(MAX_CONTENT_SIZE)).unwrap_or(vec![]);
+                                Some(parse_http_message(res, header, entity))
+                            } else {
+                                None
+                            };
+                            self.sender.send(PcapEvent::HttpContent(request, response)).unwrap();
+                        }
                     }
                     _ => {}
                 },
@@ -163,13 +209,12 @@ impl Service {
                         _next = timestamp + 450;
                     } else {
                         _pro = Some(_rs);
-                    }    
+                    }
                 } else {
                     self.sender.send(PcapEvent::Quit).unwrap();
                     break 'main;
                 }
                 // let _rs = ins.update(buffer[..n].to_vec()).unwrap();
-                
             }
             if let Some(rs) = _pro.take() {
                 self.sender.send(PcapEvent::ProgressStatus(rs)).unwrap();
@@ -181,4 +226,149 @@ impl Service {
         }
         Ok(())
     }
+}
+
+fn parse_content_type(content_type_str: &str) -> Language {
+
+    let main_type = content_type_str.to_lowercase();
+
+    if main_type.is_empty() {
+        return Language::Binary;
+    }
+    if main_type.contains("/json") {
+        return Language::Json;
+    }
+    if main_type.contains("/javascript") {
+        return Language::JavaScript;
+    }
+    if main_type.contains("/css") {
+        return Language::Css;
+    }
+    if main_type.contains("/html") {
+        return Language::Html;
+    }
+    if main_type.contains("/xml") {
+        return Language::Xml;
+    }
+    if main_type.contains("/csv") {
+        return Language::Csv;
+    }
+    if main_type.contains("/yaml") {
+        return Language::Yaml;
+    }
+    if main_type.contains("text/") {
+        return Language::Text;
+    }
+    return Language::Binary;
+}
+
+fn parse_http_message(head: &str, header: Vec<u8>, entity: Vec<u8>) -> HttpMessageWrap {
+    let (mut headers, mime, encoding) = parse_header_content(header);
+    headers.insert(0, head.to_string());
+    let body = parse_body_with_mime(entity, &mime, encoding);
+    HttpMessageWrap::new(headers, mime,body)
+}
+
+fn parse_header_content(header_raw: Vec<u8>) -> (Vec<String>, Language, HttpEncoding) {
+    if header_raw.len() == 0 {
+        return (vec![], Language::Binary, HttpEncoding::None);
+    }
+    let text = String::from_utf8_lossy(&header_raw);
+    let headers: Vec<&str> = text.split("\r\n").collect();
+    let mut content_type = Language::Binary;
+    let mut encoding = HttpEncoding::None;
+    let mut rs = vec![];
+    for head in headers.into_iter() {
+        if head.chars().count() == 0 {
+            continue;
+        }
+        rs.push(head.into());
+        if head.starts_with("Content-Type: ") || head.starts_with("content-type: ") {
+            content_type = parse_content_type(&head[14..]);
+        }
+        if head.starts_with("Content-Encoding: ") || head.starts_with("content-encoding: ") {
+            let _type = trim_data(&head[18..].as_bytes());
+            match _type {
+                b"gzip" => {
+                    encoding = HttpEncoding::Gzip;
+                }
+                b"deflate" => {
+                    encoding = HttpEncoding::Deflate;
+                }
+                b"br" => {
+                    encoding = HttpEncoding::Brotli;
+                }
+                b"zstd" => {
+                    encoding = HttpEncoding::Zstd;
+                }
+                _ => {}
+            }
+            // encoding = HttpEncoding::Gzip;
+        }
+    }
+    (rs, content_type, encoding)
+}
+
+enum HttpEncoding {
+    None,
+    Gzip,
+    Deflate,
+    Brotli,
+    Zstd,
+}
+
+fn parse_body_with_mime(body_raw: Vec<u8>, mime: &Language, encoding: HttpEncoding) -> Option<String> {
+    match &mime {
+        Language::Binary => return None,
+        _ => {}
+    }
+    let decoded_data = match encoding {
+        HttpEncoding::None => body_raw,
+        HttpEncoding::Gzip => {
+            use flate2::read::GzDecoder;
+            use std::io::Read;
+            let mut decoder = GzDecoder::new(&body_raw[..]);
+            let mut decoded = Vec::new();
+            match decoder.read_to_end(&mut decoded) {
+                Ok(_) => decoded,
+                Err(_) => body_raw,
+            }
+        }
+        HttpEncoding::Deflate => {
+            use flate2::read::DeflateDecoder;
+            use std::io::Read;
+            let mut decoder = DeflateDecoder::new(&body_raw[..]);
+            let mut decoded = Vec::new();
+            match decoder.read_to_end(&mut decoded) {
+                Ok(_) => decoded,
+                Err(_) => body_raw,
+            }
+        }
+        HttpEncoding::Brotli => {
+            use brotli::Decompressor;
+            use std::io::Read;
+            let mut decoded = Vec::new();
+            match Decompressor::new(&body_raw[..], 4096).read_to_end(&mut decoded) {
+                Ok(_) => decoded,
+                Err(_) => body_raw,
+            }
+        }
+        HttpEncoding::Zstd => {
+            use std::io::Read;
+            use zstd::stream::read::Decoder;
+            let Ok(mut decoder) = Decoder::new(&body_raw[..]) else {
+                return Some(String::from_utf8_lossy(&body_raw).to_string());
+            };
+            let mut decoded = Vec::new();
+            match decoder.read_to_end(&mut decoded) {
+                Ok(_) => decoded,
+                Err(_) => body_raw,
+            }
+        }
+    };
+    let plain = match String::from_utf8(decoded_data) {
+        Ok(text) => text,
+        Err(_) => String::from(""),
+    };
+    Some(plain)
 }
