@@ -42,9 +42,9 @@ impl TableStyle<VHttpConnection> for ConversationStyle {
         vec!["", "Status", "Method", "Host", "Length", "ContentType", "Time"]
     }
 
-    fn get_row(&self, data: &VHttpConnection) -> Vec<String> {
+    fn get_row(&self, data: &VHttpConnection, selected: bool) -> Vec<String> {
         vec![
-            "⏎".into(),
+            if selected { "⏎".into() } else { "".into() },
             data.status().to_string(),
             data.method().to_string(),
             data.url().to_string(),

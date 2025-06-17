@@ -40,9 +40,9 @@ impl TableStyle<FrameInfo> for FrameStyle {
         vec!["", "Index", "Time", "Source", "Target", "Protocol", "Length", "Info"]
     }
 
-    fn get_row(&self, data: &FrameInfo) -> Vec<String> {
+    fn get_row(&self, data: &FrameInfo, selected: bool) -> Vec<String> {
         let mut rs: Vec<String> = Vec::new();
-        rs.push("⏎".into());
+        rs.push(if selected { "⏎".into() } else { "".into() });
         rs.push(format!("{}", data.index + 1).into());
         rs.push(date_sim_str(data.time).into());
         rs.push(data.source.clone().into());

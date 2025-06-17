@@ -36,13 +36,13 @@ impl TableStyle<VConversation> for ConversationStyle {
         vec!["", "Count", "Sender", "Receiver", "Packets", "Bytes", "TX Packets", "RX Packets", "TX Bytes", "RX Bytes"]
     }
 
-    fn get_row(&self, data: &VConversation) -> Vec<String> {
+    fn get_row(&self, data: &VConversation, selected: bool) -> Vec<String> {
         let tx_p = data.receiver_packets;
         let tx_b = data.receiver_bytes;
         let rx_p = data.sender_packets;
         let rx_b = data.sender_bytes;
         vec![
-            "⏎".into(),
+            if selected { "⏎".into() } else { "".into() },
             format!("{}", data.connects),
             data.sender.clone(),
             data.receiver.clone(),
@@ -92,9 +92,9 @@ impl TableStyle<VConnection> for ConnectionStyle {
         vec!["", "Protocol", "S-port", "R-port", "TX-Packets", "TX-Bytes", "TX-Used", "RX-Packets", "RX-Bytes", "RX-Used"]
     }
 
-    fn get_row(&self, data: &VConnection) -> Vec<String> {
+    fn get_row(&self, data: &VConnection, selected: bool) -> Vec<String> {
         vec![
-            "⌫".into(),
+            if selected { "⌫".into() } else { "".into() },
             data.protocol.clone(),
             format!("{}", data.primary.port),
             format!("{}", data.second.port),
