@@ -7,14 +7,14 @@ use ratatui::{
     buffer::Buffer,
     layout::{Constraint, Rect},
     style::Modifier,
-    widgets::{Scrollbar, ScrollbarOrientation, StatefulWidget, Widget},
+    widgets::{Block, Scrollbar, ScrollbarOrientation, StatefulWidget, Widget},
 };
 use tui_tree_widget::{Tree, TreeItem, TreeState};
 
 use crate::{
     engine::{HttpMessageWrap, PcapEvent, PcapUICommand},
     theme::get_active_tab_color,
-    ui::{block::content_border, code::CodeView, loading::{self}, render_table, ControlState, CustomTableState, TableStyle},
+    ui::{block::{content_border_low, content_border_right}, code::CodeView, loading::{self}, render_table, ControlState, CustomTableState, TableStyle},
 };
 
 pub struct Page {
@@ -65,6 +65,9 @@ impl TableStyle<VHttpConnection> for ConversationStyle {
             Constraint::Max(14),
         ]
     }
+    fn get_block(&self) -> Option<Block> {
+        None
+    }
 }
 
 impl Page {
@@ -79,7 +82,7 @@ impl Page {
 impl Widget for &mut Page {
     fn render(self, area: Rect, buf: &mut Buffer) {
         if self.state.loading {
-            loading::line("Loading http connections...", area, buf);
+            loading::line(area, buf);
             return;
         }
         if let Some(view) = &mut self.detail {
@@ -259,7 +262,7 @@ impl Widget for &mut HttpHeadersView {
             ))
             .highlight_style(get_active_tab_color().add_modifier(Modifier::BOLD))
             .highlight_symbol("");
-        let mut _top = widget.block(content_border());
+        let mut _top = widget.block(content_border_low());
 
         let selected = state.selected();
         if selected.len() > 1 {
@@ -273,7 +276,7 @@ impl Widget for &mut HttpHeadersView {
                             let ch: [Rect; 2] = ratatui::layout::Layout::horizontal([Constraint::Min(5), Constraint::Min(5)]).areas(area);
                             
                             StatefulWidget::render(_top, ch[0], buf, state);
-                            let block = content_border();
+                            let block = content_border_right();
                             let in_area = block.inner(ch[1]);
                             block.render(ch[1], buf);
                             codeview.render(in_area, buf);

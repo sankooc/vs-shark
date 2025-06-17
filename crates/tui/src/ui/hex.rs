@@ -4,7 +4,7 @@ use ratatui::{
     style::{Modifier, Stylize}, text::{Line, Span}, widgets::{Paragraph, Widget}
 };
 
-use crate::{theme::get_protocol_color, ui::block::content_inner_border};
+use crate::{theme::get_protocol_color, ui::block::{content_border_right}};
 
 pub struct HexState<'a> {
     start: usize,
@@ -96,7 +96,7 @@ impl Widget for &mut HexView<'_> {
             lines.push(Line::from(ll));
             // let txt = Text::from(ll);
         }
-        let mut _top = Paragraph::new(lines).block(content_inner_border());
+        let mut _top = Paragraph::new(lines).block(content_border_right());
         if let Some(offset) = head {
             let _offset = std::cmp::max(2, offset) as u16;
             _top.scroll((_offset - 2, 0)).render(area, buf);

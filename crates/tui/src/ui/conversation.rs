@@ -4,7 +4,7 @@ use pcap::common::{
     util::format_bytes_single_unit_int,
 };
 use ratatui::{
-    buffer::Buffer, layout::{Constraint, Rect}, widgets::Widget
+    buffer::Buffer, layout::{Constraint, Rect}, widgets::{Block, Widget}
 };
 
 use crate::{
@@ -69,6 +69,9 @@ impl TableStyle<VConversation> for ConversationStyle {
             Constraint::Min(12),
         ]
     }
+    fn get_block(&self) -> Option<Block> {
+        None
+    }
 }
 
 pub struct ConnectionStyle;
@@ -118,6 +121,9 @@ impl TableStyle<VConnection> for ConnectionStyle {
             Constraint::Min(12),
         ]
     }
+    fn get_block(&self) -> Option<ratatui::widgets::Block> {
+        Some(super::block::content_border_low())
+    }
 }
 
 impl Conversation {
@@ -132,7 +138,7 @@ impl Conversation {
 impl Widget for &mut Conversation {
     fn render(self, area: Rect, buf: &mut Buffer) {
         if self.state.loading {
-            loading::line("Loading conversation...", area, buf);
+            loading::line(area, buf);
             return;
         }
         if let Some((_,_, state)) = &self.detail {

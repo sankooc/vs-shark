@@ -14,7 +14,7 @@ use pcap::common::{concept::ProgressStatus, util::format_bytes_single_unit_int};
 use ratatui::{
     buffer::Buffer,
     layout::{Alignment, Layout, Rect},
-    style::{Color, Style, Styled},
+    style::{Color, Style, Styled, Stylize},
     text::{Line, Span},
     widgets::{Block, Paragraph, Tabs, Widget},
 };
@@ -33,10 +33,6 @@ impl Widget for &mut MainUI {
     fn render(self, area: Rect, buf: &mut Buffer) {
         use ratatui::layout::Constraint::{Length, Min};
         let [tab_area, inner_area, footer_area] = Layout::vertical([Length(1), Min(0), Length(1)]).areas(area);
-
-        // let block = Block::new().borders(Borders::BOTTOM).border_set(symbols::border::FULL).padding(Padding::ZERO).border_style(ACTIVE_TAB_COLOR);
-        // let _inner_area = block.inner(tab_area);
-        // block.render(tab_area, buf);
         self.render_tab_view(tab_area, buf);
         self.render_main_view(inner_area, buf);
         self.render_status_bar(footer_area, buf);
@@ -69,9 +65,9 @@ impl MainUI {
         let main_area = main_block(area, buf);
         if let Some(_) = &self.progress {
             self.container.do_render(main_area, buf);
-            return;
+        } else {
+            loading::line(main_area, buf);
         }
-        self.render_loading(main_area, buf);
     }
     fn render_status_bar(&self, area: Rect, buf: &mut Buffer) {
         use ratatui::layout::Constraint::{Length, Min};
@@ -79,7 +75,7 @@ impl MainUI {
         let mut str_len = 0;
         let tips = "◄ ► to change page | SHIFT+(◄ ►) to change tab | Press q or ESC to quit";
         let left_text = vec![Span::styled(tips, Style::default().fg(Color::Green))];
-        let left_paragraph = Paragraph::new(Line::from(left_text))
+        let left_paragraph = Paragraph::new(Line::from(left_text).bold())
             .block(Block::default())
             .alignment(Alignment::Left)
             .style(STATUS_HINT_STYLE);
@@ -99,7 +95,7 @@ impl MainUI {
             }
         };
 
-        let right_paragraph = Paragraph::new(Line::from(right_text))
+        let right_paragraph = Paragraph::new(Line::from(right_text).bold())
             .block(Block::default())
             .alignment(Alignment::Right)
             .style(STATUS_PROGS_STYLE);
@@ -108,9 +104,7 @@ impl MainUI {
         left_paragraph.render(left_area, buf);
         right_paragraph.render(right_area, buf);
     }
-    fn render_loading(&self, area: Rect, buf: &mut Buffer) {
-        loading::line("Waiting for parsing...", area, buf);
-    }
+
 
     fn tab_select(&mut self, active_tab: usize) -> PcapUICommand {
         match active_tab {
