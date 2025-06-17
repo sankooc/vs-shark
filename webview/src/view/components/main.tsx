@@ -4,6 +4,7 @@ import { Badge } from "primereact/badge";
 import { Menu } from "primereact/menu";
 
 import FrameList from "./frame";
+import ConversationList from './conversation';
 import Empty from "./loading/empty";
 import Loading from "./loading";
 import { _log } from "../util";
@@ -62,7 +63,12 @@ const Main = () => {
     return mitems;
   };
   const buildPage = (): ReactElement => {
-    return <FrameList />;
+    switch (select) {
+      case "tcp":
+        return <ConversationList />;
+      default:
+        return <FrameList />;
+    }
   };
   if (status <= 0 && info && progress) {
     setStatus(1);
@@ -70,6 +76,7 @@ const Main = () => {
   if (status == -1) {
     return <Empty />;
   }
+  
   if (status == 0) {
     return <Loading />;
     // return <ErrPage/>

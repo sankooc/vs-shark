@@ -11,7 +11,7 @@ import { IResult } from "../../share/common";
 
 interface Props {
   cols: ColumnProps[];
-  result?: IResult;
+  result?: IResult<any>;
   onSelect?: (item: any) => void;
   getStyle?: (item: any) => string;
   scrollHeight?: number;

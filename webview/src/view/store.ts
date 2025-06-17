@@ -11,8 +11,12 @@ import {
   PcapFile,
   VRange,
 } from "../share/common";
-import { IFrameInfo, IListResult, IProgressStatus } from "../share/gen";
+import { IFrameInfo, IListResult, IProgressStatus, IVConnection, IVConversation } from "../share/gen";
 import mitt from "mitt";
+
+
+// import convMock from '../mock/conversation.json';
+// import connMock from '../mock/connection.json';
 
 interface PcapState {
   fileinfo?: PcapFile;
@@ -22,6 +26,8 @@ interface PcapState {
   sendReady: () => void;
   request: <F>(data: any) => Promise<F>;
   requestData: (data: VRange) => Promise<DataResponse>;
+  conversations: (data: any) => Promise<IListResult<IVConversation>>;
+  connections: (data: any) => Promise<IListResult<IVConnection>>;
   // frameList: (page: number, size: number) => Promise<IListResult<IFrameInfo>>;
 }
 // const compute = (page: number, size: number): Pagination => {
@@ -76,6 +82,8 @@ export const useStore = create<PcapState>()((set) => {
         emitter.emit(id, fr);
         break;
       case ComType.FRAMES:
+      case ComType.CONVERSATIONS:
+      case ComType.CONNECTIONS:
         emitter.emit(id, deserialize(body));
         break;
       case ComType.FRAME_SCOPE_RES:
@@ -100,6 +108,16 @@ export const useStore = create<PcapState>()((set) => {
     requestData: (data: VRange): Promise<DataResponse> => {
       const req = new ComMessage(ComType.DATA, data);
       return doRequest<DataResponse>(req);
+    },
+    conversations: (data: any): Promise<IListResult<IVConversation>> => {
+      const req = new ComMessage(ComType.REQUEST, data);
+      return doRequest<IListResult<IVConversation>>(req);
+      // return Promise.resolve(convMock);
+    },
+    connections: (data: any): Promise<IListResult<IVConnection>> => {
+      const req = new ComMessage(ComType.REQUEST, data);
+      return doRequest<IListResult<IVConnection>>(req);
+      // return Promise.resolve(connMock);
     },
 
     // frameList: (page: number, size: number): Promise<IListResult<IFrameInfo>> => {
