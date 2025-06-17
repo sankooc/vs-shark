@@ -17,7 +17,7 @@ use window::MainUI;
 
 use crate::{
     engine::{PcapEvent, PcapUICommand},
-    theme::ICMPV6_FG, ui::block::content_border,
+    theme::ICMPV6_FG,
 };
 
 // use crate::loading;
@@ -198,26 +198,35 @@ pub trait TableStyle<T> {
     fn get_row_style(&self, data: &T, status: usize) -> Style;
     fn get_select_style(&self) -> Style;
     fn get_cols(&self) -> Vec<&str>;
-    fn get_row(&self, data: &T) -> Vec<String>;
+    fn get_row(&self, data: &T, selected: bool) -> Vec<String>;
     fn get_row_width(&self) -> Vec<Constraint>;
+    fn get_block(&self) -> Option<Block>;
 }
 pub fn render_table<T>(ts: impl TableStyle<T>, state: &CustomTableState<T>, area: Rect, buf: &mut Buffer, status: usize) {
     let header_style = ts.get_header_style();
     let cols = ts.get_cols();
     let header = cols.into_iter().map(Cell::from).collect::<Row>().style(header_style).height(1);
-    let frames = &state.list.items;
-    let rows = frames.iter().map(|data| {
-        let rs: Vec<Cell> = ts.get_row(data).iter().map(|s| s.clone().into()).collect();
+    let items = &state.list.items;
+    // for index in 0..items.len() {
+    //     items.get(index).unwrap();
+    // }
+    let mut index = 0;
+    let rows = items.iter().map(|data| {
+        let rs: Vec<Cell> = ts.get_row(data,index == state.select).iter().map(|s| s.clone().into()).collect();
         let row_style = ts.get_row_style(data, status);
-        rs.into_iter().collect::<Row>().add_modifier(Modifier::BOLD).style(row_style).height(1)
+        index += 1;
+        rs.into_iter().collect::<Row>().bold().add_modifier(Modifier::BOLD).style(row_style).height(1)
     });
 
     let select_row_style = ts.get_select_style();
-    let t: Table<'_> = Table::new(rows, ts.get_row_width())
+    let mut t: Table<'_> = Table::new(rows, ts.get_row_width())
         .header(header)
-        .block(content_border())
+        // .block(ts.get_block())
         .highlight_style(select_row_style)
         .highlight_spacing(HighlightSpacing::Always);
+    if let Some(block) = ts.get_block() {
+        t = t.block(block);
+    }
     let mut t_area = area.clone();
     t_area.width -= 1;
     StatefulWidget::render(t, t_area, buf, &mut state.get_selection());

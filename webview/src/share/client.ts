@@ -51,9 +51,9 @@ export abstract class PCAPClient {
   private list(
     requestId: string,
     catelog: string,
-    start: number,
-    size: number,
+    param: any,
   ): void {
+    const { start, size } = param;
     if (this.ctx) {
       try {
         let rs;
@@ -61,6 +61,14 @@ export abstract class PCAPClient {
           case "frame":
             rs = this.ctx.list("frame", start, size);
             this.emitMessage(ComMessage.new(ComType.FRAMES, rs, requestId));
+            return;
+          case "conversation":
+            rs = this.ctx.list_conversations(start, size);
+            this.emitMessage(ComMessage.new(ComType.CONVERSATIONS, rs, requestId));
+            return;
+          case "connection":
+            rs = this.ctx.list_connections(param.conversionIndex, start, size);
+            this.emitMessage(ComMessage.new(ComType.CONNECTIONS, rs, requestId));
             return;
           default:
             return;
@@ -83,8 +91,8 @@ export abstract class PCAPClient {
             const range = this.ctx!.frame_range(index);
             const data = await this.pickData(range.data.start, range.data.end);
             const frameResult = this.ctx.select_frame(index, data);
-            const rs:any = {};
-            if(range.compact()) {
+            const rs: any = {};
+            if (range.compact()) {
               rs.data = data;
             } else {
               const _start = range.frame.start - range.data.start;
@@ -94,7 +102,7 @@ export abstract class PCAPClient {
             rs.start = range.frame.start;
             rs.end = range.frame.end;
             rs.liststr = frameResult.list();
-            if (frameResult.extra()?.length > 0 ) {
+            if (frameResult.extra()?.length > 0) {
               rs.extra = frameResult.extra();
             }
             this.emitMessage(
@@ -113,6 +121,7 @@ export abstract class PCAPClient {
     );
   }
 
+  
   // private async scope(requestId: string, catelog: string, index: number): Promise<void> {
   //   if (this.ctx) {
   //     try {
@@ -190,11 +199,14 @@ export abstract class PCAPClient {
           const { catelog, type, param } = req;
           switch (type) {
             case "list":
-              this.list(id, catelog, param.start, param.size);
+              this.list(id, catelog, param);
               break;
             case "select":
               this.select(id, catelog, param.index);
               break;
+            // case "conversation":
+            //   this.conversations(id, param.start, param.size);
+            //   break;
             // case "scope":
             //   this.scope(id, catelog, param.index);
             //   break;

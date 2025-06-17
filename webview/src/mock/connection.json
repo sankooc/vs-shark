@@ -1,0 +1,206 @@
+{
+    "items": [
+        {
+            "primary": {
+                "host": "10.124.68.75",
+                "port": 89,
+                "statistic": {
+                    "count": 1,
+                    "throughput": 0,
+                    "clean_throughput": 0,
+                    "retransmission": 0,
+                    "invalid": 0
+                }
+            },
+            "second": {
+                "host": "10.109.185.160",
+                "port": 41208,
+                "statistic": {
+                    "count": 2,
+                    "throughput": 2,
+                    "clean_throughput": 1,
+                    "retransmission": 0,
+                    "invalid": 0
+                }
+            },
+            "protocol": ""
+        },
+        {
+            "primary": {
+                "host": "10.124.68.75",
+                "port": 89,
+                "statistic": {
+                    "count": 1,
+                    "throughput": 0,
+                    "clean_throughput": 0,
+                    "retransmission": 0,
+                    "invalid": 0
+                }
+            },
+            "second": {
+                "host": "10.109.185.160",
+                "port": 41211,
+                "statistic": {
+                    "count": 2,
+                    "throughput": 2,
+                    "clean_throughput": 1,
+                    "retransmission": 0,
+                    "invalid": 0
+                }
+            },
+            "protocol": ""
+        },
+        {
+            "primary": {
+                "host": "10.124.68.75",
+                "port": 89,
+                "statistic": {
+                    "count": 1,
+                    "throughput": 0,
+                    "clean_throughput": 0,
+                    "retransmission": 0,
+                    "invalid": 0
+                }
+            },
+            "second": {
+                "host": "10.109.185.160",
+                "port": 41230,
+                "statistic": {
+                    "count": 2,
+                    "throughput": 2,
+                    "clean_throughput": 1,
+                    "retransmission": 0,
+                    "invalid": 0
+                }
+            },
+            "protocol": ""
+        },
+        {
+            "primary": {
+                "host": "10.124.68.75",
+                "port": 7443,
+                "statistic": {
+                    "count": 1,
+                    "throughput": 0,
+                    "clean_throughput": 0,
+                    "retransmission": 0,
+                    "invalid": 0
+                }
+            },
+            "second": {
+                "host": "10.109.185.160",
+                "port": 41229,
+                "statistic": {
+                    "count": 2,
+                    "throughput": 2,
+                    "clean_throughput": 1,
+                    "retransmission": 0,
+                    "invalid": 0
+                }
+            },
+            "protocol": ""
+        },
+        {
+            "primary": {
+                "host": "10.124.68.75",
+                "port": 7443,
+                "statistic": {
+                    "count": 1,
+                    "throughput": 0,
+                    "clean_throughput": 0,
+                    "retransmission": 0,
+                    "invalid": 0
+                }
+            },
+            "second": {
+                "host": "10.109.185.160",
+                "port": 41231,
+                "statistic": {
+                    "count": 2,
+                    "throughput": 2,
+                    "clean_throughput": 1,
+                    "retransmission": 0,
+                    "invalid": 0
+                }
+            },
+            "protocol": ""
+        },
+        {
+            "primary": {
+                "host": "10.124.68.75",
+                "port": 89,
+                "statistic": {
+                    "count": 1,
+                    "throughput": 0,
+                    "clean_throughput": 0,
+                    "retransmission": 0,
+                    "invalid": 0
+                }
+            },
+            "second": {
+                "host": "10.109.185.160",
+                "port": 41210,
+                "statistic": {
+                    "count": 2,
+                    "throughput": 2,
+                    "clean_throughput": 1,
+                    "retransmission": 0,
+                    "invalid": 0
+                }
+            },
+            "protocol": ""
+        },
+        {
+            "primary": {
+                "host": "10.124.68.75",
+                "port": 89,
+                "statistic": {
+                    "count": 1,
+                    "throughput": 0,
+                    "clean_throughput": 0,
+                    "retransmission": 0,
+                    "invalid": 0
+                }
+            },
+            "second": {
+                "host": "10.109.185.160",
+                "port": 41213,
+                "statistic": {
+                    "count": 2,
+                    "throughput": 2,
+                    "clean_throughput": 1,
+                    "retransmission": 0,
+                    "invalid": 0
+                }
+            },
+            "protocol": ""
+        },
+        {
+            "primary": {
+                "host": "10.124.68.75",
+                "port": 89,
+                "statistic": {
+                    "count": 1,
+                    "throughput": 0,
+                    "clean_throughput": 0,
+                    "retransmission": 0,
+                    "invalid": 0
+                }
+            },
+            "second": {
+                "host": "10.109.185.160",
+                "port": 41209,
+                "statistic": {
+                    "count": 2,
+                    "throughput": 2,
+                    "clean_throughput": 1,
+                    "retransmission": 0,
+                    "invalid": 0
+                }
+            },
+            "protocol": ""
+        }
+    ],
+    "total": 120,
+    "start": 0
+}

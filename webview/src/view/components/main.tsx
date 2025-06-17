@@ -4,6 +4,7 @@ import { Badge } from "primereact/badge";
 import { Menu } from "primereact/menu";
 
 import FrameList from "./frame";
+import ConversationList from './conversation';
 import Empty from "./loading/empty";
 import Loading from "./loading";
 import { _log } from "../util";
@@ -28,7 +29,7 @@ const itemRenderer = (item: any, options: any) => {
 
 // let _start = 0;
 const Main = () => {
-  const [select, _setSelect] = useState("frame");
+  const [select, setSelect] = useState("frame");
   const [status, setStatus] = useState<number>(-1);
   const sendReady = useStore((state) => state.sendReady);
   const info = useStore((state) => state.fileinfo);
@@ -51,16 +52,23 @@ const Main = () => {
         label,
         icon,
         className: select === id ? "active" : "",
-        command: () => {
-          // setSelect(env.item.id);
+        command: (event) => {
+          // console.log(event.item.id);
+          setSelect(event.item.id!);
         },
       });
     };
     addPanel("frame", "Frame", "", "pi pi-list");
+    addPanel('tcp', 'TCP', '', 'pi pi-server');
     return mitems;
   };
   const buildPage = (): ReactElement => {
-    return <FrameList />;
+    switch (select) {
+      case "tcp":
+        return <ConversationList />;
+      default:
+        return <FrameList />;
+    }
   };
   if (status <= 0 && info && progress) {
     setStatus(1);
@@ -68,6 +76,7 @@ const Main = () => {
   if (status == -1) {
     return <Empty />;
   }
+  
   if (status == 0) {
     return <Loading />;
     // return <ErrPage/>

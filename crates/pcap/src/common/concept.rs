@@ -208,6 +208,7 @@ impl Into<VConversation> for &Conversation {
     }
 }
 
+#[derive(Serialize)]
 pub struct VConversation {
     pub key: usize,
     pub sender: String,

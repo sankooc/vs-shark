@@ -11,7 +11,7 @@ use tui_tree_widget::{Tree, TreeItem, TreeState};
 use crate::{
     engine::{PcapEvent, PcapUICommand},
     theme::get_active_tab_color,
-    ui::{block::{content_border, content_inner_border}, ControlState},
+    ui::{block::{content_border_low, content_border_right}, ControlState},
 };
 
 use super::hex::{HexState, HexView};
@@ -52,7 +52,7 @@ impl Widget for &mut StackView {
             ))
             .highlight_style(get_active_tab_color().add_modifier(Modifier::BOLD))
             .highlight_symbol("");
-            let mut _top = widget.block(content_border());
+            let mut _top = widget.block(content_border_low());
 
         StatefulWidget::render(_top, ch[0], buf, &mut self.tree_state);
         
@@ -75,7 +75,7 @@ impl Widget for &mut StackView {
                 }
             }
         } else {
-            content_inner_border().render(ch[1], buf);
+            content_border_right().render(ch[1], buf);
         }
     }
 }

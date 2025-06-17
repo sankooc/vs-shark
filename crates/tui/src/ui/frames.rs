@@ -2,7 +2,7 @@ use crate::{
     engine::{PcapEvent, PcapUICommand},
     theme::{get_frame_color, get_header_style, get_select},
     ui::{
-        block::content_border, loading::{self}, render_table, stack::StackView, ControlState, CustomTableState, TableStyle
+        block::content_border_low, loading::{self}, render_table, stack::StackView, ControlState, CustomTableState, TableStyle
     },
 };
 
@@ -15,7 +15,7 @@ use ratatui::{
     buffer::Buffer,
     layout::{Alignment, Constraint, Layout, Rect},
     text::Text,
-    widgets::{Paragraph, Widget},
+    widgets::{Block, Paragraph, Widget},
 };
 
 // const ITEM_HEIGHT: usize = 1;
@@ -40,9 +40,9 @@ impl TableStyle<FrameInfo> for FrameStyle {
         vec!["", "Index", "Time", "Source", "Target", "Protocol", "Length", "Info"]
     }
 
-    fn get_row(&self, data: &FrameInfo) -> Vec<String> {
+    fn get_row(&self, data: &FrameInfo, selected: bool) -> Vec<String> {
         let mut rs: Vec<String> = Vec::new();
-        rs.push("⏎".into());
+        rs.push(if selected { "⏎".into() } else { "".into() });
         rs.push(format!("{}", data.index + 1).into());
         rs.push(date_sim_str(data.time).into());
         rs.push(data.source.clone().into());
@@ -51,6 +51,9 @@ impl TableStyle<FrameInfo> for FrameStyle {
         rs.push(format!("{}", data.len).into());
         rs.push(data.info.clone().into());
         rs
+    }
+    fn get_block(&self) -> Option<Block> {
+        None
     }
 
     fn get_row_width(&self) -> Vec<Constraint> {
@@ -89,7 +92,7 @@ impl App {
         }
     }
     fn render_loading(&self, area: Rect, buf: &mut Buffer) {
-        loading::line("Loading frame data...", area, buf);
+        loading::line(area, buf);
     }
     pub fn next(&mut self) -> usize {
         self.state.next()
@@ -120,7 +123,7 @@ impl Widget for &mut App {
             // let _area = get_erea(buf, rects[1], self.cursor == SelectPanel::STACK);
             self.view.render(rects[1], buf);
         } else {
-            let block = content_border();
+            let block = content_border_low();
             let inner = block.inner(rects[1]);
             block.render(rects[1], buf);
 
@@ -200,23 +203,3 @@ impl ControlState for App {
         }
     }
 }
-
-// fn get_erea(buf: &mut Buffer, area: Rect, active: bool) -> Rect {
-//     if active {
-//         let block = Block::bordered()
-//             .border_set(symbols::border::QUADRANT_OUTSIDE)
-//             .padding(Padding::new(0, 0, 0, 0))
-//             .border_style(ACTIVE_TAB_COLOR);
-//         let inner_area = block.inner(area);
-//         block.render(area, buf);
-//         inner_area
-//     } else {
-//         let block = Block::bordered()
-//             .border_set(symbols::border::PLAIN)
-//             .padding(Padding::new(0, 0, 0, 0))
-//             .border_style(ACTIVE_TAB_COLOR);
-//         let inner_area = block.inner(area);
-//         block.render(area, buf);
-//         inner_area
-//     }
-// }

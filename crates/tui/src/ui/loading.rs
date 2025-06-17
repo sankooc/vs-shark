@@ -1,17 +1,29 @@
 
-use ratatui::{buffer::Buffer, layout::{Alignment, Rect}, text::Text, widgets::{Block, Padding, Paragraph, Widget}};
+use ratatui::{buffer::Buffer, layout::{Constraint, Direction, Layout, Rect}, text::Line, widgets::{Paragraph, Widget}};
 
-use crate::theme::{panel_color, POSITIVE_STYLE};
+use crate::ui::block::content_border;
 
-pub fn line(text: &str, area: Rect, buf: &mut Buffer) {
-    let text = Text::from(text);
-    let paragraph = Paragraph::new(text).alignment(Alignment::Center).style(panel_color());
-    paragraph.render(area, buf);
+pub fn line(area: Rect, buf: &mut Buffer) {
+    let mut lines = vec![];
+    lines.push(Line::from(r"  _                           _   _                 "));
+    lines.push(Line::from(r" | |       ___     __ _    __| | (_)  _ __     __ _ "));
+    lines.push(Line::from(r" | |      / _ \   / _` |  / _` | | | | '_ \   / _` |"));
+    lines.push(Line::from(r" | |___  | (_) | | (_| | | (_| | | | | | | | | (_| |"));
+    lines.push(Line::from(r" |_____|  \___/   \__,_|  \__,_| |_| |_| |_|  \__, |"));
+    lines.push(Line::from(r"                                              |___/ "));
+    let chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([
+            Constraint::Fill(1),   
+            Constraint::Length(lines.len() as u16), 
+            Constraint::Fill(1),
+        ])
+        .split(area);
+    Paragraph::new(lines).centered().render(chunks[1], buf);
 }
 
 pub fn main_block(_area: Rect, buf: &mut Buffer) -> Rect {
-    let block = Block::new().padding(Padding::new(0, 0, 0, 0))
-        .style(POSITIVE_STYLE);
+    let block = content_border();
     let area = block.inner(_area);
     block.render(_area, buf);
     area

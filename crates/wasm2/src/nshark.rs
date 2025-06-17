@@ -2,22 +2,19 @@ use js_sys::Uint8Array;
 use pcap::common::{concept::Criteria, Instance};
 use wasm_bindgen::prelude::*;
 
-use crate::entity::{Conf, FrameRange, FrameResult};
+use crate::entity::{parse_http_message, Conf, FrameRange, FrameResult};
 
 #[wasm_bindgen]
 pub struct WContext {
     ctx: Box<Instance>,
 }
 
-
 #[wasm_bindgen]
 impl WContext {
     #[wasm_bindgen(constructor)]
     pub fn new(conf: Conf) -> WContext {
         let ins = Instance::new(conf.batch_size());
-        WContext {
-            ctx: Box::new(ins),
-        }
+        WContext { ctx: Box::new(ins) }
     }
 
     #[wasm_bindgen]
@@ -30,18 +27,17 @@ impl WContext {
         self.ctx.update_slice(s).unwrap().to_json()
     }
 
-    
     #[wasm_bindgen]
     pub fn count(&self, catelog: String) -> usize {
         self.ctx.get_count(&catelog)
     }
-    
+
     #[wasm_bindgen]
     pub fn list(&mut self, catelog: String, start: usize, size: usize) -> String {
-        let cri = Criteria{start, size};
+        let cri = Criteria { start, size };
         match catelog.as_str() {
             "frame" => self.ctx.frames_list_json(cri).unwrap(),
-            _ => "{}".into()
+            _ => "{}".into(),
         }
     }
 
@@ -65,11 +61,11 @@ impl WContext {
             "frame" => {
                 let slice = s.to_vec();
                 self.ctx.select_frame_json(index, slice).unwrap()
-            },
-            _ => "{}".into()
+            }
+            _ => "{}".into(),
         }
     }
-    
+
     #[wasm_bindgen]
     pub fn select_frame(&self, index: usize, s: &Uint8Array) -> FrameResult {
         let slice = s.to_vec();
@@ -79,6 +75,26 @@ impl WContext {
             return rs;
         }
         FrameResult::empty()
+    }
+    #[wasm_bindgen]
+    pub fn list_conversations(&self, start: usize, size: usize) -> String {
+        let rs = self.ctx.conversations(Criteria { start, size });
+        serde_json::to_string(&rs).unwrap_or("{}".into())
+    }
+    #[wasm_bindgen]
+    pub fn list_connections(&self, index: usize, start: usize, size: usize) -> String {
+        let rs = self.ctx.connections(index, Criteria { start, size });
+        serde_json::to_string(&rs).unwrap_or("{}".into())
+    }
+    #[wasm_bindgen]
+    pub fn list_http(&self,start: usize, size: usize) -> String {
+        let rs = self.ctx.http_connections(Criteria { start, size });
+        serde_json::to_string(&rs).unwrap_or("{}".into())
+    }
+    #[wasm_bindgen]
+    pub fn http_message_detail(&self, head: String, headers: Vec<u8>, body: Option<Vec<u8>>) -> String {
+        let rs = parse_http_message(&head, headers, body);
+        serde_json::to_string(&rs).unwrap_or("{}".into())
     }
 }
 

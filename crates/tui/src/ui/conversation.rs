@@ -4,7 +4,7 @@ use pcap::common::{
     util::format_bytes_single_unit_int,
 };
 use ratatui::{
-    buffer::Buffer, layout::{Constraint, Rect}, widgets::Widget
+    buffer::Buffer, layout::{Constraint, Rect}, widgets::{Block, Widget}
 };
 
 use crate::{
@@ -36,13 +36,13 @@ impl TableStyle<VConversation> for ConversationStyle {
         vec!["", "Count", "Sender", "Receiver", "Packets", "Bytes", "TX Packets", "RX Packets", "TX Bytes", "RX Bytes"]
     }
 
-    fn get_row(&self, data: &VConversation) -> Vec<String> {
+    fn get_row(&self, data: &VConversation, selected: bool) -> Vec<String> {
         let tx_p = data.receiver_packets;
         let tx_b = data.receiver_bytes;
         let rx_p = data.sender_packets;
         let rx_b = data.sender_bytes;
         vec![
-            "⏎".into(),
+            if selected { "⏎".into() } else { "".into() },
             format!("{}", data.connects),
             data.sender.clone(),
             data.receiver.clone(),
@@ -69,6 +69,9 @@ impl TableStyle<VConversation> for ConversationStyle {
             Constraint::Min(12),
         ]
     }
+    fn get_block(&self) -> Option<Block> {
+        None
+    }
 }
 
 pub struct ConnectionStyle;
@@ -89,9 +92,9 @@ impl TableStyle<VConnection> for ConnectionStyle {
         vec!["", "Protocol", "S-port", "R-port", "TX-Packets", "TX-Bytes", "TX-Used", "RX-Packets", "RX-Bytes", "RX-Used"]
     }
 
-    fn get_row(&self, data: &VConnection) -> Vec<String> {
+    fn get_row(&self, data: &VConnection, selected: bool) -> Vec<String> {
         vec![
-            "⌫".into(),
+            if selected { "⌫".into() } else { "".into() },
             data.protocol.clone(),
             format!("{}", data.primary.port),
             format!("{}", data.second.port),
@@ -118,6 +121,9 @@ impl TableStyle<VConnection> for ConnectionStyle {
             Constraint::Min(12),
         ]
     }
+    fn get_block(&self) -> Option<ratatui::widgets::Block> {
+        Some(super::block::content_border_low())
+    }
 }
 
 impl Conversation {
@@ -132,7 +138,7 @@ impl Conversation {
 impl Widget for &mut Conversation {
     fn render(self, area: Rect, buf: &mut Buffer) {
         if self.state.loading {
-            loading::line("Loading conversation...", area, buf);
+            loading::line(area, buf);
             return;
         }
         if let Some((_,_, state)) = &self.detail {

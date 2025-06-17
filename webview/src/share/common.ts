@@ -19,6 +19,8 @@ export enum ComType {
   FILEINFO = "fileinfo",
   log = "log",
   error = "error",
+  CONVERSATIONS = "conversations",
+  CONNECTIONS = "connections",
 }
 
 export interface ComRequest {
@@ -162,8 +164,8 @@ export class Pagination {
   filter?: string;
 }
 
-export interface IResult {
-  items: any[];
+export interface IResult<T> {
+  items: T[];
   total: number;
   page: number;
   size: number;
@@ -178,7 +180,30 @@ export interface IFrameSelect {
   extra?: Uint8Array; 
 }
 
-// export interface CField {
-//   summary: string;
-//   children?: CField[];
-// }
+export const compute = (page: number, size: number): Pagination => {
+  if (page < 1) {
+    return { start: 0, size: size };
+  }
+  const start = (page - 1) * size;
+  return { start, size };
+};
+
+
+const UNITS = ["B", "KB", "MB", "GB", "TB", "PB"];
+
+export const format_bytes_single_unit = (bytes: number): string => {
+    if(bytes <= 0){
+      return '0';
+    }
+    let size = bytes;
+    let low = 0;
+    let unit_index = 0;
+
+    while (size >= 1024 && unit_index < UNITS.length - 1) {
+        low = size % 1024;
+        size = Math.floor(size / 1024);
+        unit_index += 1;
+    }
+
+    return `${size}.${low} ${UNITS[unit_index]}`;
+  }

@@ -323,7 +323,7 @@ impl Endpoint {
             self.seq = sequence;
             self.next = sequence + _tcp_len;
             self._checksum = stat.crc;
-            statistic.clean_throughput = _tcp_len as u64;
+            statistic.clean_throughput = statistic.throughput;
             return (TCPDetail::NEXT, statistic);
         }
         if sequence > self.next {
@@ -340,7 +340,7 @@ impl Endpoint {
                 return (TCPDetail::NEXT, statistic);
             }
             self.next = sequence + _tcp_len;
-            statistic.clean_throughput = _tcp_len as u64;
+            statistic.clean_throughput = statistic.throughput;
             return (TCPDetail::NEXT, statistic);
         } else {
             if sequence == self.next - 1 && (_tcp_len == 1 || _tcp_len == 0) && stat.state.extact_match(TCPFLAG::ACK) {
@@ -442,7 +442,6 @@ impl<'a> TmpConnection<'a> {
 
         let (status, statistic) = main.update(&stat);
         main.statistic.append(&statistic);
-
         rev.confirm(&stat);
         let mut rs = ConnectState::new(main.seq(), rev.ack(), main.next(), stat.payload_len, status);
         match &rs.status {

@@ -1,20 +1,63 @@
 export interface IProgressStatus {
-  total: number;
-  cursor: number;
+    total: number;
+    cursor: number;
+    count: number;
+    left: number;
 }
 export interface IListResult<T> {
-  items: T[];
-  total: number;
-  start: number;
+    items: T[];
+    total: number;
+    start: number;
 }
 export interface IFrameInfo {
-  index: number;
-  time: number;
-  source: string;
-  dest: string;
-  protocol: string;
-  len: number;
-  irtt: number;
-  info: string;
-  status: string;
+    index: number;
+    time: number;
+    source: string;
+    dest: string;
+    protocol: string;
+    len: number;
+    irtt: number;
+    info: string;
+    status: string;
+}
+export interface IField {
+    source: number;
+    start: number;
+    size: number;
+    summary: string;
+    children?: IField[];
+}
+export interface IVConversation {
+    key: number;
+    sender: string;
+    receiver: string;
+    sender_packets: number;
+    receiver_packets: number;
+    sender_bytes: number;
+    receiver_bytes: number;
+    connects: number;
+}
+export interface ITCPStatistic {
+    count: number;
+    throughput: number;
+    clean_throughput: number;
+    retransmission: number;
+    invalid: number;
+}
+export interface IVConnection {
+    primary: IVEndpoint;
+    second: IVEndpoint;
+    protocol: string;
+}
+export interface IVEndpoint {
+    host: string;
+    port: number;
+    statistic: ITCPStatistic;
+}
+export interface IVHttpConnection {
+    request?: string;
+    response?: string;
+    rt: string;
+    content_type: string;
+    length: number;
 }

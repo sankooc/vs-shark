@@ -127,6 +127,6 @@ pub const REVERT_STYLE: Style = Style::new().fg(ACTIVE_TAB_COLOR).bg(GRUVBOX_BG_
 
 pub const REVERT_STYLE2: Style = Style::new().fg(ACTIVE_TAB_COLOR).bg(GRUVBOX_BG_S_0);
 
-pub const STATUS_HINT_STYLE: Style = Style::new().fg(GRUVBOX_FG).bg(GRUVBOX_BG_H_0);
+pub const STATUS_HINT_STYLE: Style = Style::new().fg(GRUVBOX_FG_4).bg(GRUVBOX_BG_3);
 
 pub const STATUS_PROGS_STYLE: Style = Style::new().fg(GRUVBOX_FG).bg(HEAD_FG);
