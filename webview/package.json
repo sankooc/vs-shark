@@ -8,7 +8,7 @@
     "build": "rm -rf ../plugin/dist/web && tsc -b && vite build",
     "build:all": "tsc -b && VITE_BUILD_ALL=true vite build",
     "lint": "eslint .",
-    "gen": "npx rs2ts -i ../crates/pcap/src/common/concept.rs  -o src/core/gen.ts",
+    "gen": "npx rs2ts -i ../crates/pcap/src/common/concept.rs  -o src/share/gen.ts",
     "format": "prettier -w ./src",
     "preview": "vite preview"
   },

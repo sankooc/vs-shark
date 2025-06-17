@@ -178,7 +178,3 @@ export interface IFrameSelect {
   extra?: Uint8Array; 
 }
 
-// export interface CField {
-//   summary: string;
-//   children?: CField[];
-// }

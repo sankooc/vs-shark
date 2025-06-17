@@ -27,11 +27,6 @@ export default function Stack(props: StackProps) {
       param: { index: props.select },
     }).then((rs) => {
       setData(rs);
-      // let fs: IFrameSelect = rs;
-      // console.log(rs);
-      // setField(rs.fields);
-      // setScope(new VRange(rs.start, rs.end));
-      // setField(rs);
     });
   }, [props.select]);
   const mapper = (it: IField, key: string): TreeNode => {

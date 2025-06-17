@@ -12,8 +12,6 @@ import dayjs from "dayjs";
 
 const PAGE_SIZE = 500;
 function FrameList() {
-  // const [filter, setFilter] = useState<any[]>([]);
-  // const [options, setOptions] = useState<string[]>([]);
   const size = PAGE_SIZE;
   const _request = useStore((state) => state.request);
   const [page, setPage] = useState<number>(1);
@@ -24,15 +22,7 @@ function FrameList() {
     total: 0,
     items: [],
   });
-  // const frameResult = useStore(
-  //   (state) => state.frameResult,
-  // ) || { start: 0, total: 0, items: [] };
-  // const frameSelect = useStore(
-  //   (state) => state.frameSelect,
-  // )
-  // console.log('frameSelect:', frameSelect);
-  // const { items, start, total } = frameResult;
-  // const page = Math.floor(start / PAGE_SIZE) + 1;
+
   const compute = (page: number, size: number): Pagination => {
     if (page < 1) {
       return { start: 0, size: size };
