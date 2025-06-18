@@ -178,7 +178,7 @@ pub fn parse_http_message(head: &str, header: Vec<u8>, entity: Option<Vec<u8>>) 
     HttpMessageWrap::new(headers, mime,body)
 }
 
-fn parse_header_content(header_raw: Vec<u8>) -> (Vec<String>, Language, HttpEncoding) {
+pub fn parse_header_content(header_raw: Vec<u8>) -> (Vec<String>, Language, HttpEncoding) {
     if header_raw.len() == 0 {
         return (vec![], Language::Binary, HttpEncoding::None);
     }

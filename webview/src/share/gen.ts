@@ -60,4 +60,8 @@ export interface IVHttpConnection {
     rt: string;
     content_type: string;
     length: number;
+    request_headers: [number, number][];
+    response_headers: [number, number][];
+    request_body: [number, number][];
+    response_body: [number, number][];
 }

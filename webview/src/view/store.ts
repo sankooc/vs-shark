@@ -8,10 +8,11 @@ import {
   DataResponse,
   deserialize,
   IFrameSelect,
+  MessageCompress,
   PcapFile,
   VRange,
 } from "../share/common";
-import { IFrameInfo, IListResult, IProgressStatus, IVConnection, IVConversation } from "../share/gen";
+import { IFrameInfo, IListResult, IProgressStatus, IVConnection, IVConversation, IVHttpConnection } from "../share/gen";
 import mitt from "mitt";
 
 
@@ -28,6 +29,8 @@ interface PcapState {
   requestData: (data: VRange) => Promise<DataResponse>;
   conversations: (data: any) => Promise<IListResult<IVConversation>>;
   connections: (data: any) => Promise<IListResult<IVConnection>>;
+  httpConnections: (data: any) => Promise<IListResult<IVHttpConnection>>;
+  httpDetail: (data: IVHttpConnection) => Promise<MessageCompress[]>
   // frameList: (page: number, size: number) => Promise<IListResult<IFrameInfo>>;
 }
 // const compute = (page: number, size: number): Pagination => {
@@ -84,9 +87,11 @@ export const useStore = create<PcapState>()((set) => {
       case ComType.FRAMES:
       case ComType.CONVERSATIONS:
       case ComType.CONNECTIONS:
+      case ComType.HTTP_CONNECTIONS:
         emitter.emit(id, deserialize(body));
         break;
       case ComType.FRAME_SCOPE_RES:
+      case ComType.HTTP_DETAIL_RES:
         emitter.emit(id, body);
         break;
       case ComType.RESPONSE:
@@ -118,6 +123,14 @@ export const useStore = create<PcapState>()((set) => {
       const req = new ComMessage(ComType.REQUEST, data);
       return doRequest<IListResult<IVConnection>>(req);
       // return Promise.resolve(connMock);
+    },
+    httpConnections: (data: any): Promise<IListResult<IVHttpConnection>> => {
+      const req = new ComMessage(ComType.REQUEST, data);
+      return doRequest<IListResult<IVHttpConnection>>(req);
+    },
+    httpDetail: (data: IVHttpConnection): Promise<MessageCompress[]> => {
+      const req = new ComMessage(ComType.HTTP_DETAIL_REQ, data);
+      return doRequest<MessageCompress[]>(req);
     },
 
     // frameList: (page: number, size: number): Promise<IListResult<IFrameInfo>> => {

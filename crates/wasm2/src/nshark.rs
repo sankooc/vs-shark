@@ -2,7 +2,7 @@ use js_sys::Uint8Array;
 use pcap::common::{concept::Criteria, Instance};
 use wasm_bindgen::prelude::*;
 
-use crate::entity::{parse_http_message, Conf, FrameRange, FrameResult};
+use crate::entity::{parse_header_content, parse_http_message, Conf, FrameRange, FrameResult};
 
 #[wasm_bindgen]
 pub struct WContext {
@@ -94,6 +94,16 @@ impl WContext {
     #[wasm_bindgen]
     pub fn http_message_detail(&self, head: String, headers: Vec<u8>, body: Option<Vec<u8>>) -> String {
         let rs = parse_http_message(&head, headers, body);
+        serde_json::to_string(&rs).unwrap_or("{}".into())
+    }
+    #[wasm_bindgen]
+    pub fn http_header_parse(&self,  head: String, header: &Uint8Array, body: &Uint8Array) -> String  {
+        let slice = header.to_vec();
+        let mut content = None;
+        if body.length() > 0 {
+            content = Some(body.to_vec());
+        }
+        let rs = parse_http_message(&head, slice, content);
         serde_json::to_string(&rs).unwrap_or("{}".into())
     }
 }

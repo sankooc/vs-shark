@@ -5,6 +5,7 @@ import { Menu } from "primereact/menu";
 
 import FrameList from "./frame";
 import ConversationList from './conversation';
+import HttpConnectionList from './http';
 import Empty from "./loading/empty";
 import Loading from "./loading";
 import { _log } from "../util";
@@ -63,12 +64,13 @@ const Main = () => {
     return mitems;
   };
   const buildPage = (): ReactElement => {
-    switch (select) {
-      case "tcp":
-        return <ConversationList />;
-      default:
-        return <FrameList />;
-    }
+    // switch (select) {
+    //   case "tcp":
+    //     return <ConversationList />;
+    //   default:
+    //     return <FrameList />;
+    // }
+    return <HttpConnectionList/>
   };
   if (status <= 0 && info && progress) {
     setStatus(1);

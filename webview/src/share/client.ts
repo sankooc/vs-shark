@@ -1,8 +1,21 @@
 import { load, WContext, Conf } from "rshark";
-import { ComLog, ComMessage, ComRequest, ComType, PcapFile } from "./common";
+import { ComLog, ComMessage, ComRequest, ComType, MessageCompress, PcapFile } from "./common";
 import mitt, { Emitter } from "mitt";
+import { IVHttpConnection } from "./gen";
 
 export const BATCH_SIZE = 1024 * 1024 * 1;
+
+function concatLargeUint8Arrays(arrays: Uint8Array[]): Uint8Array {
+  const totalLength = arrays.reduce((acc, arr) => acc + arr.length, 0);
+  const buffer = new ArrayBuffer(totalLength);
+  const result = new Uint8Array(buffer);
+  let offset = 0;
+  for (let arr of arrays) {
+      result.set(arr, offset);
+      offset += arr.length;
+  }
+  return result;
+}
 
 export abstract class PCAPClient {
 
@@ -70,6 +83,10 @@ export abstract class PCAPClient {
             rs = this.ctx.list_connections(param.conversionIndex, start, size);
             this.emitMessage(ComMessage.new(ComType.CONNECTIONS, rs, requestId));
             return;
+          case "http_connection":
+            rs = this.ctx.list_http(start, size);
+            this.emitMessage(ComMessage.new(ComType.HTTP_CONNECTIONS, rs, requestId));
+            return;
           default:
             return;
         }
@@ -119,6 +136,39 @@ export abstract class PCAPClient {
     this.emitMessage(
       ComMessage.new(ComType.error, "failed", requestId),
     );
+  }
+  private async http_detail(http_connection: IVHttpConnection): Promise<MessageCompress[]> {
+    const {request, response} = http_connection;
+    const list = [];
+    if (request) {
+      const { request_headers: headers, request_body: body } = http_connection;
+      const header_data = await this.pickMultiData(headers);
+      const body_data = await this.pickMultiData(body);
+      list.push({
+        json: this.ctx!.http_header_parse(request, header_data, body_data),
+        data: body_data
+      });
+    }
+    if (response) {
+      const { response_headers: headers, response_body: body } = http_connection;
+      const header_data = await this.pickMultiData(headers);
+      const body_data = await this.pickMultiData(body);
+      list.push({
+        json: this.ctx!.http_header_parse(response, header_data, body_data),
+        data: body_data
+      });
+    }
+    return list;
+  }
+  private async pickMultiData(segments: [number, number][]): Promise<Uint8Array> {
+    if (segments.length === 0) {
+      return new Uint8Array(0);
+    }
+    const list = [];
+    for (const segment of segments) {
+      list.push(await this.pickData(segment[0], segment[1]));
+    }
+    return concatLargeUint8Arrays(list);
   }
 
   
@@ -211,6 +261,13 @@ export abstract class PCAPClient {
             //   this.scope(id, catelog, param.index);
             //   break;
           }
+          break;
+
+        case ComType.HTTP_DETAIL_REQ:
+          const rs = await this.http_detail(body as IVHttpConnection);
+          this.emitMessage(
+            ComMessage.new(ComType.HTTP_DETAIL_RES, rs, id),
+          );
           break;
         default:
         // console.log(msg.body);
