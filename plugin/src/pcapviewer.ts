@@ -75,6 +75,9 @@ class PcapDocument extends Disposable implements vscode.CustomDocument {
 
   dispose(): void {
     console.log(this.uri.path + "dispose");
+    if (this.client) {
+      this.client.ctx?.free();
+    }
     super.dispose();
   }
 }
@@ -167,6 +170,22 @@ export class PcapViewerProvider
       webviewPanel.webview,
       ENTRY,
     );
+    // vscode.window.onDidChangeActiveColorTheme(theme => {
+    //   console.log('theme', theme);
+    //   const customColors = vscode.workspace.getConfiguration('workbench').get('colorCustomizations');
+    //   const tokens = vscode.workspace.getConfiguration('workbench.colorCustomizations');
+    //   console.log('theme', theme);
+    //   const themes = vscode.extensions.all.flatMap(ext => ext.packageJSON?.contributes?.themes || []).filter(t => t.label === vscode.window.activeColorTheme.kind);
+
+    //   const themeFile = themes[0]?.path;
+    //   console.log('theme', theme);
+
+    //   // webviewPanel.webview.postMessage({
+    //   //   type: "vscode-theme-change",
+    //   //   themeKind: theme.kind, // light / dark / high contrast
+    //   // });
+    // });
+
     const info: PcapFile = { name: document.uri.fsPath, size: 0, start: 0 };
     if (!document.client) {
       // document.watcher;

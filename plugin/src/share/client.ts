@@ -1,8 +1,21 @@
 import { load, WContext, Conf } from "rshark";
-import { ComLog, ComMessage, ComRequest, ComType, PcapFile } from "./common";
+import { ComLog, ComMessage, ComRequest, ComType, MessageCompress, PcapFile } from "./common";
 import mitt, { Emitter } from "mitt";
+import { IVHttpConnection } from "./gen";
 
-export const BATCH_SIZE = 1024 * 1024;
+export const BATCH_SIZE = 1024 * 1024 * 1;
+
+function concatLargeUint8Arrays(arrays: Uint8Array[]): Uint8Array {
+  const totalLength = arrays.reduce((acc, arr) => acc + arr.length, 0);
+  const buffer = new ArrayBuffer(totalLength);
+  const result = new Uint8Array(buffer);
+  let offset = 0;
+  for (let arr of arrays) {
+      result.set(arr, offset);
+      offset += arr.length;
+  }
+  return result;
+}
 
 export abstract class PCAPClient {
 
@@ -25,8 +38,8 @@ export abstract class PCAPClient {
     }
     if (this.ctx) {
       try {
-        // this.appendData(data);
-        const rs = await this.ctx.update_slice(data);
+        const rs = await this.ctx.update(data);
+        console.log('progress', rs);
         this.emitMessage(ComMessage.new(ComType.PRGRESS_STATUS, rs));
         return rs;
       } catch (e) {
@@ -40,21 +53,22 @@ export abstract class PCAPClient {
   abstract printLog(log: ComLog): void;
   abstract emitMessage(msg: ComMessage<any>): void;
   abstract pickData(start: number, end: number): Promise<Uint8Array>;
-  private async frameData(index: number): Promise<Uint8Array> {
-    const range = this.ctx!.frame_range(index);
-    return this.pickData(range.start, range.end);
-  }
+  // private async frameData(index: number): Promise<Uint8Array> {
+  //   const range = this.ctx!.frame_range(index);
+  //   return this.pickData(range.data.start, range.data.end);
+  // }
 
   private touchFile(fileInfo: PcapFile): void {
     this.info = fileInfo;
+    console.log('into', this.info);
     this.emitMessage(ComMessage.new(ComType.FILEINFO, fileInfo));
   }
   private list(
     requestId: string,
     catelog: string,
-    start: number,
-    size: number,
+    param: any,
   ): void {
+    const { start, size } = param;
     if (this.ctx) {
       try {
         let rs;
@@ -62,6 +76,18 @@ export abstract class PCAPClient {
           case "frame":
             rs = this.ctx.list("frame", start, size);
             this.emitMessage(ComMessage.new(ComType.FRAMES, rs, requestId));
+            return;
+          case "conversation":
+            rs = this.ctx.list_conversations(start, size);
+            this.emitMessage(ComMessage.new(ComType.CONVERSATIONS, rs, requestId));
+            return;
+          case "connection":
+            rs = this.ctx.list_connections(param.conversionIndex, start, size);
+            this.emitMessage(ComMessage.new(ComType.CONNECTIONS, rs, requestId));
+            return;
+          case "http_connection":
+            rs = this.ctx.list_http(start, size);
+            this.emitMessage(ComMessage.new(ComType.HTTP_CONNECTIONS, rs, requestId));
             return;
           default:
             return;
@@ -78,11 +104,26 @@ export abstract class PCAPClient {
   private async select(requestId: string, catelog: string, index: number): Promise<void> {
     if (this.ctx) {
       try {
-        let rs;
+        // let rs;
         switch (catelog) {
           case "frame":
-            let data = await this.frameData(index);
-            rs = this.ctx.select("frame", index, data);
+            const range = this.ctx!.frame_range(index);
+            const data = await this.pickData(range.data.start, range.data.end);
+            const frameResult = this.ctx.select_frame(index, data);
+            const rs: any = {};
+            if (range.compact()) {
+              rs.data = data;
+            } else {
+              const _start = range.frame.start - range.data.start;
+              const _end = range.data.end - range.frame.start;
+              rs.data = data.slice(_start, _end);
+            }
+            rs.start = range.frame.start;
+            rs.end = range.frame.end;
+            rs.liststr = frameResult.list();
+            if (frameResult.extra()?.length > 0) {
+              rs.extra = frameResult.extra();
+            }
             this.emitMessage(
               ComMessage.new(ComType.FRAMES_SELECT, rs, requestId),
             );
@@ -98,29 +139,63 @@ export abstract class PCAPClient {
       ComMessage.new(ComType.error, "failed", requestId),
     );
   }
-
-  private async scope(requestId: string, catelog: string, index: number): Promise<void> {
-    if (this.ctx) {
-      try {
-        switch (catelog) {
-          case "frame":
-            const range = this.ctx!.frame_range(index);
-            this.emitMessage(
-              ComMessage.new(ComType.FRAME_SCOPE_RES, {start: range.start, end: range.end}, requestId),
-            );
-            return;
-          default:
-            return;
-        }
-      } catch (e) {
-        console.error(e);
-      }
+  private async http_detail(http_connection: IVHttpConnection): Promise<MessageCompress[]> {
+    const {request, response} = http_connection;
+    const list = [];
+    if (request) {
+      const { request_headers: headers, request_body: body } = http_connection;
+      const header_data = await this.pickMultiData(headers);
+      const body_data = await this.pickMultiData(body);
+      list.push({
+        json: this.ctx!.http_header_parse(request, header_data, body_data),
+        data: body_data
+      });
     }
-    this.emitMessage(
-      ComMessage.new(ComType.error, "failed", requestId),
-    );
-    return;
+    if (response) {
+      const { response_headers: headers, response_body: body } = http_connection;
+      const header_data = await this.pickMultiData(headers);
+      const body_data = await this.pickMultiData(body);
+      list.push({
+        json: this.ctx!.http_header_parse(response, header_data, body_data),
+        data: body_data
+      });
+    }
+    return list;
   }
+  private async pickMultiData(segments: [number, number][]): Promise<Uint8Array> {
+    if (segments.length === 0) {
+      return new Uint8Array(0);
+    }
+    const list = [];
+    for (const segment of segments) {
+      list.push(await this.pickData(segment[0], segment[1]));
+    }
+    return concatLargeUint8Arrays(list);
+  }
+
+  
+  // private async scope(requestId: string, catelog: string, index: number): Promise<void> {
+  //   if (this.ctx) {
+  //     try {
+  //       switch (catelog) {
+  //         case "frame":
+  //           const range = this.ctx!.frame_range(index);
+  //           this.emitMessage(
+  //             ComMessage.new(ComType.FRAME_SCOPE_RES, {start: range.start, end: range.end}, requestId),
+  //           );
+  //           return;
+  //         default:
+  //           return;
+  //       }
+  //     } catch (e) {
+  //       console.error(e);
+  //     }
+  //   }
+  //   this.emitMessage(
+  //     ComMessage.new(ComType.error, "failed", requestId),
+  //   );
+  //   return;
+  // }
   private async process(): Promise<void> {
     if (this.isPendding) {
       return;
@@ -176,15 +251,25 @@ export abstract class PCAPClient {
           const { catelog, type, param } = req;
           switch (type) {
             case "list":
-              this.list(id, catelog, param.start, param.size);
+              this.list(id, catelog, param);
               break;
             case "select":
               this.select(id, catelog, param.index);
               break;
-            case "scope":
-              this.scope(id, catelog, param.index);
-              break;
+            // case "conversation":
+            //   this.conversations(id, param.start, param.size);
+            //   break;
+            // case "scope":
+            //   this.scope(id, catelog, param.index);
+            //   break;
           }
+          break;
+
+        case ComType.HTTP_DETAIL_REQ:
+          const rs = await this.http_detail(body as IVHttpConnection);
+          this.emitMessage(
+            ComMessage.new(ComType.HTTP_DETAIL_RES, rs, id),
+          );
           break;
         default:
         // console.log(msg.body);

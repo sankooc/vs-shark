@@ -1,0 +1,593 @@
+{
+    "items": [
+        {
+            "request": "GET / HTTP/1.1",
+            "response": "HTTP/1.1 200 OK",
+            "rt": "5034µs",
+            "content_type": "text/html",
+            "length": 3121,
+            "request_headers": [
+                [
+                    1342,
+                    1664
+                ]
+            ],
+            "request_body": [],
+            "response_headers": [
+                [
+                    1845,
+                    2167
+                ]
+            ],
+            "response_body": [
+                [
+                    2167,
+                    3276
+                ],
+                [
+                    3358,
+                    4806
+                ],
+                [
+                    4888,
+                    5452
+                ]
+            ]
+        },
+        {
+            "request": "GET /icons/ubuntu-logo.png HTTP/1.1",
+            "response": "HTTP/1.1 200 OK",
+            "rt": "3201µs",
+            "content_type": "image/png",
+            "length": 3322,
+            "request_headers": [
+                [
+                    5653,
+                    5918
+                ]
+            ],
+            "request_body": [],
+            "response_headers": [
+                [
+                    6017,
+                    6285
+                ]
+            ],
+            "response_body": [
+                [
+                    6285,
+                    7448
+                ],
+                [
+                    7530,
+                    8978
+                ],
+                [
+                    9060,
+                    9771
+                ]
+            ]
+        },
+        {
+            "request": "GET /favicon.ico HTTP/1.1",
+            "response": "HTTP/1.1 404 Not Found",
+            "rt": "271µs",
+            "content_type": "text/html; charset=iso-8859-1",
+            "length": 276,
+            "request_headers": [
+                [
+                    9962,
+                    10227
+                ]
+            ],
+            "request_body": [],
+            "response_headers": [
+                [
+                    10333,
+                    10525
+                ]
+            ],
+            "response_body": [
+                [
+                    10525,
+                    10801
+                ]
+            ]
+        },
+        {
+            "request": "GET /dvwa HTTP/1.1",
+            "response": "HTTP/1.1 301 Moved Permanently",
+            "rt": "568µs",
+            "content_type": "text/html; charset=iso-8859-1",
+            "length": 315,
+            "request_headers": [
+                [
+                    11493,
+                    11815
+                ]
+            ],
+            "request_body": [],
+            "response_headers": [
+                [
+                    12011,
+                    12243
+                ]
+            ],
+            "response_body": [
+                [
+                    12243,
+                    12558
+                ]
+            ]
+        },
+        {
+            "request": "GET /dvwa/ HTTP/1.1",
+            "response": "HTTP/1.1 302 Found",
+            "rt": "45395µs",
+            "content_type": "text/html; charset=UTF-8",
+            "length": 0,
+            "request_headers": [
+                [
+                    12743,
+                    13065
+                ]
+            ],
+            "request_body": [],
+            "response_headers": [
+                [
+                    13249,
+                    13750
+                ]
+            ],
+            "response_body": []
+        },
+        {
+            "request": "GET /dvwa/login.php HTTP/1.1",
+            "response": "HTTP/1.1 200 OK",
+            "rt": "80750µs",
+            "content_type": "text/html;charset=utf-8",
+            "length": 625,
+            "request_headers": [
+                [
+                    13862,
+                    14251
+                ]
+            ],
+            "request_body": [],
+            "response_headers": [
+                [
+                    14432,
+                    14765
+                ]
+            ],
+            "response_body": [
+                [
+                    14765,
+                    15390
+                ]
+            ]
+        },
+        {
+            "request": "GET /dvwa/dvwa/css/login.css HTTP/1.1",
+            "response": "HTTP/1.1 200 OK",
+            "rt": "1403µs",
+            "content_type": "text/css",
+            "length": 406,
+            "request_headers": [
+                [
+                    15593,
+                    15932
+                ]
+            ],
+            "request_body": [],
+            "response_headers": [
+                [
+                    16113,
+                    16431
+                ]
+            ],
+            "response_body": [
+                [
+                    16431,
+                    16837
+                ]
+            ]
+        },
+        {
+            "request": "GET /dvwa/dvwa/images/login_logo.png HTTP/1.1",
+            "response": "HTTP/1.1 200 OK",
+            "rt": "1709µs",
+            "content_type": "image/png",
+            "length": 9088,
+            "request_headers": [
+                [
+                    17048,
+                    17394
+                ]
+            ],
+            "request_body": [],
+            "response_headers": [
+                [
+                    17755,
+                    18024
+                ]
+            ],
+            "response_body": [
+                [
+                    18024,
+                    19186
+                ],
+                [
+                    19268,
+                    20716
+                ],
+                [
+                    20798,
+                    22246
+                ],
+                [
+                    22328,
+                    23776
+                ],
+                [
+                    23858,
+                    25306
+                ],
+                [
+                    25388,
+                    26836
+                ],
+                [
+                    26918,
+                    27604
+                ]
+            ]
+        },
+        {
+            "request": "POST /dvwa/login.php HTTP/1.1",
+            "response": "HTTP/1.1 302 Found",
+            "rt": "76037µs",
+            "content_type": "text/html; charset=UTF-8",
+            "length": 0,
+            "request_headers": [
+                [
+                    28553,
+                    29089
+                ]
+            ],
+            "request_body": [
+                [
+                    29089,
+                    29177
+                ]
+            ],
+            "response_headers": [
+                [
+                    29361,
+                    29678
+                ]
+            ],
+            "response_body": []
+        },
+        {
+            "request": "GET /dvwa/index.php HTTP/1.1",
+            "response": "HTTP/1.1 200 OK",
+            "rt": "1437µs",
+            "content_type": "text/html;charset=utf-8",
+            "length": 2365,
+            "request_headers": [
+                [
+                    29872,
+                    30308
+                ]
+            ],
+            "request_body": [],
+            "response_headers": [
+                [
+                    30489,
+                    30823
+                ]
+            ],
+            "response_body": [
+                [
+                    30823,
+                    31920
+                ],
+                [
+                    32002,
+                    33270
+                ]
+            ]
+        },
+        {
+            "request": "GET /dvwa/dvwa/css/main.css HTTP/1.1",
+            "response": "HTTP/1.1 200 OK",
+            "rt": "1173µs",
+            "content_type": "text/css",
+            "length": 1109,
+            "request_headers": [
+                [
+                    33472,
+                    33811
+                ]
+            ],
+            "request_body": [],
+            "response_headers": [
+                [
+                    34700,
+                    35019
+                ]
+            ],
+            "response_body": [
+                [
+                    35019,
+                    36128
+                ]
+            ]
+        },
+        {
+            "request": "GET /dvwa/dvwa/js/dvwaPage.js HTTP/1.1",
+            "response": "HTTP/1.1 200 OK",
+            "rt": "1558µs",
+            "content_type": "text/javascript",
+            "length": 466,
+            "request_headers": [
+                [
+                    34195,
+                    34519
+                ]
+            ],
+            "request_body": [],
+            "response_headers": [
+                [
+                    37028,
+                    37354
+                ]
+            ],
+            "response_body": [
+                [
+                    37354,
+                    37820
+                ]
+            ]
+        },
+        {
+            "request": "GET /dvwa/dvwa/js/add_event_listeners.js HTTP/1.1",
+            "response": "HTTP/1.1 200 OK",
+            "rt": "526µs",
+            "content_type": "text/javascript",
+            "length": 276,
+            "request_headers": [
+                [
+                    36605,
+                    36929
+                ]
+            ],
+            "request_body": [],
+            "response_headers": [
+                [
+                    38001,
+                    38326
+                ]
+            ],
+            "response_body": [
+                [
+                    38326,
+                    38602
+                ]
+            ]
+        },
+        {
+            "request": "GET /dvwa/dvwa/images/logo.png HTTP/1.1",
+            "response": "HTTP/1.1 200 OK",
+            "rt": "833µs",
+            "content_type": "image/png",
+            "length": 5044,
+            "request_headers": [
+                [
+                    38725,
+                    39071
+                ]
+            ],
+            "request_body": [],
+            "response_headers": [
+                [
+                    39252,
+                    39522
+                ]
+            ],
+            "response_body": [
+                [
+                    39522,
+                    40683
+                ],
+                [
+                    40765,
+                    42213
+                ],
+                [
+                    42295,
+                    43743
+                ],
+                [
+                    43825,
+                    44812
+                ]
+            ]
+        },
+        {
+            "request": "GET /dvwa/favicon.ico HTTP/1.1",
+            "response": "HTTP/1.1 200 OK",
+            "rt": "718µs",
+            "content_type": "image/vnd.microsoft.icon",
+            "length": 1406,
+            "request_headers": [
+                [
+                    45008,
+                    45354
+                ]
+            ],
+            "request_body": [],
+            "response_headers": [
+                [
+                    45453,
+                    45736
+                ]
+            ],
+            "response_body": [
+                [
+                    45736,
+                    46884
+                ],
+                [
+                    46966,
+                    47224
+                ]
+            ]
+        },
+        {
+            "request": "GET /dvwa/vulnerabilities/sqli/ HTTP/1.1",
+            "response": "HTTP/1.1 200 OK",
+            "rt": "7992µs",
+            "content_type": "text/html;charset=utf-8",
+            "length": 1386,
+            "request_headers": [
+                [
+                    48512,
+                    48948
+                ]
+            ],
+            "request_body": [],
+            "response_headers": [
+                [
+                    49129,
+                    49464
+                ]
+            ],
+            "response_body": [
+                [
+                    49464,
+                    50560
+                ],
+                [
+                    50642,
+                    50932
+                ]
+            ]
+        },
+        {
+            "request": "GET /dvwa/security.php HTTP/1.1",
+            "response": "HTTP/1.1 200 OK",
+            "rt": "4000µs",
+            "content_type": "text/html;charset=utf-8",
+            "length": 1714,
+            "request_headers": [
+                [
+                    52569,
+                    53017
+                ]
+            ],
+            "request_body": [],
+            "response_headers": [
+                [
+                    53198,
+                    53533
+                ]
+            ],
+            "response_body": [
+                [
+                    53533,
+                    54629
+                ],
+                [
+                    54711,
+                    55329
+                ]
+            ]
+        },
+        {
+            "request": "GET /dvwa/dvwa/images/lock.png HTTP/1.1",
+            "response": "HTTP/1.1 200 OK",
+            "rt": "1052µs",
+            "content_type": "image/png",
+            "length": 761,
+            "request_headers": [
+                [
+                    55534,
+                    55883
+                ]
+            ],
+            "request_body": [],
+            "response_headers": [
+                [
+                    55982,
+                    56249
+                ]
+            ],
+            "response_body": [
+                [
+                    56249,
+                    57010
+                ]
+            ]
+        },
+        {
+            "request": "POST /dvwa/security.php HTTP/1.1",
+            "response": "HTTP/1.1 302 Found",
+            "rt": "591µs",
+            "content_type": "text/html; charset=UTF-8",
+            "length": 0,
+            "request_headers": [
+                [
+                    57424,
+                    57963
+                ]
+            ],
+            "request_body": [
+                [
+                    57963,
+                    58040
+                ]
+            ],
+            "response_headers": [
+                [
+                    58142,
+                    58501
+                ]
+            ],
+            "response_body": []
+        },
+        {
+            "request": "GET /dvwa/security.php HTTP/1.1",
+            "response": "HTTP/1.1 200 OK",
+            "rt": "2199µs",
+            "content_type": "text/html;charset=utf-8",
+            "length": 1732,
+            "request_headers": [
+                [
+                    58698,
+                    59130
+                ]
+            ],
+            "request_body": [],
+            "response_headers": [
+                [
+                    59229,
+                    59563
+                ]
+            ],
+            "response_body": [
+                [
+                    59563,
+                    60660
+                ],
+                [
+                    60742,
+                    61377
+                ]
+            ]
+        }
+    ],
+    "total": 23,
+    "start": 0
+}
