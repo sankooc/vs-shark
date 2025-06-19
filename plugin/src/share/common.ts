@@ -19,6 +19,11 @@ export enum ComType {
   FILEINFO = "fileinfo",
   log = "log",
   error = "error",
+  CONVERSATIONS = "conversations",
+  CONNECTIONS = "connections",
+  HTTP_CONNECTIONS = "http_connections",
+  HTTP_DETAIL_REQ = "http_detail_req",
+  HTTP_DETAIL_RES = "http_detail_res",
 }
 
 export interface ComRequest {
@@ -74,11 +79,13 @@ export interface IField {
   summary: string;
   start?: number;
   size?: number;
+  source?: number;
   children: IField[] | null;
 }
 
 export interface Cursor {
   scope: VRange;
+  data?: Uint8Array;
   selected?: {
     start: number;
     size: number;
@@ -100,8 +107,8 @@ export class HexV {
 }
 
 export class VRange {
-  constructor(public start: number, public end: number){}
-  public size(): number{
+  constructor(public start: number, public end: number) { }
+  public size(): number {
     if (this.end > this.start) {
       this.end - this.start;
     }
@@ -160,14 +167,59 @@ export class Pagination {
   filter?: string;
 }
 
-export interface IResult {
-  items: any[];
+export interface IResult<T> {
+  items: T[];
   total: number;
   page: number;
   size: number;
 }
 
-// export interface CField {
-//   summary: string;
-//   children?: CField[];
-// }
+
+export interface IFrameSelect {
+  data: Uint8Array;
+  start: number;
+  end: number;
+  fields: IField[];
+  extra?: Uint8Array;
+}
+
+export interface HttpMessageWrap {
+  headers: string[];
+  mime: string;
+  parsed_content?: string;
+  raw?: Uint8Array
+}
+
+export interface MessageCompress{
+  json: string,
+  data: Uint8Array
+}
+
+
+export const compute = (page: number, size: number): Pagination => {
+  if (page < 1) {
+    return { start: 0, size: size };
+  }
+  const start = (page - 1) * size;
+  return { start, size };
+};
+
+
+const UNITS = ["B", "KB", "MB", "GB", "TB", "PB"];
+
+export const format_bytes_single_unit = (bytes: number): string => {
+  if (bytes <= 0) {
+    return '0';
+  }
+  let size = bytes;
+  let low = 0;
+  let unit_index = 0;
+
+  while (size >= 1024 && unit_index < UNITS.length - 1) {
+    low = size % 1024;
+    size = Math.floor(size / 1024);
+    unit_index += 1;
+  }
+
+  return `${size}.${low} ${UNITS[unit_index]}`;
+}

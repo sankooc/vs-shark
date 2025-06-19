@@ -18,8 +18,12 @@ import mitt from "mitt";
 
 // import convMock from '../mock/conversation.json';
 // import connMock from '../mock/connection.json';
+// import frameMock from '../mock/frame.json';
+import { PartialTheme } from "@fluentui/react-components";
+import {webDarkTheme } from '@fluentui/react-components';
 
 interface PcapState {
+  theme: PartialTheme;
   fileinfo?: PcapFile;
   progress?: IProgressStatus;
   frameResult?: IListResult<IFrameInfo>;
@@ -63,6 +67,12 @@ export const useStore = create<PcapState>()((set) => {
   _log("create pcap store");
   onMessage("message", (e: any) => {
     const { type, body, id } = e.data;
+    if (type === "vscode-theme-change") {
+      console.log('detect theme change');
+      console.log(body);
+      set((state) => ({ ...state, theme: body }));
+      return;
+    }
     switch (type) {
       case ComType.SERVER_REDAY: {
         //   emitMessage(ComMessage.new(ComType.CLIENT_REDAY, Date.now()));
@@ -102,13 +112,16 @@ export const useStore = create<PcapState>()((set) => {
         break;
     }
   });
+  emitMessage(ComMessage.new(ComType.CLIENT_REDAY, Date.now()));
   return {
+    theme: webDarkTheme,
     sendReady: () => {
       emitMessage(ComMessage.new(ComType.CLIENT_REDAY, Date.now()));
     },
     request: <F>(data: any): Promise<F> => {
       const req = new ComMessage(ComType.REQUEST, data);
       return doRequest<F>(req);
+      // return Promise.resolve(frameMock);
     },
     requestData: (data: VRange): Promise<DataResponse> => {
       const req = new ComMessage(ComType.DATA, data);

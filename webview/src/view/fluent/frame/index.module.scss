@@ -1,0 +1,61 @@
+@use "../../scss/common";
+
+.cell {
+    font-weight: bold;
+    white-space: nowrap;
+}
+
+.headcell {
+    padding-left: 8px;
+    border-left-width: 8px;
+    border-left-style: solid;
+}
+
+.tcp {
+    border-color: common.$t-tcp;
+}
+
+.errdata {
+    border-color: common.$t-errdata;
+}
+
+.arp {
+    border-color: common.$t-arp;
+}
+
+.http {
+    border-color: common.$t-http;
+}
+
+.deactive {
+    border-color: common.$t-deactive;
+}
+
+.tls {
+    border-color: common.$t-tls;
+}
+
+.ssdp {
+    border-color: common.$t-ssdp;
+}
+
+.udp {
+    border-color: common.$t-udp;
+}
+
+.dns {
+    border-color: common.$t-dns;
+}
+
+.pppoed {
+    border-color: common.$t-pppoed;
+}
+
+.pppoes {
+    border-color: common.$t-pppoes;
+}
+
+.icmp,
+.icmp6 {
+    border-color: common.$t-icmp;
+}

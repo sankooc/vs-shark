@@ -2,7 +2,7 @@ use js_sys::Uint8Array;
 use pcap::common::{concept::Criteria, Instance};
 use wasm_bindgen::prelude::*;
 
-use crate::entity::{parse_header_content, parse_http_message, Conf, FrameRange, FrameResult};
+use crate::entity::{parse_http_message, Conf, FrameRange, FrameResult};
 
 #[wasm_bindgen]
 pub struct WContext {
