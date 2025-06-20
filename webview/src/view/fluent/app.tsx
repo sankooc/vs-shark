@@ -10,6 +10,10 @@ import {
   bundleIcon,
   TextboxRotate9020Regular,
   TextboxRotate9020Filled,
+  FormSparkle20Regular,
+  FormSparkle20Filled,
+  PlugConnected20Filled,
+  PlugConnected20Regular,
 } from "@fluentui/react-icons";
 
 import FrameComponent from "./frame";
@@ -17,11 +21,11 @@ import { useStore } from "../store";
 import LoadingComponent from './loading';
 
 const FrameIcon = bundleIcon(TextboxRotate9020Filled, TextboxRotate9020Regular);
+const ConversationIcon = bundleIcon(FormSparkle20Filled, FormSparkle20Regular);
+const HttpIcon = bundleIcon(PlugConnected20Filled, PlugConnected20Regular);
 
 const Basic = () => {
   const [select, setSelect] = React.useState<string>('Frames');
-
-
   const info = useStore((state) => state.fileinfo);
   const progress = useStore((state) => state.progress);
 
@@ -29,10 +33,10 @@ const Basic = () => {
   console.log(info);
   console.log(progress);
   console.log('----');
+  if (!info || !progress) {
+    return <LoadingComponent info={info} progress={progress}/>
+  }
   const renderComponent = (): React.ReactElement => {
-    if (!info || !progress) {
-      return <LoadingComponent info={info} progress={progress}/>
-    }
     return <FrameComponent />
   }
   const components = [{
@@ -52,7 +56,7 @@ const Basic = () => {
         open={true}
         type="inline"
         multiple={false}
-        className="w-15rem"
+        className="w-10rem"
       >
 
         <NavDrawerBody>

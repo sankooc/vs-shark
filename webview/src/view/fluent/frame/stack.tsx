@@ -48,12 +48,14 @@ export default function Stack(props: StackProps) {
   }, [props.select]);
 
   const send = (selected: IField) => {
-    // console.log(selected);
+    console.log('selected', selected);
+    console.log(data);
     if (selected.source) {
       let extra = data.extra;
       const cursor = {
         scope: new VRange(0, extra?.length || 0),
         data: extra,
+        tab: 'Segment',
         selected: {
           start: selected.start || 0,
           size: selected.size || 0,
@@ -64,6 +66,7 @@ export default function Stack(props: StackProps) {
       const cursor = {
         scope: new VRange(data.start, data.end),
         data: data.data,
+        tab: `Frame(${props.select + 1})`,
         selected: {
           start: selected.start || 0,
           size: selected.size || 0,

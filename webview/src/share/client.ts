@@ -113,7 +113,7 @@ export abstract class PCAPClient {
               rs.data = data;
             } else {
               const _start = range.frame.start - range.data.start;
-              const _end = range.data.end - range.frame.start;
+              const _end = range.frame.end - range.data.start;
               rs.data = data.slice(_start, _end);
             }
             rs.start = range.frame.start;

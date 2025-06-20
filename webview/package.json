@@ -24,12 +24,9 @@
     "immer": "^10.1.1",
     "mitt": "^3.0.1",
     "primeflex": "^4.0.0",
-    "primeicons": "^7.0.0",
-    "primereact": "^10.9.5",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-virtualized-auto-sizer": "^1.0.26",
-    "react-window": "^1.8.11",
     "rshark": "file:../crates/wasm2/pkg",
     "zustand": "^5.0.3"
   },

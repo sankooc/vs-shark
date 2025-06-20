@@ -179,11 +179,6 @@ export class PcapViewerProvider
 
     //   const themeFile = themes[0]?.path;
     //   console.log('theme', theme);
-
-    //   // webviewPanel.webview.postMessage({
-    //   //   type: "vscode-theme-change",
-    //   //   themeKind: theme.kind, // light / dark / high contrast
-    //   // });
     // });
 
     const info: PcapFile = { name: document.uri.fsPath, size: 0, start: 0 };
