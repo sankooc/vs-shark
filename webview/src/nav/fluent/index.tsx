@@ -1,6 +1,6 @@
 
 import { FluentProvider, webDarkTheme } from '@fluentui/react-components';
-import '../../share/index.scss';
+import '../index.scss';
 import Application from './app';
 
 

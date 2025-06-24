@@ -201,7 +201,6 @@ fn parse_client_hello(reader: &mut Reader, field: &mut Field) -> Result<()> {
 
 /// Parse ServerHello message
 fn parse_server_hello(reader: &mut Reader, field: &mut Field) -> Result<()> {
-
     // Parse server version
 
     add_field_format_fn!(field, reader, reader.read16(true)?, field_tls_version);
@@ -222,7 +221,7 @@ fn parse_server_hello(reader: &mut Reader, field: &mut Field) -> Result<()> {
     //     let cipher_suites_len = add_field_format!(field, reader, reader.read16(true)?, "Cipher Suites Length: {}");
     //     add_sub_field_with_reader!(field, reader, move |reader, field| field_ciper_suite_list(cipher_suites_len, reader, field));
     // }
-    
+
     add_field_format_fn!(field, reader, reader.read16(true)?, field_ciper_suite_str);
     add_field_format_fn!(field, reader, reader.read8()?, field_compress_str);
 
@@ -286,7 +285,6 @@ fn _parse_certificate(reader: &mut Reader, field: &mut Field) {
         children.push(cert_field);
     }
 }
-
 
 /// Get string representation of handshake message type
 fn handshake_type(msg_type: u8) -> String {

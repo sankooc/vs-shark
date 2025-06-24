@@ -1,10 +1,7 @@
-// import { TabView, TabPanel } from "primereact/tabview";
-// import Hex from "./hex";
 import "./hex.scss";
 import { Cursor } from "../../../share/common";
 import { Tab, TabList } from "@fluentui/react-components";
-// import { useStore } from "../../../store";
-// import { useEffect, useState } from "react";
+import { useState } from "react";
 
 
 const ALL_EXCEPT_PRINTABLE_LATIN = /[^\x20-\x7f]/g;
@@ -18,7 +15,11 @@ const to_string = (data: Uint8Array): string => {
     return ascii_escape(text);
 };
 
-function Hex(props: { bin?: Uint8Array; highlight?: [number, number] }) {
+interface HexProps {
+    bin?: Uint8Array,
+    highlight?: [number, number]
+}
+function Hex(props: HexProps) {
     const indexes = [];
     const codes = [];
     let start = 0;
@@ -29,7 +30,6 @@ function Hex(props: { bin?: Uint8Array; highlight?: [number, number] }) {
         }
         return "";
     };
-    // const data = props.data;
     const data = { data: props.bin, index: props.highlight };
     let hasData = !!data?.data;
     const texts = [];
@@ -115,15 +115,10 @@ interface Props {
 }
 
 function Component(props: Props) {
-    // let hasSelected = false;
-    // let select = new Uint8Array();
-
     let selected: [number, number] | undefined = undefined;
+    const [tabSelect, setTabSelect] = useState<string>('source');
     const scope = props.cursor?.scope;
-    // let fetch = "";
     if (scope) {
-        // const size = scope.end - scope.start;
-        // fetch = `${scope.start}-${size}`;
         const inx = props.cursor?.selected;
         if (inx) {
             const start = Math.max(inx.start - scope.start, 0);
@@ -136,34 +131,24 @@ function Component(props: Props) {
         return <div style={{ padding: "10px" }}> No Data </div>;
     }
 
-    // if (selected) {
-    //     hasSelected = true;
-    //     select = bin.slice(selected[0], selected[0] + selected[1]);
-    // }
+
+    const hexProps: HexProps = {};
+    if (tabSelect === "select" && selected) {
+        hexProps.bin = bin.slice(selected[0], selected[0] + selected[1]);
+        hexProps.highlight = [0, 0];
+    } else {
+        hexProps.bin = bin;
+        hexProps.highlight = selected;
+    }
     return <div className="h-full flex flex-column">
-        <TabList defaultSelectedValue="tab1">
-            <Tab value="tab1">Frame</Tab>
-            <Tab value="tab2">Select</Tab>
+        <TabList defaultSelectedValue="source" onTabSelect={(_e, { value }) => { setTabSelect(value + "") }}>
+            <Tab value="source">{props.cursor?.tab}</Tab>
+            <Tab value="select">Select</Tab>
         </TabList>
         <div className="flex-1 flex-grow-1">
-            <Hex bin={bin} highlight={selected} />
+            <Hex {...hexProps} />
         </div>
     </div>
-    //   return (
-    //     <TabView
-    //       className="w-full h-full flex flex-column detail-tab"
-    //       style={{ padding: 0 }}
-    //     >
-    //       <TabPanel header="Frame" style={{ padding: 0 }}>
-    //         <Hex bin={bin} highlight={selected} />
-    //       </TabPanel>
-    //       {hasSelected && (
-    //         <TabPanel header="Selected">
-    //           <Hex bin={select} highlight={[0, 0]} />
-    //         </TabPanel>
-    //       )}
-    //     </TabView>
-    //   );
 }
 
 export default Component;

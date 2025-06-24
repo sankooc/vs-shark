@@ -1,0 +1,26 @@
+@use "../../scss/common";
+
+.cell {
+    font-weight: bold;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.treeitem {
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+}
+.treeitem_select {
+    background-color: var(--colorBrandBackground2);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.headcell {
+    padding-left: 8px;
+    border-left-width: 8px;
+    border-left-style: solid;
+}

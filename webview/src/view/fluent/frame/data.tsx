@@ -151,12 +151,12 @@ export const VirtualizedDataGrid = (props: Props<any>) => {
     }
     return (
         <DataGrid
-            size="small"
+            size="extra-small"
             items={props.items}
             columns={columns}
             columnSizingOptions={columnSizingOptions}
-            resizableColumns
             selectionMode="single"
+            resizableColumns
             className={styles.hideSelectionColumn}
             onSelectionChange={onSelectionChange}
         >

@@ -2,7 +2,9 @@
 
 .cell {
     font-weight: bold;
+    text-overflow: ellipsis;
     white-space: nowrap;
+    overflow: hidden;
 }
 
 .headcell {

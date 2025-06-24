@@ -1,8 +1,13 @@
 @use "../../scss/common";
+
+$line-height: var(--lineHeightBase200);
+$fs: var(--fontSizeBase200);
+$code-width: 10px;
+
 #detail {
   overflow: auto;
   margin: 0;
-  font-size: 12px;
+  font-size: $fs;
   display: flex;
   flex-direction: row;
   flex-wrap: nowrap;
@@ -18,11 +23,11 @@
   flex-shrink: 0;
   flex-grow: 0;
   min-height: 100%;
-  background-color: var(--vscode-list-dropBackground);
+  background-color: common.$t-common;
 }
 #detail > .hex {
   padding: 1rem 0;
-  flex-basis: 33rem;
+  flex-basis: $code-width * 33;
   display: flex;
   flex-wrap: wrap;
   flex-shrink: 0;
@@ -32,7 +37,7 @@
     border-radius: 0 !important;
   }
   code:nth-child(8n) {
-    margin-right: 1rem;
+    margin-right: $code-width;
   }
   code:nth-child(16n) {
     margin-right: 0;
@@ -51,7 +56,7 @@
   font-family: common.$base-family;
   white-space: break-spaces;
   word-break: break-all;
-  height: 1.5rem;
+  height: $line-height;
   display: inline;
   margin: 0 0.3rem;
   padding: 0;
@@ -60,17 +65,18 @@
   flex-shrink: 0;
   span {
     display: inline;
-    height: 1.5rem;
+    height: $line-height;
     background-color: darkgoldenrod;
     color: darkblue;
   }
 }
 .index pre {
-  margin: 0 14px;
+  margin: 0 8px;
   padding: 0;
   text-align: right;
   font-family: common.$base-family;
-  height: 1.5rem;
+  height: $line-height;
+  line-height: $line-height;
   &.active {
     background-color: darkgoldenrod;
     color: darkblue;
@@ -80,9 +86,9 @@
   text-align: center;
   margin: 0;
   padding: 0;
-  flex-basis: 2rem;
-  height: 1.5rem;
-  line-height: 1.5rem;
+  flex-basis: $code-width * 2;
+  height: $line-height;
+  line-height: $line-height;
   cursor: pointer;
   font-family: common.$base-family;
   background-color: inherit;
@@ -92,7 +98,8 @@
   }
   &.active {
     background-color: darkgoldenrod;
-    color: darkblue;
+    color: common.$c-bg-0;
+    font-weight: bold;
   }
 }
 .detail-tab .p-tabview-panels {
