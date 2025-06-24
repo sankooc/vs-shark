@@ -48,8 +48,6 @@ export default function Stack(props: StackProps) {
   }, [props.select]);
 
   const send = (selected: IField) => {
-    console.log('selected', selected);
-    console.log(data);
     if (selected.source) {
       let extra = data.extra;
       const cursor = {
@@ -86,7 +84,7 @@ export default function Stack(props: StackProps) {
           setSelect(key);
           send(it);
         }} className={select === key ? styles.itemSelect : ""} >{it.summary}</TreeItemLayout>
-        <Tree>
+        <Tree size="small">
           {it.children.map((item, _inx) => {
             return build(item);
           })}
@@ -102,15 +100,15 @@ export default function Stack(props: StackProps) {
     }
   }
   return (<AutoSizer className="h-full w-full">
-    {({ height, width }) => {
-      console.log('hex', height, width);
+    {({ height }) => {
+      const _height = (height - 5) + "px";
       return <div className="w-full flex">
-        <div className="flex-1" style={{ height: (height - 2) + "px", overflow: "auto", borderRight: "var(--strokeWidthThin) solid var(--colorNeutralStroke2)" }}>
+        <div className="flex-1" style={{ height: _height, overflow: "auto", borderRight: "var(--strokeWidthThin) solid var(--colorNeutralStroke2)" }}>
           <Tree aria-label="Default" size="small" className={styles.customTree}>
             {data.fields.map(build)}
           </Tree>
         </div>
-        <div className="flex-1" style={{ height: (height - 2) + "px", overflow: "auto" }}>
+        <div className="flex-1" style={{ height: _height, overflow: "auto" }}>
           <HexView cursor={cursor} />
         </div>
       </div>

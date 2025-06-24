@@ -17,6 +17,7 @@
     "@fluentui/react": "^8.123.0",
     "@fluentui/react-components": "^9.66.1",
     "@fluentui/react-icons": "^2.0.304",
+    "@fluentui/react-motion-components-preview": "^0.6.1",
     "@fluentui/react-northstar": "^0.66.5",
     "@types/node": "^22.15.3",
     "@types/vscode-webview": "^1.57.5",

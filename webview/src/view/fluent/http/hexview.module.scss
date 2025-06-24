@@ -1,0 +1,11 @@
+.hexView {
+  font-family: 'Courier New', Courier, monospace;
+  white-space: pre-wrap;
+  word-break: break-all;
+  color: var(--vscode-editor-foreground);
+}
+
+.truncationIndicator {
+  color: var(--vscode-descriptionForeground);
+  margin-left: 4px;
+}

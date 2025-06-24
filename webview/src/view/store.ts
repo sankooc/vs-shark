@@ -16,8 +16,8 @@ import { IFrameInfo, IListResult, IProgressStatus, IVConnection, IVConversation,
 import mitt from "mitt";
 
 
-// import convMock from '../mock/conversation.json';
-// import connMock from '../mock/connection.json';
+import convMock from '../mock/conversation.json';
+import connMock from '../mock/connection.json';
 // import frameMock from '../mock/frame.json';
 import { PartialTheme } from "@fluentui/react-components";
 import {webDarkTheme } from '@fluentui/react-components';

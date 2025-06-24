@@ -15,6 +15,7 @@ import AutoSizer from "react-virtualized-auto-sizer";
 
 import { VirtualizedDataGrid } from './data';
 import Stack from "./stack";
+import { frame_size } from "../../conf";
 
 const useCSS = makeStyles({
   pagnation: {
@@ -72,7 +73,7 @@ function Paging(props: PageProps) {
 }
 
 function Empty() {
-  return <div className="h-full w-full" style={{ padding: "10px" }}>no content</div>
+  return <div className="w-full" style={{ padding: "10px" }}>no content</div>
 }
 
 
@@ -86,7 +87,7 @@ function Component() {
   });
   const [select, setSelect] = useState<IFrameInfo | undefined>(undefined);
 
-  const size = 500;
+  const size = frame_size;
 
   useEffect(() => {
     const data: ComRequest = {
@@ -100,9 +101,12 @@ function Component() {
   }, [page]);
   return <AutoSizer>
     {({ height, width }) => {
-      console.log('frame heght width', height, width);
+      if(height < 370){
+        return <span>need more space</span>
+      }
+      const bodyHeight = height - 370;
       return <div className="flex flex-column" style={{ height: height + "px", width: width + "px" }}>
-        <VirtualizedDataGrid bodyHeight={height - 370} items={result.items} onSelect={setSelect} />
+        <VirtualizedDataGrid bodyHeight={bodyHeight} items={result.items} onSelect={setSelect} />
         <Paging page={page} total={result.total} pageSize={size} onPageChange={setPage} />
         <div className="flex-grow-1" style={{ borderTop: "var(--strokeWidthThin) solid var(--colorNeutralStroke2)" }}>
           {select ? <Stack select={select.index} /> : <Empty />}
