@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useStore } from "../../store";
 import { IVHttpConnection } from "../../../share/gen";
-import { Button, createTableColumn, Drawer, DrawerBody, DrawerHeader, DrawerHeaderTitle, ForwardRefComponent, makeStyles, Tab, TableCellLayout, TableColumnDefinition, TabList, TabProps, Tree, TreeItem, TreeItemLayout } from "@fluentui/react-components";
+import { Button, createTableColumn, Drawer, DrawerBody, DrawerHeader, DrawerHeaderTitle, makeStyles, Tab, TableCellLayout, TableColumnDefinition, TabList, Tree, TreeItem, TreeItemLayout } from "@fluentui/react-components";
 import { compute, ComRequest, format_bytes_single_unit, HttpMessageWrap, MessageCompress } from "../../../share/common";
 import { Dismiss24Regular } from "@fluentui/react-icons";
 import { Fade } from "@fluentui/react-motion-components-preview";
@@ -272,7 +272,7 @@ function Component() {
             separator
             open={open}
             position="bottom"
-            size="large"
+            size="full"
             modalType="non-modal"
         >
             <DrawerHeader>

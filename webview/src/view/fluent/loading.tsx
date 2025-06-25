@@ -1,17 +1,23 @@
+import { makeStyles } from "@fluentui/react-components";
 import { PcapFile } from "../../share/common";
 import { IProgressStatus } from "../../share/gen";
 
-
+const useCSS = makeStyles({
+    root: {
+        padding: "10px",
+    }
+})
 
 interface LoadingProps {
     info?: PcapFile;
     progress?: IProgressStatus;
 }
 function Component (props: LoadingProps) {
-    if (!props.info && !props.progress) {
-        return <>No Selected file</>
+    const styles = useCSS();
+    if (!props.progress) {
+        return <div className={styles.root}>No Selected file</div>
     }
-    return <>Loading</>
+    return <div className={styles.root}>Loading</div>
 }
 
 export default Component;

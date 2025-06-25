@@ -16,11 +16,11 @@ import { IFrameInfo, IListResult, IProgressStatus, IVConnection, IVConversation,
 import mitt from "mitt";
 
 
-import convMock from '../mock/conversation.json';
-import connMock from '../mock/connection.json';
+// import convMock from '../mock/conversation.json';
+// import connMock from '../mock/connection.json';
 // import frameMock from '../mock/frame.json';
 import { PartialTheme } from "@fluentui/react-components";
-import {webDarkTheme } from '@fluentui/react-components';
+import { buildTheme } from "./fluent/theme";
 
 interface PcapState {
   theme: PartialTheme;
@@ -63,6 +63,7 @@ const doRequest = <F>(data: ComMessage<any>): Promise<F> => {
   });
 };
 
+
 export const useStore = create<PcapState>()((set) => {
   _log("create pcap store");
   onMessage("message", (e: any) => {
@@ -70,7 +71,8 @@ export const useStore = create<PcapState>()((set) => {
     if (type === "vscode-theme-change") {
       console.log('detect theme change');
       console.log(body);
-      set((state) => ({ ...state, theme: body }));
+      const _theme = buildTheme();
+      set((state) => ({ ...state, theme: _theme }));
       return;
     }
     switch (type) {
@@ -113,8 +115,9 @@ export const useStore = create<PcapState>()((set) => {
     }
   });
   emitMessage(ComMessage.new(ComType.CLIENT_REDAY, Date.now()));
+  const ctheme = buildTheme();
   return {
-    theme: webDarkTheme,
+    theme: ctheme,
     sendReady: () => {
       emitMessage(ComMessage.new(ComType.CLIENT_REDAY, Date.now()));
     },

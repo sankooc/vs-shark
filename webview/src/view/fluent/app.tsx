@@ -45,7 +45,7 @@ const Basic = () => {
   // console.log(info);
   // console.log(progress);
   // console.log('----');
-  if (!info || !progress) {
+  if (!progress) {
     return <LoadingComponent info={info} progress={progress} />
   }
   const renderComponent = (): React.ReactElement => {
