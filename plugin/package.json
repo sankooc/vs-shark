@@ -2,18 +2,26 @@
 	"name": "pcapviewer",
 	"displayName": "pcapviewer",
 	"description": "pcap/pcapng file analyzer",
-	"version": "0.3.12",
+	"version": "0.4.0",
 	"publisher": "sankooc",
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/sankooc/vs-shark/tree/master/extension"
+		"url": "https://github.com/sankooc/vs-shark/tree/master/plugin"
 	},
+	"homepage": "https://sankooc.github.io/vs-shark",
 	"engines": {
 		"vscode": "^1.86.2"
 	},
 	"categories": [
-		"Other"
+		"Debuggers"
 	],
+	"icon": "icon256.png",
+	"keywords": [
+		"pcap/pcapng",
+		"network trace",
+		"wireshark"
+	],
+	"license": "MIT",
 	"activationEvents": [],
 	"main": "./dist/extension.js",
 	"contributes": {
@@ -56,6 +64,10 @@
 		"dependencies": false,
 		"yarn": true
 	},
+	"resolutions": {
+      "cross-spawn": "^7.0.5",
+	  "micromatch": "^4.0.8"
+	},
 	"dependencies": {
 		"lodash": "^4.17.21",
 		"mitt": "^3.0.1",
@@ -64,7 +76,7 @@
 	"devDependencies": {
 		"@types/mocha": "^10.0.6",
 		"@types/node": "20.x",
-		"@types/vscode": "^1.99.0",
+		"@types/vscode": "^1.86.2",
 		"@typescript-eslint/eslint-plugin": "^7.11.0",
 		"@typescript-eslint/parser": "^7.11.0",
 		"@vscode/test-cli": "^0.0.9",
@@ -73,6 +85,6 @@
 		"eslint": "^8.57.0",
 		"npm-run-all": "^4.1.5",
 		"prettier": "^3.5.3",
-		"typescript": "^5.4.5"
+		"typescript": "5.4.5"
 	}
 }

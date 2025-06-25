@@ -98,10 +98,13 @@ function Component() {
       if(height < 370){
         return <span>need more space</span>
       }
-      const bodyHeight = height - 370;
+      const bodyHeight = Math.ceil(height * 0.65);
       return <div className="flex flex-column" style={{ height: height + "px", width: width + "px" }}>
         <VirtualizedDataGrid bodyHeight={bodyHeight} items={result.items} onSelect={setSelect} />
-        <Paging page={page} total={result.total} pageSize={size} onPageChange={setPage} />
+        <Paging page={page} total={result.total} pageSize={size} onPageChange={(page: number) => {
+          setPage(page);
+          setSelect(undefined);
+        }} />
         <div className="flex-grow-1" style={{ borderTop: "var(--strokeWidthThin) solid var(--colorNeutralStroke2)" }}>
           {select ? <Stack select={select.index} /> : <Empty />}
         </div>

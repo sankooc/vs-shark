@@ -285,7 +285,7 @@ export abstract class PCAPClient {
       return;
     }
     const { type, id } = msg;
-    if (type == ComType.PROCESS_DATA) {
+    if (type === ComType.PROCESS_DATA) {
       this.lowPirityQueue.push(msg);
     } else {
       this.highPirityQueue.push(msg);

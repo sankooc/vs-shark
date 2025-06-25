@@ -47,7 +47,7 @@ $code-width: 10px;
       flex-wrap: wrap;
       flex-shrink: 0;
       flex-grow: 0;
-      background-color: var(--vscode-button-secondaryBackground);
+      background-color: var(--vscode-statusBar-background);
       code {
         border-radius: 0 !important;
       }
@@ -64,7 +64,7 @@ $code-width: 10px;
       overflow-x: hidden;
       white-space: break-spaces;
       word-break: break-all;
-      background-color: var(--vscode-list-focusBackground);
+      background-color: var(--vscode-tab-selectedForeground);
       flex-grow: 1;
       .asc {
         font-family: common.$base-family;
@@ -77,11 +77,12 @@ $code-width: 10px;
         display: block;
         text-align: left;
         flex-shrink: 0;
+        color: var(--vscode-tab-selectedBackground);
         span {
           display: inline;
           height: $line-height;
-          background-color: var(--vscode-widget-shadow);
-          color: var(--vscode-list-focusForeground);
+          background-color: var(--vscode-tab-activeModifiedBorder);
+          color: var(--vscode-tab-selectedBackground);
         }
       }
     }

@@ -102,8 +102,8 @@ export default function Stack(props: StackProps) {
   return (<AutoSizer className="h-full w-full">
     {({ height }) => {
       const _height = (height - 5) + "px";
-      return <div className="w-full flex" style={{ backgroundColor: "var(--vscode-input-background)" }}>
-        <div className="flex-1" style={{ height: _height, overflow: "auto", borderRight: "var(--strokeWidthThin) solid var(--vscode-input-border)" }}>
+      return <div className="w-full flex">
+        <div className="flex-1" style={{ height: _height, overflow: "auto", borderRight: "var(--strokeWidthThin) solid var(--vscode-menu-border)" }}>
           <Tree aria-label="Default" size="small" className={styles.customTree}>
             {data.fields.map(build)}
           </Tree>

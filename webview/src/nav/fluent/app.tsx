@@ -5,10 +5,7 @@ import { ComMessage, ComType, PcapFile } from "../../share/common";
 import {
     Button,
 } from "@fluentui/react-components";
-import {
-    Dropdown,
-    Option,
-} from "@fluentui/react-components";
+
 
 // import { getTheme } from '@fluentui/react';
 class PFile {
@@ -22,7 +19,7 @@ export default function CommandDemo() {
     const send = useStore((state) => state.send);
     const loadData = useStore((state) => state.loadData);
     const [pFile, setPFile] = useState<PFile | undefined>(undefined);
-    const [theme, _setTheme] = useState<string>("DarkTheme");
+    // const [theme, _setTheme] = useState<string>("DarkTheme");
     const inputRef = useRef<HTMLInputElement>(null);
     const iframeRef = useRef<HTMLIFrameElement>(null);
     const [blocked, setBlocked] = useState<boolean>(false);
@@ -54,10 +51,10 @@ export default function CommandDemo() {
     const handleIframeLoad = useCallback(() => {
         setIsLoading(false);
     }, []);
-    const options = [
-        "DarkTheme",
-        "LightTheme",
-    ];
+    // const options = [
+    //     "DarkTheme",
+    //     "LightTheme",
+    // ];
     return (
         <>
             <div style={{ padding: "5px", borderBottom: 'solid 1px #ddd' }} className="flex flex-row justify-content-between">
@@ -65,13 +62,13 @@ export default function CommandDemo() {
                     {pFile && <span style={{ marginRight: "4px" }}>{pFile.name}</span>}
                     <Button disabled={blocked} onClick={() => inputRef.current?.click()} size="small">Select PCAP File</Button>
                 </div>
-                <Dropdown placeholder="Select an Theme" defaultValue={theme} defaultSelectedOptions={[theme]} size="small">
+                {/* <Dropdown placeholder="Select an Theme" defaultValue={theme} defaultSelectedOptions={[theme]} size="small">
                     {options.map((option) => (
                         <Option key={option}>
                             {option}
                         </Option>
                     ))}
-                </Dropdown>
+                </Dropdown> */}
             </div>
             <input
                 type="file"
