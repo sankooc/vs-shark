@@ -271,7 +271,7 @@ function Component() {
             separator
             open={open}
             position="bottom"
-            size="large"
+            size="full"
             modalType="non-modal"
         >
             <DrawerHeader>

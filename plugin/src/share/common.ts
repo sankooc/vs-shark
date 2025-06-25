@@ -41,8 +41,8 @@ let counter = 0;
 
 const getMessageId = (type: string) => {
   const cc = counter++;
-  return `${cc}_${type}_${Date.now()}`
-}
+  return `${cc}_${type}_${Date.now()}`;
+};
 
 export class ComMessage<T> {
   type: ComType;
@@ -86,6 +86,7 @@ export interface IField {
 export interface Cursor {
   scope: VRange;
   data?: Uint8Array;
+  tab: string,
   selected?: {
     start: number;
     size: number;
@@ -222,4 +223,4 @@ export const format_bytes_single_unit = (bytes: number): string => {
   }
 
   return `${size}.${low} ${UNITS[unit_index]}`;
-}
+};

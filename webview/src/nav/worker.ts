@@ -7,6 +7,9 @@ ready.then((rs) => {
   _log("wasm loaded", rs);
 
   class Client extends PCAPClient {
+    doReady(): void {
+      this.init();
+    }
     async pickData(start: number, end: number): Promise<Uint8Array> {
       const _data = client.data!.slice(start, end);
       return _data;

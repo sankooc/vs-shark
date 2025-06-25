@@ -38,6 +38,13 @@ export default defineConfig(({ command, mode }) => {
       exclude: ['rshark']
     },
     base: '',
+    // css: {
+    //   preprocessorOptions: {
+    //     scss: {
+    //       additionalData: `@import "src/scss/var.scss";`
+    //     }
+    //   }
+    // },
     assetsInclude: ['**/*.ttf'],
     build: {
       outDir: './../plugin/dist/web',

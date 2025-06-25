@@ -151,7 +151,7 @@ export const VirtualizedDataGrid = (props: Props<any>) => {
     }
     return (
         <DataGrid
-            size="extra-small"
+            size="small"
             items={props.items}
             columns={columns}
             columnSizingOptions={columnSizingOptions}

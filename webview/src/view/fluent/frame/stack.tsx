@@ -103,7 +103,7 @@ export default function Stack(props: StackProps) {
     {({ height }) => {
       const _height = (height - 5) + "px";
       return <div className="w-full flex">
-        <div className="flex-1" style={{ height: _height, overflow: "auto", borderRight: "var(--strokeWidthThin) solid var(--colorNeutralStroke2)" }}>
+        <div className="flex-1" style={{ height: _height, overflow: "auto", borderRight: "var(--strokeWidthThin) solid var(--vscode-menu-border)" }}>
           <Tree aria-label="Default" size="small" className={styles.customTree}>
             {data.fields.map(build)}
           </Tree>

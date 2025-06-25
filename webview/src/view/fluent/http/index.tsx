@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useStore } from "../../store";
 import { IVHttpConnection } from "../../../share/gen";
-import { Button, createTableColumn, Drawer, DrawerBody, DrawerHeader, DrawerHeaderTitle, ForwardRefComponent, makeStyles, Tab, TableCellLayout, TableColumnDefinition, TabList, TabProps, Tree, TreeItem, TreeItemLayout } from "@fluentui/react-components";
+import { Button, createTableColumn, Drawer, DrawerBody, DrawerHeader, DrawerHeaderTitle, makeStyles, Tab, TableCellLayout, TableColumnDefinition, TabList, Tree, TreeItem, TreeItemLayout } from "@fluentui/react-components";
 import { compute, ComRequest, format_bytes_single_unit, HttpMessageWrap, MessageCompress } from "../../../share/common";
 import { Dismiss24Regular } from "@fluentui/react-icons";
 import { Fade } from "@fluentui/react-motion-components-preview";
@@ -107,12 +107,12 @@ const ConnectionList = (props: ConnectProper) => {
             </Tree>
         </div>
         <Fade visible={hasContent}>
-         <div className="flex-1" style={{ padding: "5px 10px", borderLeft: "1px solid #ccc" }}>
+         <div className="flex-1 flex flex-column" style={{ padding: "5px 10px", borderLeft: "1px solid #ccc", overflowY: "hidden" }}>
             <TabList size="small" defaultSelectedValue={tabSelect} onTabSelect={(_, {value}: any) => {setTabSelect(value)}}>
                 <Tab value="binary">Raw</Tab>
                 {tabList(hmw)}
             </TabList>
-            <div style={{ margin: "10px 0px", padding: "5px 10px", border: "1px solid #ccc" }}>
+            <div style={{ margin: "10px 0px", padding: "5px 10px", border: "1px solid #ccc", overflowY: "auto" }}>
                 {tabContent(hmw, tabSelect)}
             </div>
         </div>
@@ -249,12 +249,11 @@ function Component() {
         },
         length: {
             autoFitColumns: true,
-            defaultWidth: 50,
-            minWidth: 50,
+            idealWidth: 100,
+            defaultWidth: 100,
+            minWidth: 100,
         },
         content_type: {
-            // idealWidth: 200,
-            // minWidth: 200,
             defaultWidth: 200,
             minWidth: 200,
             autoFitColumns: true,
@@ -272,7 +271,7 @@ function Component() {
             separator
             open={open}
             position="bottom"
-            size="large"
+            size="full"
             modalType="non-modal"
         >
             <DrawerHeader>

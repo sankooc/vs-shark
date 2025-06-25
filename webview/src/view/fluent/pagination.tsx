@@ -33,12 +33,15 @@ const PrevIcon = bundleIcon(TriangleLeft20Filled, TriangleLeft20Regular);
 function Component(props: PageProps) {
     const styles = useCSS();
     const hasTotal = props.total >= 0;
-
     if (hasTotal) {
         const max = Math.ceil(props.total / props.pageSize);
-        const start = Math.max(1, props.page - 2);
-        const end = Math.min(max, props.page + 2);
-
+        let start = Math.max(1, props.page - 2);
+        let end = Math.min(max, props.page + 2);
+        if(start === 1){
+            end = Math.min(max, start + 4);
+        } else if(end === max){
+            start = Math.max(1, end - 4);
+        }
         const pages = [];
         for (let i = start; i <= end; i++) {
             pages.push(i);

@@ -4,7 +4,6 @@ import {
   NavDrawer,
   NavDrawerBody,
   NavItem,
-  NavSectionHeader,
 } from "@fluentui/react-components";
 
 import {
@@ -45,7 +44,7 @@ const Basic = () => {
   // console.log(info);
   // console.log(progress);
   // console.log('----');
-  if (!info || !progress) {
+  if (!progress) {
     return <LoadingComponent info={info} progress={progress} />
   }
   const renderComponent = (): React.ReactElement => {
@@ -94,7 +93,7 @@ const Basic = () => {
           >
             Frames
           </NavItem>
-          <NavSectionHeader>Statistics</NavSectionHeader>
+          {/* <NavSectionHeader>Statistics</NavSectionHeader> */}
           {
             components.map((item) => (
               <NavItem

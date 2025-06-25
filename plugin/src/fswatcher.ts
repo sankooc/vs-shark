@@ -8,7 +8,7 @@ interface FileTailWatcherOptions {
 type OnDataCallback = (data: Buffer) => void;
 
 export class FileTailWatcher {
-  private filePath: string;
+  public filePath: string;
   private chunkSize: number;
   private intervalMs: number;
   private position: number = 0;
@@ -18,8 +18,8 @@ export class FileTailWatcher {
 
   constructor(filePath: string, options: FileTailWatcherOptions = {}) {
     this.filePath = filePath;
-    this.chunkSize = options.chunkSize ?? 1024 * 1024; // 默认 1MB
-    this.intervalMs = options.intervalMs ?? 1000; // 默认 1 秒
+    this.chunkSize = options.chunkSize ?? 1024 * 1024;
+    this.intervalMs = options.intervalMs ?? 1000;
   }
 
   async start(onData: OnDataCallback): Promise<void> {
@@ -74,7 +74,7 @@ export class FileTailWatcher {
           }
         }
       } catch (err) {
-        console.error("读取新增内容出错:", err);
+        console.error("read file failed:", err);
       }
     }, this.intervalMs);
   }
@@ -106,6 +106,6 @@ export class FileTailWatcher {
       this.fd = null;
     }
 
-    console.log("文件监控已停止");
+    console.log("stop watching file");
   }
 }

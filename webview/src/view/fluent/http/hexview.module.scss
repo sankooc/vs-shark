@@ -1,7 +1,7 @@
 .hexView {
   font-family: 'Courier New', Courier, monospace;
   white-space: pre-wrap;
-  word-break: break-all;
+  word-break:keep-all;
   color: var(--vscode-editor-foreground);
 }
 
