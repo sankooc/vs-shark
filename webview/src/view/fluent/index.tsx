@@ -1,6 +1,7 @@
 
 import { FluentProvider } from '@fluentui/react-components';
 import './index.scss';
+// import '../../scss/var.scss';
 import Application from './app';
 import { useStore } from '../store';
 

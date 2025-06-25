@@ -107,12 +107,12 @@ const ConnectionList = (props: ConnectProper) => {
             </Tree>
         </div>
         <Fade visible={hasContent}>
-         <div className="flex-1" style={{ padding: "5px 10px", borderLeft: "1px solid #ccc" }}>
+         <div className="flex-1 flex flex-column" style={{ padding: "5px 10px", borderLeft: "1px solid #ccc", overflowY: "hidden" }}>
             <TabList size="small" defaultSelectedValue={tabSelect} onTabSelect={(_, {value}: any) => {setTabSelect(value)}}>
                 <Tab value="binary">Raw</Tab>
                 {tabList(hmw)}
             </TabList>
-            <div style={{ margin: "10px 0px", padding: "5px 10px", border: "1px solid #ccc" }}>
+            <div style={{ margin: "10px 0px", padding: "5px 10px", border: "1px solid #ccc", overflowY: "auto" }}>
                 {tabContent(hmw, tabSelect)}
             </div>
         </div>
@@ -249,12 +249,11 @@ function Component() {
         },
         length: {
             autoFitColumns: true,
-            defaultWidth: 50,
-            minWidth: 50,
+            idealWidth: 100,
+            defaultWidth: 100,
+            minWidth: 100,
         },
         content_type: {
-            // idealWidth: 200,
-            // minWidth: 200,
             defaultWidth: 200,
             minWidth: 200,
             autoFitColumns: true,

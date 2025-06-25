@@ -4,7 +4,6 @@ import {
   NavDrawer,
   NavDrawerBody,
   NavItem,
-  NavSectionHeader,
 } from "@fluentui/react-components";
 
 import {
@@ -94,7 +93,7 @@ const Basic = () => {
           >
             Frames
           </NavItem>
-          <NavSectionHeader>Statistics</NavSectionHeader>
+          {/* <NavSectionHeader>Statistics</NavSectionHeader> */}
           {
             components.map((item) => (
               <NavItem

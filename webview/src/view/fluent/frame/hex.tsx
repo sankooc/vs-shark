@@ -1,4 +1,4 @@
-import "./hex.scss";
+import './hex.scss';
 import { Cursor } from "../../../share/common";
 import { Tab, TabList } from "@fluentui/react-components";
 import { useState } from "react";
@@ -40,7 +40,7 @@ function Hex(props: HexProps) {
             end = start + data.index[1];
         }
         for (let i = 0; i < lent; i += 16) {
-            const inx = `0x${i.toString(16).padStart(8, "0")}`;
+            const inx = `${i.toString(16).padStart(4, "0")}`;
             indexes.push(inx);
         }
         for (let i = 0; i < lent; i += 1) {
@@ -91,7 +91,7 @@ function Hex(props: HexProps) {
         return <div id="detail"></div>;
     }
     return (
-        <div id="detail">
+        <div className="detail">
             <div className="index">
                 {indexes.map((inx) => (
                     <pre key={"line" + inx}>{inx}</pre>
@@ -140,12 +140,12 @@ function Component(props: Props) {
         hexProps.bin = bin;
         hexProps.highlight = selected;
     }
-    return <div className="h-full flex flex-column">
-        <TabList defaultSelectedValue="source" onTabSelect={(_e, { value }) => { setTabSelect(value + "") }}>
+    return <div className="h-full flex flex-column hexview" >
+        <TabList size="small" defaultSelectedValue="source" onTabSelect={(_e, { value }) => { setTabSelect(value + "") }}>
             <Tab value="source">{props.cursor?.tab}</Tab>
             <Tab value="select">Select</Tab>
         </TabList>
-        <div className="flex-1 flex-grow-1">
+        <div className="flex-1 flex-grow-1 tab-content" style={{marginTop: "5px"}}>
             <Hex {...hexProps} />
         </div>
     </div>
