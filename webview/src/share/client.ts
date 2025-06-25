@@ -11,8 +11,8 @@ function concatLargeUint8Arrays(arrays: Uint8Array[]): Uint8Array {
   const result = new Uint8Array(buffer);
   let offset = 0;
   for (let arr of arrays) {
-      result.set(arr, offset);
-      offset += arr.length;
+    result.set(arr, offset);
+    offset += arr.length;
   }
   return result;
 }
@@ -48,6 +48,7 @@ export abstract class PCAPClient {
     }
     return "";
   }
+  abstract doReady(): void;
   abstract appendData(data: Uint8Array): void;
   abstract printLog(log: ComLog): void;
   abstract emitMessage(msg: ComMessage<any>): void;
@@ -138,7 +139,7 @@ export abstract class PCAPClient {
     );
   }
   private async http_detail(http_connection: IVHttpConnection): Promise<MessageCompress[]> {
-    const {request, response} = http_connection;
+    const { request, response } = http_connection;
     const list = [];
     if (request) {
       const { request_headers: headers, request_body: body } = http_connection;
@@ -171,7 +172,7 @@ export abstract class PCAPClient {
     return concatLargeUint8Arrays(list);
   }
 
-  
+
   // private async scope(requestId: string, catelog: string, index: number): Promise<void> {
   //   if (this.ctx) {
   //     try {
@@ -220,12 +221,14 @@ export abstract class PCAPClient {
     try {
       switch (type) {
         case ComType.CLIENT_REDAY:
-          this.ready = true;
-          try {
-            this.init();
-          } catch (e) {
-            console.error(e);
-            this.printLog(new ComLog("error", "failed to open file"));
+          if (!this.ready) {
+            this.ready = true;
+            try {
+              this.doReady();
+            } catch (e) {
+              console.error(e);
+              this.printLog(new ComLog("error", "failed to open file"));
+            }
           }
           break;
         case ComType.TOUCH_FILE:

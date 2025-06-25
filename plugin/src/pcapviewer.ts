@@ -74,15 +74,23 @@ class PcapDocument extends Disposable implements vscode.CustomDocument {
   // public get uri() { return this._uri; }
 
   dispose(): void {
-    console.log(this.uri.path + "dispose");
     if (this.client) {
-      this.client.ctx?.free();
+      console.log(this.uri.path + " dispose");
+      this.client.dispose();
     }
     super.dispose();
   }
 }
 
 export class Client extends PCAPClient {
+  doReady(): void {
+    this.init();
+    const info: PcapFile = { name: this.watcher.filePath, size: 0, start: 0 };
+    this.handle(ComMessage.new(ComType.TOUCH_FILE, info));
+    this.watcher.start((buffer: Buffer) => {
+      this.handle(ComMessage.new(ComType.PROCESS_DATA, { data: bufferToUint8Array(buffer) }));
+    });
+  }
   async pickData(start: number, end: number): Promise<Uint8Array> {
     const buffer = await this.watcher.readRandomAccess(start, (end - start));
     return bufferToUint8Array(buffer);
@@ -103,6 +111,10 @@ export class Client extends PCAPClient {
   }
   emitMessage(msg: ComMessage<any>): void {
     this.view.postMessage(msg);
+  }
+  dispose(): void{
+    this.watcher.stop();
+    this.ctx?.free();
   }
 }
 
@@ -171,25 +183,25 @@ export class PcapViewerProvider
       ENTRY,
     );
     vscode.window.onDidChangeActiveColorTheme(theme => {
-      console.log('theme', theme);
-      const customColors = vscode.workspace.getConfiguration('workbench').get('colorCustomizations');
-      const tokens = vscode.workspace.getConfiguration('workbench.colorCustomizations');
-      console.log('theme', theme);
-      const themes = vscode.extensions.all.flatMap(ext => ext.packageJSON?.contributes?.themes || []).filter(t => t.label === vscode.window.activeColorTheme.kind);
+      // console.log('theme', theme);
+      // const customColors = vscode.workspace.getConfiguration('workbench').get('colorCustomizations');
+      // const tokens = vscode.workspace.getConfiguration('workbench.colorCustomizations');
+      // console.log('theme', theme);
+      // const themes = vscode.extensions.all.flatMap(ext => ext.packageJSON?.contributes?.themes || []).filter(t => t.label === vscode.window.activeColorTheme.kind);
 
-      const themeFile = themes[0]?.path;
-      console.log('theme', theme);
+      // const themeFile = themes[0]?.path;
+      // console.log('theme', theme);
       webviewPanel.webview.postMessage({
         type: 'vscode-theme-change',
         themeKind: theme.kind,
       });
     });
 
-    const info: PcapFile = { name: document.uri.fsPath, size: 0, start: 0 };
+    // const info: PcapFile = { name: document.uri.fsPath, size: 0, start: 0 };
     if (!document.client) {
       // document.watcher;
       const client = new Client(webviewPanel.webview, PcapViewerProvider.output, document.watcher);
-      client.handle(ComMessage.new(ComType.TOUCH_FILE, info));
+      // client.handle(ComMessage.new(ComType.TOUCH_FILE, info));
       document.client = client;
       webviewPanel.webview.onDidReceiveMessage((data) => {
         const id = data.id;
@@ -221,16 +233,7 @@ export class PcapViewerProvider
         client.handle(data);
       });
     }
-    const client = document.client;
-    document.watcher.start((buffer: Buffer) => {
-      client.handle(ComMessage.new(ComType.PROCESS_DATA, { data: bufferToUint8Array(buffer) }));
-      // client.update(buffer).then((rs) => {
-      //   PcapViewerProvider.output.info(rs);
-      // });
-      // const rs = document.instance.update(buffer);
-      // console.log(rs);
-      // const arr = new Uint8Array(buffer);
-    });
+    // const client = document.client;
 
     this.webviews.add(document.uri, webviewPanel);
   }

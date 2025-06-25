@@ -39,7 +39,6 @@ export abstract class PCAPClient {
     if (this.ctx) {
       try {
         const rs = await this.ctx.update(data);
-        console.log('progress', rs);
         this.emitMessage(ComMessage.new(ComType.PRGRESS_STATUS, rs));
         return rs;
       } catch (e) {
@@ -49,6 +48,7 @@ export abstract class PCAPClient {
     }
     return "";
   }
+  abstract doReady(): void;
   abstract appendData(data: Uint8Array): void;
   abstract printLog(log: ComLog): void;
   abstract emitMessage(msg: ComMessage<any>): void;
@@ -60,7 +60,6 @@ export abstract class PCAPClient {
 
   private touchFile(fileInfo: PcapFile): void {
     this.info = fileInfo;
-    console.log('into', this.info);
     this.emitMessage(ComMessage.new(ComType.FILEINFO, fileInfo));
   }
   private list(
@@ -115,7 +114,7 @@ export abstract class PCAPClient {
               rs.data = data;
             } else {
               const _start = range.frame.start - range.data.start;
-              const _end = range.data.end - range.frame.start;
+              const _end = range.frame.end - range.data.start;
               rs.data = data.slice(_start, _end);
             }
             rs.start = range.frame.start;
@@ -222,12 +221,14 @@ export abstract class PCAPClient {
     try {
       switch (type) {
         case ComType.CLIENT_REDAY:
-          this.ready = true;
-          try {
-            this.init();
-          } catch (e) {
-            console.error(e);
-            this.printLog(new ComLog("error", "failed to open file"));
+          if(!this.ready){
+            this.ready = true;
+            try {
+              this.doReady();
+            } catch (e) {
+              console.error(e);
+              this.printLog(new ComLog("error", "failed to open file"));
+            }
           }
           break;
         case ComType.TOUCH_FILE:

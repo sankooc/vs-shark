@@ -86,6 +86,7 @@ export interface IField {
 export interface Cursor {
   scope: VRange;
   data?: Uint8Array;
+  tab: string,
   selected?: {
     start: number;
     size: number;
