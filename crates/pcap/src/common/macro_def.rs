@@ -98,9 +98,10 @@ macro_rules! add_sub_field_with_reader {
     ($field:expr, $reader:expr, $fn_ref:expr) => {{
         let mut _field = Field::with_children("".into(), $reader.cursor, 0);
         _field.source = $field.source;
-        let _ = $fn_ref($reader, &mut _field);
+        let rs = $fn_ref($reader, &mut _field);
         _field.size = $reader.cursor - _field.start;
         $field.children.as_mut().unwrap().push(_field);
+        rs
     }};
 }
 
@@ -126,7 +127,17 @@ macro_rules! add_field_backstep_fn {
         $field.children.as_mut().unwrap().push(ele);
     }};
 }
-
+#[macro_export]
+macro_rules! add_field_forward {
+    ($field:expr, $reader:expr, $inx:expr, $msg:expr) => {{
+        let start = $reader.cursor;
+        let mut ele = crate::common::concept::Field::label($msg, start, start + $inx);
+        ele.source = $field.source;
+        let inx = $field.children.as_ref().unwrap().len();
+        $field.children.as_mut().unwrap().push(ele);
+        inx
+    }};
+}
 
 #[macro_export]
 macro_rules! read_field_format {

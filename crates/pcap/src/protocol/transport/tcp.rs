@@ -1,17 +1,30 @@
 use crate::{
-    common::{
-        concept::Field,
-        connection::{TCPStat, TcpFlagField},
-        core::Context,
-        enum_def::{PacketStatus, Protocol, TCPDetail},
-        io::Reader,
-        Frame,
-    },
-    constants::ip_protocol_type_mapper,
-    field_back_format, field_forward_format, read_field_format,
+    add_field_backstep, add_field_format, add_field_forward, add_field_label_no_range, add_sub_field_with_reader, common::{
+        concept::Field, connection::{TCPStat, TcpFlagField}, core::Context, enum_def::{PacketStatus, Protocol, TCPDetail}, io::Reader, util::{read_bit, read_bits}, Frame
+    }, constants::ip_protocol_type_mapper
 };
 use anyhow::Result;
 
+
+
+fn read_tcp_flag(reader: &mut Reader, field: &mut Field) -> Result<TcpFlagField>{
+    let flag_bit = reader.read16(true)?;
+    let result = TcpFlagField::from(flag_bit);
+    // let len = flag_bit >> 12;;
+    add_field_label_no_range!(field, read_bits(flag_bit, 0..4, |v| format!("Header Length: {}", v)));
+    add_field_label_no_range!(field, read_bits(flag_bit, 4..7, |_v| format!("Reserved")));
+    add_field_label_no_range!(field, read_bit(flag_bit, 7, "Accurate ECN", ("SET", "NOT SET")));
+    add_field_label_no_range!(field, read_bit(flag_bit, 8, "Congestion Window Reduced", ("SET", "NOT SET")));
+    add_field_label_no_range!(field, read_bit(flag_bit, 9, "ECN-Echo", ("SET", "NOT SET")));
+    add_field_label_no_range!(field, read_bit(flag_bit, 10, "URG", ("SET", "NOT SET")));
+    add_field_label_no_range!(field, read_bit(flag_bit, 11, "ACK", ("SET", "NOT SET")));
+    add_field_label_no_range!(field, read_bit(flag_bit, 12, "PUSH", ("SET", "NOT SET")));
+    add_field_label_no_range!(field, read_bit(flag_bit, 13, "RESET", ("SET", "NOT SET")));
+    add_field_label_no_range!(field, read_bit(flag_bit, 14, "SYN", ("SET", "NOT SET")));
+    add_field_label_no_range!(field, read_bit(flag_bit, 15, "FIN", ("SET", "NOT SET")));
+    field.summary = result.to_string();
+    Ok(result)
+}
 pub struct Visitor;
 pub fn t_protocol(protocol_type: u8) -> String {
     format!("Protocol: {} ({:#06x})", ip_protocol_type_mapper(protocol_type as u16), protocol_type)
@@ -69,35 +82,38 @@ impl Visitor {
         Ok(Protocol::None)
     }
     pub fn detail(field: &mut Field, _: &Context, frame: &Frame, reader: &mut Reader) -> Result<Protocol> {
-        let mut list = Vec::new();
+        // let mut list = Vec::new();
 
-        let source_port = read_field_format!(list, reader, reader.read16(true)?, "Source Port: {}");
-        let target_port = read_field_format!(list, reader, reader.read16(true)?, "Destination Port: {}");
+        let source_port = add_field_format!(field, reader, reader.read16(true)?, "Source Port: {}");
+        let target_port = add_field_format!(field, reader, reader.read16(true)?, "Destination Port: {}");
 
         let info = frame.tcp_info.as_ref().unwrap();
 
         let sequence = reader.read32(true)?;
-        field_back_format!(list, reader, 4, format!("Sequence Number: {}    (relative sequence number)", info.seq));
-        field_back_format!(list, reader, 4, format!("Sequence Number (raw): {}", sequence));
-        list.push(Field::label(format!("[Next Sequence Number: {}    (relative sequence number)]", info.next), 0, 0));
+        // add_field_format!(field, reader, 4)
+        add_field_backstep!(field, reader, 4, format!("Sequence Number: {}    (relative sequence number)", info.seq));
+        add_field_backstep!(field, reader, 4, format!("Sequence Number (raw): {}", sequence));
+        // list.push(Field::label(format!("[Next Sequence Number: {}    (relative sequence number)]", info.next), 0, 0));
         let ack = reader.read32(true)?;
-        field_back_format!(list, reader, 4, format!("Acknowledgment Number: {}    (relative ack number)", info.ack));
-        field_back_format!(list, reader, 4, format!("Acknowledgment Number (raw): {}", ack));
+        add_field_backstep!(field, reader, 4, format!("Acknowledgment Number: {}    (relative ack number)", info.ack));
+        add_field_backstep!(field, reader, 4, format!("Acknowledgment Number (raw): {}", ack));
         // let _state = TcpFlagField::from(reader.read16(true)?);
-        let state = read_field_format!(list, reader, TcpFlagField::from(reader.read16(true)?), "{}");
-        read_field_format!(list, reader, reader.read16(true)?, "Window: {}");
-        read_field_format!(list, reader, reader.read16(true)?, "Checksum: {:#06x} [unverified]");
-        read_field_format!(list, reader, reader.read16(true)?, "Urgent Pointer: {}");
+        let state = add_sub_field_with_reader!(field, reader, read_tcp_flag)?;
+        // let state = add_field_format!(field, reader, TcpFlagField::from(reader.read16(true)?), "{}");
+        add_field_format!(field, reader, reader.read16(true)?, "Window: {}");
+        add_field_format!(field, reader, reader.read16(true)?, "Checksum: {:#06x} [unverified]");
+        add_field_format!(field, reader, reader.read16(true)?, "Urgent Pointer: {}");
         let len = state.head_len();
         if len > 5 {
             let skip = (len - 5) * 4;
             reader.forward(skip as usize);
         }
         let payload_len = info.len as usize;
-        field_forward_format!(list, reader, payload_len, format!("TCP payload ({} bytes)", payload_len));
+        
+        add_field_forward!(field, reader, payload_len, format!("TCP payload ({} bytes)", payload_len));
 
         field.summary = format!("Transmission Control Protocol, Src Port: {}, Dst Port: {}, Len: {}", source_port, target_port, info.len);
-        field.children = Some(list);
+        // field.children = Some(list);
         Ok(info.next_protocol)
     }
 }
