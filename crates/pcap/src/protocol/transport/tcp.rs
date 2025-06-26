@@ -1,13 +1,19 @@
 use crate::{
-    add_field_backstep, add_field_format, add_field_forward, add_field_label_no_range, add_sub_field_with_reader, common::{
-        concept::Field, connection::{TCPStat, TcpFlagField}, core::Context, enum_def::{PacketStatus, Protocol, TCPDetail}, io::Reader, util::{read_bit, read_bits}, Frame
-    }, constants::ip_protocol_type_mapper
+    add_field_backstep, add_field_format, add_field_forward, add_field_label_no_range, add_sub_field_with_reader,
+    common::{
+        concept::Field,
+        connection::{TCPStat, TcpFlagField},
+        core::Context,
+        enum_def::{PacketStatus, Protocol, TCPDetail},
+        io::Reader,
+        util::{read_bit, read_bits},
+        Frame,
+    },
+    constants::{ip_protocol_type_mapper, tcp_option_kind_mapper},
 };
 use anyhow::Result;
 
-
-
-fn read_tcp_flag(reader: &mut Reader, field: &mut Field) -> Result<TcpFlagField>{
+fn read_tcp_flag(reader: &mut Reader, field: &mut Field) -> Result<TcpFlagField> {
     let flag_bit = reader.read16(true)?;
     let result = TcpFlagField::from(flag_bit);
     // let len = flag_bit >> 12;;
@@ -25,6 +31,108 @@ fn read_tcp_flag(reader: &mut Reader, field: &mut Field) -> Result<TcpFlagField>
     field.summary = result.to_string();
     Ok(result)
 }
+
+// Returns false if EOL is reached
+fn read_tcp_options(reader: &mut Reader, field: &mut Field) -> Result<bool> {
+    let mut count = 0;
+    loop {
+        let left = reader.left();
+        if left == 0 {
+            break;
+        }
+        let r = add_sub_field_with_reader!(field, reader, read_tcp_option)?;
+        count += 1;
+        if r == 0 {
+            break;
+        }
+    }
+    field.summary = format!("TCP Options ({})", count);
+    Ok(true)
+}
+
+fn read_tcp_option(reader: &mut Reader, field: &mut Field) -> Result<u8> {
+    let kind = reader.read8()?;
+    let sim = tcp_option_kind_mapper(kind);
+    add_field_backstep!(field, reader, 1, format!("Kind: {} ({})", sim, kind));
+    match kind {
+        0 => {
+            field.summary = format!("TCP Option - {} ({})", sim, kind);
+        }
+        1 => {
+            field.summary = format!("TCP Option - {} ({})", sim, kind);
+        }
+        2 => {
+            let len = add_field_format!(field, reader, reader.read8()?, "Length {}");
+            if len == 4 {
+                let mss = add_field_format!(field, reader, reader.read16(true)?, "MSS Value: {}");
+                field.summary = format!("TCP Option - Maximum segment size: {} bytes", mss);
+            } else if len > 2 {
+                reader.forward(2);
+            }
+        }
+        3 => {
+            let len = add_field_format!(field, reader, reader.read8()?, "Length {}");
+            if len == 3 {
+                let sup = add_field_format!(field, reader, reader.read8()?, "Shift: {}");
+                field.summary = format!("TCP Option - window scale: {}", sup);
+            } else if len > 3 {
+                reader.forward((len - 2) as usize);
+            }
+        }
+        4 => {
+            //SACK Permitted
+            add_field_format!(field, reader, reader.read8()?, "Length {}");
+            field.summary = "TCP Option - SACK Permitted".into();
+        }
+        5 => {
+            //SACK
+            let len = add_field_format!(field, reader, reader.read8()?, "Length {}");
+            if len == 10 {
+                add_field_format!(field, reader, reader.read32(true)?, "Left Edge: {}");
+                add_field_format!(field, reader, reader.read32(true)?, "Right Edge: {}");
+                field.summary = "TCP Option - SACK".into();
+            } else if len > 2 {
+                reader.forward((len - 2) as usize);
+            }
+        }
+        8 => {
+            let len = add_field_format!(field, reader, reader.read8()?, "Length {}");
+            if len == 10 {
+                add_field_format!(field, reader, reader.read32(true)?, "Timestamp value: {}");
+                add_field_format!(field, reader, reader.read32(true)?, "Timestamp echo reply: {}");
+                field.summary = "TCP Option - Timestamp".into();
+            } else if len > 2 {
+                reader.forward((len - 2) as usize);
+            }
+        }
+        28 => {
+            let len = add_field_format!(field, reader, reader.read8()?, "Length {}");
+            if len == 4 {
+                let bit = reader.read16(true)?;
+                let g = bit >> 15;
+                let v = bit & 0x7fff;
+                let unit = match g {
+                    1 => format!("{} minus", v),
+                    _ => format!("{} second", v),
+                };
+                add_field_backstep!(field, reader, 2, unit.clone());
+                field.summary = format!("TCP Option - {}", unit);
+            } else if len > 2 {
+                reader.forward((len - 2) as usize);
+            }
+        }
+        29 | 30 => {
+            let len = add_field_format!(field, reader, reader.read8()?, "Length {}");
+            if len > 2 {
+                reader.forward((len - 2) as usize);
+            }
+        }
+        _ => {
+        }
+    }
+    Ok(kind)
+}
+
 pub struct Visitor;
 pub fn t_protocol(protocol_type: u8) -> String {
     format!("Protocol: {} ({:#06x})", ip_protocol_type_mapper(protocol_type as u16), protocol_type)
@@ -106,10 +214,12 @@ impl Visitor {
         let len = state.head_len();
         if len > 5 {
             let skip = (len - 5) * 4;
-            reader.forward(skip as usize);
+            let mut _reader = reader.slice_as_reader(skip as usize)?;
+            add_sub_field_with_reader!(field, &mut _reader, read_tcp_options)?;
+            // reader.forward(skip as usize);
         }
         let payload_len = info.len as usize;
-        
+
         add_field_forward!(field, reader, payload_len, format!("TCP payload ({} bytes)", payload_len));
 
         field.summary = format!("Transmission Control Protocol, Src Port: {}, Dst Port: {}, Len: {}", source_port, target_port, info.len);
