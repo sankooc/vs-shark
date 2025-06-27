@@ -70,7 +70,7 @@ impl Display for TcpFlagField {
                 write!(&mut content, ",{}", item).unwrap();
             }
         }
-        f.write_fmt(format_args!("Flags: {:#06x} ({})", (self.data & 0x1fff), content))
+        f.write_fmt(format_args!("Flags: {:#06x} ({})", self.data, content))
     }
 }
 

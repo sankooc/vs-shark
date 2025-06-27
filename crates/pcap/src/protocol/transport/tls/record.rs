@@ -184,13 +184,13 @@ fn parse_client_hello(reader: &mut Reader, field: &mut Field) -> Result<()> {
     // Parse cipher suites
     if reader.left() >= 2 {
         let cipher_suites_len = add_field_format!(field, reader, reader.read16(true)?, "Cipher Suites Length: {}");
-        add_sub_field_with_reader!(field, reader, move |reader, field| field_ciper_suite_list(cipher_suites_len, reader, field));
+        add_sub_field_with_reader!(field, reader, move |reader, field| field_ciper_suite_list(cipher_suites_len, reader, field))?;
     }
 
     // Parse compression methods
     if reader.left() >= 1 {
         let clen = add_field_format!(field, reader, reader.read8()?, "Compression Methods Length: {}");
-        add_sub_field_with_reader!(field, reader, move |reader, field| field_compression_list(clen, reader, field));
+        add_sub_field_with_reader!(field, reader, move |reader, field| field_compression_list(clen, reader, field))?;
     }
 
     if reader.left() >= 2 {

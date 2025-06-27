@@ -42,3 +42,69 @@ pub fn format_bytes_single_unit_int(bytes: usize) -> String {
 
     format!("{}.{} {}", size, low, UNITS[unit_index])
 }
+
+
+pub trait BitData: 
+    std::ops::BitAnd<Output = Self> + 
+    std::ops::Sub<Self, Output = Self> + 
+    std::ops::Shr<usize, Output = Self> + 
+    std::ops::Shl<usize, Output = Self> + 
+    From<u8> + 
+    Copy + 
+    std::cmp::PartialEq + 
+    std::cmp::PartialOrd +
+    Sized {}
+
+impl BitData for u8 {}
+impl BitData for u16 {}
+impl BitData for u32 {}
+impl BitData for u64 {}
+
+pub fn get_masked_value<T: BitData>(value: T, range: &std::ops::Range<usize>) -> T {
+    let bits = std::mem::size_of::<T>() * 8;
+    let start = range.start;
+    let end = range.end;
+    let mut v = value;
+    if bits > end {
+        let offset = bits - end;
+        v = v >> offset;
+    }
+    let len = end - start;
+    let mask = (T::from(1) << len) - T::from(1);
+    v & mask
+}
+ 
+// get_binary_text(0xf0f0u16, 4..8);   .... 1111 .... ....
+//
+pub fn get_binary_text<T: BitData>(value: T, range: &std::ops::Range<usize>) -> String {
+    let bits = std::mem::size_of::<T>() * 8;
+    let mut rs = String::with_capacity(bits * 2);
+    for i in 0..bits {
+        if i % 4 == 0 && i != 0 {
+            rs.push(' ');
+        }
+        if range.contains(&i) {
+            let bit = T::from(1) << (bits - i - 1);
+            if value & bit == bit {
+                rs.push('1');
+            } else {
+                rs.push('0');
+            }
+        } else {
+            rs.push('.');
+        }
+    }
+    rs
+}
+
+
+pub fn read_bits<T: BitData>(value: T, range: std::ops::Range<usize>, f: impl Fn (T) -> String) -> String {
+    let bits = get_binary_text(value, &range);
+    let v = get_masked_value(value, &range);
+    format!("{} = {}", bits, f(v))
+}
+
+pub fn read_bit<T: BitData>(value: T, start: usize, key: &str, sets: (&str, &str)) -> String {
+    let cb = |v| if v > T::from(0) { format!("{}: {}", key, sets.0) } else { format!("{}: {}", key, sets.1) };
+    read_bits(value, start..start + 1, cb)
+}

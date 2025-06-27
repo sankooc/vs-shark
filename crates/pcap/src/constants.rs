@@ -517,7 +517,7 @@ pub fn etype_mapper(code: u16) -> &'static str {
 		_ => "Unknown",
 	}
 }
-pub fn tcp_option_kind_mapper(code: u16) -> &'static str {
+pub fn tcp_option_kind_mapper(code: u8) -> &'static str {
 	match code {
 		0 => "End OF LIST",
 		1 => "No Operation",

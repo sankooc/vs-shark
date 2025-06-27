@@ -63,7 +63,7 @@ pub fn parse_detail(reader: &mut Reader, field: &mut Field, is_client: bool) -> 
 
     let mut _reader = reader.slice_as_reader(extensions_len as usize)?;
 
-    add_sub_field_with_reader!(field, &mut _reader, parse_extensions(is_client));
+    add_sub_field_with_reader!(field, &mut _reader, parse_extensions(is_client))?;
 
     Ok(())
 }
@@ -71,7 +71,7 @@ fn parse_extensions(is_client: bool) -> Box<dyn Fn(&mut Reader, &mut Field) -> R
     return Box::new(move |reader: &mut Reader, field: &mut Field| -> Result<()> {
         field.summary = "Extensions".into();
         while reader.left() >= 4 {
-            add_sub_field_with_reader!(field, reader,|reader: &mut Reader, field: &mut Field| parse_extension(reader, field, is_client));
+            add_sub_field_with_reader!(field, reader,|reader: &mut Reader, field: &mut Field| parse_extension(reader, field, is_client))?;
         }
         Ok(())
     })
@@ -108,7 +108,7 @@ fn parse_extension(reader: &mut Reader, ext_field: &mut Field, is_client: bool) 
             return Ok(());
         }
     };
-    add_sub_field_with_reader!(ext_field, &mut _reader, parser);
+    add_sub_field_with_reader!(ext_field, &mut _reader, parser)?;
 
     Ok(())
 }

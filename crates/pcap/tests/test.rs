@@ -8,11 +8,7 @@ mod unit {
     use anyhow::Result;
     use pcap::{
         common::{
-            concept::Field,
-            core::Context,
-            enum_def::{ProtocolInfoField, AddressField, Protocol},
-            io::{DataSource, Reader},
-            Frame,
+            concept::Field, core::Context, enum_def::{AddressField, Protocol, ProtocolInfoField}, io::{DataSource, Reader}, util::{get_binary_text, get_masked_value}, Frame
         },
         protocol,
     };
@@ -136,6 +132,30 @@ mod unit {
         Ok(())
     }
     #[test]
+    fn test_tcp2() -> Result<()> {
+        let (ds, mut cx, mut frame) = init("tcp2");
+        {
+            let _data = [1, 3, 4, 5, 2, 3, 4, 5];
+            let source = Ipv4Addr::from(<[u8; 4]>::try_from(&_data[..4])?);
+            let target = Ipv4Addr::from(<[u8; 4]>::try_from(&_data[4..])?);
+            frame.address_field = AddressField::IPv4(source, target); 
+        }
+        {
+            let mut reader = Reader::new(&ds);
+            let next = protocol::transport::tcp::Visitor::parse(&mut cx, &mut frame, &mut reader)?;
+            assert!(matches!(next, Protocol::None));
+        }
+        {
+            let mut reader = Reader::new(&ds);
+            let mut f = Field::default();
+            f.children = Some(vec![]);
+            let next = protocol::transport::tcp::Visitor::detail(&mut f, &mut cx, &mut frame, &mut reader)?;
+            assert!(matches!(next, Protocol::None));
+            print_field(1, &f);
+        }
+        Ok(())
+    }
+    #[test]
     fn test_http() -> Result<()> {
         let (ds, mut cx, mut frame) = init("http");
         {
@@ -186,6 +206,7 @@ mod unit {
         {
             let mut reader = Reader::new(&ds);
             let mut f = Field::default();
+            f.children = Some(vec![]);
             let next = protocol::link::pppoes::Visitor::detail(&mut f, &mut cx, &mut frame, &mut reader)?;
             assert!(matches!(next, Protocol::None));
             print_field(1, &f);
@@ -230,6 +251,18 @@ mod unit {
             print_field(1, &f);
             assert!(matches!(next, Protocol::None));
         }
+        Ok(())
+    }
+
+
+    #[test]
+    fn funcs() -> Result<()> {
+        let range = 4..8;
+        let line = get_binary_text(0xf0f0u16, &range);
+        println!("{}", line);
+        let range = 0..4;
+        let v = get_masked_value(0xf0f0u16, &range);
+        println!("{}", v);
         Ok(())
     }
 }
