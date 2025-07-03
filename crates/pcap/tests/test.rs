@@ -10,7 +10,7 @@ mod unit {
         common::{
             concept::Field, core::Context, enum_def::{AddressField, Protocol, ProtocolInfoField}, io::{DataSource, Reader}, util::{get_binary_text, get_masked_value}, Frame
         },
-        protocol,
+        protocol::{self, transport::tls::record::{parse_certificates, parse_server_hello}},
     };
 
     fn init(name: &str) -> (DataSource, Context, Frame) {
@@ -254,6 +254,26 @@ mod unit {
         Ok(())
     }
 
+    #[test]
+    fn test_tls_serverhello() -> Result<()> {
+        let (ds, _, _) = init("tls_serverhello");
+        let mut f = Field::default();
+        f.children = Some(vec![]);
+        let mut reader = Reader::new(&ds);
+        parse_server_hello(&mut reader, &mut f)?;
+        print_field(1, &f);
+        Ok(())
+    }
+    #[test]
+    fn test_tls_certificate() -> Result<()> {
+        let (ds, _, _) = init("tls_certificate");
+        let mut f = Field::default();
+        f.children = Some(vec![]);
+        let mut reader = Reader::new(&ds);
+        parse_certificates(&mut reader, &mut f)?;
+        print_field(1, &f);
+        Ok(())
+    }
 
     #[test]
     fn funcs() -> Result<()> {

@@ -7,8 +7,9 @@ use crate::common::{enum_def::Protocol, io::Reader, Frame};
 use crate::{add_field_format, add_field_format_fn};
 use anyhow::Result;
 use record::parse_record_detail;
-mod record;
+pub mod record;
 mod extension;
+mod decode;
 
 #[derive(Default)]
 pub struct TLSList {
