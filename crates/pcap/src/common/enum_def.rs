@@ -59,31 +59,6 @@ pub enum FileType {
     NONE,
 }
 
-// pub enum Visitor {
-//     ETHERNET(protocol::link::ethernet::Visitor),
-//     // ETHERNET(protocol::link::ethernet::Visitor),
-//     // SSL,
-//     // Loopback(protocol::link::loopback::Visitor),
-//     // PPPoES(protocol::link::pppoes::Visitor),
-//     // PPPoED,
-//     // IP4(protocol::network::ip4::Visitor),
-//     // IP6(protocol::network::ip6::Visitor),
-//     // ICMP(protocol::network::icmp::Visitor),
-//     // ICMP6(protocol::network::icmp6::Visitor),
-//     // ARP,
-//     // RARP,
-//     // RADIOTAP,
-//     // IEEE1905A(protocol::link::ieee1905a::Visitor),
-//     // IGMP,
-//     // UDP,
-//     // TCP(protocol::transport::tcp::Visitor),
-//     // DNS,
-//     // DHCP,
-//     // DHCPv6,
-//     // HTTP(protocol::application::http::Visitor),
-//     // HTTPS,
-//     // TLS,
-// }
 #[derive(Default, Display, Debug, Clone, Copy)]
 pub enum Protocol {
     #[default]
@@ -114,11 +89,6 @@ pub enum Protocol {
     TLS,
     IEEE802_11,
 }
-
-// #[enum_dispatch]
-// pub enum FieldDef {
-//     UNKOWN(FieldElement),
-// }
 
 #[derive(Clone, PartialEq)]
 pub enum TCPDetail {

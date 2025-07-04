@@ -58,6 +58,23 @@ mod unit {
         Ok(())
     }
     #[test]
+    fn test_dns_response() -> Result<()> {
+        let (ds, mut cx, mut frame) = init("dns_response");
+        {
+            let mut reader = Reader::new(&ds);
+            let next = protocol::application::dns::Visitor::parse(&mut cx, &mut frame, &mut reader)?;
+            assert!(matches!(next, Protocol::None));
+        }
+        {
+            let mut reader = Reader::new(&ds);
+            let mut f = Field::with_children("".into(), 0, 0);
+            let next = protocol::application::dns::Visitor::detail(&mut f, &mut cx, &mut frame, &mut reader)?;
+            assert!(matches!(next, Protocol::None));
+            print_field(1, &f);
+        }
+        Ok(())
+    }
+    #[test]
     fn test_ieee1905a() -> Result<()> {
         let (ds, mut cx, mut frame) = init("ieee1905a");
         {

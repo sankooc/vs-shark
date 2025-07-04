@@ -1,17 +1,16 @@
 // Copyright (c) 2025 sankooc
-// 
+//
 // This file is part of the pcapview project.
 // Licensed under the MIT License - see https://opensource.org/licenses/MIT
 
-use crate::{common::{concept::Field, enum_def::Protocol, io::Reader, core::Context, Frame}, read_field_format};
+use crate::{add_field_format, common::{concept::Field, core::Context, enum_def::Protocol, io::Reader, Frame}};
 use anyhow::Result;
-
 
 const SUMMARY: &str = "Null/Loopback";
 pub struct Visitor;
 
 impl Visitor {
-    pub fn info(_: &Context, _: &Frame) -> Option<String>{
+    pub fn info(_: &Context, _: &Frame) -> Option<String> {
         Some(SUMMARY.to_string())
     }
     pub fn parse(_: &mut Context, _: &mut Frame, reader: &mut Reader) -> Result<Protocol> {
@@ -24,11 +23,9 @@ impl Visitor {
         }
     }
     pub fn detail(field: &mut Field, _: &Context, _: &Frame, reader: &mut Reader) -> Result<Protocol> {
-        let mut list = vec![];
-        read_field_format!(list, reader, reader.read32(false)?, "Family: {}");
+        add_field_format!(field, reader, reader.read32(false)?, "Family: {}");
         let _next = reader.next()?;
         field.summary = SUMMARY.to_string();
-        field.children = Some(list);
         if _next == 0x45 {
             Ok(Protocol::IP4)
         } else {
