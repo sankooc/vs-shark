@@ -281,9 +281,6 @@ pub fn parse_certificate(_reader: &mut Reader, _field: &mut Field) -> Result<()>
 /// Parse Certificate message
 pub fn parse_certificates(reader: &mut Reader, field: &mut Field) -> Result<()> {
 
-    // Create a child field for Certificate details
-    // let mut cert_field = Field::with_children("Certificate".to_string(), start_pos, 0);
-
     let total_length = read24(reader)?;
     add_field_format!(field, reader, total_length, "Certificates Length: {}");
 

@@ -6,10 +6,7 @@ use std::{
 };
 
 use crate::{
-    add_field_backstep, add_sub_field_with_reader,
-    common::{concept::Field, io::Reader, util::bytes_to_hex, util::bytes_to_hex_limit},
-    constants::oid_map_mapper,
-    protocol::transport::tls::record::read24,
+    add_field_backstep, add_field_forward, add_sub_field_with_reader, common::{concept::Field, io::Reader, util::{bytes_to_hex, bytes_to_hex_limit}}, constants::oid_map_mapper, protocol::transport::tls::record::read24
 };
 use anyhow::Result;
 pub const BER_SEQUENCE: u8 = 0x30;
@@ -81,27 +78,17 @@ pub fn _read_len(reader: &mut Reader) -> Result<usize> {
 pub trait Sequence {
     fn collection(&self, index: usize) -> Option<Rc<dyn Sequence>>;
     fn val(&self, index: usize, ber_type: BerType) -> Option<String>;
+    fn unknown(&self, index: usize, reader: &mut Reader) -> Option<String>;
     fn text(&self) -> String;
 }
 pub struct Certificate;
 pub struct SignedCertificate;
-
-// pub trait Collects {
-//     fn collection(&self, index: usize) -> Option<Rc<dyn Sequence>>;
-//     fn text(&self) -> Option<String>;
-// }
 
 pub struct CollectionOnly {
     text: Option<String>,
     list: Vec<Rc<dyn Sequence>>,
     cb: Option<fn(usize) -> String>,
 }
-
-// impl CollectionOnly {
-//     pub fn new(text: Option<String>, list: Vec<Rc<dyn Sequence>>, cb: Option<fn(usize) -> String>) -> Self {
-//         Self { text, list, cb }
-//     }
-// }
 
 impl Sequence for CollectionOnly {
     fn collection(&self, index: usize) -> Option<Rc<dyn Sequence>> {
@@ -118,6 +105,10 @@ impl Sequence for CollectionOnly {
             return func(self.list.len());
         }
         "".to_string()
+    }
+    
+    fn unknown(&self, _: usize, _: &mut Reader) -> Option<String> {
+        None
     }
 }
 
@@ -153,6 +144,11 @@ impl Sequence for ContructOnly {
 
     fn text(&self) -> String {
         self.mono.text(&self.text.borrow(), self.count.get())
+    }
+    
+    
+    fn unknown(&self, _: usize, _: &mut Reader) -> Option<String> {
+        None
     }
 }
 
@@ -245,16 +241,6 @@ impl ValueMono for Extension {
     }
 }
 
-
-
-
-
-pub fn create_construct_list(text: impl ToString, mono: impl ContructMono + 'static) -> Option<Rc<dyn Sequence>> {
-    Some(Rc::new(ContructOnly::create(text.to_string(), mono)))
-}
-pub fn create_value_list(text: impl ToString, mono: impl ValueMono + 'static) -> Option<Rc<dyn Sequence>> {
-    Some(Rc::new(ValueOnly::create(text.to_string(), mono)))
-}
 pub trait ValueMono {
     fn val(&self, index: usize, ber_type: BerType) -> Option<String>;
 }
@@ -281,6 +267,11 @@ impl Sequence for ValueOnly {
     fn text(&self) -> String {
         self.text.clone()
     }
+    
+    
+    fn unknown(&self, _: usize, _: &mut Reader) -> Option<String> {
+        None
+    }
 }
 
 pub struct SignedCertificateVersion;
@@ -300,6 +291,20 @@ impl Sequence for Certificate {
     }
 
     fn val(&self, _: usize, _: BerType) -> Option<String> {
+        None
+    }
+    
+    
+    fn unknown(&self, index : usize, reader: &mut Reader) -> Option<String> {
+        if index == 2 {
+            let len: usize = reader.left();
+            let size = std::cmp::min(len, 20);
+            if size > 0 {
+                let data = reader.slice(size, false).unwrap();
+                return Some(format!("encrypted [truncated]: {}", bytes_to_hex(data)));
+            }
+            
+        }
         None
     }
 }
@@ -336,6 +341,11 @@ impl Sequence for SignedCertificate {
             }
             _ => {}
         }
+        None
+    }
+    
+    
+    fn unknown(&self, _: usize, _: &mut Reader) -> Option<String> {
         None
     }
 }
@@ -388,12 +398,21 @@ impl ValueMono for Validity {
     }
 }
 
+
+pub fn create_construct_list(text: impl ToString, mono: impl ContructMono + 'static) -> Option<Rc<dyn Sequence>> {
+    Some(Rc::new(ContructOnly::create(text.to_string(), mono)))
+}
+pub fn create_value_list(text: impl ToString, mono: impl ValueMono + 'static) -> Option<Rc<dyn Sequence>> {
+    Some(Rc::new(ValueOnly::create(text.to_string(), mono)))
+}
+
 pub fn parse_sequence(t: Rc<dyn Sequence>, _reader: &mut Reader, field: &mut Field) -> Result<()> {
     let mut index = 0;
     loop {
         if _reader.left() == 0 {
             break;
         }
+        let _cursor = _reader.cursor;
         let _type = _reader.read8()?;
         let len = _read_len(_reader)?;
         match _type {
@@ -454,6 +473,11 @@ pub fn parse_sequence(t: Rc<dyn Sequence>, _reader: &mut Reader, field: &mut Fie
             //     add_sub_field_with_reader!(field, &mut reader2, move |reader, field| T::parse(index, reader, field))?;
             // }
             _ => {
+                _reader.cursor = _cursor;
+                let len = _reader.left();
+                if let Some(v) = t.unknown(index, _reader) {
+                    add_field_forward!(field, _reader, len, v);
+                }
                 break;
             }
         }
