@@ -154,25 +154,22 @@ impl Visitor {
         field.children = Some(vec![]);
         let mut extra_data = None;
         let list = field.children.as_mut().unwrap();
-        match &frame.protocol_field {
-            ProtocolInfoField::TLS(tls_list) => {
-                for item in &tls_list.list {
-                    if item.segments.len() == 1 {
-                        let range = item.segments.first().unwrap().range.clone();
-                        let ds = _reader.ds();
-                        let reader = Reader::new_sub(ds, range)?;
-                        list.push(parse_segment(reader, 0)?);
-                    } else {
-                        let data = item.combind(_reader.ds());
-                        let mut ds = DataSource::create(data, 0..0);
-                        let reader = Reader::new(&ds);
-                        list.push(parse_segment(reader, 1)?);
-                        let _data = std::mem::take(&mut ds.data);
-                        extra_data = Some(_data);
-                    }
+        if let ProtocolInfoField::TLS(tls_list) = &frame.protocol_field {
+            for item in &tls_list.list {
+                if item.segments.len() == 1 {
+                    let range = item.segments.first().unwrap().range.clone();
+                    let ds = _reader.ds();
+                    let reader = Reader::new_sub(ds, range)?;
+                    list.push(parse_segment(reader, 0)?);
+                } else {
+                    let data = item.combind(_reader.ds());
+                    let mut ds = DataSource::create(data, 0..0);
+                    let reader = Reader::new(&ds);
+                    list.push(parse_segment(reader, 1)?);
+                    let _data = std::mem::take(&mut ds.data);
+                    extra_data = Some(_data);
                 }
             }
-            _ => {}
         }
         field.summary = "Transport Layer Security".to_string();
         Ok((Protocol::None, extra_data))

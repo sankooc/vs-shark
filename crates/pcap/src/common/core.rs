@@ -179,16 +179,14 @@ impl Context {
             let connect = HttpConntect::request(connect_index, message_index);
             self.http_connections.push(connect);
             self.http_connections_map.insert(connect_index, (http_connect_index, timestamp));
-        } else {
-            if let Some((http_connect_index, ts)) = self.http_connections_map.get(&connect_index) {
-                if let Some(connect) = self.http_connections.get_mut(*http_connect_index as usize) {
-                    let fd = if *ts < timestamp { timestamp - *ts } else { 0 };
-                    connect.add_response(message_index, fd);
-                    self.http_connections_map.remove(&connect_index);
-                }
-            } else {
-                self.http_connections.push(HttpConntect::response(connect_index, message_index));
+        } else if let Some((http_connect_index, ts)) = self.http_connections_map.get(&connect_index) {
+            if let Some(connect) = self.http_connections.get_mut(*http_connect_index as usize) {
+                let fd = timestamp.saturating_sub(*ts);
+                connect.add_response(message_index, fd);
+                self.http_connections_map.remove(&connect_index);
             }
+        } else {
+            self.http_connections.push(HttpConntect::response(connect_index, message_index));
         }
         message_index
     }
@@ -212,13 +210,13 @@ pub struct IPV4Point {
 impl IPV4Point {
     fn new(ip: &Ipv4Addr, port: u16) -> Self {
         let ip_hash = quick_hash(ip);
-        Self { ip: ip.clone(), ip_hash, port }
+        Self { ip: *ip, ip_hash, port }
     }
 }
 
-impl Into<Endpoint> for IPV4Point {
-    fn into(self) -> Endpoint {
-        Endpoint::new(self.ip.to_string(), self.port)
+impl From<IPV4Point> for Endpoint {
+    fn from(val: IPV4Point) -> Self {
+        Endpoint::new(val.ip.to_string(), val.port)
     }
 }
 
@@ -234,7 +232,7 @@ impl PartialOrd for IPV4Point {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         match self.ip_hash.partial_cmp(&other.ip_hash) {
             Some(core::cmp::Ordering::Equal) => self.port.partial_cmp(&other.port),
-            ord => return ord,
+            ord => ord,
         }
     }
 }
@@ -249,13 +247,13 @@ pub struct IPV6Point {
 impl IPV6Point {
     fn new(ip: &Ipv6Addr, port: u16) -> Self {
         let ip_hash = quick_hash(ip);
-        Self { ip: ip.clone(), ip_hash, port }
+        Self { ip: *ip, ip_hash, port }
     }
 }
 
-impl Into<Endpoint> for IPV6Point {
-    fn into(self) -> Endpoint {
-        Endpoint::new(self.ip.to_string(), self.port)
+impl From<IPV6Point> for Endpoint {
+    fn from(val: IPV6Point) -> Self {
+        Endpoint::new(val.ip.to_string(), val.port)
     }
 }
 
@@ -272,7 +270,7 @@ impl PartialOrd for IPV6Point {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         match self.ip_hash.partial_cmp(&other.ip_hash) {
             Some(core::cmp::Ordering::Equal) => self.port.partial_cmp(&other.port),
-            ord => return ord,
+            ord => ord,
         }
     }
 }
@@ -311,7 +309,7 @@ impl Context {
         let mut _index: usize = 0;
 
         if let Some(index) = self.active_connection.get(&key) {
-            _index = index.clone();
+            _index = *index;
         } else {
             let connection = Connection::new(eps.0.into(), eps.1.into());
             _index = conversation.add_connection(connection);
@@ -324,7 +322,7 @@ impl Context {
         if rs.connect_finished {
             self.active_connection.remove(&key);
         }
-        return Ok(rs);
+        Ok(rs)
     }
     pub fn get_connect(&mut self, frame: &mut Frame, port1: u16, port2: u16, stat: TCPStat, data_source: &DataSource, range: Range<usize>) -> Result<ConnectState> {
         match &frame.address_field {

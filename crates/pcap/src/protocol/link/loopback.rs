@@ -7,7 +7,7 @@ use crate::{common::{concept::Field, enum_def::Protocol, io::Reader, core::Conte
 use anyhow::Result;
 
 
-const SUMMARY: &'static str = "Null/Loopback";
+const SUMMARY: &str = "Null/Loopback";
 pub struct Visitor;
 
 impl Visitor {

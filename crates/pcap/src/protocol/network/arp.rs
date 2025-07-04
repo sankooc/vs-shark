@@ -24,7 +24,7 @@ pub fn hardware_type_str(hw_type: u16) -> String {
 }
 
 pub fn protocol_type_str(_: u16) -> String {
-    format!("Protocol type: IPv4 (0x0800)")
+    "Protocol type: IPv4 (0x0800)".to_string()
 }
 
 pub fn operation_str(operation: u16) -> String {

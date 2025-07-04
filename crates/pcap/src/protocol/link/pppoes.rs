@@ -16,7 +16,7 @@ use crate::{
 };
 use anyhow::Result;
 
-const SUMMARY: &'static str = "PPP-over-Ethernet Session";
+const SUMMARY: &str = "PPP-over-Ethernet Session";
 
 fn payload(protocol: u16, reader: &mut Reader) -> Result<Vec<Field>> {
     let mut list = vec![];

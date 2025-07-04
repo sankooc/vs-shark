@@ -218,7 +218,7 @@ impl Visitor {
         let transaction_id = (b1 << 16) | (b2 << 8) | b3;
         
         // Store DHCPv6 information in the frame
-        frame.protocol_field = ProtocolInfoField::DHCPv6(msg_type, transaction_id as u32);
+        frame.protocol_field = ProtocolInfoField::DHCPv6(msg_type, transaction_id);
         
         // Parse options if there's more data
         // while reader.left() >= 4 {

@@ -106,19 +106,16 @@ impl Frame {
         Self { ..Default::default() }
     }
     pub fn range(&self) -> Option<Range<usize>> {
-        match &self.protocol_field {
-            ProtocolInfoField::TLS(tls_list) => {
-                if tls_list.list.len() > 0 {
-                    let mut start = tls_list.list.first().unwrap().segments.first().unwrap().range.start;
-                    let mut end = tls_list.list.last().unwrap().segments.last().unwrap().range.end;
-                    if let Some(r) = &self.range {
-                        start = cmp::min(start, r.start);
-                        end = cmp::max(end, r.end);
-                    }
-                    return Some(start..end);
+        if let ProtocolInfoField::TLS(tls_list) = &self.protocol_field {
+            if !tls_list.list.is_empty() {
+                let mut start = tls_list.list.first().unwrap().segments.first().unwrap().range.start;
+                let mut end = tls_list.list.last().unwrap().segments.last().unwrap().range.end;
+                if let Some(r) = &self.range {
+                    start = cmp::min(start, r.start);
+                    end = cmp::max(end, r.end);
                 }
+                return Some(start..end);
             }
-            _ => {}
         }
         self.range.clone()
     }
@@ -245,7 +242,7 @@ impl Instance {
     }
     pub fn parse_packet(ctx: &mut Context, mut frame: Frame, ds: &DataSource) {
         if let Some(range) = &frame.range {
-            let mut _reader = Reader::new_sub(&ds, range.clone()).unwrap();
+            let mut _reader = Reader::new_sub(ds, range.clone()).unwrap();
             let proto: Protocol = link_type_map(&ctx.file_type, ctx.link_type, &mut _reader);
             frame.range = Some(range.clone());
             frame.head = proto;
@@ -399,7 +396,7 @@ impl Instance {
                             let mut f = Field::default();
                             f.children = Some(vec![]);
                             f.start = reader.cursor;
-                            if let Ok((next, _extra_data)) = detail(_next, &mut f, &self.ctx, &frame, &mut reader) {
+                            if let Ok((next, _extra_data)) = detail(_next, &mut f, &self.ctx, frame, &mut reader) {
                                 f.size = reader.cursor - f.start;
                                 list.push(f);
                                 _next = next;

@@ -19,7 +19,7 @@ use crate::{
 use anyhow::Result;
 
 
-const SUMMARY: &'static str = "Linux cooked capture v1";
+const SUMMARY: &str = "Linux cooked capture v1";
 pub struct Visitor;
 
 pub fn typedesc(_type: u16) -> String {

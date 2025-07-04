@@ -24,10 +24,7 @@ pub fn detect(reader: &Reader) -> (bool, bool) {
             _ => (),
         }
     }
-    match &buffer[0..7] {
-        b"HTTP/1." => return (true, false),
-        _ => (),
-    }
+    if &buffer[0..7] == b"HTTP/1." { return (true, false) }
     (false, false)
 }
 
@@ -78,27 +75,22 @@ pub fn detect_type(data: &[u8]) -> Option<String> {
 
 fn read_line(reader: &mut Reader, len: usize) -> Result<String> {
     let data = reader.slice(len, true)?;
-    Ok(std_string(&data)?.to_string())
+    Ok(std_string(data)?.to_string())
 }
 
 pub fn parse_http_header(record: &mut HttpMessage, reader: &mut Reader, message_index: MessageIndex) -> Result<SegmentStatus> {
     loop {
         let left = reader.left();
-        if left == 2 {
-            match reader.preview(2)? {
-                b"\r\n" => {
-                    reader.forward(2);
-                    if record.chunked {
-                        return Ok(SegmentStatus::HttpChunkedContinue(message_index, 0));
-                    } else if let Some(length) = record.length {
-                        if length > 0 {
-                            return Ok(SegmentStatus::HttpContentContinue(message_index, length));
-                        }
-                    }
-                    return Ok(SegmentStatus::Finish);
+        if left == 2 && reader.preview(2)? == b"\r\n" {
+            reader.forward(2);
+            if record.chunked {
+                return Ok(SegmentStatus::HttpChunkedContinue(message_index, 0));
+            } else if let Some(length) = record.length {
+                if length > 0 {
+                    return Ok(SegmentStatus::HttpContentContinue(message_index, length));
                 }
-                _ => {}
             }
+            return Ok(SegmentStatus::Finish);
         }
         if let Some(size) = reader.search_enter(0xffff) {
             if size == 0 {
@@ -113,13 +105,13 @@ pub fn parse_http_header(record: &mut HttpMessage, reader: &mut Reader, message_
                 return Ok(SegmentStatus::Finish);
             }
             let data = reader.slice(size, true)?;
-            if let None = record.length {
+            if record.length.is_none() {
                 record.length = detect_length(data);
             }
             if !record.chunked {
                 record.chunked = detect_chunked(data);
             }
-            if let None = record.content_type {
+            if record.content_type.is_none() {
                 record.content_type = detect_type(data);
             }
             reader.forward(2);
@@ -155,7 +147,7 @@ pub fn parse_http_chunked(record: &mut HttpMessage, index: FrameIndex, reader: &
         }
         if let Some(pos) = reader.search_enter(u16::MAX.into()) {
             let data = reader.slice(pos, true)?;
-            if let Ok(len) = hex_num(&data) {
+            if let Ok(len) = hex_num(data) {
                 reader.forward(2);
                 if len == 0 {
                     return Ok(SegmentStatus::Finish);
@@ -213,15 +205,15 @@ fn parse_http(ctx: &mut Context, reader: &mut Reader, frame_index: FrameIndex, s
                 match &status {
                     SegmentStatus::HttpHeaderContinue(_, _) => {
                         record.headers = segment_append(orgin, segment);
-                        return Ok(status);
+                        Ok(status)
                     }
                     _ => {
                         record.headers = segment_append(orgin, segment);
-                        return parse_http(ctx, reader, frame_index, status);
+                        parse_http(ctx, reader, frame_index, status)
                     }
                 }
             } else {
-                return Ok(SegmentStatus::Error);
+                Ok(SegmentStatus::Error)
             }
         }
         SegmentStatus::HttpHeaderContinue(message_index, mut extra) => {
@@ -235,17 +227,17 @@ fn parse_http(ctx: &mut Context, reader: &mut Reader, frame_index: FrameIndex, s
                     record.headers = segment_append(orgin, segment);
                     let data = reader.slice(size, true)?;
                     extra.extend_from_slice(data);
-                    if let None = record.length {
+                    if record.length.is_none() {
                         record.length = detect_length(&extra);
                     }
                     if !record.chunked {
                         record.chunked = detect_chunked(&extra);
                     }
-                    if let None = record.content_type {
+                    if record.content_type.is_none() {
                         record.content_type = detect_type(&extra);
                     }
                     reader.forward(2);
-                    return parse_http(ctx, reader, frame_index, SegmentStatus::HttpDetected(message_index));
+                    parse_http(ctx, reader, frame_index, SegmentStatus::HttpDetected(message_index))
                 } else {
                     let segment = Segment {
                         index: frame_index,
@@ -255,10 +247,10 @@ fn parse_http(ctx: &mut Context, reader: &mut Reader, frame_index: FrameIndex, s
                     record.headers = segment_append(orgin, segment);
                     let data = reader.slice(reader.left(), true)?;
                     extra.extend_from_slice(data);
-                    return Ok(SegmentStatus::HttpHeaderContinue(message_index, extra));
+                    Ok(SegmentStatus::HttpHeaderContinue(message_index, extra))
                 }
             } else {
-                return Ok(SegmentStatus::Error);
+                Ok(SegmentStatus::Error)
             }
         }
         SegmentStatus::HttpContentContinue(message_index, left) => {
@@ -278,16 +270,16 @@ fn parse_http(ctx: &mut Context, reader: &mut Reader, frame_index: FrameIndex, s
                     return Ok(SegmentStatus::HttpContentContinue(message_index, left - _left));
                 }
             }
-            return Ok(SegmentStatus::Error);
+            Ok(SegmentStatus::Error)
         }
         SegmentStatus::HttpChunkedContinue(message_index, left) => {
             if let Some(record) = ctx.get_http_message(message_index) {
-                if let None = record.length {
+                if record.length.is_none() {
                     record.length = Some(0);
                 }
-                return parse_http_chunked(record, frame_index, reader, message_index, left);
+                parse_http_chunked(record, frame_index, reader, message_index, left)
             } else {
-                return Ok(SegmentStatus::Error);
+                Ok(SegmentStatus::Error)
             }
         }
         SegmentStatus::HttpChunkedBroken(message_index, mut extra) => {
@@ -304,31 +296,29 @@ fn parse_http(ctx: &mut Context, reader: &mut Reader, frame_index: FrameIndex, s
                         }
                         return parse_http_chunked(record, frame_index, reader, message_index, len + 2);
                     }
-                } else {
-                    if let Some(size) = reader.search_enter(0x000f) {
-                        let data = reader.slice(size, true)?;
-                        extra.extend_from_slice(&data);
-                        reader.forward(2);
-                        if let Ok(len) = hex_num(&extra) {
-                            if len == 0 {
-                                return Ok(SegmentStatus::Finish);
-                            }
-                            if let Some(ll) = record.length {
-                                record.length = Some(ll + len);
-                            }
-                            return parse_http_chunked(record, frame_index, reader, message_index, len + 2);
-                        
+                } else if let Some(size) = reader.search_enter(0x000f) {
+                    let data = reader.slice(size, true)?;
+                    extra.extend_from_slice(data);
+                    reader.forward(2);
+                    if let Ok(len) = hex_num(&extra) {
+                        if len == 0 {
+                            return Ok(SegmentStatus::Finish);
                         }
-                    } else {
-                        return Ok(SegmentStatus::Error);
+                        if let Some(ll) = record.length {
+                            record.length = Some(ll + len);
+                        }
+                        return parse_http_chunked(record, frame_index, reader, message_index, len + 2);
+                    
                     }
+                } else {
+                    return Ok(SegmentStatus::Error);
                 }
                 // TODO
             }
-            return Ok(SegmentStatus::Finish);
+            Ok(SegmentStatus::Finish)
         }
         _ => {
-            return Ok(status);
+            Ok(status)
         }
     }
 }
@@ -336,9 +326,9 @@ pub struct Visitor;
 impl Visitor {
     pub fn info(_: &Context, frame: &Frame) -> Option<String> {
         if let ProtocolInfoField::Http(data, _mi) = &frame.protocol_field {
-            return Some(data.clone());
+            Some(data.clone())
         } else {
-            return frame.tcp_descripion();
+            frame.tcp_descripion()
         }
     }
     pub fn parse(ctx: &mut Context, frame: &mut Frame, _reader: &mut Reader) -> Result<Protocol> {
@@ -386,15 +376,10 @@ impl Visitor {
             ProtocolInfoField::Http(_, _mi) => {
                 loop {
                     let left = reader.left();
-                    if left >= 2 {
-                        match reader.preview(2)? {
-                            b"\r\n" => {
-                                reader.forward(2);
-                                //todo header parse finish
-                                break;
-                            }
-                            _ => {}
-                        }
+                    if left >= 2 && reader.preview(2)? == b"\r\n" {
+                        reader.forward(2);
+                        //todo header parse finish
+                        break;
                     }
                     if let Some(pos) = reader.search_enter(0xffff) {
                         add_field_format!(field, reader, read_line(reader, pos)?, "{}");

@@ -165,12 +165,8 @@ impl Visitor {
         }
         let mut left_size = reader.left();
         let iplen = frame.iplen as usize;
-        if iplen > 0 {
-            if start > iplen {
-                if iplen + left_size >= start {
-                    left_size = iplen + left_size - start;
-                }
-            }
+        if iplen > 0 && start > iplen && iplen + left_size >= start {
+            left_size = iplen + left_size - start;
         }
         let ds = reader.ds();
         let range = reader.cursor..reader.cursor + left_size;

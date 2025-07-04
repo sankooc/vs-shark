@@ -154,10 +154,10 @@ impl Visitor {
     pub fn info(_: &Context, frame: &Frame) -> Option<String> {
         match &frame.protocol_field {
             ProtocolInfoField::DnsRESPONSE(transaction_id) => {
-                return Some(format!("Domain Name System (response) ID: 0x{:04x}", transaction_id));
+                Some(format!("Domain Name System (response) ID: 0x{:04x}", transaction_id))
             }
             ProtocolInfoField::DnsQUERY(transaction_id) => {
-                return Some(format!("Domain Name System (query) ID: 0x{:04x}", transaction_id));
+                Some(format!("Domain Name System (query) ID: 0x{:04x}", transaction_id))
             }
             _ => None,
         }
@@ -323,7 +323,7 @@ fn read_resource_record(start_offset: usize, reader: &mut Reader) -> Result<Fiel
         255 => {
             field.summary = "Type: ANY".into();
         },
-        46 | 47 | 48 => {
+        46..=48 => {
             field.summary = "Type: DNSSEC".into();
         },
         _ => {
@@ -460,7 +460,7 @@ fn read_resource_record(start_offset: usize, reader: &mut Reader) -> Result<Fiel
                 }
             };
             reader.set(finish);
-            if record_data.len() > 0 {
+            if !record_data.is_empty() {
                 field_back_format!(list, reader, data_len, record_data.clone());
             }
             field.summary  = format!("{}, type {}, class {}, {}", name, dns_type_mapper(record_type), dns_class_mapper(record_class), record_data);

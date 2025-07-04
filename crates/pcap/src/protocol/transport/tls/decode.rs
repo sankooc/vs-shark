@@ -97,7 +97,7 @@ pub struct CollectionOnly {
 
 impl Sequence for CollectionOnly {
     fn collection(&self, index: usize) -> Option<Rc<dyn Sequence>> {
-        self.list.get(index).map(|f| f.clone())
+        self.list.get(index).cloned()
     }
     fn val(&self, _: usize, _: BerType) -> Option<String> {
         None
@@ -376,14 +376,11 @@ impl ValueMono for SignedCertificateVersion {
 
 impl ValueMono for SignedCertificateSignature {
     fn val(&self, index: usize, ber_type: BerType) -> Option<String> {
-        match index {
-            0 => {
-                if let BerType::ObjectIdentifier(data) = ber_type {
-                    let oid = oid_map_mapper(&data);
-                    return Some(format!("Algorithm Id: {} ({})", data, oid));
-                }
+        if index == 0 {
+            if let BerType::ObjectIdentifier(data) = ber_type {
+                let oid = oid_map_mapper(&data);
+                return Some(format!("Algorithm Id: {} ({})", data, oid));
             }
-            _ => {}
         }
         None
     }
@@ -463,7 +460,7 @@ pub fn parse_sequence(t: Rc<dyn Sequence>, _reader: &mut Reader, field: &mut Fie
             }
             BER_UTC_TIME => {
                 let data = _reader.slice(len, true)?;
-                let content = format!("20{}", from_utf8(data)?.to_string());
+                let content = format!("20{}", from_utf8(data)?);
                 if let Some(v) = t.val(index, BerType::UTCTime(content)) {
                     add_field_backstep!(field, _reader, len, v);
                 }

@@ -193,18 +193,18 @@ impl Conversation {
     }
 }
 
-impl Into<VConversation> for &Conversation {
-    fn into(self) -> VConversation {
-        let key = self.key;
-        let sender_packets = self.primary_statistic.count;
-        let receiver_packets = self.second_statistic.count;
-        let sender_bytes = self.primary_statistic.throughput;
-        let receiver_bytes = self.second_statistic.throughput;
-        let connects = self.connections.len();
+impl From<&Conversation> for VConversation {
+    fn from(val: &Conversation) -> Self {
+        let key = val.key;
+        let sender_packets = val.primary_statistic.count;
+        let receiver_packets = val.second_statistic.count;
+        let sender_bytes = val.primary_statistic.throughput;
+        let receiver_bytes = val.second_statistic.throughput;
+        let connects = val.connections.len();
         VConversation {
             key,
-            sender: self.primary.clone(),
-            receiver: self.second.clone(),
+            sender: val.primary.clone(),
+            receiver: val.second.clone(),
             sender_packets,
             receiver_packets,
             sender_bytes,
@@ -294,7 +294,7 @@ pub struct VHttpConnection {
     pub response_body: Vec<(usize, usize)>,
 }
 
-const NA: &'static str = "N/A";
+const NA: &str = "N/A";
 
 impl VHttpConnection {
     pub fn status(&self) -> &str {

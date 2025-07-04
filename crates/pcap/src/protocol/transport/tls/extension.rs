@@ -52,8 +52,8 @@ const EXT_SUPPORTED_VERSIONS: u16 = 43; // RFC 8446
 fn field_extension_type(code: u16) -> String {
     format!("Type: {} ({:#06x})", tls_extension_mapper(code), code)
 }
-/// Parse TLS extensions
-/// Reference: RFC 8446 Section 4.2
+// Parse TLS extensions
+// Reference: RFC 8446 Section 4.2
 pub fn parse_detail(reader: &mut Reader, field: &mut Field, is_client: bool) -> Result<()> {
     if reader.left() < 2 {
         return Ok(());
@@ -73,7 +73,7 @@ pub fn parse_detail(reader: &mut Reader, field: &mut Field, is_client: bool) -> 
     Ok(())
 }
 fn parse_extensions(is_client: bool) -> Box<dyn Fn(&mut Reader, &mut Field) -> Result<()>> {
-    return Box::new(move |reader: &mut Reader, field: &mut Field| -> Result<()> {
+    Box::new(move |reader: &mut Reader, field: &mut Field| -> Result<()> {
         field.summary = "Extensions".into();
         while reader.left() >= 4 {
             add_sub_field_with_reader!(field, reader,|reader: &mut Reader, field: &mut Field| parse_extension(reader, field, is_client))?;
@@ -81,10 +81,6 @@ fn parse_extensions(is_client: bool) -> Box<dyn Fn(&mut Reader, &mut Field) -> R
         Ok(())
     })
 }
-
-/// Parse a single TLS extension
-/// Reference: RFC 8446 Section 4.2
-/// 
 
 fn parse_extension(reader: &mut Reader, ext_field: &mut Field, is_client: bool) -> Result<()> {
     let ext_type = add_field_format_fn!(ext_field, reader, reader.read16(true)?, field_extension_type);
@@ -118,8 +114,8 @@ fn parse_extension(reader: &mut Reader, ext_field: &mut Field, is_client: bool) 
     Ok(())
 }
 
-/// Parse Server Name Indication (SNI) extension
-/// Reference: RFC 6066 Section 3
+// Parse Server Name Indication (SNI) extension
+// Reference: RFC 6066 Section 3
 fn parse_server_name(reader: &mut Reader, field: &mut Field) -> Result<()> {
     let ext_len = reader.left();
     if ext_len < 2 {
@@ -140,8 +136,8 @@ fn parse_server_name(reader: &mut Reader, field: &mut Field) -> Result<()> {
     Ok(())
 }
 
-/// Parse Supported Groups extension (previously known as Elliptic Curves)
-/// Reference: RFC 8446 Section 4.2.7, RFC 7919
+// Parse Supported Groups extension (previously known as Elliptic Curves)
+// Reference: RFC 8446 Section 4.2.7, RFC 7919
 
 fn parse_supported_groups_item(reader: &mut Reader, field: &mut Field) -> Result<()> {
     add_field_format_fn!(field, reader, reader.read16(true)?, field_group_support);
@@ -181,8 +177,8 @@ fn field_ec_point_format(format: u8) -> String {
         _ => "EC Point Format: unknown".to_string(),
     }
 }
-/// Convert named group ID to string
-/// Reference: RFC 8446 Section 4.2.7, RFC 7919
+// Convert named group ID to string
+// Reference: RFC 8446 Section 4.2.7, RFC 7919
 fn named_group_to_string(group_id: u16) -> String {
     match group_id {
         // Elliptic Curve Groups (ECDHE)
@@ -223,8 +219,8 @@ fn named_group_to_string(group_id: u16) -> String {
     }
 }
 
-/// Parse EC Point Formats extension
-/// Reference: RFC 8422 Section 5.1.2
+// Parse EC Point Formats extension
+// Reference: RFC 8422 Section 5.1.2
 
 fn parse_ec_point_formats_item(reader: &mut Reader, field: &mut Field) -> Result<()> {
     add_field_format_fn!(field, reader, reader.read8()?, field_ec_point_format);
@@ -249,8 +245,8 @@ fn parse_ec_point_formats(reader: &mut Reader, field: &mut Field) -> Result<()> 
     Ok(())
 }
 
-/// Parse Signature Algorithms extension
-/// Reference: RFC 8446 Section 4.2.3
+// Parse Signature Algorithms extension
+// Reference: RFC 8446 Section 4.2.3
 
 fn parse_signature_algorithms_item(reader: &mut Reader, field: &mut Field) -> Result<()> {
     let sig_alg = reader.read16(true)?;
@@ -317,9 +313,9 @@ fn parse_signature_algorithms(reader: &mut Reader, field: &mut Field) -> Result<
     Ok(())
 }
 
-/// Parse Application Layer Protocol Negotiation (ALPN) extension
-/// Reference: RFC 7301
-/// 
+// Parse Application Layer Protocol Negotiation (ALPN) extension
+// Reference: RFC 7301
+// 
 
 fn parse_alpn_item(reader: &mut Reader, field: &mut Field) -> Result<()> {
     let len = add_field_format!(field, reader, reader.read8()?, "ALPN Protocol Length: {}") as usize;
@@ -350,8 +346,8 @@ fn parse_alpn(reader: &mut Reader, field: &mut Field) -> Result<()> {
     Ok(())
 }
 
-/// Parse Supported Versions extension
-/// Reference: RFC 8446 Section 4.2.1
+// Parse Supported Versions extension
+// Reference: RFC 8446 Section 4.2.1
 
 fn parse_supported_versions_item(reader: &mut Reader, field: &mut Field) -> Result<()> {
     add_field_format_fn!(field, reader, reader.read16(true)?, field_tls_version);
@@ -380,8 +376,8 @@ fn parse_supported_versions(reader: &mut Reader, field: &mut Field) -> Result<()
     Ok(())
 }
 
-/// Parse Key Share extension
-/// Reference: RFC 8446 Section 4.2.8
+// Parse Key Share extension
+// Reference: RFC 8446 Section 4.2.8
 
 fn parse_key_share_item(reader: &mut Reader, field: &mut Field) -> Result<()> {
     add_field_format_fn!(field, reader, reader.read16(true)?, field_group_ks);

@@ -19,7 +19,7 @@ pub struct EthernetVisitor {}
 impl EthernetVisitor {
     pub fn info(ctx: &Context, frame: &Frame) -> Option<String> {
         if let ProtocolInfoField::Ethernet(key) = &frame.protocol_field {
-            if let Some(ech) = ctx.ethermap.get(&key) {
+            if let Some(ech) = ctx.ethermap.get(key) {
                 return Some(format!("Ethernet II, Src: {}, Dst: {}", ech.source, ech.target));
             }
         }

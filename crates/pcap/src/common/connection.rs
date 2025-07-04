@@ -47,7 +47,7 @@ impl TcpFlagField {
     }
     pub fn list_str(&self) -> String {
         let list = self.f_list();
-        if list.len() == 0 {
+        if list.is_empty() {
             return String::from("");
         }
         // let content = list.iter().map(|f| format!("{}", f)).collect::<Vec<_>>().join(",");
@@ -59,7 +59,7 @@ impl TcpFlagField {
                 write!(&mut content, ",{}", item).unwrap();
             }
         }
-        return format!("[{}]", content);
+        format!("[{}]", content)
     }
 }
 
@@ -137,11 +137,7 @@ pub struct TCPSegment {
 
 impl TCPSegment {
     pub fn size(&self) -> usize {
-        if self.range.start > self.range.end {
-            0
-        } else {
-            self.range.end - self.range.start
-        }
+        self.range.end.saturating_sub(self.range.start)
     }
 }
 
@@ -213,12 +209,12 @@ impl TLSSegment {
     }
 }
 
-impl Into<TlsData> for TLSSegment {
-    fn into(self) -> TlsData {
+impl From<TLSSegment> for TlsData {
+    fn from(val: TLSSegment) -> Self {
         TlsData {
-            content_type: self.content_type,
-            segments: self.segments,
-            total: self.total as usize,
+            content_type: val.content_type,
+            segments: val.segments,
+            total: val.total as usize,
         }
     }
 }
@@ -245,12 +241,12 @@ pub struct Endpoint {
     _segments: Option<Vec<TCPSegment>>,
 }
 
-impl Into<VEndpoint> for &Endpoint {
-    fn into(self) -> VEndpoint {
+impl From<&Endpoint> for VEndpoint {
+    fn from(val: &Endpoint) -> Self {
         VEndpoint {
-            host: self.host.clone(),
-            port: self.port,
-            statistic: self.statistic.clone(),
+            host: val.host.clone(),
+            port: val.port,
+            statistic: val.statistic.clone(),
         }
     }
 }
@@ -265,7 +261,7 @@ impl Endpoint {
         self._segments = None;
     }
     pub fn add_segment(&mut self, index: FrameIndex, range: Range<usize>) {
-        if let None = self._segments {
+        if self._segments.is_none() {
             self._segments = Some(vec![]);
         }
         let _segs = self._segments.as_mut().unwrap();
@@ -276,12 +272,10 @@ impl Endpoint {
         if self._ack == 0 {
             if stat.state.contain(TCPFLAG::SYNC) {
                 self._ack = acknowledge;
+            } else if acknowledge >= 1 {
+                self._ack = acknowledge - 1;
             } else {
-                if acknowledge >= 1 {
-                    self._ack = acknowledge - 1;
-                } else {
-                    self._ack = 0;
-                }
+                self._ack = 0;
             }
         }
 
@@ -337,7 +331,7 @@ impl Endpoint {
             self._checksum = stat.crc;
             statistic.invalid = 1;
             self.clear_segment();
-            return (TCPDetail::NOPREVCAPTURE, statistic);
+            (TCPDetail::NOPREVCAPTURE, statistic)
         } else if sequence == self.next {
             self.seq = sequence;
             self._checksum = stat.crc;
@@ -445,9 +439,9 @@ impl<'a> TmpConnection<'a> {
             rev = &mut conn.second;
         }
 
-        let (status, statistic) = main.update(&stat);
+        let (status, statistic) = main.update(stat);
         main.statistic.append(&statistic);
-        rev.confirm(&stat);
+        rev.confirm(stat);
         let mut rs = ConnectState::new(main.seq(), rev.ack(), main.next(), stat.payload_len, status);
         match &rs.status {
             TCPDetail::RESET => {
@@ -459,24 +453,19 @@ impl<'a> TmpConnection<'a> {
                 // TODO
             }
             _ => {
-                if rs.status == TCPDetail::NEXT {
-                    if rs.len > 0 {
-                        let reader = Reader::new_sub(data_source, range.clone())?;
-                        match conn.protocol {
-                            Protocol::None => {
-                                if protocol::application::http::detect(&reader).0 {
-                                    conn.protocol = Protocol::HTTP;
-                                    main.segment_status = SegmentStatus::Init;
-                                }
-                                 else if protocol::transport::tls::detect(&reader) {
-                                    conn.protocol = Protocol::TLS;
-                                    main.segment_status = SegmentStatus::Init;
-                                }
-                            }
-                            _ => {}
+                if rs.status == TCPDetail::NEXT && rs.len > 0 {
+                    let reader = Reader::new_sub(data_source, range.clone())?;
+                    if let Protocol::None = conn.protocol {
+                        if protocol::application::http::detect(&reader).0 {
+                            conn.protocol = Protocol::HTTP;
+                            main.segment_status = SegmentStatus::Init;
                         }
-                        rs.next_protocol = conn.protocol;
+                         else if protocol::transport::tls::detect(&reader) {
+                            conn.protocol = Protocol::TLS;
+                            main.segment_status = SegmentStatus::Init;
+                        }
                     }
+                    rs.next_protocol = conn.protocol;
                 }
                 // // process
                 if stat.state.contain(TCPFLAG::FIN) {

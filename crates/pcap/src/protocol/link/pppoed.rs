@@ -15,7 +15,7 @@ use crate::{
 };
 use anyhow::Result;
 
-const SUMMARY: &'static str = "PPP-over-Ethernet Discovery";
+const SUMMARY: &str = "PPP-over-Ethernet Discovery";
 
 const PADI: u8 = 0x09; // PPPoE Active Discovery Initiation
 const PADO: u8 = 0x07; // PPPoE Active Discovery Offer

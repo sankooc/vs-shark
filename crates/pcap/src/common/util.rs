@@ -50,7 +50,7 @@ pub fn format_bytes_single_unit_int(bytes: usize) -> String {
 
 
 pub fn bytes_to_hex(bytes: &[u8]) -> String {
-    if bytes.len() == 0 {
+    if bytes.is_empty() {
         return String::new();
     }
     let mut rt = String::with_capacity(2 * bytes.len() + 2);
@@ -65,7 +65,7 @@ pub fn bytes_to_hex_limit(bytes: &[u8], max: usize) -> String {
     // let cut = len > max;
     let size = std::cmp::min(len, max);
     let _data = &bytes[0..size];
-    return bytes_to_hex(_data)
+    bytes_to_hex(_data)
 }
 
 
