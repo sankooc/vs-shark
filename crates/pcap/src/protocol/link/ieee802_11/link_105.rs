@@ -1,3 +1,8 @@
+// Copyright (c) 2025 sankooc
+// 
+// This file is part of the pcapview project.
+// Licensed under the MIT License - see https://opensource.org/licenses/MIT
+
 // Parser for IEEE 802.11 MAC frames (Link Type 105)
 // References: IEEE Std 802.11-2020
 

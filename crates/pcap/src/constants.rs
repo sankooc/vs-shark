@@ -1,3 +1,8 @@
+// Copyright (c) 2025 sankooc
+// 
+// This file is part of the pcapview project.
+// Licensed under the MIT License - see https://opensource.org/licenses/MIT
+
 pub fn link_type_mapper(code: u16) -> &'static str {
 	match code {
 		0 => "NULL",

@@ -1,3 +1,8 @@
+// Copyright (c) 2025 sankooc
+// 
+// This file is part of the pcapview project.
+// Licensed under the MIT License - see https://opensource.org/licenses/MIT
+
 //https://www.radiotap.org/
 use crate::{
     add_field_backstep, add_field_format, add_field_label, add_sub_field,

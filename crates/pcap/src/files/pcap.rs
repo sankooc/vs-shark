@@ -1,3 +1,8 @@
+// Copyright (c) 2025 sankooc
+// 
+// This file is part of the pcapview project.
+// Licensed under the MIT License - see https://opensource.org/licenses/MIT
+
 use anyhow::{bail, Result};
 use crate::common::{enum_def::DataError, io::Reader, Frame};
 

@@ -1,3 +1,8 @@
+// Copyright (c) 2025 sankooc
+// 
+// This file is part of the pcapview project.
+// Licensed under the MIT License - see https://opensource.org/licenses/MIT
+
 use crate::{
     common::{concept::Field, core::Context, enum_def::{ProtocolInfoField, Protocol}, io::Reader, Frame},
     field_back_format, field_rest_format, read_field_format, read_field_format_fn,

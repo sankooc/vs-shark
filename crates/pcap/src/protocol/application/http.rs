@@ -1,3 +1,8 @@
+// Copyright (c) 2025 sankooc
+// 
+// This file is part of the pcapview project.
+// Licensed under the MIT License - see https://opensource.org/licenses/MIT
+
 use crate::common::concept::{Field, FrameIndex, MessageIndex};
 use crate::common::core::{Context, Segment, SegmentData, HttpMessage};
 use crate::common::enum_def::{ProtocolInfoField, SegmentStatus};

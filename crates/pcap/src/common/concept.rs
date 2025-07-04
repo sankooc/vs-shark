@@ -1,3 +1,9 @@
+// Copyright (c) 2025 sankooc
+// 
+// This file is part of the pcapview project.
+// Licensed under the MIT License - see https://opensource.org/licenses/MIT
+
+
 use serde::Serialize;
 
 use crate::common::{connection::{Connection}, enum_def::Protocol};
@@ -319,4 +325,3 @@ impl VHttpConnection {
         NA
     }
 }
-

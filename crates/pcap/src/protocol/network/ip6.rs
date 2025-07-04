@@ -1,3 +1,8 @@
+// Copyright (c) 2025 sankooc
+// 
+// This file is part of the pcapview project.
+// Licensed under the MIT License - see https://opensource.org/licenses/MIT
+
 use crate::{
     add_field_format, add_field_format_fn, add_sub_field, common::{concept::Field, core::Context, enum_def::{AddressField, Protocol}, io::Reader, quick_hash, Frame}, constants::ip_protocol_type_mapper, protocol::ip4_mapper
 };

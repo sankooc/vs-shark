@@ -1,3 +1,8 @@
+// Copyright (c) 2025 sankooc
+// 
+// This file is part of the pcapview project.
+// Licensed under the MIT License - see https://opensource.org/licenses/MIT
+
 use crate::common::{concept::Field, io::Reader};
 use crate::constants::{tls_cipher_suites_mapper, tls_hs_message_type_mapper};
 use crate::protocol::transport::tls::decode::parse_cert;

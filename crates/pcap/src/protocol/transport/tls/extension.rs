@@ -1,3 +1,8 @@
+// Copyright (c) 2025 sankooc
+// 
+// This file is part of the pcapview project.
+// Licensed under the MIT License - see https://opensource.org/licenses/MIT
+
 use crate::common::{concept::Field, io::Reader};
 use crate::constants::tls_extension_mapper;
 use crate::protocol::transport::tls::field_tls_version;
