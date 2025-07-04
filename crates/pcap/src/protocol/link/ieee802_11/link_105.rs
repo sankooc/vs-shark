@@ -15,7 +15,7 @@ use crate::{
         io::Reader, // Assuming read_u16_le is available
         Frame,
     },
-    protocol::enthernet_protocol_mapper,
+    protocol::ethernet_protocol_mapper,
 };
 use anyhow::Result;
 
@@ -147,7 +147,7 @@ impl Visitor {
                         //LLC
                         reader.forward(3);
                         let ptype = reader.read16(true)?;
-                        return Ok(enthernet_protocol_mapper(ptype));
+                        return Ok(ethernet_protocol_mapper(ptype));
                     }
                     _ => {}
                 }
@@ -274,7 +274,7 @@ impl Visitor {
                         //LLC
                         reader.forward(3);
                         let ptype = reader.read16(true)?;
-                        return Ok(enthernet_protocol_mapper(ptype));
+                        return Ok(ethernet_protocol_mapper(ptype));
                     }
                     _ => {}
                 }

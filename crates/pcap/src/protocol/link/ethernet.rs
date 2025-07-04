@@ -10,7 +10,7 @@ use crate::{
         enum_def::{AddressField, Protocol, ProtocolInfoField},
         io::{read_mac, Reader},
         quick_hash, EthernetCache, Frame,
-    }, constants::etype_mapper, protocol::enthernet_protocol_mapper
+    }, constants::etype_mapper, protocol::ethernet_protocol_mapper
 };
 use anyhow::Result;
 
@@ -32,7 +32,7 @@ impl EthernetVisitor {
         frame.address_field = AddressField::Mac(key);
         frame.protocol_field = ProtocolInfoField::Ethernet(key);
         if let Some(cache) = ctx.ethermap.get(&key) {
-            Ok(enthernet_protocol_mapper(cache.ptype))
+            Ok(ethernet_protocol_mapper(cache.ptype))
         } else {
             let target: [u8; 6] = _reader.slice(6, true)?.try_into()?;
             let source: [u8; 6] = _reader.slice(6, true)?.try_into()?;
@@ -41,7 +41,7 @@ impl EthernetVisitor {
                 ptype = 1010; // IEEE 802.3
             }
             ctx.ethermap.insert(key, EthernetCache::new(source.into(), target.into(), ptype));
-            Ok(enthernet_protocol_mapper(ptype))
+            Ok(ethernet_protocol_mapper(ptype))
         }
     }
 
@@ -56,6 +56,6 @@ impl EthernetVisitor {
             add_field_backstep!(field, reader, 2, format!("Type: {} ({:#06x})", etype_mapper(ptype), ptype));
         }
         field.summary = format!("Ethernet II, Src: {}, Dst: {}", source, target);
-        Ok(enthernet_protocol_mapper(ptype))
+        Ok(ethernet_protocol_mapper(ptype))
     }
 }

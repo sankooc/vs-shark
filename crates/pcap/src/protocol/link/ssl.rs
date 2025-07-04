@@ -14,7 +14,7 @@ use crate::{
         Frame,
     },
     constants::etype_mapper,
-    protocol::enthernet_protocol_mapper,
+    protocol::ethernet_protocol_mapper,
 };
 use anyhow::Result;
 
@@ -46,7 +46,7 @@ impl Visitor {
         reader.forward(2);
         let ptype = reader.read16(true)?;
 
-        Ok(enthernet_protocol_mapper(ptype))
+        Ok(ethernet_protocol_mapper(ptype))
     }
     pub fn detail(field: &mut Field, _: &Context, _: &Frame, reader: &mut Reader) -> Result<Protocol> {
         let _type = add_field_format_fn!(field, reader, reader.read16(true)?, typedesc);
@@ -56,6 +56,6 @@ impl Visitor {
         reader.forward(2);
         let ptype = add_field_format_fn!(field, reader, reader.read16(true)?, ptype_str);
         field.summary = SUMMARY.to_string();
-        Ok(enthernet_protocol_mapper(ptype))
+        Ok(ethernet_protocol_mapper(ptype))
     }
 }

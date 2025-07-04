@@ -158,7 +158,7 @@ impl Visitor {
             ProtocolInfoField::TLS(tls_list) => {
                 for item in &tls_list.list {
                     if item.segments.len() == 1 {
-                        let range = item.segments.get(0).unwrap().range.clone();
+                        let range = item.segments.first().unwrap().range.clone();
                         let ds = _reader.ds();
                         let reader = Reader::new_sub(ds, range)?;
                         list.push(parse_segment(reader, 0)?);

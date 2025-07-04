@@ -58,8 +58,8 @@ fn field_session_id_str(data: &[u8]) -> String {
     let len = std::cmp::min(32, data.len());
     let mut rs = String::with_capacity(12 + len * 2);
     rs.push_str("Session ID: ");
-    for i in 0..len {
-        rs.push_str(&format!("{:02x}", data[i]));
+    for (_, item) in data.iter().enumerate().take(len) {
+        rs.push_str(&format!("{:02x}", *item));
     }
     rs
 }
@@ -302,8 +302,6 @@ pub fn parse_certificates(reader: &mut Reader, field: &mut Field) -> Result<()> 
             // add_sub_field_with_reader!(field, &mut _reader, |reader, field| parse_sequence(decode::Certificate, reader, field)).unwrap();
 
             if let Ok(_) = add_sub_field_with_reader!(field, &mut _reader, parse_cert) {
-
-            } else {
 
             }
             cert_count += 1;

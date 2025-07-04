@@ -75,7 +75,7 @@ impl PCAPNG {
                 let origin = reader.read32(false)?;
 
                 if _captured != origin {
-                    bail!(DataError::FormatMissMatch);
+                    bail!(DataError::FormatMismatch);
                 }
                 let mut f = Frame::new();
                 f.info.len = origin;

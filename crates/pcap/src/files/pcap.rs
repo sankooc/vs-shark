@@ -23,7 +23,7 @@ impl PCAP {
         let captured = reader.read32(false)?;
         let origin = reader.read32(false)?;
         if captured != origin {
-            bail!(DataError::FormatMissMatch);
+            bail!(DataError::FormatMismatch);
         }
         if reader.left() < (origin as usize) {
             reader.back(16);

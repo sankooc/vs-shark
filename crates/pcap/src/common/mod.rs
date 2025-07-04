@@ -226,11 +226,11 @@ impl Instance {
                                 break;
                             }
                             _ => {
-                                bail!(DataError::FormatMissMatch);
+                                bail!(DataError::FormatMismatch);
                             }
                         }
                     }
-                    bail!(DataError::FormatMissMatch);
+                    bail!(DataError::FormatMismatch);
                 }
             }
         }

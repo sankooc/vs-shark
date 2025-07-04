@@ -43,13 +43,13 @@ impl TableStyle<FrameInfo> for FrameStyle {
     fn get_row(&self, data: &FrameInfo, selected: bool) -> Vec<String> {
         let mut rs: Vec<String> = Vec::new();
         rs.push(if selected { "⏎".into() } else { "".into() });
-        rs.push(format!("{}", data.index + 1).into());
-        rs.push(date_sim_str(data.time).into());
-        rs.push(data.source.clone().into());
-        rs.push(data.dest.clone().into());
-        rs.push(data.protocol.clone().into());
-        rs.push(format!("{}", data.len).into());
-        rs.push(data.info.clone().into());
+        rs.push(format!("{}", data.index + 1));
+        rs.push(date_sim_str(data.time));
+        rs.push(data.source.clone());
+        rs.push(data.dest.clone());
+        rs.push(data.protocol.clone());
+        rs.push(format!("{}", data.len));
+        rs.push(data.info.clone());
         rs
     }
     fn get_block(&self) -> Option<Block> {

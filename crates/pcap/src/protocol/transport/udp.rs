@@ -44,11 +44,7 @@ impl Visitor {
             let target_port = ports.1;
             let payload_len = match frame.protocol_field {
                 ProtocolInfoField::UDP(udp_len) => {
-                    if udp_len < 8 {
-                        0
-                    } else {
-                        udp_len - 8
-                    }
+                    udp_len.saturating_sub(8)
                 }
                 _ => 0,
             };

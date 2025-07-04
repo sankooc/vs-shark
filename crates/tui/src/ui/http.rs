@@ -48,7 +48,7 @@ impl TableStyle<VHttpConnection> for ConversationStyle {
             data.status().to_string(),
             data.method().to_string(),
             data.url().to_string(),
-            format_bytes_single_unit_int(data.length as usize),
+            format_bytes_single_unit_int(data.length),
             data.content_type.clone(),
             data.rt.clone(),
         ]
@@ -223,8 +223,8 @@ impl HttpHeadersView {
     }
     pub fn wrap(items: &[HttpMessageWrap]) -> Vec<TreeItem<HeaderKey>> {
         let mut rs = vec![];
-        let mut index = 0;
-        for item in items {
+        // let mut index = 0;
+        for (index, item) in items.iter().enumerate() {
             let len = item.headers.len();
             let mut child = vec![];
             for inx in 1..len {
@@ -239,7 +239,6 @@ impl HttpHeadersView {
             }
             let it = TreeItem::new(HeaderKey::Message(index), item.headers.get(0).unwrap().clone(), child).expect("need unique id");
             rs.push(it);
-            index += 1;
         }
         rs
     }

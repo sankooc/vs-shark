@@ -19,12 +19,12 @@ use super::{connection::{TCPSegment, TLSSegment}, io::MacAddress};
 pub enum PROPS {
     #[strum(serialize = "none")]
     None,
-    #[strum(serialize = "enthernet.source.mac")]
-    EnthernetSourceMac,
-    #[strum(serialize = "enthernet.destination.mac")]
-    EnthernetDestinationMac,
-    #[strum(serialize = "enthernet.protocol.type")]
-    EnthernetProtocolType,
+    #[strum(serialize = "ethernet.source.mac")]
+    EthernetSourceMac,
+    #[strum(serialize = "ethernet.destination.mac")]
+    EthernetDestinationMac,
+    #[strum(serialize = "ethernet.protocol.type")]
+    EthernetProtocolType,
     #[strum(serialize = "ip.source")]
     IpSource,
     #[strum(serialize = "ip.destination")]
@@ -40,7 +40,7 @@ pub enum DataError {
     #[error("end of stream")]
     EndOfStream,
     #[error("format miss match")]
-    FormatMissMatch,
+    FormatMismatch,
     #[error("unimplemented")]
     Unimplemented,
     #[error("ipv4 head length invalid")]

@@ -128,7 +128,7 @@ pub fn link_type_map(file_type: &FileType, link_type: u32, reader: &mut Reader) 
     }
 }
 
-pub fn enthernet_protocol_mapper(ptype: u16) -> Protocol {
+pub fn ethernet_protocol_mapper(ptype: u16) -> Protocol {
     match ptype {
         0x893a => Protocol::IEEE1905A,
         0x0800 => Protocol::IP4,

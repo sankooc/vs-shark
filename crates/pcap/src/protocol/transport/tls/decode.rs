@@ -34,8 +34,8 @@ pub const BER_CUSTOM_EXT: u8 = 0xa3;
 fn parse_oid(te: &[u8]) -> u64 {
     let _len = te.len();
     let mut val: u64 = 0;
-    for inx in 0.._len {
-        let v = (te[inx] & 0x7f) as u64;
+    for (inx, item) in te.iter().enumerate().take(_len) {
+        let v = (*item & 0x7f) as u64;
         let offset = (_len - 1 - inx) * 7;
         val += v << offset;
     }
@@ -202,9 +202,9 @@ impl ValueMono for SubjectPublicKey {
     }
 }
 
-pub struct RDN;
+pub struct Rdn;
 
-impl ContructMono for RDN {
+impl ContructMono for Rdn {
     fn collection(&self, _: usize) -> Option<Rc<dyn Sequence>> {
         create_construct_list("item", RDNGroup)
     }
@@ -319,9 +319,9 @@ impl Sequence for SignedCertificate {
         match index {
             0 => Some(Rc::new(ValueOnly::create("SignedCertificateVersion".into(), SignedCertificateVersion))),
             2 => create_value_list("SignedCertificateSignature", SignedCertificateSignature),
-            3 => create_construct_list("issuer: rdnSequence", RDN),
+            3 => create_construct_list("issuer: rdnSequence", Rdn),
             4 => create_value_list("validity", Validity),
-            5 => create_construct_list("subject: rdnSequence", RDN),
+            5 => create_construct_list("subject: rdnSequence", Rdn),
             6 => create_construct_list("subjectPublicKey", SubjectPublicKeyInfo),
             7 => create_construct_list("", Extentions),
             _ => None,

@@ -23,7 +23,7 @@ fn read_tcp_flag(reader: &mut Reader, field: &mut Field) -> Result<TcpFlagField>
     let result = TcpFlagField::from(flag_bit);
     // let len = flag_bit >> 12;;
     add_field_label_no_range!(field, read_bits(flag_bit, 0..4, |v| format!("Header Length: {}", v)));
-    add_field_label_no_range!(field, read_bits(flag_bit, 4..7, |_v| format!("Reserved")));
+    add_field_label_no_range!(field, read_bits(flag_bit, 4..7, |_v| "Reserved".into()));
     add_field_label_no_range!(field, read_bit(flag_bit, 7, "Accurate ECN", ("SET", "NOT SET")));
     add_field_label_no_range!(field, read_bit(flag_bit, 8, "Congestion Window Reduced", ("SET", "NOT SET")));
     add_field_label_no_range!(field, read_bit(flag_bit, 9, "ECN-Echo", ("SET", "NOT SET")));
