@@ -94,7 +94,7 @@ impl TcpFlagField {
         let val = self.data & 0x1fff;
         (val & mask) > 0
     }
-    pub fn extact_match(&self, flag: TCPFLAG) -> bool {
+    pub fn exact_match(&self, flag: TCPFLAG) -> bool {
         let mask = 1 << (flag as i32) as u16;
         let val = self.data & 0x1fff;
         (val & mask) == mask
@@ -342,7 +342,7 @@ impl Endpoint {
             statistic.clean_throughput = statistic.throughput;
             return (TCPDetail::NEXT, statistic);
         } else {
-            if sequence == self.next - 1 && (_tcp_len == 1 || _tcp_len == 0) && stat.state.extact_match(TCPFLAG::ACK) {
+            if sequence == self.next - 1 && (_tcp_len == 1 || _tcp_len == 0) && stat.state.exact_match(TCPFLAG::ACK) {
                 self._checksum = stat.crc;
                 return (TCPDetail::KEEPALIVE, statistic);
             }
@@ -471,7 +471,7 @@ impl<'a> TmpConnection<'a> {
                 if stat.state.contain(TCPFLAG::FIN) {
                     main.status = TCPConnectStatus::CLOSE_WAIT;
                 }
-                if stat.state.extact_match(TCPFLAG::ACK) && rev.status == TCPConnectStatus::CLOSE_WAIT {
+                if stat.state.exact_match(TCPFLAG::ACK) && rev.status == TCPConnectStatus::CLOSE_WAIT {
                     rev.status = TCPConnectStatus::CLOSED;
                     if main.status == TCPConnectStatus::CLOSED {
                         rs.connect_finished = true;
