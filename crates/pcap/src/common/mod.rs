@@ -54,14 +54,14 @@ pub fn trim_data(data: &[u8]) -> &[u8] {
     let size = data.len();
     let mut start = 0;
     let mut end = size;
-    for inx in 0..size {
-        if data[inx] != b' ' {
+    for (inx, data) in data.iter().enumerate().take(size) {
+        if *data != b' ' {
             start = inx;
             break;
         }
     }
-    for inx in size..start {
-        if data[inx] != b' ' {
+    for (inx, data) in data.iter().enumerate().take(start).skip(size) {
+        if *data != b' ' {
             end = inx;
             break;
         }
@@ -348,9 +348,7 @@ impl Instance {
         self.ctx.list.get(index)
     }
     fn frame_field(&self, frame: &Frame) -> Field {
-        let mut f = Field::default();
-        f.start = 0;
-        f.size = 0;
+        let mut f = Field::children();
         if let Some(range) = frame.range.as_ref() {
             f.start = range.start;
             f.size = range.end - range.start;
@@ -367,7 +365,6 @@ impl Instance {
             size * 8,
             interface_type
         );
-        f.children = Some(vec![]);
         add_field_label_no_range!(f, format!("Frame number: {}", _index));
         add_field_label_no_range!(f, format!("Epoch Arrival Time: {}", date_str(frame.info.time)));
         add_field_label_no_range!(f, format!("Interface id: {}", interface_type));
@@ -393,8 +390,7 @@ impl Instance {
                             break;
                         }
                         _ => {
-                            let mut f = Field::default();
-                            f.children = Some(vec![]);
+                            let mut f = Field::children();
                             f.start = reader.cursor;
                             if let Ok((next, _extra_data)) = detail(_next, &mut f, &self.ctx, frame, &mut reader) {
                                 f.size = reader.cursor - f.start;

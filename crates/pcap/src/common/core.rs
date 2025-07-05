@@ -119,16 +119,10 @@ impl HttpConntect {
 
 impl HttpConntect {
     fn request(index: ConnectionIndex, message_index: MessageIndex) -> Self {
-        let mut rs = Self::default();
-        rs.request = Some(message_index);
-        rs.index = index;
-        rs
+        Self{ index, request: Some(message_index), ..Default::default() }
     }
     fn response(index: ConnectionIndex, message_index: MessageIndex) -> Self {
-        let mut rs = Self::default();
-        rs.response = Some(message_index);
-        rs.index = index;
-        rs
+        Self{ index, response: Some(message_index), ..Default::default() }
     }
     fn add_response(&mut self, message_index: MessageIndex, ts: Timestamp) {
         self.response = Some(message_index);
@@ -169,9 +163,7 @@ impl Context {
     }
     pub fn init_segment_message(&mut self, frame_index: FrameIndex, host: String, is_request: bool, connect_index: ConnectionIndex, timestamp: Timestamp) -> MessageIndex {
         let message_index = self.http_messages.len() as MessageIndex;
-        let mut sg = HttpMessage::default();
-        sg.frame_index = frame_index;
-        sg.host = host;
+        let sg = HttpMessage { frame_index, host, ..Default::default() };
         self.http_messages.push(sg);
 
         if is_request {

@@ -252,10 +252,7 @@ impl From<&Endpoint> for VEndpoint {
 }
 impl Endpoint {
     pub fn new(host: String, port: u16) -> Self {
-        let mut _self = Self::default();
-        _self.host = host;
-        _self.port = port;
-        _self
+        Self {host, port, ..Default::default()}
     }
     pub fn clear_segment(&mut self) {
         self._segments = None;
@@ -291,9 +288,7 @@ impl Endpoint {
     }
     pub fn update(&mut self, stat: &TCPStat) -> (TCPDetail, TCPStatistic) {
         let sequence = stat.sequence;
-        let mut statistic = TCPStatistic::default();
-        statistic.count = 1;
-        statistic.throughput = stat.payload_len as u64;
+        let mut statistic = TCPStatistic { count: 1, throughput: stat.payload_len as u64, ..Default::default() };
 
         if self.seq == sequence && stat.payload_len == 0 {
             return (TCPDetail::NEXT, statistic);
@@ -304,9 +299,7 @@ impl Endpoint {
             return (TCPDetail::RESET, statistic);
         }
         let mut _tcp_len = 0;
-        if stat.state.contain(TCPFLAG::SYNC) {
-            _tcp_len = 1;
-        } else if stat.state.contain(TCPFLAG::FIN) {
+        if stat.state.contain(TCPFLAG::SYNC) || stat.state.contain(TCPFLAG::FIN) {
             _tcp_len = 1;
         } else {
             _tcp_len = stat.payload_len as u32;

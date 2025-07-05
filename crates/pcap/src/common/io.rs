@@ -77,7 +77,7 @@ pub struct DataSource {
     range: Range<usize>,
     // pub config: InstanceConfig,
 }
-
+#[allow(clippy::len_without_is_empty)]
 impl DataSource {
     pub fn create(data: Vec<u8>, range: Range<usize>) -> Self {
         let size = data.len();

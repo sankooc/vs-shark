@@ -49,8 +49,8 @@ fn field_random_str(data: &[u8]) -> String {
     let mut rs = String::with_capacity(72);
     rs.push_str("Random: ");
     let len = std::cmp::min(32, data.len());
-    for i in 0..len {
-        rs.push_str(&format!("{:02x}", data[i]));
+    for d in data.iter().take(len) {
+        rs.push_str(&format!("{:02x}", *d));
     }
     rs
 }

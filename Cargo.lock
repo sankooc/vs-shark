@@ -765,22 +765,12 @@ dependencies = [
  "enum_dispatch",
  "log",
  "memchr",
- "once_cell",
- "pcap_derive",
  "rustc-hash",
  "serde",
  "serde_json",
  "strum 0.25.0",
  "strum_macros 0.25.3",
  "thiserror",
-]
-
-[[package]]
-name = "pcap_derive"
-version = "0.1.0"
-dependencies = [
- "quote",
- "syn",
 ]
 
 [[package]]

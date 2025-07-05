@@ -344,7 +344,9 @@ impl Sequence for SignedCertificate {
                     return Some(format!("serialNumber: {}", bytes_to_hex(&data)));
                 }
             }
-            _ => {}
+            _ => {
+                return Some("Unkown field".to_string());
+            }
         }
         None
     }

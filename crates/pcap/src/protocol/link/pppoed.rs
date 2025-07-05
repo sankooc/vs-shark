@@ -177,9 +177,7 @@ impl Visitor {
         if reader.left() > 0 {
             let tags = parse_tags(reader)?;
             if !tags.is_empty() {
-                let mut tags_field = Field::default();
-                tags_field.summary = "PPPoE Tags".to_string();
-                tags_field.children = Some(tags);
+                let tags_field = Field{ summary: "PPPoE Tags".to_string(), children: Some(tags), ..Default::default() };
                 list.push(tags_field);
             }
         }

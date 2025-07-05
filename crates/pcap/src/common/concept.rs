@@ -86,13 +86,7 @@ pub struct FrameInfo {
 
 impl From<&FrameInternInfo> for FrameInfo {
     fn from(value: &FrameInternInfo) -> Self {
-        let mut info = FrameInfo::default();
-        info.index = value.index;
-        info.time = value.time;
-        info.len = value.len;
-        info.irtt = value.irtt;
-        info.status = value.status;
-        info
+        Self{ index: value.index, time: value.time, len: value.len, irtt: value.irtt, status: value.status, ..Default::default() }
     }
 }
 
@@ -150,6 +144,9 @@ impl Field {
             summary,
             children: Some(Vec::new()),
         }
+    }
+    pub fn children() -> Self{
+        Self{children: Some(vec![]), ..Default::default()}
     }
     pub fn with_children_reader(reader: &super::io::Reader) -> Field {
         Field::with_children(String::from(""), reader.cursor, 0)

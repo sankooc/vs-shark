@@ -3,14 +3,17 @@ name = "pcap"
 version = "0.1.0"
 edition = "2021"
 
-
 [lib]
 crate-type = ["lib"]
+
+[lints.clippy]
+len_zero = "allow"
+type_complexity = "allow"
+single_match = "allow"
 
 [dependencies]
 chrono.workspace = true
 log.workspace = true
-pcap_derive = { path = "../derive" }
 thiserror.workspace = true
 anyhow.workspace = true
 enum_dispatch.workspace = true
@@ -18,7 +21,7 @@ strum = "0.25"
 strum_macros = "0.25"
 serde = { workspace = true, features = ["derive"]}
 serde_json.workspace = true
-once_cell.workspace = true
+# once_cell.workspace = true
 ahash = { version = "0.8", default-features = false }
 rustc-hash = "1.1"
 memchr = "2.7.4"
