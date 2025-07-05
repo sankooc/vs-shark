@@ -166,7 +166,7 @@ fn parse_content_type(content_type_str: &str) -> Language {
     if main_type.contains("text/") {
         return Language::Text;
     }
-    return Language::Binary;
+    Language::Binary
 }
 
 pub fn parse_http_message(head: &str, header: Vec<u8>, entity: Option<Vec<u8>>) -> HttpMessageWrap {
@@ -179,7 +179,7 @@ pub fn parse_http_message(head: &str, header: Vec<u8>, entity: Option<Vec<u8>>) 
 }
 
 pub fn parse_header_content(header_raw: Vec<u8>) -> (Vec<String>, Language, HttpEncoding) {
-    if header_raw.len() == 0 {
+    if header_raw.is_empty() {
         return (vec![], Language::Binary, HttpEncoding::None);
     }
     let text = String::from_utf8_lossy(&header_raw);
@@ -196,7 +196,7 @@ pub fn parse_header_content(header_raw: Vec<u8>) -> (Vec<String>, Language, Http
             content_type = parse_content_type(&head[14..]);
         }
         if head.starts_with("Content-Encoding: ") || head.starts_with("content-encoding: ") {
-            let _type = trim_data(&head[18..].as_bytes());
+            let _type = trim_data(&head.as_bytes()[18..]);
             match _type {
                 b"gzip" => {
                     encoding = HttpEncoding::Gzip;
@@ -267,9 +267,6 @@ fn parse_body_with_mime(body_raw: Vec<u8>, mime: &Language, encoding: HttpEncodi
             }
         }
     };
-    let plain = match String::from_utf8(decoded_data) {
-        Ok(text) => text,
-        Err(_) => String::from(""),
-    };
+    let plain = String::from_utf8(decoded_data).unwrap_or_default();
     Some(plain)
 }

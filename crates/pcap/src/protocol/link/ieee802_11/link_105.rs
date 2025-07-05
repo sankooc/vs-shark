@@ -1,3 +1,8 @@
+// Copyright (c) 2025 sankooc
+// 
+// This file is part of the pcapview project.
+// Licensed under the MIT License - see https://opensource.org/licenses/MIT
+
 // Parser for IEEE 802.11 MAC frames (Link Type 105)
 // References: IEEE Std 802.11-2020
 
@@ -10,7 +15,7 @@ use crate::{
         io::Reader, // Assuming read_u16_le is available
         Frame,
     },
-    protocol::enthernet_protocol_mapper,
+    protocol::ethernet_protocol_mapper,
 };
 use anyhow::Result;
 
@@ -56,15 +61,9 @@ impl From<u16> for FrameControlInfo {
 
 impl FrameControlInfo {
     fn is_qos_frame(&self) -> bool {
-        match self.frame_type {
-            FRAME_TYPE_DATA => match self.frame_subtype {
-                8 | 9 | 10 | 11 => {
-                    return true;
-                }
-                _ => {}
-            },
-            _ => {}
-        };
+        if self.frame_type == FRAME_TYPE_DATA { if let 8..=11 = self.frame_subtype {
+            return true;
+        } };
         false
     }
 }
@@ -72,39 +71,33 @@ impl FrameControlInfo {
 pub struct Visitor;
 
 impl Visitor {
-    /**
-    *
-    * +--------------------+  <-- Frame Control (2 bytes)
-       | Frame Control      |
-       +--------------------+
-       | Duration / ID      |  (2 bytes)
-       +--------------------+
-       | Address 1          |  (6 bytes)
-       +--------------------+
-       | Address 2          |  (6 bytes)
-       +--------------------+
-       | Address 3          |  (6 bytes)
-       +--------------------+
-       | Sequence Control   |  (2 bytes)
-       +--------------------+
-       | Address 4          |  (6 bytes)
-       +--------------------+
-       | QoS Control        |  (2 bytes)
-       +--------------------+
-       | HT Control         |  (4 bytes)
-       +--------------------+
-       | Initialization Vector (IV) | (3 bytes)
-       +--------------------+
-       | Key ID             |  (1 byte)
-       +--------------------+
-       | Frame Body         |
-       +--------------------+
-       | Frame Check Sequence (FCS) | (4 bytes)
-       +--------------------+
-
-    *
-    *
-    */
+    // +--------------------+  <-- Frame Control (2 bytes)
+    //    | Frame Control      |
+    //    +--------------------+
+    //    | Duration / ID      |  (2 bytes)
+    //    +--------------------+
+    //    | Address 1          |  (6 bytes)
+    //    +--------------------+
+    //    | Address 2          |  (6 bytes)
+    //    +--------------------+
+    //    | Address 3          |  (6 bytes)
+    //    +--------------------+
+    //    | Sequence Control   |  (2 bytes)
+    //    +--------------------+
+    //    | Address 4          |  (6 bytes)
+    //    +--------------------+
+    //    | QoS Control        |  (2 bytes)
+    //    +--------------------+
+    //    | HT Control         |  (4 bytes)
+    //    +--------------------+
+    //    | Initialization Vector (IV) | (3 bytes)
+    //    +--------------------+
+    //    | Key ID             |  (1 byte)
+    //    +--------------------+
+    //    | Frame Body         |
+    //    +--------------------+
+    //    | Frame Check Sequence (FCS) | (4 bytes)
+    //    +--------------------+
     // Provides a summary string for the IEEE 802.11 MAC layer.
     pub fn info(_ctx: &Context, frame: &Frame) -> Option<String> {
         match &frame.protocol_field {
@@ -134,18 +127,13 @@ impl Visitor {
         if fc_info.protected_frame {
             reader.forward(8); // TODO need check type
         }
-        if fc_info.frame_type == FRAME_TYPE_DATA {
-            if reader.left() >= 8 {
-                let _data = reader.slice(3, true)?;
-                match _data {
-                    [0xaa, 0xaa, 0x03] => {
-                        //LLC
-                        reader.forward(3);
-                        let ptype = reader.read16(true)?;
-                        return Ok(enthernet_protocol_mapper(ptype));
-                    }
-                    _ => {}
-                }
+        if fc_info.frame_type == FRAME_TYPE_DATA && reader.left() >= 8 {
+            let _data = reader.slice(3, true)?;
+            if let [0xaa, 0xaa, 0x03] = _data {
+                //LLC
+                reader.forward(3);
+                let ptype = reader.read16(true)?;
+                return Ok(ethernet_protocol_mapper(ptype));
             }
         }
         Ok(Protocol::None)
@@ -261,18 +249,13 @@ impl Visitor {
         }
 
         // Determine next protocol based on Frame Type (primarily for Data frames)
-        if fc_info.frame_type == FRAME_TYPE_DATA {
-            if reader.left() >= 8 {
-                let _data = reader.slice(3, true)?;
-                match _data {
-                    [0xaa, 0xaa, 0x03] => {
-                        //LLC
-                        reader.forward(3);
-                        let ptype = reader.read16(true)?;
-                        return Ok(enthernet_protocol_mapper(ptype));
-                    }
-                    _ => {}
-                }
+        if fc_info.frame_type == FRAME_TYPE_DATA && reader.left() >= 8 {
+            let _data = reader.slice(3, true)?;
+            if let [0xaa, 0xaa, 0x03] = _data {
+                //LLC
+                reader.forward(3);
+                let ptype = reader.read16(true)?;
+                return Ok(ethernet_protocol_mapper(ptype));
             }
         }
 

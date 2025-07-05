@@ -1,3 +1,8 @@
+// Copyright (c) 2025 sankooc
+// 
+// This file is part of the pcapview project.
+// Licensed under the MIT License - see https://opensource.org/licenses/MIT
+
 use crate::common::concept::Field;
 use crate::common::core::Context;
 use crate::constants::{link_type_mapper, ssl_type_mapper};
@@ -9,12 +14,12 @@ use crate::{
         Frame,
     },
     constants::etype_mapper,
-    protocol::enthernet_protocol_mapper,
+    protocol::ethernet_protocol_mapper,
 };
 use anyhow::Result;
 
 
-const SUMMARY: &'static str = "Linux cooked capture v1";
+const SUMMARY: &str = "Linux cooked capture v1";
 pub struct Visitor;
 
 pub fn typedesc(_type: u16) -> String {
@@ -41,7 +46,7 @@ impl Visitor {
         reader.forward(2);
         let ptype = reader.read16(true)?;
 
-        Ok(enthernet_protocol_mapper(ptype))
+        Ok(ethernet_protocol_mapper(ptype))
     }
     pub fn detail(field: &mut Field, _: &Context, _: &Frame, reader: &mut Reader) -> Result<Protocol> {
         let _type = add_field_format_fn!(field, reader, reader.read16(true)?, typedesc);
@@ -51,6 +56,6 @@ impl Visitor {
         reader.forward(2);
         let ptype = add_field_format_fn!(field, reader, reader.read16(true)?, ptype_str);
         field.summary = SUMMARY.to_string();
-        Ok(enthernet_protocol_mapper(ptype))
+        Ok(ethernet_protocol_mapper(ptype))
     }
 }

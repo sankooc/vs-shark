@@ -1,15 +1,18 @@
+// Copyright (c) 2025 sankooc
+// 
+// This file is part of the pcapview project.
+// Licensed under the MIT License - see https://opensource.org/licenses/MIT
+
 use std::net::{Ipv4Addr, Ipv6Addr};
 
 use crate::{
-    common::{
+    add_field_backstep, add_field_format, add_field_format_fn, add_sub_field_with_reader, common::{
         concept::Field,
         core::Context,
         enum_def::{Protocol, ProtocolInfoField},
         io::Reader,
         Frame,
-    },
-    constants::{dns_class_mapper, dns_type_mapper},
-    field_back_format, read_field_format, read_field_format_fn,
+    }, constants::{dns_class_mapper, dns_type_mapper}
 };
 use anyhow::Result;
 
@@ -149,10 +152,10 @@ impl Visitor {
     pub fn info(_: &Context, frame: &Frame) -> Option<String> {
         match &frame.protocol_field {
             ProtocolInfoField::DnsRESPONSE(transaction_id) => {
-                return Some(format!("Domain Name System (response) ID: 0x{:04x}", transaction_id));
+                Some(format!("Domain Name System (response) ID: 0x{:04x}", transaction_id))
             }
             ProtocolInfoField::DnsQUERY(transaction_id) => {
-                return Some(format!("Domain Name System (query) ID: 0x{:04x}", transaction_id));
+                Some(format!("Domain Name System (query) ID: 0x{:04x}", transaction_id))
             }
             _ => None,
         }
@@ -172,105 +175,64 @@ impl Visitor {
     }
 
     pub fn detail(field: &mut Field, _: &Context, _: &Frame, reader: &mut Reader) -> Result<Protocol> {
-        let mut list = vec![];
         let start_offset = reader.cursor;
 
-        let transaction_id = read_field_format!(list, reader, reader.read16(true)?, "Transaction ID: 0x{:04x}");
+        let transaction_id = add_field_format!(field, reader, reader.read16(true)?, "Transaction ID: 0x{:04x}");
 
         let flags = reader.read16(true)?;
         let is_response = (flags & 0x8000) != 0;
 
         let mut flags_field = Field::with_children(format!("Flags: 0x{:04x}", flags), reader.cursor - 2, 2);
-        let mut flags_list = vec![];
 
         for flag_str in format_dns_flags(flags) {
-            flags_list.push(Field::label(flag_str, reader.cursor - 2, reader.cursor));
+            add_field_backstep!(flags_field, reader,2, flag_str);
         }
-
-        flags_field.children = Some(flags_list);
-        list.push(flags_field);
+        field.children.as_mut().unwrap().push(flags_field);
 
         // Counts
-        let query_count = read_field_format!(list, reader, reader.read16(true)?, "Questions: {}");
-        let answer_count = read_field_format!(list, reader, reader.read16(true)?, "Answer RRs: {}");
-        let authority_count = read_field_format!(list, reader, reader.read16(true)?, "Authority RRs: {}");
-        let additional_count = read_field_format!(list, reader, reader.read16(true)?, "Additional RRs: {}");
+        let query_count = add_field_format!(field, reader, reader.read16(true)?, "Questions: {}");
+        let answer_count = add_field_format!(field, reader, reader.read16(true)?, "Answer RRs: {}");
+        let authority_count = add_field_format!(field, reader, reader.read16(true)?, "Authority RRs: {}");
+        let additional_count = add_field_format!(field, reader, reader.read16(true)?, "Additional RRs: {}");
         // Parse queries
         if query_count > 0 {
-            let mut queries_field = Field::with_children(format!("Queries ({})", query_count), reader.cursor, 0);
-            let mut queries_list = vec![];
-
             for _ in 0..query_count {
-                if let Ok(query) = read_query_record(start_offset, reader) {
-                    queries_list.push(query);
-                }
+                add_sub_field_with_reader!(field, reader, |reader2, field2| parse_query_field(reader2, field2, start_offset))?;
             }
-            queries_field.size = reader.cursor - queries_field.start;
-            queries_field.children = Some(queries_list);
-            list.push(queries_field);
         }
 
         if answer_count > 0 && reader.left() > 0 {
-            let mut answers_field = Field::with_children(format!("Answers ({})", answer_count), reader.cursor, 0);
-            let mut answers_list = vec![];
-
             for _ in 0..answer_count {
                 if reader.left() < 10 {
                     break;
                 }
-                if let Ok(field) = read_resource_record(start_offset, reader) {
-                    answers_list.push(field);
-                }
+                add_sub_field_with_reader!(field, reader, |reader2, field2| parese_resource_record_field(reader2, field2, start_offset))?;
             }
-
-            answers_field.size = reader.cursor - answers_field.start;
-            answers_field.children = Some(answers_list);
-            list.push(answers_field);
         }
 
-        // Parse authority records
         if authority_count > 0 && reader.left() > 0 {
-            let mut authority_field = Field::with_children(format!("Authority ({})", authority_count), reader.cursor, 0);
-            let mut authority_list = vec![];
-
             for _ in 0..authority_count {
                 if reader.left() < 10 {
                     break;
                 }
-                if let Ok(field) = read_resource_record(start_offset, reader) {
-                    authority_list.push(field);
-                }
+                add_sub_field_with_reader!(field, reader, |reader2, field2| parese_resource_record_field(reader2, field2, start_offset))?;
             }
-
-            authority_field.size = reader.cursor - authority_field.start;
-            authority_field.children = Some(authority_list);
-            list.push(authority_field);
         }
 
-        // Parse additional records
         if additional_count > 0 && reader.left() > 0 {
-            let mut additional_field = Field::with_children(format!("Additional ({})", additional_count), reader.cursor, 0);
-            let mut additional_list = vec![];
 
             for _ in 0..additional_count {
                 if reader.left() < 10 {
                     break;
                 }
-                if let Ok(field) = read_resource_record(start_offset, reader) {
-                    additional_list.push(field);
-                }
+                add_sub_field_with_reader!(field, reader, |reader2, field2| parese_resource_record_field(reader2, field2, start_offset))?;
             }
 
-            additional_field.size = reader.cursor - additional_field.start;
-            additional_field.children = Some(additional_list);
-            list.push(additional_field);
         }
 
         // Set summary
         let type_str = if is_response { "response" } else { "query" };
         field.summary = format!("Domain Name System ({}) ID: 0x{:04x}", type_str, transaction_id);
-        field.children = Some(list);
-
         Ok(Protocol::None)
     }
 }
@@ -284,28 +246,20 @@ fn rr_ttl(t: u32) -> String {
     format!("Time to live: {} seconds", t)
 }
 
-fn read_query_record(start_offset: usize, reader: &mut Reader) -> Result<Field> {
-    let start = reader.cursor;
-    let mut list = vec![];
-    let name = read_field_format!(list, reader, parse_dns_name(reader, start_offset)?, "Name: {}");
-    let record_type = read_field_format_fn!(list, reader, reader.read16(true)?, rr_type);
-    let record_class = read_field_format_fn!(list, reader, reader.read16(true)?, rr_class);
-    let end = reader.cursor;
-    let title = format!("{}, type {}, class {}", name, dns_type_mapper(record_type), dns_class_mapper(record_class));
-    let field = Field::new(title, start, end, list);
-    Ok(field)
+fn parse_query_field(reader: &mut Reader, field: &mut Field, start_offset: usize) -> Result<()> {
+    let name = add_field_format!(field, reader, parse_dns_name(reader, start_offset)?, "Name: {}");
+    let record_type = add_field_format_fn!(field, reader, reader.read16(true)?, rr_type);
+    let record_class = add_field_format_fn!(field, reader, reader.read16(true)?, rr_class);
+    field.summary = format!("{}, type {}, class {}", name, dns_type_mapper(record_type), dns_class_mapper(record_class));
+    Ok(())
 }
 
-fn read_resource_record(start_offset: usize, reader: &mut Reader) -> Result<Field> {
-    let start = reader.cursor;
-    let mut field = Field::new("".to_string(), start, start, vec![]);
-    let list = field.children.as_mut().unwrap();
-
-    let name = read_field_format!(list, reader, parse_dns_name(reader, start_offset)?, "Name: {}");
-    let record_type = read_field_format_fn!(list, reader, reader.read16(true)?, rr_type);
+fn parese_resource_record_field(reader: &mut Reader, field: &mut Field, start_offset: usize) -> Result<()> {
+    let name = add_field_format!(field, reader, parse_dns_name(reader, start_offset)?, "Name: {}");
+    let record_type = add_field_format_fn!(field, reader, reader.read16(true)?, rr_type);
     match record_type {
         41 => {
-            read_field_format!(list, reader, reader.read16(true)?, "UDP payload size: {} bytes");
+            add_field_format!(field, reader, reader.read16(true)?, "UDP payload size: {} bytes");
             field.summary = "Type: OPT (41)".into();
         },
         3 | 4 | 20 => {
@@ -318,13 +272,13 @@ fn read_resource_record(start_offset: usize, reader: &mut Reader) -> Result<Fiel
         255 => {
             field.summary = "Type: ANY".into();
         },
-        46 | 47 | 48 => {
+        46..=48 => {
             field.summary = "Type: DNSSEC".into();
         },
         _ => {
-            let record_class = read_field_format_fn!(list, reader, reader.read16(true)?, rr_class);
-            read_field_format_fn!(list, reader, reader.read32(true)?, rr_ttl);
-            let data_len = read_field_format!(list, reader, reader.read16(true)? as usize, "Data length: {} bytes");
+            let record_class = add_field_format_fn!(field, reader, reader.read16(true)?, rr_class);
+            add_field_format_fn!(field, reader, reader.read32(true)?, rr_ttl);
+            let data_len = add_field_format!(field, reader, reader.read16(true)? as usize, "Data length: {} bytes");
             let finish = reader.cursor + data_len;
             let record_data = match record_type {
                 1 => {
@@ -368,13 +322,13 @@ fn read_resource_record(start_offset: usize, reader: &mut Reader) -> Result<Fiel
                     if reader.left() >= 22 {
                         // Minimum SOA record size
                         // let mut soa_data = String::new();
-                        read_field_format!(list, reader, parse_dns_name(reader, start_offset)?, "Primary NS: {}");
-                        read_field_format!(list, reader, parse_dns_name(reader, start_offset)?, "Responsible: {}");
-                        read_field_format!(list, reader, reader.read32(true)?, "Serial: {}");
-                        read_field_format!(list, reader, reader.read32(true)?, "Refresh: {} seconds");
-                        read_field_format!(list, reader, reader.read32(true)?, "Retry: {} seconds");
-                        read_field_format!(list, reader, reader.read32(true)?, "Expire: {} seconds");
-                        read_field_format!(list, reader, reader.read32(true)?, "Minimum: {} seconds");
+                        add_field_format!(field, reader, parse_dns_name(reader, start_offset)?, "Primary NS: {}");
+                        add_field_format!(field, reader, parse_dns_name(reader, start_offset)?, "Responsible: {}");
+                        add_field_format!(field, reader, reader.read32(true)?, "Serial: {}");
+                        add_field_format!(field, reader, reader.read32(true)?, "Refresh: {} seconds");
+                        add_field_format!(field, reader, reader.read32(true)?, "Retry: {} seconds");
+                        add_field_format!(field, reader, reader.read32(true)?, "Expire: {} seconds");
+                        add_field_format!(field, reader, reader.read32(true)?, "Minimum: {} seconds");
                         "".into()
                     } else {
                         "".into()
@@ -455,12 +409,12 @@ fn read_resource_record(start_offset: usize, reader: &mut Reader) -> Result<Fiel
                 }
             };
             reader.set(finish);
-            if record_data.len() > 0 {
-                field_back_format!(list, reader, data_len, record_data.clone());
+            if !record_data.is_empty() {
+                add_field_backstep!(field, reader, data_len, record_data.clone());
             }
             field.summary  = format!("{}, type {}, class {}, {}", name, dns_type_mapper(record_type), dns_class_mapper(record_class), record_data);
         }
     }
-    field.size = reader.cursor - start;
-    Ok(field)
+    Ok(())
+
 }

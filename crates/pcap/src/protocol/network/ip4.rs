@@ -1,3 +1,8 @@
+// Copyright (c) 2025 sankooc
+// 
+// This file is part of the pcapview project.
+// Licensed under the MIT License - see https://opensource.org/licenses/MIT
+
 use std::net::Ipv4Addr;
 
 use crate::{
@@ -188,10 +193,8 @@ impl Visitor {
         let _stop = reader.left();
         if total_len == 0 {
             //  payload_len is None;
-        } else {
-            if total_len < (_start - _stop) as u16 {
-                bail!(DataError::Ipv4TotalLengthInvalid);
-            }
+        } else if total_len < (_start - _stop) as u16 {
+            bail!(DataError::Ipv4TotalLengthInvalid);
         }
 
         field.summary = format!("Internet Protocol Version 4, Src: {}, Dst: {}", source, target);

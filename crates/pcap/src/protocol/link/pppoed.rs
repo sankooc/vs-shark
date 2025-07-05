@@ -1,3 +1,8 @@
+// Copyright (c) 2025 sankooc
+// 
+// This file is part of the pcapview project.
+// Licensed under the MIT License - see https://opensource.org/licenses/MIT
+
 use crate::{
     common::{
         concept::Field,
@@ -10,7 +15,7 @@ use crate::{
 };
 use anyhow::Result;
 
-const SUMMARY: &'static str = "PPP-over-Ethernet Discovery";
+const SUMMARY: &str = "PPP-over-Ethernet Discovery";
 
 const PADI: u8 = 0x09; // PPPoE Active Discovery Initiation
 const PADO: u8 = 0x07; // PPPoE Active Discovery Offer
@@ -172,9 +177,7 @@ impl Visitor {
         if reader.left() > 0 {
             let tags = parse_tags(reader)?;
             if !tags.is_empty() {
-                let mut tags_field = Field::default();
-                tags_field.summary = "PPPoE Tags".to_string();
-                tags_field.children = Some(tags);
+                let tags_field = Field{ summary: "PPPoE Tags".to_string(), children: Some(tags), ..Default::default() };
                 list.push(tags_field);
             }
         }

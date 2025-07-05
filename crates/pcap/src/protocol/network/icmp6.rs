@@ -1,3 +1,8 @@
+// Copyright (c) 2025 sankooc
+// 
+// This file is part of the pcapview project.
+// Licensed under the MIT License - see https://opensource.org/licenses/MIT
+
 use crate::{
     common::{concept::Field, core::Context, enum_def::{ProtocolInfoField, Protocol}, io::Reader, Frame},
     field_back_format, field_rest_format, read_field_format, read_field_format_fn,
@@ -330,7 +335,7 @@ impl Visitor {
                 parse_icmpv6_options(&mut list, reader)?;
             },
             // Multicast Listener Query/Report/Done
-            130 | 131 | 132 => {
+            130..=132 => {
                 if type_code == 130 {
                     read_field_format!(list, reader, reader.read16(true)?, "Maximum Response Delay: {} milliseconds");
                     field_back_format!(list, reader, 2, "Reserved".into());

@@ -1,3 +1,9 @@
+// Copyright (c) 2025 sankooc
+// 
+// This file is part of the pcapview project.
+// Licensed under the MIT License - see https://opensource.org/licenses/MIT
+
+
 use serde::Serialize;
 
 use crate::common::{connection::{Connection}, enum_def::Protocol};
@@ -80,13 +86,7 @@ pub struct FrameInfo {
 
 impl From<&FrameInternInfo> for FrameInfo {
     fn from(value: &FrameInternInfo) -> Self {
-        let mut info = FrameInfo::default();
-        info.index = value.index;
-        info.time = value.time;
-        info.len = value.len;
-        info.irtt = value.irtt;
-        info.status = value.status;
-        info
+        Self{ index: value.index, time: value.time, len: value.len, irtt: value.irtt, status: value.status, ..Default::default() }
     }
 }
 
@@ -145,6 +145,9 @@ impl Field {
             children: Some(Vec::new()),
         }
     }
+    pub fn children() -> Self{
+        Self{children: Some(vec![]), ..Default::default()}
+    }
     pub fn with_children_reader(reader: &super::io::Reader) -> Field {
         Field::with_children(String::from(""), reader.cursor, 0)
     }
@@ -187,18 +190,18 @@ impl Conversation {
     }
 }
 
-impl Into<VConversation> for &Conversation {
-    fn into(self) -> VConversation {
-        let key = self.key;
-        let sender_packets = self.primary_statistic.count;
-        let receiver_packets = self.second_statistic.count;
-        let sender_bytes = self.primary_statistic.throughput;
-        let receiver_bytes = self.second_statistic.throughput;
-        let connects = self.connections.len();
+impl From<&Conversation> for VConversation {
+    fn from(val: &Conversation) -> Self {
+        let key = val.key;
+        let sender_packets = val.primary_statistic.count;
+        let receiver_packets = val.second_statistic.count;
+        let sender_bytes = val.primary_statistic.throughput;
+        let receiver_bytes = val.second_statistic.throughput;
+        let connects = val.connections.len();
         VConversation {
             key,
-            sender: self.primary.clone(),
-            receiver: self.second.clone(),
+            sender: val.primary.clone(),
+            receiver: val.second.clone(),
             sender_packets,
             receiver_packets,
             sender_bytes,
@@ -288,7 +291,7 @@ pub struct VHttpConnection {
     pub response_body: Vec<(usize, usize)>,
 }
 
-const NA: &'static str = "N/A";
+const NA: &str = "N/A";
 
 impl VHttpConnection {
     pub fn status(&self) -> &str {
@@ -319,4 +322,3 @@ impl VHttpConnection {
         NA
     }
 }
-

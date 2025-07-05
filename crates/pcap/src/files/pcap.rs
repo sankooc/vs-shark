@@ -1,3 +1,8 @@
+// Copyright (c) 2025 sankooc
+// 
+// This file is part of the pcapview project.
+// Licensed under the MIT License - see https://opensource.org/licenses/MIT
+
 use anyhow::{bail, Result};
 use crate::common::{enum_def::DataError, io::Reader, Frame};
 
@@ -18,7 +23,7 @@ impl PCAP {
         let captured = reader.read32(false)?;
         let origin = reader.read32(false)?;
         if captured != origin {
-            bail!(DataError::FormatMissMatch);
+            bail!(DataError::FormatMismatch);
         }
         if reader.left() < (origin as usize) {
             reader.back(16);

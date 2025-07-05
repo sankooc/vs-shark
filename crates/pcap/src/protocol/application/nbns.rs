@@ -1,3 +1,8 @@
+// Copyright (c) 2025 sankooc
+// 
+// This file is part of the pcapview project.
+// Licensed under the MIT License - see https://opensource.org/licenses/MIT
+
 use crate::{
     common::{
         concept::Field,
@@ -24,13 +29,13 @@ fn decode_netbios_name(encoded_name: &[u8]) -> String {
             let c1 = encoded_name[i];
             let c2 = encoded_name[i + 1];
 
-            if c1 >= b'A' && c1 <= b'P' && c2 >= b'A' && c2 <= b'P' {
+            if (b'A'..=b'P').contains(&c1) && (b'A'..=b'P').contains(&c2) {
                 let high = c1 - b'A';
                 let low = c2 - b'A';
                 let ascii = (high << 4) | low;
 
                 // Only append printable ASCII characters
-                if ascii >= 32 && ascii < 127 {
+                if (32..127).contains(&ascii) {
                     result.push(ascii as char);
                 }
             }

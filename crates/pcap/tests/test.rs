@@ -10,7 +10,7 @@ mod unit {
         common::{
             concept::Field, core::Context, enum_def::{AddressField, Protocol, ProtocolInfoField}, io::{DataSource, Reader}, util::{get_binary_text, get_masked_value}, Frame
         },
-        protocol,
+        protocol::{self, transport::tls::record::{parse_certificates, parse_server_hello}},
     };
 
     fn init(name: &str) -> (DataSource, Context, Frame) {
@@ -53,6 +53,23 @@ mod unit {
             let mut f = Field::default();
             let next = protocol::link::ssl::Visitor::detail(&mut f, &mut cx, &mut frame, &mut reader)?;
             assert!(matches!(next, Protocol::IP4));
+            print_field(1, &f);
+        }
+        Ok(())
+    }
+    #[test]
+    fn test_dns_response() -> Result<()> {
+        let (ds, mut cx, mut frame) = init("dns_response");
+        {
+            let mut reader = Reader::new(&ds);
+            let next = protocol::application::dns::Visitor::parse(&mut cx, &mut frame, &mut reader)?;
+            assert!(matches!(next, Protocol::None));
+        }
+        {
+            let mut reader = Reader::new(&ds);
+            let mut f = Field::with_children("".into(), 0, 0);
+            let next = protocol::application::dns::Visitor::detail(&mut f, &mut cx, &mut frame, &mut reader)?;
+            assert!(matches!(next, Protocol::None));
             print_field(1, &f);
         }
         Ok(())
@@ -254,6 +271,26 @@ mod unit {
         Ok(())
     }
 
+    #[test]
+    fn test_tls_serverhello() -> Result<()> {
+        let (ds, _, _) = init("tls_serverhello");
+        let mut f = Field::default();
+        f.children = Some(vec![]);
+        let mut reader = Reader::new(&ds);
+        parse_server_hello(&mut reader, &mut f)?;
+        print_field(1, &f);
+        Ok(())
+    }
+    #[test]
+    fn test_tls_certificate() -> Result<()> {
+        let (ds, _, _) = init("tls_certificate");
+        let mut f = Field::default();
+        f.children = Some(vec![]);
+        let mut reader = Reader::new(&ds);
+        parse_certificates(&mut reader, &mut f)?;
+        print_field(1, &f);
+        Ok(())
+    }
 
     #[test]
     fn funcs() -> Result<()> {

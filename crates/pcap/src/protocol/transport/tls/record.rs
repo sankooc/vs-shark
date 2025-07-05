@@ -1,8 +1,14 @@
+// Copyright (c) 2025 sankooc
+// 
+// This file is part of the pcapview project.
+// Licensed under the MIT License - see https://opensource.org/licenses/MIT
+
 use crate::common::{concept::Field, io::Reader};
 use crate::constants::{tls_cipher_suites_mapper, tls_hs_message_type_mapper};
+use crate::protocol::transport::tls::decode::parse_cert;
 use crate::protocol::transport::tls::{extension, field_tls_version};
 use crate::{add_field_backstep, add_field_format, add_field_format_fn, add_field_format_fn_nors, add_sub_field_with_reader};
-use anyhow::Result;
+use anyhow::{Result};
 
 // TLS Record Content Types
 const CHANGE_CIPHER_SPEC: u8 = 20;
@@ -23,12 +29,28 @@ const CERTIFICATE_VERIFY: u8 = 15;
 const CLIENT_KEY_EXCHANGE: u8 = 16;
 const FINISHED: u8 = 20;
 
+
+// pub const BER_SEQUENCE: u8 = 0x30;
+// pub const BER_SEQUENCE_OF: u8 = 0x0a;
+// pub const BER_SET: u8 = 0x31;
+// pub const BER_SET_OF: u8 = 0x0b;
+// pub const BER_INT: u8 = 0x02;
+// pub const BER_BIT_STRING: u8 = 0x03;
+// pub const BER_OCTET_STRING: u8 = 0x04;
+// pub const BER_NULL: u8 = 0x05;
+// pub const BER_OBJECT_IDENTIFIER: u8 = 0x06;
+// pub const BER_UTF_STR: u8 = 0x0c;
+// pub const BER_PRINTABLE_STR: u8 = 0x13;
+// pub const BER_IA5STRING: u8 = 0x16;
+// pub const BER_UTC_TIME: u8 = 0x17;
+// pub const BER_GENERALIZED_TIME: u8 = 0x18;
+
 fn field_random_str(data: &[u8]) -> String {
     let mut rs = String::with_capacity(72);
     rs.push_str("Random: ");
     let len = std::cmp::min(32, data.len());
-    for i in 0..len {
-        rs.push_str(&format!("{:02x}", data[i]));
+    for d in data.iter().take(len) {
+        rs.push_str(&format!("{:02x}", *d));
     }
     rs
 }
@@ -36,8 +58,8 @@ fn field_session_id_str(data: &[u8]) -> String {
     let len = std::cmp::min(32, data.len());
     let mut rs = String::with_capacity(12 + len * 2);
     rs.push_str("Session ID: ");
-    for i in 0..len {
-        rs.push_str(&format!("{:02x}", data[i]));
+    for (_, item) in data.iter().enumerate().take(len) {
+        rs.push_str(&format!("{:02x}", *item));
     }
     rs
 }
@@ -85,7 +107,7 @@ fn field_compression_list(len: u8, reader: &mut Reader, field: &mut Field) -> Re
     Ok(())
 }
 
-/// Parse TLS record based on content type
+// Parse TLS record based on content type
 pub fn parse_record_detail(content_type: u8, _version: u16, reader: &mut Reader, field: &mut Field) -> Result<()> {
     match content_type {
         CHANGE_CIPHER_SPEC => parse_change_cipher_spec(reader, field),
@@ -102,7 +124,18 @@ fn parse_change_cipher_spec(_reader: &mut Reader, field: &mut Field) {
     field.summary = "Change Cipher Spec".to_string();
 }
 
-/// Parse Handshake record
+
+pub fn read24(reader: &mut Reader) -> Result<u32>{
+    if reader.left() >= 3 {
+        let b1 = reader.read8()?;
+        let b2 = reader.read8()?;
+        let b3 = reader.read8()?;
+        let length = ((b1 as u32) << 16) | ((b2 as u32) << 8) | (b3 as u32);
+        return Ok(length);
+    }
+    Ok(0)
+}
+// Parse Handshake record
 fn parse_handshake(reader: &mut Reader, field: &mut Field) -> Result<()> {
     field.summary = "Handshake".to_string();
     //tls_hs_message_type_mapper
@@ -111,15 +144,8 @@ fn parse_handshake(reader: &mut Reader, field: &mut Field) -> Result<()> {
         let msg_type = add_field_format_fn!(field, reader, reader.read8()?, handshake_type);
         field.summary = format!("Handshake: {}", tls_hs_message_type_mapper(msg_type));
         // Read length (3 bytes)
-        let mut length: u32 = 0;
-        if let Ok(b1) = reader.read8() {
-            if let Ok(b2) = reader.read8() {
-                if let Ok(b3) = reader.read8() {
-                    length = ((b1 as u32) << 16) | ((b2 as u32) << 8) | (b3 as u32);
-                    add_field_backstep!(field, reader, 3, format!("Length: {}", length));
-                }
-            }
-        }
+        let length = read24(reader)?;
+        add_field_backstep!(field, reader, 3, format!("Length: {}", length));
 
         // Parse specific handshake message based on type
         if reader.left() >= length as usize {
@@ -127,7 +153,7 @@ fn parse_handshake(reader: &mut Reader, field: &mut Field) -> Result<()> {
             match msg_type {
                 CLIENT_HELLO => parse_client_hello(&mut _reader, field)?,
                 SERVER_HELLO => parse_server_hello(&mut _reader, field)?,
-                // CERTIFICATE => parse_certificate(&mut _reader, field),
+                CERTIFICATE => parse_certificates(&mut _reader, field)?,
                 // Other handshake types could be implemented here
                 _ => {
                     // Skip the content as we don't parse it in detail
@@ -138,7 +164,7 @@ fn parse_handshake(reader: &mut Reader, field: &mut Field) -> Result<()> {
     Ok(())
 }
 
-/// Parse Heartbeat record
+// Parse Heartbeat record
 fn parse_heartbeat(reader: &mut Reader, field: &mut Field) {
     field.summary = "Heartbeat".to_string();
 
@@ -167,7 +193,7 @@ fn parse_heartbeat(reader: &mut Reader, field: &mut Field) {
     }
 }
 
-/// Parse ClientHello message
+// Parse ClientHello message
 fn parse_client_hello(reader: &mut Reader, field: &mut Field) -> Result<()> {
     add_field_format_fn!(field, reader, reader.read16(true)?, field_tls_version);
 
@@ -199,8 +225,8 @@ fn parse_client_hello(reader: &mut Reader, field: &mut Field) -> Result<()> {
     Ok(())
 }
 
-/// Parse ServerHello message
-fn parse_server_hello(reader: &mut Reader, field: &mut Field) -> Result<()> {
+// Parse ServerHello message
+pub fn parse_server_hello(reader: &mut Reader, field: &mut Field) -> Result<()> {
     // Parse server version
 
     add_field_format_fn!(field, reader, reader.read16(true)?, field_tls_version);
@@ -231,62 +257,63 @@ fn parse_server_hello(reader: &mut Reader, field: &mut Field) -> Result<()> {
 
     Ok(())
 }
-
-/// Parse Certificate message
-fn _parse_certificate(reader: &mut Reader, field: &mut Field) {
-    let start_pos = reader.cursor;
-
-    // Create a child field for Certificate details
-    let mut cert_field = Field::with_children("Certificate".to_string(), start_pos, 0);
-
-    // Parse certificates length (3 bytes)
-    let mut total_length: u32 = 0;
-    if reader.left() >= 3 {
-        if let Ok(b1) = reader.read8() {
-            if let Ok(b2) = reader.read8() {
-                if let Ok(b3) = reader.read8() {
-                    total_length = ((b1 as u32) << 16) | ((b2 as u32) << 8) | (b3 as u32);
-                    add_field_format!(cert_field, reader, total_length, "Certificates Length: {}");
-                }
-            }
+pub fn _read_len(reader: &mut Reader) -> Result<usize> {
+    let _next = reader.read8()?;
+    let _len = match _next {
+        0x81 => reader.read8()? as usize,
+        0x82 => reader.read16(true)? as usize,
+        0x83 => {
+            read24(reader)? as usize
         }
-    }
+        0x84 => reader.read32(true)? as usize,
+        _ => _next as usize,
+    };
+    Ok(_len)
+}
+pub fn parse_certificate(_reader: &mut Reader, _field: &mut Field) -> Result<()> {
+    // let _type = reader.read8()?;
+    // let _len = _read_len(reader)?;
+    // if _type == BER_SEQUENCE {
+    // }
+    // match _type {
+    //     BER_SEQUENCE | BER_SEQUENCE_OF => {
+            
+    //     }
+    //     _ => {}
+    // }
+    Ok(())
+}
+// Parse Certificate message
+pub fn parse_certificates(reader: &mut Reader, field: &mut Field) -> Result<()> {
+
+    let total_length = read24(reader)?;
+    add_field_format!(field, reader, total_length, "Certificates Length: {}");
 
     // Parse individual certificates
     let mut cert_count = 0;
-    let mut bytes_read = 0;
 
-    while bytes_read < total_length && reader.left() >= 3 {
-        // Each certificate has a 3-byte length prefix
-        let mut _cert_length: u32 = 0;
-        if let Ok(b1) = reader.read8() {
-            if let Ok(b2) = reader.read8() {
-                if let Ok(b3) = reader.read8() {
-                    _cert_length = ((b1 as u32) << 16) | ((b2 as u32) << 8) | (b3 as u32);
-                    bytes_read += 3 + _cert_length;
+    loop {
+        if reader.left() < 3 {
+            break;
+        }
+        let bytes_read = read24(reader)? as usize;
+        if reader.left() >= bytes_read {
+            let mut _reader = reader.slice_as_reader(bytes_read)?;
+            // add_sub_field_with_reader!(field, &mut _reader, |reader, field| parse_sequence(decode::Certificate, reader, field)).unwrap();
 
-                    // Skip certificate data
-                    if reader.left() >= _cert_length as usize {
-                        reader.forward(_cert_length as usize);
-                        cert_count += 1;
-                    } else {
-                        break;
-                    }
-                }
-            }
+            let _ = add_sub_field_with_reader!(field, &mut _reader, parse_cert).is_ok();
+            cert_count += 1;
+        } else {
+            break;
         }
     }
 
-    add_field_format!(cert_field, reader, cert_count, "Certificate Count: {}");
-    cert_field.size = (reader.cursor - start_pos) as usize;
-
-    // Add the certificate field to the parent field
-    if let Some(children) = &mut field.children {
-        children.push(cert_field);
-    }
+    add_field_format!(field, reader, cert_count, "Certificate Count: {}");
+    field.summary = format!("Certificate: {}", cert_count);
+    Ok(())
 }
 
-/// Get string representation of handshake message type
+// Get string representation of handshake message type
 fn handshake_type(msg_type: u8) -> String {
     match msg_type {
         HELLO_REQUEST => "Hello Request (0)".to_string(),

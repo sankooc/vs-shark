@@ -1,3 +1,8 @@
+// Copyright (c) 2025 sankooc
+// 
+// This file is part of the pcapview project.
+// Licensed under the MIT License - see https://opensource.org/licenses/MIT
+
 use std::{
     cmp,
     hash::{Hash, Hasher},
@@ -72,7 +77,7 @@ pub struct DataSource {
     range: Range<usize>,
     // pub config: InstanceConfig,
 }
-
+#[allow(clippy::len_without_is_empty)]
 impl DataSource {
     pub fn create(data: Vec<u8>, range: Range<usize>) -> Self {
         let size = data.len();
@@ -156,10 +161,10 @@ pub struct Reader<'a> {
     pub cursor: usize,
 }
 
-impl Into<ProgressStatus> for &Reader<'_> {
-    fn into(self) -> ProgressStatus {
-        let total = self.data.range.end;
-        let cursor = self.cursor;
+impl From<&Reader<'_>> for ProgressStatus {
+    fn from(val: &Reader<'_>) -> Self {
+        let total = val.data.range.end;
+        let cursor = val.cursor;
         ProgressStatus { total, cursor, count: 0, left: 0 }
     }
 }
@@ -254,23 +259,23 @@ impl Reader<'_> {
             return false;
         }
         self.cursor = pos;
-        return true;
+        true
     }
     pub fn left(&self) -> usize {
         let _cursor = cmp::min(self.range.end, self.cursor);
-        return self.range.end - _cursor;
+        self.range.end - _cursor
     }
     pub fn left_range(&self) -> Range<usize> {
         self.cursor..self.range.end
     }
     pub fn forward(&mut self, len: usize) -> bool {
-        return self.set(self.cursor + len);
+        self.set(self.cursor + len)
     }
     pub fn back(&mut self, len: usize) -> bool {
         if self.cursor < len {
             return false;
         }
-        return self.set(self.cursor - len);
+        self.set(self.cursor - len)
     }
     pub fn slice(&mut self, len: usize, mv: bool) -> Result<&[u8]> {
         if self.forward(len) {
@@ -403,12 +408,7 @@ impl Reader<'_> {
 }
 
 pub fn find_crlf(bytes: &[u8]) -> Option<usize> {
-    for pos in memchr_iter(b'\r', bytes) {
-        if pos + 1 < bytes.len() && bytes[pos + 1] == b'\n' {
-            return Some(pos);
-        }
-    }
-    None
+    memchr_iter(b'\r', bytes).find(|&pos| pos + 1 < bytes.len() && bytes[pos + 1] == b'\n')
 }
 pub struct TCPChunk {
     pub ds: DataSource,

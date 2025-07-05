@@ -1,3 +1,8 @@
+// Copyright (c) 2025 sankooc
+// 
+// This file is part of the pcapview project.
+// Licensed under the MIT License - see https://opensource.org/licenses/MIT
+
 use std::time::{Duration, UNIX_EPOCH};
 use chrono::{DateTime, Utc};
 
@@ -41,6 +46,26 @@ pub fn format_bytes_single_unit_int(bytes: usize) -> String {
     }
 
     format!("{}.{} {}", size, low, UNITS[unit_index])
+}
+
+
+pub fn bytes_to_hex(bytes: &[u8]) -> String {
+    if bytes.is_empty() {
+        return String::new();
+    }
+    let mut rt = String::with_capacity(2 * bytes.len() + 2);
+    rt.push_str("0x");
+    for b in bytes {
+        rt.push_str(format!("{:02x}", b).as_str());
+    }
+    rt
+}
+pub fn bytes_to_hex_limit(bytes: &[u8], max: usize) -> String {
+    let len = bytes.len();
+    // let cut = len > max;
+    let size = std::cmp::min(len, max);
+    let _data = &bytes[0..size];
+    bytes_to_hex(_data)
 }
 
 

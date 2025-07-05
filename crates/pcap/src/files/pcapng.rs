@@ -1,3 +1,8 @@
+// Copyright (c) 2025 sankooc
+// 
+// This file is part of the pcapview project.
+// Licensed under the MIT License - see https://opensource.org/licenses/MIT
+
 use crate::common::{
     core::Context,
     enum_def::DataError,
@@ -70,7 +75,7 @@ impl PCAPNG {
                 let origin = reader.read32(false)?;
 
                 if _captured != origin {
-                    bail!(DataError::FormatMissMatch);
+                    bail!(DataError::FormatMismatch);
                 }
                 let mut f = Frame::new();
                 f.info.len = origin;

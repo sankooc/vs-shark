@@ -169,15 +169,15 @@ impl Service {
                     PcapUICommand::HttpContent(http_connection) => {
                         if let Ok(mut file) = File::open(&self.fname) {
                             let request = if let Some(req) = &http_connection.request {
-                                let header = concat_data(&mut file, http_connection.request_headers, None).unwrap_or(vec![]);
-                                let entity = concat_data(&mut file, http_connection.request_body, Some(MAX_CONTENT_SIZE)).unwrap_or(vec![]);
+                                let header = concat_data(&mut file, http_connection.request_headers, None).unwrap_or_default();
+                                let entity = concat_data(&mut file, http_connection.request_body, Some(MAX_CONTENT_SIZE)).unwrap_or_default();
                                 Some(parse_http_message(req, header, entity))
                             } else {
                                 None
                             };
                             let response = if let Some(res) = &http_connection.response {
-                                let header = concat_data(&mut file, http_connection.response_headers, None).unwrap_or(vec![]);
-                                let entity = concat_data(&mut file, http_connection.response_body, Some(MAX_CONTENT_SIZE)).unwrap_or(vec![]);
+                                let header = concat_data(&mut file, http_connection.response_headers, None).unwrap_or_default();
+                                let entity = concat_data(&mut file, http_connection.response_body, Some(MAX_CONTENT_SIZE)).unwrap_or_default();
                                 Some(parse_http_message(res, header, entity))
                             } else {
                                 None
@@ -259,7 +259,7 @@ fn parse_content_type(content_type_str: &str) -> Language {
     if main_type.contains("text/") {
         return Language::Text;
     }
-    return Language::Binary;
+    Language::Binary
 }
 
 fn parse_http_message(head: &str, header: Vec<u8>, entity: Vec<u8>) -> HttpMessageWrap {
@@ -270,7 +270,7 @@ fn parse_http_message(head: &str, header: Vec<u8>, entity: Vec<u8>) -> HttpMessa
 }
 
 fn parse_header_content(header_raw: Vec<u8>) -> (Vec<String>, Language, HttpEncoding) {
-    if header_raw.len() == 0 {
+    if header_raw.is_empty() {
         return (vec![], Language::Binary, HttpEncoding::None);
     }
     let text = String::from_utf8_lossy(&header_raw);
@@ -287,7 +287,7 @@ fn parse_header_content(header_raw: Vec<u8>) -> (Vec<String>, Language, HttpEnco
             content_type = parse_content_type(&head[14..]);
         }
         if head.starts_with("Content-Encoding: ") || head.starts_with("content-encoding: ") {
-            let _type = trim_data(&head[18..].as_bytes());
+            let _type = trim_data(head[18..].as_bytes());
             match _type {
                 b"gzip" => {
                     encoding = HttpEncoding::Gzip;
@@ -318,10 +318,7 @@ enum HttpEncoding {
 }
 
 fn parse_body_with_mime(body_raw: Vec<u8>, mime: &Language, encoding: HttpEncoding) -> Option<String> {
-    match &mime {
-        Language::Binary => return None,
-        _ => {}
-    }
+    if let Language::Binary = &mime { return None }
     let decoded_data = match encoding {
         HttpEncoding::None => body_raw,
         HttpEncoding::Gzip => {
@@ -366,9 +363,6 @@ fn parse_body_with_mime(body_raw: Vec<u8>, mime: &Language, encoding: HttpEncodi
             }
         }
     };
-    let plain = match String::from_utf8(decoded_data) {
-        Ok(text) => text,
-        Err(_) => String::from(""),
-    };
+    let plain = String::from_utf8(decoded_data).unwrap_or_default();
     Some(plain)
 }

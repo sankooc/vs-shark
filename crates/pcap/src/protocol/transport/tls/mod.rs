@@ -1,3 +1,8 @@
+// Copyright (c) 2025 sankooc
+// 
+// This file is part of the pcapview project.
+// Licensed under the MIT License - see https://opensource.org/licenses/MIT
+
 use crate::common::concept::{Field, FrameIndex};
 use crate::common::connection::{TCPSegment, TLSSegment, TlsData};
 use crate::common::core::Context;
@@ -7,8 +12,9 @@ use crate::common::{enum_def::Protocol, io::Reader, Frame};
 use crate::{add_field_format, add_field_format_fn};
 use anyhow::Result;
 use record::parse_record_detail;
-mod record;
+pub mod record;
 mod extension;
+mod decode;
 
 #[derive(Default)]
 pub struct TLSList {
@@ -21,6 +27,9 @@ impl TLSList {
     }
     pub fn len(&self) -> usize {
         self.list.len()
+    }
+    pub fn is_empty(&self) -> bool {
+        self.list.is_empty()
     }
     pub fn get(&self, index: usize) -> Option<&TlsData> {
         self.list.get(index)
@@ -148,25 +157,22 @@ impl Visitor {
         field.children = Some(vec![]);
         let mut extra_data = None;
         let list = field.children.as_mut().unwrap();
-        match &frame.protocol_field {
-            ProtocolInfoField::TLS(tls_list) => {
-                for item in &tls_list.list {
-                    if item.segments.len() == 1 {
-                        let range = item.segments.get(0).unwrap().range.clone();
-                        let ds = _reader.ds();
-                        let reader = Reader::new_sub(ds, range)?;
-                        list.push(parse_segment(reader, 0)?);
-                    } else {
-                        let data = item.combind(_reader.ds());
-                        let mut ds = DataSource::create(data, 0..0);
-                        let reader = Reader::new(&ds);
-                        list.push(parse_segment(reader, 1)?);
-                        let _data = std::mem::take(&mut ds.data);
-                        extra_data = Some(_data);
-                    }
+        if let ProtocolInfoField::TLS(tls_list) = &frame.protocol_field {
+            for item in &tls_list.list {
+                if item.segments.len() == 1 {
+                    let range = item.segments.first().unwrap().range.clone();
+                    let ds = _reader.ds();
+                    let reader = Reader::new_sub(ds, range)?;
+                    list.push(parse_segment(reader, 0)?);
+                } else {
+                    let data = item.combind(_reader.ds());
+                    let mut ds = DataSource::create(data, 0..0);
+                    let reader = Reader::new(&ds);
+                    list.push(parse_segment(reader, 1)?);
+                    let _data = std::mem::take(&mut ds.data);
+                    extra_data = Some(_data);
                 }
             }
-            _ => {}
         }
         field.summary = "Transport Layer Security".to_string();
         Ok((Protocol::None, extra_data))

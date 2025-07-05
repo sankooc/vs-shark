@@ -1,3 +1,8 @@
+// Copyright (c) 2025 sankooc
+// 
+// This file is part of the pcapview project.
+// Licensed under the MIT License - see https://opensource.org/licenses/MIT
+
 use crate::{
     common::{
         concept::Field,
@@ -11,7 +16,7 @@ use crate::{
 };
 use anyhow::Result;
 
-const SUMMARY: &'static str = "PPP-over-Ethernet Session";
+const SUMMARY: &str = "PPP-over-Ethernet Session";
 
 fn payload(protocol: u16, reader: &mut Reader) -> Result<Vec<Field>> {
     let mut list = vec![];

@@ -1,3 +1,8 @@
+// Copyright (c) 2025 sankooc
+// 
+// This file is part of the pcapview project.
+// Licensed under the MIT License - see https://opensource.org/licenses/MIT
+
 use crate::{
     add_field_backstep, add_field_format, add_field_forward, add_field_label_no_range, add_sub_field_with_reader,
     common::{
@@ -18,7 +23,7 @@ fn read_tcp_flag(reader: &mut Reader, field: &mut Field) -> Result<TcpFlagField>
     let result = TcpFlagField::from(flag_bit);
     // let len = flag_bit >> 12;;
     add_field_label_no_range!(field, read_bits(flag_bit, 0..4, |v| format!("Header Length: {}", v)));
-    add_field_label_no_range!(field, read_bits(flag_bit, 4..7, |_v| format!("Reserved")));
+    add_field_label_no_range!(field, read_bits(flag_bit, 4..7, |_v| "Reserved".into()));
     add_field_label_no_range!(field, read_bit(flag_bit, 7, "Accurate ECN", ("SET", "NOT SET")));
     add_field_label_no_range!(field, read_bit(flag_bit, 8, "Congestion Window Reduced", ("SET", "NOT SET")));
     add_field_label_no_range!(field, read_bit(flag_bit, 9, "ECN-Echo", ("SET", "NOT SET")));
@@ -160,12 +165,8 @@ impl Visitor {
         }
         let mut left_size = reader.left();
         let iplen = frame.iplen as usize;
-        if iplen > 0 {
-            if start > iplen {
-                if iplen + left_size >= start {
-                    left_size = iplen + left_size - start;
-                }
-            }
+        if iplen > 0 && start > iplen && iplen + left_size >= start {
+            left_size = iplen + left_size - start;
         }
         let ds = reader.ds();
         let range = reader.cursor..reader.cursor + left_size;

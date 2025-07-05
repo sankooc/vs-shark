@@ -1,3 +1,8 @@
+// Copyright (c) 2025 sankooc
+// 
+// This file is part of the pcapview project.
+// Licensed under the MIT License - see https://opensource.org/licenses/MIT
+
 use std::net::Ipv4Addr;
 
 
@@ -14,12 +19,12 @@ use super::{connection::{TCPSegment, TLSSegment}, io::MacAddress};
 pub enum PROPS {
     #[strum(serialize = "none")]
     None,
-    #[strum(serialize = "enthernet.source.mac")]
-    EnthernetSourceMac,
-    #[strum(serialize = "enthernet.destination.mac")]
-    EnthernetDestinationMac,
-    #[strum(serialize = "enthernet.protocol.type")]
-    EnthernetProtocolType,
+    #[strum(serialize = "ethernet.source.mac")]
+    EthernetSourceMac,
+    #[strum(serialize = "ethernet.destination.mac")]
+    EthernetDestinationMac,
+    #[strum(serialize = "ethernet.protocol.type")]
+    EthernetProtocolType,
     #[strum(serialize = "ip.source")]
     IpSource,
     #[strum(serialize = "ip.destination")]
@@ -35,7 +40,7 @@ pub enum DataError {
     #[error("end of stream")]
     EndOfStream,
     #[error("format miss match")]
-    FormatMissMatch,
+    FormatMismatch,
     #[error("unimplemented")]
     Unimplemented,
     #[error("ipv4 head length invalid")]
@@ -54,31 +59,6 @@ pub enum FileType {
     NONE,
 }
 
-// pub enum Visitor {
-//     ETHERNET(protocol::link::ethernet::Visitor),
-//     // ETHERNET(protocol::link::ethernet::Visitor),
-//     // SSL,
-//     // Loopback(protocol::link::loopback::Visitor),
-//     // PPPoES(protocol::link::pppoes::Visitor),
-//     // PPPoED,
-//     // IP4(protocol::network::ip4::Visitor),
-//     // IP6(protocol::network::ip6::Visitor),
-//     // ICMP(protocol::network::icmp::Visitor),
-//     // ICMP6(protocol::network::icmp6::Visitor),
-//     // ARP,
-//     // RARP,
-//     // RADIOTAP,
-//     // IEEE1905A(protocol::link::ieee1905a::Visitor),
-//     // IGMP,
-//     // UDP,
-//     // TCP(protocol::transport::tcp::Visitor),
-//     // DNS,
-//     // DHCP,
-//     // DHCPv6,
-//     // HTTP(protocol::application::http::Visitor),
-//     // HTTPS,
-//     // TLS,
-// }
 #[derive(Default, Display, Debug, Clone, Copy)]
 pub enum Protocol {
     #[default]
@@ -109,11 +89,6 @@ pub enum Protocol {
     TLS,
     IEEE802_11,
 }
-
-// #[enum_dispatch]
-// pub enum FieldDef {
-//     UNKOWN(FieldElement),
-// }
 
 #[derive(Clone, PartialEq)]
 pub enum TCPDetail {
@@ -216,5 +191,3 @@ pub enum ProtocolInfoField {
     TLSSegment,
     Ieee80211(u16),
 }
-
-

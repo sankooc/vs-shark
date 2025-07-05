@@ -1,13 +1,16 @@
+// Copyright (c) 2025 sankooc
+// 
+// This file is part of the pcapview project.
+// Licensed under the MIT License - see https://opensource.org/licenses/MIT
+
 use crate::{
-    common::{
+    add_field_format, common::{
         concept::Field,
         core::Context,
         enum_def::{Protocol, ProtocolInfoField},
         io::Reader,
         Frame,
-    },
-    constants::ip_protocol_type_mapper,
-    read_field_format,
+    }, constants::ip_protocol_type_mapper
 };
 use anyhow::Result;
 
@@ -39,11 +42,7 @@ impl Visitor {
             let target_port = ports.1;
             let payload_len = match frame.protocol_field {
                 ProtocolInfoField::UDP(udp_len) => {
-                    if udp_len < 8 {
-                        0
-                    } else {
-                        udp_len - 8
-                    }
+                    udp_len.saturating_sub(8)
                 }
                 _ => 0,
             };
@@ -67,18 +66,12 @@ impl Visitor {
     }
 
     pub fn detail(field: &mut Field, _: &Context, _: &Frame, reader: &mut Reader) -> Result<Protocol> {
-        let mut list = Vec::new();
-
-        let source_port = read_field_format!(list, reader, reader.read16(true)?, "Source Port: {}");
-        let target_port = read_field_format!(list, reader, reader.read16(true)?, "Destination Port: {}");
-        read_field_format!(list, reader, reader.read16(true)?, "Length: {}");
-        read_field_format!(list, reader, reader.read16(true)?, "Checksum: {:#06x} [unverified]");
-
+        let source_port = add_field_format!(field, reader, reader.read16(true)?, "Source Port: {}");
+        let target_port = add_field_format!(field, reader, reader.read16(true)?, "Destination Port: {}");
+        add_field_format!(field, reader, reader.read16(true)?, "Length: {}");
+        add_field_format!(field, reader, reader.read16(true)?, "Checksum: {:#06x} [unverified]");
         let next_protocol = detect_protocol(source_port, target_port);
-
         field.summary = format!("User Datagram Protocol, Src Port: {}, Dst Port: {}", source_port, target_port);
-        field.children = Some(list);
-
         Ok(next_protocol)
     }
 }

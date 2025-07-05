@@ -1,3 +1,8 @@
+// Copyright (c) 2025 sankooc
+// 
+// This file is part of the pcapview project.
+// Licensed under the MIT License - see https://opensource.org/licenses/MIT
+
 // use crate::cache::intern;
 
 use std::{
@@ -42,7 +47,7 @@ impl TcpFlagField {
     }
     pub fn list_str(&self) -> String {
         let list = self.f_list();
-        if list.len() == 0 {
+        if list.is_empty() {
             return String::from("");
         }
         // let content = list.iter().map(|f| format!("{}", f)).collect::<Vec<_>>().join(",");
@@ -54,7 +59,7 @@ impl TcpFlagField {
                 write!(&mut content, ",{}", item).unwrap();
             }
         }
-        return format!("[{}]", content);
+        format!("[{}]", content)
     }
 }
 
@@ -89,7 +94,7 @@ impl TcpFlagField {
         let val = self.data & 0x1fff;
         (val & mask) > 0
     }
-    pub fn extact_match(&self, flag: TCPFLAG) -> bool {
+    pub fn exact_match(&self, flag: TCPFLAG) -> bool {
         let mask = 1 << (flag as i32) as u16;
         let val = self.data & 0x1fff;
         (val & mask) == mask
@@ -132,11 +137,7 @@ pub struct TCPSegment {
 
 impl TCPSegment {
     pub fn size(&self) -> usize {
-        if self.range.start > self.range.end {
-            0
-        } else {
-            self.range.end - self.range.start
-        }
+        self.range.end.saturating_sub(self.range.start)
     }
 }
 
@@ -208,12 +209,12 @@ impl TLSSegment {
     }
 }
 
-impl Into<TlsData> for TLSSegment {
-    fn into(self) -> TlsData {
+impl From<TLSSegment> for TlsData {
+    fn from(val: TLSSegment) -> Self {
         TlsData {
-            content_type: self.content_type,
-            segments: self.segments,
-            total: self.total as usize,
+            content_type: val.content_type,
+            segments: val.segments,
+            total: val.total as usize,
         }
     }
 }
@@ -240,27 +241,24 @@ pub struct Endpoint {
     _segments: Option<Vec<TCPSegment>>,
 }
 
-impl Into<VEndpoint> for &Endpoint {
-    fn into(self) -> VEndpoint {
+impl From<&Endpoint> for VEndpoint {
+    fn from(val: &Endpoint) -> Self {
         VEndpoint {
-            host: self.host.clone(),
-            port: self.port,
-            statistic: self.statistic.clone(),
+            host: val.host.clone(),
+            port: val.port,
+            statistic: val.statistic.clone(),
         }
     }
 }
 impl Endpoint {
     pub fn new(host: String, port: u16) -> Self {
-        let mut _self = Self::default();
-        _self.host = host;
-        _self.port = port;
-        _self
+        Self {host, port, ..Default::default()}
     }
     pub fn clear_segment(&mut self) {
         self._segments = None;
     }
     pub fn add_segment(&mut self, index: FrameIndex, range: Range<usize>) {
-        if let None = self._segments {
+        if self._segments.is_none() {
             self._segments = Some(vec![]);
         }
         let _segs = self._segments.as_mut().unwrap();
@@ -271,12 +269,10 @@ impl Endpoint {
         if self._ack == 0 {
             if stat.state.contain(TCPFLAG::SYNC) {
                 self._ack = acknowledge;
+            } else if acknowledge >= 1 {
+                self._ack = acknowledge - 1;
             } else {
-                if acknowledge >= 1 {
-                    self._ack = acknowledge - 1;
-                } else {
-                    self._ack = 0;
-                }
+                self._ack = 0;
             }
         }
 
@@ -292,9 +288,7 @@ impl Endpoint {
     }
     pub fn update(&mut self, stat: &TCPStat) -> (TCPDetail, TCPStatistic) {
         let sequence = stat.sequence;
-        let mut statistic = TCPStatistic::default();
-        statistic.count = 1;
-        statistic.throughput = stat.payload_len as u64;
+        let mut statistic = TCPStatistic { count: 1, throughput: stat.payload_len as u64, ..Default::default() };
 
         if self.seq == sequence && stat.payload_len == 0 {
             return (TCPDetail::NEXT, statistic);
@@ -305,9 +299,7 @@ impl Endpoint {
             return (TCPDetail::RESET, statistic);
         }
         let mut _tcp_len = 0;
-        if stat.state.contain(TCPFLAG::SYNC) {
-            _tcp_len = 1;
-        } else if stat.state.contain(TCPFLAG::FIN) {
+        if stat.state.contain(TCPFLAG::SYNC) || stat.state.contain(TCPFLAG::FIN) {
             _tcp_len = 1;
         } else {
             _tcp_len = stat.payload_len as u32;
@@ -332,7 +324,7 @@ impl Endpoint {
             self._checksum = stat.crc;
             statistic.invalid = 1;
             self.clear_segment();
-            return (TCPDetail::NOPREVCAPTURE, statistic);
+            (TCPDetail::NOPREVCAPTURE, statistic)
         } else if sequence == self.next {
             self.seq = sequence;
             self._checksum = stat.crc;
@@ -343,7 +335,7 @@ impl Endpoint {
             statistic.clean_throughput = statistic.throughput;
             return (TCPDetail::NEXT, statistic);
         } else {
-            if sequence == self.next - 1 && (_tcp_len == 1 || _tcp_len == 0) && stat.state.extact_match(TCPFLAG::ACK) {
+            if sequence == self.next - 1 && (_tcp_len == 1 || _tcp_len == 0) && stat.state.exact_match(TCPFLAG::ACK) {
                 self._checksum = stat.crc;
                 return (TCPDetail::KEEPALIVE, statistic);
             }
@@ -440,9 +432,9 @@ impl<'a> TmpConnection<'a> {
             rev = &mut conn.second;
         }
 
-        let (status, statistic) = main.update(&stat);
+        let (status, statistic) = main.update(stat);
         main.statistic.append(&statistic);
-        rev.confirm(&stat);
+        rev.confirm(stat);
         let mut rs = ConnectState::new(main.seq(), rev.ack(), main.next(), stat.payload_len, status);
         match &rs.status {
             TCPDetail::RESET => {
@@ -454,30 +446,25 @@ impl<'a> TmpConnection<'a> {
                 // TODO
             }
             _ => {
-                if rs.status == TCPDetail::NEXT {
-                    if rs.len > 0 {
-                        let reader = Reader::new_sub(data_source, range.clone())?;
-                        match conn.protocol {
-                            Protocol::None => {
-                                if protocol::application::http::detect(&reader).0 {
-                                    conn.protocol = Protocol::HTTP;
-                                    main.segment_status = SegmentStatus::Init;
-                                }
-                                 else if protocol::transport::tls::detect(&reader) {
-                                    conn.protocol = Protocol::TLS;
-                                    main.segment_status = SegmentStatus::Init;
-                                }
-                            }
-                            _ => {}
+                if rs.status == TCPDetail::NEXT && rs.len > 0 {
+                    let reader = Reader::new_sub(data_source, range.clone())?;
+                    if let Protocol::None = conn.protocol {
+                        if protocol::application::http::detect(&reader).0 {
+                            conn.protocol = Protocol::HTTP;
+                            main.segment_status = SegmentStatus::Init;
                         }
-                        rs.next_protocol = conn.protocol;
+                         else if protocol::transport::tls::detect(&reader) {
+                            conn.protocol = Protocol::TLS;
+                            main.segment_status = SegmentStatus::Init;
+                        }
                     }
+                    rs.next_protocol = conn.protocol;
                 }
                 // // process
                 if stat.state.contain(TCPFLAG::FIN) {
                     main.status = TCPConnectStatus::CLOSE_WAIT;
                 }
-                if stat.state.extact_match(TCPFLAG::ACK) && rev.status == TCPConnectStatus::CLOSE_WAIT {
+                if stat.state.exact_match(TCPFLAG::ACK) && rev.status == TCPConnectStatus::CLOSE_WAIT {
                     rev.status = TCPConnectStatus::CLOSED;
                     if main.status == TCPConnectStatus::CLOSED {
                         rs.connect_finished = true;

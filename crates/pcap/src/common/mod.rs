@@ -1,3 +1,8 @@
+// Copyright (c) 2025 sankooc
+// 
+// This file is part of the pcapview project.
+// Licensed under the MIT License - see https://opensource.org/licenses/MIT
+
 use core::Context;
 use std::{
     cmp,
@@ -49,14 +54,14 @@ pub fn trim_data(data: &[u8]) -> &[u8] {
     let size = data.len();
     let mut start = 0;
     let mut end = size;
-    for inx in 0..size {
-        if data[inx] != b' ' {
+    for (inx, data) in data.iter().enumerate().take(size) {
+        if *data != b' ' {
             start = inx;
             break;
         }
     }
-    for inx in size..start {
-        if data[inx] != b' ' {
+    for (inx, data) in data.iter().enumerate().take(start).skip(size) {
+        if *data != b' ' {
             end = inx;
             break;
         }
@@ -101,19 +106,16 @@ impl Frame {
         Self { ..Default::default() }
     }
     pub fn range(&self) -> Option<Range<usize>> {
-        match &self.protocol_field {
-            ProtocolInfoField::TLS(tls_list) => {
-                if tls_list.list.len() > 0 {
-                    let mut start = tls_list.list.first().unwrap().segments.first().unwrap().range.start;
-                    let mut end = tls_list.list.last().unwrap().segments.last().unwrap().range.end;
-                    if let Some(r) = &self.range {
-                        start = cmp::min(start, r.start);
-                        end = cmp::max(end, r.end);
-                    }
-                    return Some(start..end);
+        if let ProtocolInfoField::TLS(tls_list) = &self.protocol_field {
+            if !tls_list.list.is_empty() {
+                let mut start = tls_list.list.first().unwrap().segments.first().unwrap().range.start;
+                let mut end = tls_list.list.last().unwrap().segments.last().unwrap().range.end;
+                if let Some(r) = &self.range {
+                    start = cmp::min(start, r.start);
+                    end = cmp::max(end, r.end);
                 }
+                return Some(start..end);
             }
-            _ => {}
         }
         self.range.clone()
     }
@@ -221,11 +223,11 @@ impl Instance {
                                 break;
                             }
                             _ => {
-                                bail!(DataError::FormatMissMatch);
+                                bail!(DataError::FormatMismatch);
                             }
                         }
                     }
-                    bail!(DataError::FormatMissMatch);
+                    bail!(DataError::FormatMismatch);
                 }
             }
         }
@@ -240,7 +242,7 @@ impl Instance {
     }
     pub fn parse_packet(ctx: &mut Context, mut frame: Frame, ds: &DataSource) {
         if let Some(range) = &frame.range {
-            let mut _reader = Reader::new_sub(&ds, range.clone()).unwrap();
+            let mut _reader = Reader::new_sub(ds, range.clone()).unwrap();
             let proto: Protocol = link_type_map(&ctx.file_type, ctx.link_type, &mut _reader);
             frame.range = Some(range.clone());
             frame.head = proto;
@@ -346,9 +348,7 @@ impl Instance {
         self.ctx.list.get(index)
     }
     fn frame_field(&self, frame: &Frame) -> Field {
-        let mut f = Field::default();
-        f.start = 0;
-        f.size = 0;
+        let mut f = Field::children();
         if let Some(range) = frame.range.as_ref() {
             f.start = range.start;
             f.size = range.end - range.start;
@@ -365,7 +365,6 @@ impl Instance {
             size * 8,
             interface_type
         );
-        f.children = Some(vec![]);
         add_field_label_no_range!(f, format!("Frame number: {}", _index));
         add_field_label_no_range!(f, format!("Epoch Arrival Time: {}", date_str(frame.info.time)));
         add_field_label_no_range!(f, format!("Interface id: {}", interface_type));
@@ -391,10 +390,9 @@ impl Instance {
                             break;
                         }
                         _ => {
-                            let mut f = Field::default();
-                            f.children = Some(vec![]);
+                            let mut f = Field::children();
                             f.start = reader.cursor;
-                            if let Ok((next, _extra_data)) = detail(_next, &mut f, &self.ctx, &frame, &mut reader) {
+                            if let Ok((next, _extra_data)) = detail(_next, &mut f, &self.ctx, frame, &mut reader) {
                                 f.size = reader.cursor - f.start;
                                 list.push(f);
                                 _next = next;

@@ -1,3 +1,8 @@
+// Copyright (c) 2025 sankooc
+// 
+// This file is part of the pcapview project.
+// Licensed under the MIT License - see https://opensource.org/licenses/MIT
+
 use crate::{
     add_field_backstep, add_field_format, common::{
         concept::Field,
@@ -5,7 +10,7 @@ use crate::{
         enum_def::{AddressField, Protocol, ProtocolInfoField},
         io::{read_mac, Reader},
         quick_hash, EthernetCache, Frame,
-    }, constants::etype_mapper, protocol::enthernet_protocol_mapper
+    }, constants::etype_mapper, protocol::ethernet_protocol_mapper
 };
 use anyhow::Result;
 
@@ -14,7 +19,7 @@ pub struct EthernetVisitor {}
 impl EthernetVisitor {
     pub fn info(ctx: &Context, frame: &Frame) -> Option<String> {
         if let ProtocolInfoField::Ethernet(key) = &frame.protocol_field {
-            if let Some(ech) = ctx.ethermap.get(&key) {
+            if let Some(ech) = ctx.ethermap.get(key) {
                 return Some(format!("Ethernet II, Src: {}, Dst: {}", ech.source, ech.target));
             }
         }
@@ -27,7 +32,7 @@ impl EthernetVisitor {
         frame.address_field = AddressField::Mac(key);
         frame.protocol_field = ProtocolInfoField::Ethernet(key);
         if let Some(cache) = ctx.ethermap.get(&key) {
-            Ok(enthernet_protocol_mapper(cache.ptype))
+            Ok(ethernet_protocol_mapper(cache.ptype))
         } else {
             let target: [u8; 6] = _reader.slice(6, true)?.try_into()?;
             let source: [u8; 6] = _reader.slice(6, true)?.try_into()?;
@@ -36,7 +41,7 @@ impl EthernetVisitor {
                 ptype = 1010; // IEEE 802.3
             }
             ctx.ethermap.insert(key, EthernetCache::new(source.into(), target.into(), ptype));
-            Ok(enthernet_protocol_mapper(ptype))
+            Ok(ethernet_protocol_mapper(ptype))
         }
     }
 
@@ -51,6 +56,6 @@ impl EthernetVisitor {
             add_field_backstep!(field, reader, 2, format!("Type: {} ({:#06x})", etype_mapper(ptype), ptype));
         }
         field.summary = format!("Ethernet II, Src: {}, Dst: {}", source, target);
-        Ok(enthernet_protocol_mapper(ptype))
+        Ok(ethernet_protocol_mapper(ptype))
     }
 }

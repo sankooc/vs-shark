@@ -1,3 +1,8 @@
+// Copyright (c) 2025 sankooc
+// 
+// This file is part of the pcapview project.
+// Licensed under the MIT License - see https://opensource.org/licenses/MIT
+
 use std::net::Ipv4Addr;
 
 use crate::{
@@ -19,7 +24,7 @@ pub fn hardware_type_str(hw_type: u16) -> String {
 }
 
 pub fn protocol_type_str(_: u16) -> String {
-    format!("Protocol type: IPv4 (0x0800)")
+    "Protocol type: IPv4 (0x0800)".to_string()
 }
 
 pub fn operation_str(operation: u16) -> String {
