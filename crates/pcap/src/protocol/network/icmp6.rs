@@ -4,8 +4,7 @@
 // Licensed under the MIT License - see https://opensource.org/licenses/MIT
 
 use crate::{
-    common::{concept::Field, core::Context, enum_def::{ProtocolInfoField, Protocol}, io::Reader, Frame},
-    field_back_format, field_rest_format, read_field_format, read_field_format_fn,
+    add_field_backstep, add_field_format, add_field_format_fn, add_field_rest_format, common::{concept::Field, core::Context, enum_def::{Protocol, ProtocolInfoField}, io::Reader, Frame}
 };
 use anyhow::Result;
 
@@ -88,7 +87,7 @@ pub fn t_icmp6_code(type_code: u8, code: u8) -> String {
     format!("Code: {} ({})", icmp6_code_mapper(type_code, code), code)
 }
 
-fn parse_icmpv6_options(list: &mut Vec<Field>, reader: &mut Reader) -> Result<()> {
+fn parse_icmpv6_options(field: &mut Field, reader: &mut Reader) -> Result<()> {
     if reader.left() == 0 {
         return Ok(());
     }
@@ -102,7 +101,6 @@ fn parse_icmpv6_options(list: &mut Vec<Field>, reader: &mut Reader) -> Result<()
         let option_len = reader.read8()? as usize;
         
         if option_len == 0 {
-            
             break;
         }
         
@@ -110,7 +108,6 @@ fn parse_icmpv6_options(list: &mut Vec<Field>, reader: &mut Reader) -> Result<()
         let data_len = total_len - 2; 
         
         if reader.left() < data_len {
-            
             break;
         }
         
@@ -178,7 +175,11 @@ fn parse_icmpv6_options(list: &mut Vec<Field>, reader: &mut Reader) -> Result<()
     
     if !options_list.is_empty() {
         let options_field = Field::new(format!("Options: {} bytes", reader.cursor - options_start), options_start, reader.cursor, options_list);
-        list.push(options_field);
+        if let Some(list) = &mut field.children {
+            list.push(options_field);
+        }
+        // field.children.unwrap().push(options_field);
+        // list.push(options_field);
     }
     
     Ok(())
@@ -237,13 +238,6 @@ pub struct Visitor;
 
 impl Visitor {
     pub fn info(_: &Context, _: &Frame) -> Option<String> {
-        // if let InfoField::Icmp6(_type, _code) = &frame.info_field {
-        //     let type_str = icmp6_type_mapper(*_type);
-        //     let code_str = icmp6_code_mapper(*_type, *_code);
-        //     Some(format!("ICMPv6 {} ({})", type_str, code_str))
-        // } else {
-        //     Some("Internet Control Message Protocol v6".to_string())
-        // }
         Some("Internet Control Message Protocol v6".to_string())
     }
 
@@ -257,65 +251,64 @@ impl Visitor {
 
     pub fn detail(field: &mut Field, _: &Context, _: &Frame, reader: &mut Reader) -> Result<Protocol> {
         let _start = reader.left();
-        let mut list = vec![];
 
-        let type_code = read_field_format_fn!(list, reader, reader.read8()?, t_icmp6_type);
-        read_field_format_fn!(list, reader, reader.read8()?, |c| t_icmp6_code(type_code, c));
-        read_field_format!(list, reader, reader.read16(true)?, "Checksum: {:#06x}");
+        let type_code = add_field_format_fn!(field, reader, reader.read8()?, t_icmp6_type);
+        add_field_format_fn!(field, reader, reader.read8()?, |c| t_icmp6_code(type_code, c));
+        add_field_format!(field, reader, reader.read16(true)?, "Checksum: {:#06x}");
 
         match type_code {
             // Echo Request/Reply
             128 | 129 => {
-                read_field_format!(list, reader, reader.read16(true)?, "Identifier: {}");
-                read_field_format!(list, reader, reader.read16(true)?, "Sequence Number: {}");
-                field_rest_format!(list, reader, format!("Data: {} bytes", reader.left()));
+                add_field_format!(field, reader, reader.read16(true)?, "Identifier: {}");
+                add_field_format!(field, reader, reader.read16(true)?, "Sequence Number: {}");
+                add_field_format!(field, reader, reader.read16(true)?, "Data: {} bytes");
             },
             // Packet Too Big
             2 => {
-                read_field_format!(list, reader, reader.read32(true)?, "MTU: {}");
-                field_rest_format!(list, reader, format!("Original Packet: {} bytes", reader.left()));
+                add_field_format!(field, reader, reader.read32(true)?, "MTU: {}");
+                add_field_format!(field, reader, reader.read16(true)?, "Original Packet: {} bytes");
             },
             // Destination Unreachable
             1 => {
-                field_back_format!(list, reader, 4, "Unused".into());
-                field_rest_format!(list, reader, format!("Original Packet: {} bytes", reader.left()));
+                add_field_format!(field, reader, reader.read16(true)?, "Unused: {}");
+                add_field_format!(field, reader, reader.read16(true)?, "Original Packet: {} bytes");
             },
             // Time Exceeded
             3 => {
-                field_back_format!(list, reader, 4, "Unused".into());
-                field_rest_format!(list, reader, format!("Original Packet: {} bytes", reader.left()));
+                add_field_backstep!(field, reader, 4, "Unused".into());
+                add_field_rest_format!(field, reader, format!("Original Packet: {} bytes", reader.left()));
             },
             // Parameter Problem
             4 => {
-                read_field_format!(list, reader, reader.read32(true)?, "Pointer: {}");
-                field_rest_format!(list, reader, format!("Original Packet: {} bytes", reader.left()));
+                add_field_format!(field, reader, reader.read32(true)?, "Pointer: {}");
+                add_field_rest_format!(field, reader, format!("Original Packet: {} bytes", reader.left()));
             },
             // Router Solicitation
             133 => {
-                field_back_format!(list, reader, 4, "Reserved".into());
-                parse_icmpv6_options(&mut list, reader)?;
+                add_field_backstep!(field, reader, 4, "Reserved".into());
+                parse_icmpv6_options(field, reader)?;
             },
             // Router Advertisement
             134 => {
-                read_field_format!(list, reader, reader.read8()?, "Cur Hop Limit: {}");
+                add_field_format!(field, reader, reader.read8()?, "Cur Hop Limit: {}");
                 let flags = reader.read8()?;
                 let m_flag = (flags >> 7) & 0x01;
                 let o_flag = (flags >> 6) & 0x01;
                 let h_flag = (flags >> 5) & 0x01;
                 let prf = (flags >> 3) & 0x03;
                 let p_flag = (flags >> 2) & 0x01;
-                field_back_format!(list, reader, 1, format!("Flags: {:#04x} (M:{}, O:{}, H:{}, Prf:{}, P:{})", flags, m_flag, o_flag, h_flag, prf, p_flag));
+                add_field_backstep!(field, reader, 1, format!("Flags: {:#04x} (M:{}, O:{}, H:{}, Prf:{}, P:{})", flags, m_flag, o_flag, h_flag, prf, p_flag));
 
-                read_field_format!(list, reader, reader.read16(true)?, "Router Lifetime: {} seconds");
-                read_field_format!(list, reader, reader.read32(true)?, "Reachable Time: {} milliseconds");
-                read_field_format!(list, reader, reader.read32(true)?, "Retrans Timer: {} milliseconds");
-                parse_icmpv6_options(&mut list, reader)?;
+                add_field_format!(field, reader, reader.read16(true)?, "Router Lifetime: {} seconds");
+                add_field_format!(field, reader, reader.read32(true)?, "Reachable Time: {} milliseconds");
+                add_field_format!(field, reader, reader.read32(true)?, "Retrans Timer: {} milliseconds");
+                parse_icmpv6_options(field, reader)?;
             },
             // Neighbor Solicitation
             135 => {
-                field_back_format!(list, reader, 4, "Reserved".into());
-                read_field_format!(list, reader, reader.read_ip6()?, "Target Address: {}");
-                parse_icmpv6_options(&mut list, reader)?;
+                add_field_backstep!(field, reader, 4, "Reserved".into());
+                add_field_format!(field, reader, reader.read_ip6()?, "Target Address: {}");
+                parse_icmpv6_options(field, reader)?;
             },
             // Neighbor Advertisement
             136 => {
@@ -323,35 +316,33 @@ impl Visitor {
                 let r_flag = (flags >> 31) & 0x01;
                 let s_flag = (flags >> 30) & 0x01;
                 let o_flag = (flags >> 29) & 0x01;
-                field_back_format!(list, reader, 4, format!("Flags: {:#010x} (R:{}, S:{}, O:{})", flags, r_flag, s_flag, o_flag));
-                read_field_format!(list, reader, reader.read_ip6()?, "Target Address: {}");
-                parse_icmpv6_options(&mut list, reader)?;
+                add_field_backstep!(field, reader, 4, format!("Flags: {:#010x} (R:{}, S:{}, O:{})", flags, r_flag, s_flag, o_flag));
+                add_field_format!(field, reader, reader.read_ip6()?, "Target Address: {}");
+                parse_icmpv6_options(field, reader)?;
             },
             // Redirect Message
             137 => {
-                field_back_format!(list, reader, 4, "Reserved".into());
-                read_field_format!(list, reader, reader.read_ip6()?, "Target Address: {}");
-                read_field_format!(list, reader, reader.read_ip6()?, "Destination Address: {}");
-                parse_icmpv6_options(&mut list, reader)?;
+                add_field_backstep!(field, reader, 4, "Reserved".into());
+                add_field_format!(field, reader, reader.read_ip6()?, "Target Address: {}");
+                add_field_format!(field, reader, reader.read_ip6()?, "Destination Address: {}");
+                parse_icmpv6_options(field, reader)?;
             },
             // Multicast Listener Query/Report/Done
             130..=132 => {
                 if type_code == 130 {
-                    read_field_format!(list, reader, reader.read16(true)?, "Maximum Response Delay: {} milliseconds");
-                    field_back_format!(list, reader, 2, "Reserved".into());
+                    add_field_format!(field, reader, reader.read16(true)?, "Maximum Response Delay: {} milliseconds");
+                    add_field_backstep!(field, reader, 2, "Reserved".into());
                 } else {
-                    field_back_format!(list, reader, 4, "Reserved".into());
+                    add_field_backstep!(field, reader, 4, "Reserved".into());
                 }
-                read_field_format!(list, reader, reader.read_ip6()?, "Multicast Address: {}");
+                add_field_format!(field, reader, reader.read_ip6()?, "Multicast Address: {}");
             },
-            // 其他ICMPv6消息类型
             _ => {
-                field_rest_format!(list, reader, format!("Data: {} bytes", reader.left()));
+                add_field_rest_format!(field, reader, format!("Data: {} bytes", reader.left()));
             }
         }
 
         field.summary = "Internet Control Message Protocol v6".to_string();
-        field.children = Some(list);
 
         Ok(Protocol::None)
     }

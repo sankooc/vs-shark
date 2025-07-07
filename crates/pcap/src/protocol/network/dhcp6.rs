@@ -4,14 +4,13 @@
 // Licensed under the MIT License - see https://opensource.org/licenses/MIT
 
 use crate::{
-    common::{
+    add_field_backstep, common::{
         concept::Field,
         core::Context,
         enum_def::{Protocol, ProtocolInfoField},
         io::Reader,
         Frame,
-    },
-    field_back_format,
+    }
 };
 use anyhow::Result;
 
@@ -219,36 +218,20 @@ impl Visitor {
         
         // Store DHCPv6 information in the frame
         frame.protocol_field = ProtocolInfoField::DHCPv6(msg_type, transaction_id);
-        
-        // Parse options if there's more data
-        // while reader.left() >= 4 {
-        //     let _option_code = reader.read16(true)?;
-        //     let option_len = reader.read16(true)? as usize;
-            
-        //     // Skip option data
-        //     if option_len > 0 && reader.left() >= option_len {
-        //         reader.slice(option_len, true)?;
-        //     } else {
-        //         break;
-        //     }
-        // }
-        
         Ok(Protocol::None)
     }
 
-    pub fn detail(field: &mut Field, _: &Context, _: &Frame, reader: &mut Reader) -> Result<Protocol> {
-        let mut list = vec![];
-        
+    pub fn detail(field: &mut Field, _: &Context, _: &Frame, reader: &mut Reader) -> Result<Protocol> {        
         // Parse DHCPv6 header
         let msg_type = reader.read8()?;
-        field_back_format!(list, reader, 1, format!("Message type: {} ({})", dhcpv6_msg_type_mapper(msg_type), msg_type));
+        add_field_backstep!(field, reader, 1, format!("Message type: {} ({})", dhcpv6_msg_type_mapper(msg_type), msg_type));
         
         // Transaction ID (3 bytes)
         let b1 = reader.read8()? as u32;
         let b2 = reader.read8()? as u32;
         let b3 = reader.read8()? as u32;
         let transaction_id = (b1 << 16) | (b2 << 8) | b3;
-        field_back_format!(list, reader, 3, format!("Transaction ID: 0x{:06x}", transaction_id));
+        add_field_backstep!(field, reader, 3, format!("Transaction ID: 0x{:06x}", transaction_id));
         
         // Parse options
         while reader.left() >= 4 {
@@ -263,9 +246,8 @@ impl Visitor {
                 option_len + 4
             );
             
-            let mut option_list = vec![];
-            field_back_format!(option_list, reader, 2, format!("Option code: {} ({})", dhcpv6_option_code_mapper(option_code), option_code));
-            field_back_format!(option_list, reader, 2, format!("Option length: {}", option_len));
+            add_field_backstep!(option_field, reader, 2, format!("Option code: {} ({})", dhcpv6_option_code_mapper(option_code), option_code));
+            add_field_backstep!(option_field, reader, 2, format!("Option length: {}", option_len));
             
             // Parse specific options
             if option_len > 0 {
@@ -276,16 +258,16 @@ impl Visitor {
                     1 | 2 => {
                         if reader.left() >= 2 {
                             let duid_type = reader.read16(true)?;
-                            field_back_format!(option_list, reader, 2, format!("DUID type: {}", duid_type));
+                            add_field_backstep!(option_field, reader, 2, format!("DUID type: {}", duid_type));
                             
                             // Skip remaining data
                             if option_len > 2 {
                                 reader.slice(option_len - 2, true)?;
-                                field_back_format!(option_list, reader, option_len - 2, "DUID data".to_string());
+                                add_field_backstep!(option_field, reader, option_len - 2, "DUID data".to_string());
                             }
                         } else {
                             reader.slice(option_len, true)?;
-                            field_back_format!(option_list, reader, option_len, "Option data".to_string());
+                            add_field_backstep!(option_field, reader, option_len, "Option data".to_string());
                         }
                     },
                     // DNS Servers
@@ -311,19 +293,19 @@ impl Visitor {
                     // Other options - just skip the data
                     _ => {
                         reader.slice(option_len, true)?;
-                        field_back_format!(option_list, reader, option_len, "Option data".to_string());
+                        add_field_backstep!(option_field, reader, option_len, "Option data".to_string());
                     }
                 }
             }
             
-            option_field.children = Some(option_list);
-            list.push(option_field);
+
+            if let Some(list) = field.children.as_mut() {
+                list.push(option_field);
+            }
         }
         
         // Set summary
         field.summary = format!("DHCPv6 {} (Transaction ID: 0x{:06x})", dhcpv6_msg_type_mapper(msg_type), transaction_id);
-        field.children = Some(list);
-        
         Ok(Protocol::None)
     }
 }

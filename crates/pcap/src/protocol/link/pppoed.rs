@@ -4,14 +4,13 @@
 // Licensed under the MIT License - see https://opensource.org/licenses/MIT
 
 use crate::{
-    common::{
+    add_field_backstep, add_field_rest_format, add_sub_field_with_reader, common::{
         concept::Field,
         core::Context,
-        enum_def::{ProtocolInfoField, Protocol},
+        enum_def::{Protocol, ProtocolInfoField},
         io::Reader,
         Frame,
-    },
-    field_back_format, field_rest_format,
+    }
 };
 use anyhow::Result;
 
@@ -34,8 +33,8 @@ const TAG_SERVICE_NAME_ERROR: u16 = 0x0201;
 const TAG_AC_SYSTEM_ERROR: u16 = 0x0202;
 const TAG_GENERIC_ERROR: u16 = 0x0203;
 
-fn parse_tags(reader: &mut Reader) -> Result<Vec<Field>> {
-    let mut list = vec![];
+fn parse_tags(reader: &mut Reader, field: &mut Field) -> Result<()> {
+    field.summary = "PPPoE Tags".to_string();
     
     while reader.left() >= 4 {
         let tag_type = reader.read16(true)?;
@@ -59,64 +58,63 @@ fn parse_tags(reader: &mut Reader) -> Result<Vec<Field>> {
             match tag_type {
                 TAG_SERVICE_NAME | TAG_AC_NAME => {
                     if let Ok(tag_value) = reader.read_string(tag_length as usize) {
-                        field_back_format!(list, reader, tag_length as usize, format!("{}: {}", tag_name, tag_value));
+                        add_field_backstep!(field, reader, tag_length as usize, format!("{}: {}", tag_name, tag_value));
                     } else {
                         let tag_data = reader.slice(tag_length as usize, true)?;
                         let hex_str = tag_data.iter().map(|b| format!("{:02x}", b)).collect::<Vec<String>>().join(" ");
-                        field_back_format!(list, reader, tag_length as usize, format!("{}: 0x{}", tag_name, hex_str));
+                        add_field_backstep!(field, reader, tag_length as usize, format!("{}: 0x{}", tag_name, hex_str));
                     }
                 },
                 TAG_HOST_UNIQ | TAG_AC_COOKIE | TAG_RELAY_SESSION_ID => {
                     // 显示为十六进制
                     let tag_data = reader.slice(tag_length as usize, true)?;
                     let hex_str = tag_data.iter().map(|b| format!("{:02x}", b)).collect::<Vec<String>>().join(" ");
-                    field_back_format!(list, reader, tag_length as usize, format!("{}: 0x{}", tag_name, hex_str));
+                    add_field_backstep!(field, reader, tag_length as usize, format!("{}: 0x{}", tag_name, hex_str));
                 },
                 TAG_VENDOR_SPECIFIC => {
                     if tag_length >= 4 {
                         let vendor_id = reader.read32(true)?;
-                        field_back_format!(list, reader, 4, format!("{}: Vendor ID: {:#010x}", tag_name, vendor_id));
+                        add_field_backstep!(field, reader, 4, format!("{}: Vendor ID: {:#010x}", tag_name, vendor_id));
                         
                         if tag_length > 4 {
                             let vendor_data = reader.slice((tag_length - 4) as usize, true)?;
                             let hex_str = vendor_data.iter().map(|b| format!("{:02x}", b)).collect::<Vec<String>>().join(" ");
-                            field_back_format!(list, reader, (tag_length - 4) as usize, format!("Vendor Data: 0x{}", hex_str));
+                            add_field_backstep!(field, reader, (tag_length - 4) as usize, format!("Vendor Data: 0x{}", hex_str));
                         }
                     } else {
                         let tag_data = reader.slice(tag_length as usize, true)?;
                         let hex_str = tag_data.iter().map(|b| format!("{:02x}", b)).collect::<Vec<String>>().join(" ");
-                        field_back_format!(list, reader, tag_length as usize, format!("{}: 0x{}", tag_name, hex_str));
+                        add_field_backstep!(field, reader, tag_length as usize, format!("{}: 0x{}", tag_name, hex_str));
                     }
                 },
                 TAG_SERVICE_NAME_ERROR | TAG_AC_SYSTEM_ERROR | TAG_GENERIC_ERROR => {
                     if let Ok(error_msg) = reader.read_string(tag_length as usize) {
-                        field_back_format!(list, reader, tag_length as usize, format!("{}: {}", tag_name, error_msg));
+                        add_field_backstep!(field, reader, tag_length as usize, format!("{}: {}", tag_name, error_msg));
                     } else {
                         let tag_data = reader.slice(tag_length as usize, true)?;
                         let hex_str = tag_data.iter().map(|b| format!("{:02x}", b)).collect::<Vec<String>>().join(" ");
-                        field_back_format!(list, reader, tag_length as usize, format!("{}: 0x{}", tag_name, hex_str));
+                        add_field_backstep!(field, reader, tag_length as usize, format!("{}: 0x{}", tag_name, hex_str));
                     }
                 },
                 _ => {
                     let tag_data = reader.slice(tag_length as usize, true)?;
                     let hex_str = tag_data.iter().map(|b| format!("{:02x}", b)).collect::<Vec<String>>().join(" ");
-                    field_back_format!(list, reader, tag_length as usize, format!("{} (0x{:04x}): 0x{}", tag_name, tag_type, hex_str));
+                    add_field_backstep!(field, reader, tag_length as usize, format!("{} (0x{:04x}): 0x{}", tag_name, tag_type, hex_str));
                 }
             }
         } else if tag_length == 0 {
-            field_back_format!(list, reader, 0, format!("{}", tag_name));
+            add_field_backstep!(field, reader, 0, format!("{}", tag_name));
         } else {
-            // 标签长度不足，可能数据不完整
-            field_rest_format!(list, reader, format!("Incomplete {} Tag", tag_name));
+            add_field_rest_format!(field, reader, format!("Incomplete {} Tag", tag_name));
             break;
         }
     }
     
     if reader.left() > 0 {
-        field_rest_format!(list, reader, format!("Trailing Data: {} bytes", reader.left()));
+        add_field_rest_format!(field, reader, format!("Trailing Data: {} bytes", reader.left()));
     }
     
-    Ok(list)
+    Ok(())
 }
 
 pub struct Visitor;
@@ -150,12 +148,11 @@ impl Visitor {
     }
 
     pub fn detail(field: &mut Field, _: &Context, _: &Frame, reader: &mut Reader) -> Result<Protocol> {
-        let mut list = vec![];
         
         let version_type = reader.read8()?;
         let version = (version_type >> 4) & 0x0F;
         let type_val = version_type & 0x0F;
-        field_back_format!(list, reader, 1, format!("Version: {}, Type: {}", version, type_val));
+        add_field_backstep!(field, reader, 1, format!("Version: {}, Type: {}", version, type_val));
         
         let code = reader.read8()?;
         let code_name = match code {
@@ -166,20 +163,21 @@ impl Visitor {
             PADT => "PADT (PPPoE Active Discovery Terminate)",
             _ => "Unknown",
         };
-        field_back_format!(list, reader, 1, format!("Code: {} (0x{:02x})", code_name, code));
+        add_field_backstep!(field, reader, 1, format!("Code: {} (0x{:02x})", code_name, code));
         
         let session_id = reader.read16(true)?;
-        field_back_format!(list, reader, 2, format!("Session ID: {:#06x}", session_id));
+        add_field_backstep!(field, reader, 2, format!("Session ID: {:#06x}", session_id));
         
         let payload_length = reader.read16(true)?;
-        field_back_format!(list, reader, 2, format!("Payload Length: {} bytes", payload_length));
+        add_field_backstep!(field, reader, 2, format!("Payload Length: {} bytes", payload_length));
         
         if reader.left() > 0 {
-            let tags = parse_tags(reader)?;
-            if !tags.is_empty() {
-                let tags_field = Field{ summary: "PPPoE Tags".to_string(), children: Some(tags), ..Default::default() };
-                list.push(tags_field);
-            }
+            add_sub_field_with_reader!(field, reader, parse_tags)?;
+            // let tags = parse_tags(reader)?;
+            // if !tags.is_empty() {
+            //     let tags_field = Field{ summary: "PPPoE Tags".to_string(), children: Some(tags), ..Default::default() };
+            //     list.push(tags_field);
+            // }
         }
         
         field.summary = match code {
@@ -190,9 +188,6 @@ impl Visitor {
             PADT => "Active Discovery Terminate (PADT)",
             _ => SUMMARY,
         }.to_string();
-        
-        field.children = Some(list);
-        
         Ok(Protocol::None)
     }
 }

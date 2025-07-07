@@ -6,16 +6,13 @@
 use std::net::Ipv4Addr;
 
 use crate::{
-    common::{
+    add_field_backstep, add_field_format, add_field_format_fn, common::{
         concept::Field,
         core::Context,
         enum_def::{AddressField, Protocol, ProtocolInfoField},
         io::{MacAddress, Reader},
         Frame,
-    },
-    constants::{arp_hardware_type_mapper, arp_oper_type_mapper},
-    field_back_format,
-    read_field_format, read_field_format_fn,
+    }, constants::{arp_hardware_type_mapper, arp_oper_type_mapper}
 };
 use anyhow::Result;
 
@@ -76,35 +73,34 @@ impl Visitor {
     }
 
     pub fn detail(field: &mut Field, _: &Context, _: &Frame, reader: &mut Reader) -> Result<Protocol> {
-        let mut list = vec![];
+        // let mut list = vec![];
         
-        read_field_format_fn!(list, reader, reader.read16(true)?, hardware_type_str);
-        read_field_format!(list, reader, reader.read16(true)?, "Protocol type: IPv4 ({:#06x})");
+        add_field_format_fn!(field, reader, reader.read16(true)?, hardware_type_str);
+        add_field_format!(field, reader, reader.read16(true)?, "Protocol type: IPv4 ({:#06x})");
         
-        let hw_size = read_field_format!(list, reader, reader.read8()?, "Hardware size: {}");
-        let proto_size = read_field_format!(list, reader, reader.read8()?, "Protocol size: {}");
+        let hw_size = add_field_format!(field, reader, reader.read8()?, "Hardware size: {}");
+        let proto_size = add_field_format!(field, reader, reader.read8()?, "Protocol size: {}");
         
-        let operation = read_field_format_fn!(list, reader, reader.read16(true)?, operation_str);
+        let operation = add_field_format_fn!(field, reader, reader.read16(true)?, operation_str);
         
         let sender_mac_data = reader.slice(hw_size as usize, true)?;
         let sender_mac = MacAddress::from(<[u8; 6]>::try_from(sender_mac_data)?);
-        field_back_format!(list, reader, 6, format!("Sender MAC address: {}", sender_mac));
+        add_field_backstep!(field, reader, 6, format!("Sender MAC address: {}", sender_mac));
         
         let sender_ip_data = reader.slice(proto_size as usize, true)?;
         let sender_ip = Ipv4Addr::from(<[u8; 4]>::try_from(sender_ip_data)?);
-        field_back_format!(list, reader, 4, format!("Sender IP address: {}", sender_ip));
+        add_field_backstep!(field, reader, 4, format!("Sender IP address: {}", sender_ip));
         
         let target_mac_data = reader.slice(hw_size as usize, true)?;
         let target_mac = MacAddress::from(<[u8; 6]>::try_from(target_mac_data)?);
-        field_back_format!(list, reader, 6, format!("Target MAC address: {}", target_mac));
+        add_field_backstep!(field, reader, 6, format!("Target MAC address: {}", target_mac));
         
         let target_ip_data = reader.slice(proto_size as usize, true)?;
         let target_ip = Ipv4Addr::from(<[u8; 4]>::try_from(target_ip_data)?);
-        field_back_format!(list, reader, 4, format!("Target IP address: {}", target_ip));
+        add_field_backstep!(field, reader, 4, format!("Target IP address: {}", target_ip));
         
         let op_str = arp_oper_type_mapper(operation);
         field.summary = format!("Address Resolution Protocol ({} {:#06x})", op_str, operation);
-        field.children = Some(list);
         
         Ok(Protocol::None)
     }

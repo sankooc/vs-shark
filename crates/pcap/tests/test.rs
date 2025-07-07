@@ -31,7 +31,7 @@ mod unit {
         }
         {
             let mut reader = Reader::new(&ds);
-            let mut f = Field::default();
+            let mut f = Field::children();
             let next = protocol::link::ethernet::EthernetVisitor::detail(&mut f, &mut cx, &mut frame, &mut reader)?;
             assert!(matches!(next, Protocol::IP4));
             print_field(1, &f);
@@ -50,7 +50,7 @@ mod unit {
         }
         {
             let mut reader = Reader::new(&ds);
-            let mut f = Field::default();
+            let mut f = Field::children();
             let next = protocol::link::ssl::Visitor::detail(&mut f, &mut cx, &mut frame, &mut reader)?;
             assert!(matches!(next, Protocol::IP4));
             print_field(1, &f);
@@ -84,8 +84,42 @@ mod unit {
         }
         {
             let mut reader = Reader::new(&ds);
-            let mut f = Field::default();
+            let mut f = Field::children();
             let next = protocol::link::ieee1905a::Visitor::detail(&mut f, &mut cx, &mut frame, &mut reader)?;
+            assert!(matches!(next, Protocol::None));
+            print_field(1, &f);
+        }
+        Ok(())
+    }
+    #[test]
+    fn test_nbns() -> Result<()> {
+        let (ds, mut cx, mut frame) = init("nbns");
+        {
+            let mut reader = Reader::new(&ds);
+            let next = protocol::application::nbns::Visitor::parse(&mut cx, &mut frame, &mut reader)?;
+            assert!(matches!(next, Protocol::None));
+        }
+        {
+            let mut reader = Reader::new(&ds);
+            let mut f = Field::children();
+            let next = protocol::application::nbns::Visitor::detail(&mut f, &mut cx, &mut frame, &mut reader)?;
+            assert!(matches!(next, Protocol::None));
+            print_field(1, &f);
+        }
+        Ok(())
+    }
+    #[test]
+    fn test_dhcp() -> Result<()> {
+        let (ds, mut cx, mut frame) = init("dhcp");
+        {
+            let mut reader = Reader::new(&ds);
+            let next = protocol::network::dhcp::Visitor::parse(&mut cx, &mut frame, &mut reader)?;
+            assert!(matches!(next, Protocol::None));
+        }
+        {
+            let mut reader = Reader::new(&ds);
+            let mut f = Field::children();
+            let next = protocol::network::dhcp::Visitor::detail(&mut f, &mut cx, &mut frame, &mut reader)?;
             assert!(matches!(next, Protocol::None));
             print_field(1, &f);
         }
@@ -101,7 +135,7 @@ mod unit {
         }
         {
             let mut reader = Reader::new(&ds);
-            let mut f = Field::default();
+            let mut f = Field::children();
             let next = protocol::network::ip4::Visitor::detail(&mut f, &mut cx, &mut frame, &mut reader)?;
             assert!(matches!(next, Protocol::TCP));
             print_field(1, &f);
@@ -118,7 +152,7 @@ mod unit {
         }
         {
             let mut reader = Reader::new(&ds);
-            let mut f = Field::default();
+            let mut f = Field::children();
             let next = protocol::network::ip6::Visitor::detail(&mut f, &mut cx, &mut frame, &mut reader)?;
             assert!(matches!(next, Protocol::ICMP6));
             print_field(1, &f);
@@ -141,7 +175,7 @@ mod unit {
         }
         {
             let mut reader = Reader::new(&ds);
-            let mut f = Field::default();
+            let mut f = Field::children();
             let next = protocol::transport::tcp::Visitor::detail(&mut f, &mut cx, &mut frame, &mut reader)?;
             assert!(matches!(next, Protocol::None));
             print_field(1, &f);
@@ -164,7 +198,7 @@ mod unit {
         }
         {
             let mut reader = Reader::new(&ds);
-            let mut f = Field::default();
+            let mut f = Field::children();
             f.children = Some(vec![]);
             let next = protocol::transport::tcp::Visitor::detail(&mut f, &mut cx, &mut frame, &mut reader)?;
             assert!(matches!(next, Protocol::None));
@@ -177,7 +211,7 @@ mod unit {
         let (ds, mut cx, mut frame) = init("http");
         {
             let mut reader = Reader::new(&ds);
-            let mut f = Field::default();
+            let mut f = Field::children();
             let next = protocol::application::http::Visitor::detail(&mut f, &mut cx, &mut frame, &mut reader)?;
             assert!(matches!(next, Protocol::None));
             print_field(1, &f);
@@ -186,7 +220,7 @@ mod unit {
         {
             frame.protocol_field = ProtocolInfoField::Http("".to_string(), 0);
             let mut reader = Reader::new(&ds);
-            let mut f = Field::default();
+            let mut f = Field::children();
             let next = protocol::application::http::Visitor::detail(&mut f, &mut cx, &mut frame, &mut reader)?;
             assert!(matches!(next, Protocol::None));
             print_field(1, &f);
@@ -203,7 +237,7 @@ mod unit {
         }
         {
             let mut reader = Reader::new(&ds);
-            let mut f = Field::default();
+            let mut f = Field::children();
             let next = protocol::network::icmp::Visitor::detail(&mut f, &mut cx, &mut frame, &mut reader)?;
             assert!(matches!(next, Protocol::None));
             print_field(1, &f);
@@ -222,7 +256,7 @@ mod unit {
         }
         {
             let mut reader = Reader::new(&ds);
-            let mut f = Field::default();
+            let mut f = Field::children();
             f.children = Some(vec![]);
             let next = protocol::link::pppoes::Visitor::detail(&mut f, &mut cx, &mut frame, &mut reader)?;
             assert!(matches!(next, Protocol::None));
@@ -242,7 +276,7 @@ mod unit {
         // }
         {
             let mut reader = Reader::new(&ds);
-            let mut f = Field::default();
+            let mut f = Field::children();
             f.children = Some(vec![]);
             let next = protocol::link::ieee802_11::link_105::Visitor::detail(&mut f, &mut cx, &mut frame, &mut reader)?;
             print_field(1, &f);
@@ -262,11 +296,11 @@ mod unit {
         // }
         {
             let mut reader = Reader::new(&ds);
-            let mut f = Field::default();
+            let mut f = Field::children();
             f.children = Some(vec![]);
             let next = protocol::link::ieee802_11::link_127::Visitor::detail(&mut f, &mut cx, &mut frame, &mut reader)?;
             print_field(1, &f);
-            assert!(matches!(next, Protocol::None));
+            assert!(matches!(next, Protocol::IEEE802_11));
         }
         Ok(())
     }
@@ -274,7 +308,7 @@ mod unit {
     #[test]
     fn test_tls_serverhello() -> Result<()> {
         let (ds, _, _) = init("tls_serverhello");
-        let mut f = Field::default();
+        let mut f = Field::children();
         f.children = Some(vec![]);
         let mut reader = Reader::new(&ds);
         parse_server_hello(&mut reader, &mut f)?;
@@ -284,7 +318,7 @@ mod unit {
     #[test]
     fn test_tls_certificate() -> Result<()> {
         let (ds, _, _) = init("tls_certificate");
-        let mut f = Field::default();
+        let mut f = Field::children();
         f.children = Some(vec![]);
         let mut reader = Reader::new(&ds);
         parse_certificates(&mut reader, &mut f)?;

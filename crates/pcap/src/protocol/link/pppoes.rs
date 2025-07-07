@@ -4,33 +4,34 @@
 // Licensed under the MIT License - see https://opensource.org/licenses/MIT
 
 use crate::{
-    common::{
+    add_field_backstep, add_field_format, add_field_rest_format, add_sub_field_with_reader, common::{
         concept::Field,
         core::Context,
-        enum_def::{ProtocolInfoField, Protocol},
+        enum_def::{Protocol, ProtocolInfoField},
         io::Reader,
         Frame,
-    },
-    constants::{ppp_lcp_type_mapper, ppp_type_mapper},
-    field_back_format, field_rest_format, read_field_format,
+    }, constants::{ppp_lcp_type_mapper, ppp_type_mapper}
 };
 use anyhow::Result;
 
 const SUMMARY: &str = "PPP-over-Ethernet Session";
 
-fn payload(protocol: u16, reader: &mut Reader) -> Result<Vec<Field>> {
-    let mut list = vec![];
+
+fn read_payload(reader: &mut Reader, field: &mut Field) -> Result<u16> {
+    let protocol = reader.read16(true)?;
+    let protocol_name = ppp_type_mapper(protocol);
+
     match protocol {
         0xc021 => {
             if reader.left() >= 4 {
                 let code = reader.read8()?;
-                field_back_format!(list, reader, 1, format!("LCP Code: {} ({})", ppp_lcp_type_mapper(code), code));
-                read_field_format!(list, reader, reader.read8()?, "Identifier: {}");
-                read_field_format!(list, reader, reader.read16(true)?, "Length: {} bytes");
-                field_rest_format!(list, reader, format!("LCP Data: {} bytes", reader.left()));
+                add_field_backstep!(field, reader, 1, format!("LCP Code: {} ({})", ppp_lcp_type_mapper(code), code));
+                add_field_format!(field, reader, reader.read8()?, "Identifier: {}");
+                add_field_format!(field, reader, reader.read16(true)?, "Length: {} bytes");
+                add_field_rest_format!(field, reader, format!("LCP Data: {} bytes", reader.left()));
             } else {
                 reader.forward(reader.left());
-                field_rest_format!(list, reader, "Incomplete LCP Header".to_string());
+                add_field_rest_format!(field, reader, "Incomplete LCP Header".to_string());
             }
         }
         0xc023 => {
@@ -42,17 +43,17 @@ fn payload(protocol: u16, reader: &mut Reader) -> Result<Vec<Field>> {
                     3 => "Authenticate-Nak",
                     _ => "Unknown",
                 };
-                field_back_format!(list, reader, 1, format!("PAP Code: {} ({})", pap_code, code));
+                add_field_backstep!(field, reader, 1, format!("PAP Code: {} ({})", pap_code, code));
 
                 let identifier = reader.read8()?;
-                field_back_format!(list, reader, 1, format!("Identifier: {}", identifier));
+                add_field_backstep!(field, reader, 1, format!("Identifier: {}", identifier));
 
                 let length = reader.read16(true)?;
-                field_back_format!(list, reader, 2, format!("Length: {} bytes", length));
+                add_field_backstep!(field, reader, 2, format!("Length: {} bytes", length));
 
-                field_rest_format!(list, reader, format!("PAP Data: {} bytes", reader.left()));
+                add_field_rest_format!(field, reader, format!("PAP Data: {} bytes", reader.left()));
             } else {
-                field_rest_format!(list, reader, "Incomplete PAP Header".to_string());
+                add_field_rest_format!(field, reader, "Incomplete PAP Header".to_string());
             }
         }
         0xc223 => {
@@ -65,30 +66,30 @@ fn payload(protocol: u16, reader: &mut Reader) -> Result<Vec<Field>> {
                     4 => "Failure",
                     _ => "Unknown",
                 };
-                field_back_format!(list, reader, 1, format!("CHAP Code: {} ({})", chap_code, code));
+                add_field_backstep!(field, reader, 1, format!("CHAP Code: {} ({})", chap_code, code));
 
                 let identifier = reader.read8()?;
-                field_back_format!(list, reader, 1, format!("Identifier: {}", identifier));
+                add_field_backstep!(field, reader, 1, format!("Identifier: {}", identifier));
 
                 let length = reader.read16(true)?;
-                field_back_format!(list, reader, 2, format!("Length: {} bytes", length));
+                add_field_backstep!(field, reader, 2, format!("Length: {} bytes", length));
 
-                field_rest_format!(list, reader, format!("CHAP Data: {} bytes", reader.left()));
+                add_field_rest_format!(field, reader, format!("CHAP Data: {} bytes", reader.left()));
             } else {
-                field_rest_format!(list, reader, "Incomplete CHAP Header".to_string());
+                add_field_rest_format!(field, reader, "Incomplete CHAP Header".to_string());
             }
         }
         0x8021 => {
             // IPCP (IP Control Protocol)
             if reader.left() >= 4 {
                 let code = reader.read8()?;
-                field_back_format!(list, reader, 1, format!("IPCP Code: {} ({})", ppp_lcp_type_mapper(code), code));
+                add_field_backstep!(field, reader, 1, format!("IPCP Code: {} ({})", ppp_lcp_type_mapper(code), code));
 
                 let identifier = reader.read8()?;
-                field_back_format!(list, reader, 1, format!("Identifier: {}", identifier));
+                add_field_backstep!(field, reader, 1, format!("Identifier: {}", identifier));
 
                 let length = reader.read16(true)?;
-                field_back_format!(list, reader, 2, format!("Length: {} bytes", length));
+                add_field_backstep!(field, reader, 2, format!("Length: {} bytes", length));
 
                 // Parse IPCP options if available
                 if reader.left() > 0 && code == 1 {
@@ -166,13 +167,13 @@ fn payload(protocol: u16, reader: &mut Reader) -> Result<Vec<Field>> {
                     }
 
                     if !options_data.is_empty() {
-                        field_back_format!(list, reader, 0, format!("Options: {}", options_data.join(", ")));
+                        add_field_backstep!(field, reader, 0, format!("Options: {}", options_data.join(", ")));
                     }
                 } else {
-                    field_rest_format!(list, reader, format!("IPCP Data: {} bytes", reader.left()));
+                    add_field_rest_format!(field, reader, format!("IPCP Data: {} bytes", reader.left()));
                 }
             } else {
-                field_rest_format!(list, reader, "Incomplete IPCP Header".to_string());
+                add_field_rest_format!(field, reader, "Incomplete IPCP Header".to_string());
             }
         }
         0x8057 => {
@@ -189,13 +190,13 @@ fn payload(protocol: u16, reader: &mut Reader) -> Result<Vec<Field>> {
                     7 => "Code-Reject",
                     _ => "Unknown",
                 };
-                field_back_format!(list, reader, 1, format!("IPv6CP Code: {} ({})", ipv6cp_code, code));
+                add_field_backstep!(field, reader, 1, format!("IPv6CP Code: {} ({})", ipv6cp_code, code));
 
                 let identifier = reader.read8()?;
-                field_back_format!(list, reader, 1, format!("Identifier: {}", identifier));
+                add_field_backstep!(field, reader, 1, format!("Identifier: {}", identifier));
 
                 let length = reader.read16(true)?;
-                field_back_format!(list, reader, 2, format!("Length: {} bytes", length));
+                add_field_backstep!(field, reader, 2, format!("Length: {} bytes", length));
 
                 // Parse IPv6CP options if available
                 if reader.left() > 0 && code == 1 {
@@ -237,13 +238,13 @@ fn payload(protocol: u16, reader: &mut Reader) -> Result<Vec<Field>> {
                     }
 
                     if !options_data.is_empty() {
-                        field_back_format!(list, reader, 0, format!("Options: {}", options_data.join(", ")));
+                        add_field_backstep!(field, reader, 0, format!("Options: {}", options_data.join(", ")));
                     }
                 } else {
-                    field_rest_format!(list, reader, format!("IPv6CP Data: {} bytes", reader.left()));
+                    add_field_rest_format!(field, reader, format!("IPv6CP Data: {} bytes", reader.left()));
                 }
             } else {
-                field_rest_format!(list, reader, "Incomplete IPv6CP Header".to_string());
+                add_field_rest_format!(field, reader, "Incomplete IPv6CP Header".to_string());
             }
         }
         0x80fd => {
@@ -262,13 +263,13 @@ fn payload(protocol: u16, reader: &mut Reader) -> Result<Vec<Field>> {
                     15 => "Reset-Ack",
                     _ => "Unknown",
                 };
-                field_back_format!(list, reader, 1, format!("CCP Code: {} ({})", ccp_code, code));
+                add_field_backstep!(field, reader, 1, format!("CCP Code: {} ({})", ccp_code, code));
 
                 let identifier = reader.read8()?;
-                field_back_format!(list, reader, 1, format!("Identifier: {}", identifier));
+                add_field_backstep!(field, reader, 1, format!("Identifier: {}", identifier));
 
                 let length = reader.read16(true)?;
-                field_back_format!(list, reader, 2, format!("Length: {} bytes", length));
+                add_field_backstep!(field, reader, 2, format!("Length: {} bytes", length));
 
                 // Parse CCP options if available
                 if reader.left() > 0 && (code == 1 || code == 2 || code == 3 || code == 4) {
@@ -307,13 +308,13 @@ fn payload(protocol: u16, reader: &mut Reader) -> Result<Vec<Field>> {
                     }
 
                     if !options_data.is_empty() {
-                        field_back_format!(list, reader, 0, format!("Options: {}", options_data.join(", ")));
+                        add_field_backstep!(field, reader, 0, format!("Options: {}", options_data.join(", ")));
                     }
                 } else {
-                    field_rest_format!(list, reader, format!("CCP Data: {} bytes", reader.left()));
+                    add_field_rest_format!(field, reader, format!("CCP Data: {} bytes", reader.left()));
                 }
             } else {
-                field_rest_format!(list, reader, "Incomplete CCP Header".to_string());
+                add_field_rest_format!(field, reader, "Incomplete CCP Header".to_string());
             }
         }
         0x8053 => {
@@ -330,13 +331,13 @@ fn payload(protocol: u16, reader: &mut Reader) -> Result<Vec<Field>> {
                     7 => "Code-Reject",
                     _ => "Unknown",
                 };
-                field_back_format!(list, reader, 1, format!("ECP Code: {} ({})", ecp_code, code));
+                add_field_backstep!(field, reader, 1, format!("ECP Code: {} ({})", ecp_code, code));
 
                 let identifier = reader.read8()?;
-                field_back_format!(list, reader, 1, format!("Identifier: {}", identifier));
+                add_field_backstep!(field, reader, 1, format!("Identifier: {}", identifier));
 
                 let length = reader.read16(true)?;
-                field_back_format!(list, reader, 2, format!("Length: {} bytes", length));
+                add_field_backstep!(field, reader, 2, format!("Length: {} bytes", length));
 
                 // Parse ECP options if available
                 if reader.left() > 0 && (code == 1 || code == 2 || code == 3 || code == 4) {
@@ -368,20 +369,21 @@ fn payload(protocol: u16, reader: &mut Reader) -> Result<Vec<Field>> {
                     }
 
                     if !options_data.is_empty() {
-                        field_back_format!(list, reader, 0, format!("Options: {}", options_data.join(", ")));
+                        add_field_backstep!(field, reader, 0, format!("Options: {}", options_data.join(", ")));
                     }
                 } else {
-                    field_rest_format!(list, reader, format!("ECP Data: {} bytes", reader.left()));
+                    add_field_rest_format!(field, reader, format!("ECP Data: {} bytes", reader.left()));
                 }
             } else {
-                field_rest_format!(list, reader, "Incomplete ECP Header".to_string());
+                add_field_rest_format!(field, reader, "Incomplete ECP Header".to_string());
             }
         }
         _ => {
-            field_rest_format!(list, reader, format!("Payload: {} bytes", reader.left()));
+            add_field_rest_format!(field, reader, format!("Payload: {} bytes", reader.left()));
         }
     }
-    Ok(list)
+    field.summary = format!("PPP Protocol: {} ({:#06x})", protocol_name, protocol);
+    Ok(protocol)
 }
 pub struct Visitor;
 
@@ -421,30 +423,27 @@ impl Visitor {
     }
 
     pub fn detail(field: &mut Field, _: &Context, _: &Frame, reader: &mut Reader) -> Result<Protocol> {
-        let mut list = vec![];
-
         let version_type = reader.read8()?;
         let version = (version_type >> 4) & 0x0F;
         let type_val = version_type & 0x0F;
-        field_back_format!(list, reader, 1, format!("Version: {}, Type: {}", version, type_val));
+        add_field_backstep!(field, reader, 1, format!("Version: {}, Type: {}", version, type_val));
 
-        read_field_format!(list, reader, reader.read8()?, "Code: {}");
+        add_field_format!(field, reader, reader.read8()?, "Code: {}");
 
-        read_field_format!(list, reader, reader.read16(true)?, "Session ID: {:#06x}");
+        add_field_format!(field, reader, reader.read16(true)?, "Session ID: {:#06x}");
 
-        read_field_format!(list, reader, reader.read16(true)?, "Payload Length: {} bytes");
+        add_field_format!(field, reader, reader.read16(true)?, "Payload Length: {} bytes");
 
-        let protocol = reader.read16(true)?;
-        let protocol_name = ppp_type_mapper(protocol);
-        let _index = field_back_format!(list, reader, 2, format!("PPP Protocol: {} ({:#06x})", protocol_name, protocol));
+        let protocol = add_sub_field_with_reader!(field, reader, read_payload)?;
+        // let protocol = reader.read16(true)?;
+        // let protocol_name = ppp_type_mapper(protocol);
+        // let _index = add_field_backstep!(field, reader, 2, format!("PPP Protocol: {} ({:#06x})", protocol_name, protocol));
 
-        let f = list.get_mut(_index).unwrap();
+        // let f = list.get_mut(_index).unwrap();
 
-        f.children = Some(payload(protocol, reader)?);
+        // f.children = Some(read_payload(protocol, reader)?);
 
         field.summary = SUMMARY.to_string();
-        field.children = Some(list);
-
         match protocol {
             0x0021 => Ok(Protocol::IP4), // IPv4
             0x0057 => Ok(Protocol::IP6), // IPv6

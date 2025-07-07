@@ -6,15 +6,13 @@
 use std::net::Ipv4Addr;
 
 use crate::{
-    common::{
+    add_field_backstep, add_field_format, add_sub_field_with_reader, common::{
         concept::Field,
         core::Context,
         enum_def::{Protocol, ProtocolInfoField},
         io::{MacAddress, Reader},
         Frame,
-    },
-    constants::{dhcp_option_type_mapper, dhcp_type_mapper},
-    field_back_format, field_back_format_with_list, read_field_format,
+    }, constants::{dhcp_option_type_mapper, dhcp_type_mapper}
 };
 use anyhow::Result;
 
@@ -107,42 +105,40 @@ impl Visitor {
     }
 
     pub fn detail(field: &mut Field, _: &Context, frame: &Frame, reader: &mut Reader) -> Result<Protocol> {
-        let mut list = vec![];
-
         reader.forward(1);
         if let ProtocolInfoField::DHCP(msg_type) = &frame.protocol_field {
-            field_back_format!(list, reader, 1, format!("Message Type: {} ({})", dhcp_type_mapper(*msg_type), msg_type));
+            add_field_backstep!(field, reader, 1, format!("Message Type: {} ({})", dhcp_type_mapper(*msg_type), msg_type));
         }
         let htype = reader.read8()?;
-        field_back_format!(list, reader, 1, format!("Hardware type: {} ({})", htype, if htype == 1 { "Ethernet" } else { "Other" }));
+        add_field_backstep!(field, reader, 1, format!("Hardware type: {} ({})", htype, if htype == 1 { "Ethernet" } else { "Other" }));
 
-        let hlen = read_field_format!(list, reader, reader.read8()?, "Hardware address length: {}");
-        read_field_format!(list, reader, reader.read8()?, "Hops: {}");
+        let hlen = add_field_format!(field, reader, reader.read8()?, "Hardware address length: {}");
+        add_field_format!(field, reader, reader.read8()?, "Hops: {}");
 
-        read_field_format!(list, reader, reader.read32(true)?, "Transaction ID: 0x{:08x}");
-        read_field_format!(list, reader, reader.read16(true)?, "Seconds elapsed: {}");
+        add_field_format!(field, reader, reader.read32(true)?, "Transaction ID: 0x{:08x}");
+        add_field_format!(field, reader, reader.read16(true)?, "Seconds elapsed: {}");
         let flags = reader.read16(true)?;
-        field_back_format!(
-            list,
+        add_field_backstep!(
+            field,
             reader,
             2,
             format!("Flags: 0x{:04x} ({})", flags, if (flags & 0x8000) != 0 { "Broadcast" } else { "Unicast" })
         );
 
         // IP addresses
-        read_field_format!(list, reader, reader.read_ip4()?, "Client IP address: {}");
-        read_field_format!(list, reader, reader.read_ip4()?, "Your (client) IP address: {}");
-        read_field_format!(list, reader, reader.read_ip4()?, "Next server IP address: {}");
-        read_field_format!(list, reader, reader.read_ip4()?, "Relay agent IP address: {}");
+        add_field_format!(field, reader, reader.read_ip4()?, "Client IP address: {}");
+        add_field_format!(field, reader, reader.read_ip4()?, "Your (client) IP address: {}");
+        add_field_format!(field, reader, reader.read_ip4()?, "Next server IP address: {}");
+        add_field_format!(field, reader, reader.read_ip4()?, "Relay agent IP address: {}");
 
         // Client hardware address
         let client_mac_data = reader.slice(hlen as usize, true)?;
         let client_mac = MacAddress::from(<[u8; 6]>::try_from(client_mac_data)?);
-        field_back_format!(list, reader, hlen as usize, format!("Client MAC address: {}", client_mac));
+        add_field_backstep!(field, reader, hlen as usize, format!("Client MAC address: {}", client_mac));
 
         // Skip the rest of the chaddr field
         reader.slice(16 - hlen as usize, true)?;
-        field_back_format!(list, reader, 16 - hlen as usize, "Client hardware address padding".to_string());
+        add_field_backstep!(field, reader, 16 - hlen as usize, "Client hardware address padding".to_string());
 
         // Server host name and Boot file name
         let _sname = reader.slice(64, true)?;
@@ -158,53 +154,54 @@ impl Visitor {
         let file_len = file.iter().position(|&x| x == 0).unwrap_or(128);
         if file_len > 0 {
             let _content = format!("Boot file name: {}", String::from_utf8_lossy(&file[..file_len]));
-            field_back_format!(list, reader, 128, _content);
+            add_field_backstep!(field, reader, 128, _content);
         } else {
-            field_back_format!(list, reader, 128, "Boot file name not given".to_string());
+            add_field_backstep!(field, reader, 128, "Boot file name not given".to_string());
         }
 
         // // Magic cookie
         let magic_cookie = reader.read32(true)?;
-        field_back_format!(list, reader, 4, format!("Magic cookie: {:#010x}", magic_cookie));
+        add_field_backstep!(field, reader, 4, format!("Magic cookie: {:#010x}", magic_cookie));
 
         // Parse options until we reach the end option (0xFF) or run out of data
         while reader.left() > 0 {
-            let start = reader.cursor;
-            if let Ok((option_type, option_str, option_list)) = read_dhcp_option(reader) {
-                let size = reader.cursor - start;
-                field_back_format_with_list!(list, reader, size, format!("Option: ({}) {}", option_type, option_str), option_list);
-            } else {
-                break;
-            }
+            add_sub_field_with_reader!(field, reader, read_dhcp_option)?;
+            // let start = reader.cursor;
+            // if let Ok((option_type, option_str, option_list)) = read_dhcp_option(reader) {
+            //     let size = reader.cursor - start;
+            //     field_back_format_with_list!(list, reader, size, format!("Option: ({}) {}", option_type, option_str), option_list);
+            // } else {
+            //     break;
+            // }
         }
 
         if let ProtocolInfoField::DHCP(msg_type) = &frame.protocol_field {
             let msg_type_str = if *msg_type > 0 { dhcp_type_mapper(*msg_type) } else { "Unknown" };
             field.summary = format!("Dynamic Host Configuration Protocol ({})", msg_type_str);
         }
-        field.children = Some(list);
-
         Ok(Protocol::None)
     }
 }
 
-fn read_dhcp_option(reader: &mut Reader) -> Result<(u8, String, Vec<Field>)> {
+fn read_dhcp_option(reader: &mut Reader, field: &mut Field) -> Result<u8> {
     let option_type = reader.read8()?;
-    let mut options_list = vec![];
+    // let mut options_list = vec![];
     // End option
     if option_type == 255 {
-        field_back_format!(options_list, reader, 1, "Option: (255) End".to_string());
-        return Ok((option_type, "Option: (255) End".to_string(), options_list));
+        add_field_backstep!(field, reader, 1, "End".to_string());
+        field.summary = "Option: (255) End".to_string();
+        return Ok(option_type);
     }
 
     // Pad option
     if option_type == 0 {
-        field_back_format!(options_list, reader, 1, "Option: (0) Pad".to_string());
-        return Ok((option_type, "Option: (0) Pad".to_string(), options_list));
+        add_field_backstep!(field, reader, 1, "Pad".to_string());
+        field.summary = "Option: (0) Pad".to_string();
+        return Ok(option_type);
     }
 
     // Read option length and data
-    let option_len = read_field_format!(options_list, reader, reader.read8()?, "Option length: {}") as usize;
+    let option_len = add_field_format!(field, reader, reader.read8()?, "length: {}") as usize;
     let option_data = reader.slice(option_len, true)?;
 
     // Format specific options
@@ -251,9 +248,10 @@ fn read_dhcp_option(reader: &mut Reader) -> Result<(u8, String, Vec<Field>)> {
             let server_id = Ipv4Addr::from([option_data[0], option_data[1], option_data[2], option_data[3]]);
             format!("DHCP Server Identifier: {}", server_id)
         }
-        _ => format!("Option: ({}) {}, Length: {}", option_type, dhcp_option_type_mapper(option_type), option_len),
+        _ => format!("{}", dhcp_option_type_mapper(option_type)),
     };
 
-    field_back_format!(options_list, reader, option_len, option_str.clone());
-    Ok((option_type, option_str, options_list))
+    add_field_backstep!(field, reader, option_len, option_str.clone());
+    field.summary = format!("Option: ({}) {}", option_type, option_str);
+    Ok(option_type)
 }

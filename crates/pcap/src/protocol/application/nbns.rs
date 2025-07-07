@@ -1,9 +1,10 @@
 // Copyright (c) 2025 sankooc
-// 
+//
 // This file is part of the pcapview project.
 // Licensed under the MIT License - see https://opensource.org/licenses/MIT
 
 use crate::{
+    add_field_format, add_field_format_fn, add_field_label, add_sub_field, add_sub_field_with_reader,
     common::{
         concept::Field,
         core::Context,
@@ -12,7 +13,6 @@ use crate::{
         Frame,
     },
     constants::{dns_class_mapper, nbns_type_mapper},
-    field_back_format, read_field_format, read_field_format_fn,
 };
 use anyhow::{bail, Result};
 
@@ -183,73 +183,30 @@ impl Visitor {
     }
 
     pub fn detail(field: &mut Field, _: &Context, _: &Frame, reader: &mut Reader) -> Result<Protocol> {
-        let mut list = vec![];
+        let transaction_id = add_field_format!(field, reader, reader.read16(true)?, "Transaction ID: 0x{:04x}");
 
-        // Parse NBNS header
-        let transaction_id = reader.read16(true)?;
-        field_back_format!(list, reader, 2, format!("Transaction ID: 0x{:04x}", transaction_id));
-
-        let flags = reader.read16(true)?;
+        let flags = add_sub_field!(field, reader, reader.read16(true)?, read_flag);
         let is_response = (flags & 0x8000) != 0;
 
-        // Format flags
-        let mut flags_field = Field::with_children(format!("Flags: 0x{:04x}", flags), reader.cursor - 2, 2);
-        let mut flags_list = vec![];
-
-        for flag_str in format_nbns_flags(flags) {
-            flags_list.push(Field::label(flag_str, reader.cursor - 2, reader.cursor));
-        }
-
-        flags_field.children = Some(flags_list);
-        list.push(flags_field);
-
         // Counts
-        let query_count = read_field_format!(list, reader, reader.read16(true)?, "Questions: {}");
-        let answer_count = read_field_format!(list, reader, reader.read16(true)?, "Answer RRs: {}");
-        read_field_format!(list, reader, reader.read16(true)?, "Authority RRs: {}");
-        read_field_format!(list, reader, reader.read16(true)?, "Additional RRs: {}");
+        let query_count = add_field_format!(field, reader, reader.read16(true)?, "Questions: {}");
+        let answer_count = add_field_format!(field, reader, reader.read16(true)?, "Answer RRs: {}");
+        add_field_format!(field, reader, reader.read16(true)?, "Authority RRs: {}");
+        add_field_format!(field, reader, reader.read16(true)?, "Additional RRs: {}");
 
         // Parse queries
         if query_count > 0 {
-            let mut queries_field = Field::with_children(format!("Queries ({})", query_count), reader.cursor, 0);
-            let mut queries_list = vec![];
-
-            for _ in 0..query_count {
-                if let Ok(field) = read_query_record(reader) {
-                    queries_list.push(field);
-                }
-            }
-
-            queries_field.size = reader.cursor - queries_field.start;
-            queries_field.children = Some(queries_list);
-            list.push(queries_field);
+            add_sub_field_with_reader!(field, reader, read_query_record)?;
         }
 
         // Parse answers (simplified)
         if answer_count > 0 && reader.left() > 0 {
-            let mut answers_field = Field::new(format!("Answers ({})", answer_count), reader.cursor, reader.cursor, vec![]);
-            let answers_list = answers_field.children.as_mut().unwrap();
-
-            for _ in 0..answer_count {
-                if reader.left() < 10 {
-                    // Minimum size for an answer record
-                    break;
-                }
-
-                if let Ok(rr) = read_resource_record(reader) {
-                    answers_list.push(rr);
-                }
-            }
-
-            answers_field.size = reader.cursor - answers_field.start;
-            list.push(answers_field);
+            add_sub_field_with_reader!(field, reader, read_resource_record)?
         }
 
         // Set summary
         let type_str = if is_response { "response" } else { "query" };
         field.summary = format!("NetBIOS Name Service ({}) ID: 0x{:04x}", type_str, transaction_id);
-        field.children = Some(list);
-
         Ok(Protocol::None)
     }
 }
@@ -260,36 +217,33 @@ fn rr_type(t: u16) -> String {
 fn rr_class(t: u16) -> String {
     format!("Class: {} ({})", dns_class_mapper(t), t)
 }
-fn read_query_record(reader: &mut Reader) -> Result<Field> {
-    let start = reader.cursor;
-    let mut field = Field::new("".to_string(), start, start, vec![]);
-    let list = field.children.as_mut().unwrap();
-
-    let name = read_field_format!(list, reader, parse_nbns_name(reader)?, "Name: {}");
-    read_field_format_fn!(list, reader, reader.read16(true)?, rr_type);
-    read_field_format_fn!(list, reader, reader.read16(true)?, rr_class);
+fn read_query_record(reader: &mut Reader, field: &mut Field) -> Result<()> {
+    let name = add_field_format!(field, reader, parse_nbns_name(reader)?, "Name: {}");
+    add_field_format_fn!(field, reader, reader.read16(true)?, rr_type);
+    add_field_format_fn!(field, reader, reader.read16(true)?, rr_class);
     field.summary = format!("Query: {}", name);
-    field.size = reader.cursor - start;
-    Ok(field)
+    Ok(())
 }
 
-fn read_resource_record(reader: &mut Reader) -> Result<Field> {
-    let start = reader.cursor;
-    let mut field = Field::new("".to_string(), start, start, vec![]);
-    let list = field.children.as_mut().unwrap();
+fn read_resource_record(reader: &mut Reader, field: &mut Field) -> Result<()> {
+    let name = add_field_format!(field, reader, parse_nbns_name(reader)?, "Name: {}");
+    let record_type = add_field_format_fn!(field, reader, reader.read16(true)?, rr_type);
+    let record_class = add_field_format_fn!(field, reader, reader.read16(true)?, rr_class);
 
-    let name = read_field_format!(list, reader, parse_nbns_name(reader)?, "Name: {}");
-    let record_type = read_field_format_fn!(list, reader, reader.read16(true)?, rr_type);
-    let record_class = read_field_format_fn!(list, reader, reader.read16(true)?, rr_class);
-
-    read_field_format!(list, reader, reader.read32(true)?, "Time to live: {} seconds");
-    let data_len = read_field_format!(list, reader, reader.read16(true)?, "Data length: {} bytes");
+    add_field_format!(field, reader, reader.read32(true)?, "Time to live: {} seconds");
+    let data_len = add_field_format!(field, reader, reader.read16(true)?, "Data length: {} bytes");
     if reader.left() < data_len as usize {
         bail!("invalid data length")
     } else {
         reader.forward(data_len as usize);
     }
     field.summary = format!("Resource Record: {} type {} class {}", name, record_type, record_class);
-    field.size = reader.cursor - start;
-    Ok(field)
+    Ok(())
+}
+
+fn read_flag(bit: u16, field: &mut Field) {
+    for flag_str in format_nbns_flags(bit) {
+        add_field_label!(field, flag_str);
+    }
+    field.summary = format!("Flags: 0x{:04x}", bit);
 }

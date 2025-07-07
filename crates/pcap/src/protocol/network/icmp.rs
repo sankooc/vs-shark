@@ -4,14 +4,13 @@
 // Licensed under the MIT License - see https://opensource.org/licenses/MIT
 
 use crate::{
-    common::{
+    add_field_backstep, add_field_format, add_field_format_fn, add_field_rest_format, common::{
         concept::Field,
         core::Context,
-        enum_def::{ProtocolInfoField, Protocol},
+        enum_def::{Protocol, ProtocolInfoField},
         io::Reader,
         Frame,
-    },
-    field_back_format, field_rest_format, read_field_format, read_field_format_fn,
+    }
 };
 use anyhow::Result;
 
@@ -123,71 +122,68 @@ impl Visitor {
 
     pub fn detail(field: &mut Field, _: &Context, _: &Frame, reader: &mut Reader) -> Result<Protocol> {
         let _start = reader.left();
-        let mut list = vec![];
-
-        let type_code = read_field_format_fn!(list, reader, reader.read8()?, t_icmp_type);
-        let code = read_field_format_fn!(list, reader, reader.read8()?, |c| t_icmp_code(type_code, c));
-        read_field_format!(list, reader, reader.read16(true)?, "Checksum: {:#06x}");
+        let type_code = add_field_format_fn!(field, reader, reader.read8()?, t_icmp_type);
+        let code = add_field_format_fn!(field, reader, reader.read8()?, |c| t_icmp_code(type_code, c));
+        add_field_format!(field, reader, reader.read16(true)?, "Checksum: {:#06x}");
 
         match type_code {
             0 | 8 => {
-                read_field_format!(list, reader, reader.read16(true)?, "Identifier: {}");
-                read_field_format!(list, reader, reader.read16(true)?, "Sequence Number: {}");
-                field_rest_format!(list, reader, format!("Data: {} bytes", reader.left()));
+                add_field_format!(field, reader, reader.read16(true)?, "Identifier: {}");
+                add_field_format!(field, reader, reader.read16(true)?, "Sequence Number: {}");
+                add_field_rest_format!(field, reader, format!("Data: {} bytes", reader.left()));
             }
             3 => {
                 // Destination Unreachable
                 if code == 4 {
                     reader.read16(true)?; // unused
-                    read_field_format!(list, reader, reader.read16(true)?, "Next-hop MTU: {}");
+                    add_field_format!(field, reader, reader.read16(true)?, "Next-hop MTU: {}");
                 } else {
-                    field_back_format!(list, reader, 4, "Unused".into());
+                    add_field_backstep!(field, reader, 4, "Unused".into());
                 }
-                field_rest_format!(list, reader, format!("Original Datagram: {} bytes", reader.left()));
+                add_field_rest_format!(field, reader, format!("Original Datagram: {} bytes", reader.left()));
             }
             5 => {
                 // Redirect
-                let _gateway = read_field_format!(list, reader, reader.read_ip4()?, "Gateway Address: {}");
+                let _gateway = add_field_format!(field, reader, reader.read_ip4()?, "Gateway Address: {}");
 
-                field_rest_format!(list, reader, format!("Original Datagram: {} bytes", reader.left()));
+                add_field_rest_format!(field, reader, format!("Original Datagram: {} bytes", reader.left()));
             }
             11 => {
                 // Time Exceeded
-                field_back_format!(list, reader, 4, "Unused".into());
+                add_field_backstep!(field, reader, 4, "Unused".into());
 
-                field_rest_format!(list, reader, format!("Original Datagram: {} bytes", reader.left()));
+                add_field_rest_format!(field, reader, format!("Original Datagram: {} bytes", reader.left()));
             }
             12 => {
                 // Parameter Problem
-                read_field_format!(list, reader, reader.read8()?, "Pointer: {}");
-                field_back_format!(list, reader, 3, "Unused".into());
-                field_rest_format!(list, reader, format!("Original Datagram: {} bytes", reader.left()));
+                add_field_format!(field, reader, reader.read8()?, "Pointer: {}");
+                add_field_backstep!(field, reader, 3, "Unused".into());
+                add_field_rest_format!(field, reader, format!("Original Datagram: {} bytes", reader.left()));
             }
             13 | 14 => {
                 // Timestamp 或 Timestamp Reply
-                read_field_format!(list, reader, reader.read16(true)?, "Identifier: {}");
-                read_field_format!(list, reader, reader.read16(true)?, "Sequence Number: {}");
-                read_field_format!(list, reader, reader.read32(true)?, "Originate Timestamp: {} ms");
-                read_field_format!(list, reader, reader.read32(true)?, "Receive Timestamp: {} ms");
-                read_field_format!(list, reader, reader.read32(true)?, "Transmit Timestamp: {} ms");
+                add_field_format!(field, reader, reader.read16(true)?, "Identifier: {}");
+                add_field_format!(field, reader, reader.read16(true)?, "Sequence Number: {}");
+                add_field_format!(field, reader, reader.read32(true)?, "Originate Timestamp: {} ms");
+                add_field_format!(field, reader, reader.read32(true)?, "Receive Timestamp: {} ms");
+                add_field_format!(field, reader, reader.read32(true)?, "Transmit Timestamp: {} ms");
             }
             15 | 16 => {
                 // Information Request 或 Information Reply
-                read_field_format!(list, reader, reader.read16(true)?, "Identifier: {}");
-                read_field_format!(list, reader, reader.read16(true)?, "Sequence Number: {}");
+                add_field_format!(field, reader, reader.read16(true)?, "Identifier: {}");
+                add_field_format!(field, reader, reader.read16(true)?, "Sequence Number: {}");
             }
             17 | 18 => {
-                read_field_format!(list, reader, reader.read16(true)?, "Identifier: {}");
-                read_field_format!(list, reader, reader.read16(true)?, "Sequence Number: {}");
-                read_field_format!(list, reader, reader.read_ip4()?, "Address Mask: {}");
+                add_field_format!(field, reader, reader.read16(true)?, "Identifier: {}");
+                add_field_format!(field, reader, reader.read16(true)?, "Sequence Number: {}");
+                add_field_format!(field, reader, reader.read_ip4()?, "Address Mask: {}");
             }
             _ => {
-                field_rest_format!(list, reader, format!("Data: {} bytes", reader.left()));
+                add_field_rest_format!(field, reader, format!("Data: {} bytes", reader.left()));
             }
         }
 
         field.summary = "Internet Control Message Protocol".to_string();
-        field.children = Some(list);
 
         Ok(Protocol::None)
     }
