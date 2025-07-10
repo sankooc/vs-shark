@@ -1,13 +1,9 @@
 [workspace]
 resolver = "2"
 members = [
-  # "crates/shark",
-  # "crates/derive",
-  # "crates/wasm"
-"crates/wasm2",
+"crates/wasm",
 "crates/tui",
-# "crates/benchmark",
- "crates/pcap"]
+"crates/pcap"]
 
 
 [profile.release]
