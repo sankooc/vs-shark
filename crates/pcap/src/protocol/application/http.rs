@@ -328,7 +328,7 @@ impl Visitor {
         if let ProtocolInfoField::Http(data, _mi) = &frame.protocol_field {
             Some(data.clone())
         } else {
-            frame.tcp_descripion()
+            frame.tcp_description()
         }
     }
     pub fn parse(ctx: &mut Context, frame: &mut Frame, _reader: &mut Reader) -> Result<Protocol> {

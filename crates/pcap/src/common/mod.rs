@@ -122,7 +122,7 @@ impl Frame {
     pub fn frame_range(&self) -> Option<Range<usize>> {
         self.range.clone()
     }
-    pub fn tcp_descripion(&self) -> Option<String> {
+    pub fn tcp_description(&self) -> Option<String> {
         if let Some(stat) = &self.tcp_info {
             let mut source_port = 0;
             let mut target_port = 0;
@@ -400,6 +400,7 @@ impl Instance {
                                     extra_data = Some(data);
                                 }
                             } else {
+                                f.summary = format!("Parse [{}] failed", _next);
                                 break;
                             }
                         }

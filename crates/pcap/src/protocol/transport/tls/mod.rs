@@ -14,7 +14,7 @@ use anyhow::Result;
 use record::parse_record_detail;
 pub mod record;
 mod extension;
-mod decode;
+mod x509;
 
 #[derive(Default)]
 pub struct TLSList {
@@ -61,8 +61,8 @@ impl Visitor {
                 let str = tls_type(list.get(0).unwrap().content_type);
                 Some(str)
             },
-            ProtocolInfoField::TLSSegment => frame.tcp_descripion(),
-            _ => None,
+            ProtocolInfoField::TLSSegment => frame.tcp_description(),
+            _ => frame.tcp_description(),
         }
     }
     pub fn parse(ctx: &mut Context, frame: &mut Frame, _reader: &mut Reader) -> Result<Protocol> {

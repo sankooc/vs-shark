@@ -8,9 +8,9 @@ mod unit {
     use anyhow::Result;
     use pcap::{
         common::{
-            concept::Field, core::Context, enum_def::{AddressField, Protocol, ProtocolInfoField}, io::{DataSource, Reader}, util::{get_binary_text, get_masked_value}, Frame
+            concept::Field, core::Context, enum_def::{AddressField, Protocol, ProtocolInfoField}, io::{DataSource, Reader}, util::{date_str, get_binary_text, get_masked_value}, Frame
         },
-        protocol::{self, transport::tls::record::{parse_certificates, parse_server_hello}},
+        protocol::{self, transport::tls::record::{parse_certificates, parse_new_session_ticket, parse_server_hello}},
     };
 
     fn init(name: &str) -> (DataSource, Context, Frame) {
@@ -325,6 +325,16 @@ mod unit {
         print_field(1, &f);
         Ok(())
     }
+    #[test]
+    fn test_tls_newticket() -> Result<()> {
+        let (ds, _, _) = init("tls_newticket");
+        let mut f = Field::children();
+        f.children = Some(vec![]);
+        let mut reader = Reader::new(&ds);
+        parse_new_session_ticket(&mut reader, &mut f)?;
+        print_field(1, &f);
+        Ok(())
+    }
 
     #[test]
     fn funcs() -> Result<()> {
@@ -334,6 +344,8 @@ mod unit {
         let range = 0..4;
         let v = get_masked_value(0xf0f0u16, &range);
         println!("{}", v);
+
+        println!("{}", date_str(1573141985093241206));
         Ok(())
     }
 }

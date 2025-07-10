@@ -66,7 +66,6 @@ fn parse_tags(reader: &mut Reader, field: &mut Field) -> Result<()> {
                     }
                 },
                 TAG_HOST_UNIQ | TAG_AC_COOKIE | TAG_RELAY_SESSION_ID => {
-                    // 显示为十六进制
                     let tag_data = reader.slice(tag_length as usize, true)?;
                     let hex_str = tag_data.iter().map(|b| format!("{:02x}", b)).collect::<Vec<String>>().join(" ");
                     add_field_backstep!(field, reader, tag_length as usize, format!("{}: 0x{}", tag_name, hex_str));

@@ -3,9 +3,10 @@
 // This file is part of the pcapview project.
 // Licensed under the MIT License - see https://opensource.org/licenses/MIT
 
+use crate::common::util::bytes_to_hex_limit;
 use crate::common::{concept::Field, io::Reader};
 use crate::constants::{tls_cipher_suites_mapper, tls_hs_message_type_mapper};
-use crate::protocol::transport::tls::decode::parse_cert;
+use crate::protocol::transport::tls::x509::parse_cert;
 use crate::protocol::transport::tls::{extension, field_tls_version};
 use crate::{add_field_backstep, add_field_format, add_field_format_fn, add_field_format_fn_nors, add_sub_field_with_reader};
 use anyhow::{Result};
@@ -18,32 +19,18 @@ const HANDSHAKE: u8 = 22;
 const HEARTBEAT: u8 = 24;
 
 // TLS Handshake Types
-const HELLO_REQUEST: u8 = 0;
+// const HELLO_REQUEST: u8 = 0;
 const CLIENT_HELLO: u8 = 1;
 const SERVER_HELLO: u8 = 2;
+const NEW_SESSION_TICKET: u8 = 4;
 const CERTIFICATE: u8 = 11;
-const SERVER_KEY_EXCHANGE: u8 = 12;
-const CERTIFICATE_REQUEST: u8 = 13;
-const SERVER_HELLO_DONE: u8 = 14;
-const CERTIFICATE_VERIFY: u8 = 15;
-const CLIENT_KEY_EXCHANGE: u8 = 16;
-const FINISHED: u8 = 20;
+// const SERVER_KEY_EXCHANGE: u8 = 12;
+// const CERTIFICATE_REQUEST: u8 = 13;
+// const SERVER_HELLO_DONE: u8 = 14;
+// const CERTIFICATE_VERIFY: u8 = 15;
+// const CLIENT_KEY_EXCHANGE: u8 = 16;
+// const FINISHED: u8 = 20;
 
-
-// pub const BER_SEQUENCE: u8 = 0x30;
-// pub const BER_SEQUENCE_OF: u8 = 0x0a;
-// pub const BER_SET: u8 = 0x31;
-// pub const BER_SET_OF: u8 = 0x0b;
-// pub const BER_INT: u8 = 0x02;
-// pub const BER_BIT_STRING: u8 = 0x03;
-// pub const BER_OCTET_STRING: u8 = 0x04;
-// pub const BER_NULL: u8 = 0x05;
-// pub const BER_OBJECT_IDENTIFIER: u8 = 0x06;
-// pub const BER_UTF_STR: u8 = 0x0c;
-// pub const BER_PRINTABLE_STR: u8 = 0x13;
-// pub const BER_IA5STRING: u8 = 0x16;
-// pub const BER_UTC_TIME: u8 = 0x17;
-// pub const BER_GENERALIZED_TIME: u8 = 0x18;
 
 fn field_random_str(data: &[u8]) -> String {
     let mut rs = String::with_capacity(72);
@@ -140,9 +127,15 @@ fn parse_handshake(reader: &mut Reader, field: &mut Field) -> Result<()> {
     field.summary = "Handshake".to_string();
     //tls_hs_message_type_mapper
     if reader.left() >= 4 {
-        // Handshake has a 4-byte header: type(1) + length(3)
-        let msg_type = add_field_format_fn!(field, reader, reader.read8()?, handshake_type);
-        field.summary = format!("Handshake: {}", tls_hs_message_type_mapper(msg_type));
+        let msg_type = reader.read8()?;
+        let type_desc = tls_hs_message_type_mapper(msg_type);
+        if type_desc == "Unknown" {
+            field.summary = "Handshake Protocol: Encrypted Handshake Message".to_string();
+            return Ok(());
+        }
+        // let msg_type = add_field_format_fn!(field, reader, reader.read8()?, handshake_type);
+        add_field_backstep!(field, reader, 1, type_desc.to_string());
+        field.summary = format!("Handshake: {}", type_desc);
         // Read length (3 bytes)
         let length = read24(reader)?;
         add_field_backstep!(field, reader, 3, format!("Length: {}", length));
@@ -154,6 +147,7 @@ fn parse_handshake(reader: &mut Reader, field: &mut Field) -> Result<()> {
                 CLIENT_HELLO => parse_client_hello(&mut _reader, field)?,
                 SERVER_HELLO => parse_server_hello(&mut _reader, field)?,
                 CERTIFICATE => parse_certificates(&mut _reader, field)?,
+                NEW_SESSION_TICKET => add_sub_field_with_reader!(field, &mut _reader, parse_new_session_ticket)?,
                 // Other handshake types could be implemented here
                 _ => {
                     // Skip the content as we don't parse it in detail
@@ -270,17 +264,17 @@ pub fn _read_len(reader: &mut Reader) -> Result<usize> {
     };
     Ok(_len)
 }
-pub fn parse_certificate(_reader: &mut Reader, _field: &mut Field) -> Result<()> {
-    // let _type = reader.read8()?;
-    // let _len = _read_len(reader)?;
-    // if _type == BER_SEQUENCE {
-    // }
-    // match _type {
-    //     BER_SEQUENCE | BER_SEQUENCE_OF => {
-            
-    //     }
-    //     _ => {}
-    // }
+pub fn parse_new_session_ticket(reader: &mut Reader, field: &mut Field) -> Result<()> {
+    add_field_format!(field, reader, reader.read32(true)?, "Session Ticket Lifetime Hint: {} seconds");
+    let len = add_field_format!(field, reader, reader.read16(true)?, "Session Ticket Length: {}");
+    let data = reader.slice(len as usize, true)?;
+    let content = bytes_to_hex_limit(data, 20);
+    if len > 20 {
+        add_field_backstep!(field, reader, len as usize, format!("Session Ticket [truncated]: {}", content));
+    } else {
+        add_field_backstep!(field, reader, len as usize, format!("Session Ticket: {}", content));
+    }
+    field.summary = "TLS Session Ticket".to_string();
     Ok(())
 }
 // Parse Certificate message
@@ -314,18 +308,6 @@ pub fn parse_certificates(reader: &mut Reader, field: &mut Field) -> Result<()> 
 }
 
 // Get string representation of handshake message type
-fn handshake_type(msg_type: u8) -> String {
-    match msg_type {
-        HELLO_REQUEST => "Hello Request (0)".to_string(),
-        CLIENT_HELLO => "Client Hello (1)".to_string(),
-        SERVER_HELLO => "Server Hello (2)".to_string(),
-        CERTIFICATE => "Certificate (11)".to_string(),
-        SERVER_KEY_EXCHANGE => "Server Key Exchange (12)".to_string(),
-        CERTIFICATE_REQUEST => "Certificate Request (13)".to_string(),
-        SERVER_HELLO_DONE => "Server Hello Done (14)".to_string(),
-        CERTIFICATE_VERIFY => "Certificate Verify (15)".to_string(),
-        CLIENT_KEY_EXCHANGE => "Client Key Exchange (16)".to_string(),
-        FINISHED => "Finished (20)".to_string(),
-        _ => format!("Unknown ({}) ", msg_type),
-    }
-}
+// fn handshake_type(msg_type: u8) -> String {
+//     tls_hs_message_type_mapper(msg_type).to_string()
+// }

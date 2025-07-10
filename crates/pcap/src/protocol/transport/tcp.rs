@@ -144,7 +144,7 @@ pub fn t_protocol(protocol_type: u8) -> String {
 }
 impl Visitor {
     pub fn info(_: &Context, frame: &Frame) -> Option<String> {
-        frame.tcp_descripion()
+        frame.tcp_description()
     }
     pub fn parse(ctx: &mut Context, frame: &mut Frame, reader: &mut Reader) -> Result<Protocol> {
         let index = frame.info.index;

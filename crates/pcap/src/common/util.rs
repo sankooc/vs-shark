@@ -6,8 +6,29 @@
 use std::time::{Duration, UNIX_EPOCH};
 use chrono::{DateTime, Utc};
 
+
+const SEC_2000: u64 = 946684800;
+const SEC_2100: u64 = 4102444800;
+
+const MS_MIN: u64 = SEC_2000 * 1_000;
+const MS_MAX: u64 = SEC_2100 * 1_000;
+
+const US_MIN: u64 = SEC_2000 * 1_000_000;
+const US_MAX: u64 = SEC_2100 * 1_000_000;
+
+const NS_MIN: u64 = SEC_2000 * 1_000_000_000;
+const NS_MAX: u64 = SEC_2100 * 1_000_000_000;
+
 pub fn date_str(ts: u64) -> String {
-    let d = UNIX_EPOCH + Duration::from_micros(ts);
+    let d = if (NS_MIN..=NS_MAX).contains(&ts) {
+        UNIX_EPOCH + Duration::from_nanos(ts)
+    } else if (MS_MIN..=MS_MAX).contains(&ts) {
+        UNIX_EPOCH + Duration::from_millis(ts)
+    } else if (US_MIN..=US_MAX).contains(&ts) {
+        UNIX_EPOCH + Duration::from_micros(ts)
+    } else {
+        return "Incorrect Date".to_string();
+    };
     let datetime = DateTime::<Utc>::from(d);
     datetime.format("%Y-%m-%d %H:%M:%S").to_string()
 }
@@ -102,8 +123,9 @@ pub fn get_masked_value<T: BitData>(value: T, range: &std::ops::Range<usize>) ->
 // get_binary_text(0xf0f0u16, 4..8);   .... 1111 .... ....
 //
 pub fn get_binary_text<T: BitData>(value: T, range: &std::ops::Range<usize>) -> String {
-    let bits = std::mem::size_of::<T>() * 8;
-    let mut rs = String::with_capacity(bits * 2);
+    let t_size = std::mem::size_of::<T>();
+    let bits = t_size * 8;
+    let mut rs = String::with_capacity(t_size * 10);
     for i in 0..bits {
         if i % 4 == 0 && i != 0 {
             rs.push(' ');

@@ -248,7 +248,7 @@ fn read_dhcp_option(reader: &mut Reader, field: &mut Field) -> Result<u8> {
             let server_id = Ipv4Addr::from([option_data[0], option_data[1], option_data[2], option_data[3]]);
             format!("DHCP Server Identifier: {}", server_id)
         }
-        _ => format!("{}", dhcp_option_type_mapper(option_type)),
+        _ => dhcp_option_type_mapper(option_type).to_string(),
     };
 
     add_field_backstep!(field, reader, option_len, option_str.clone());
