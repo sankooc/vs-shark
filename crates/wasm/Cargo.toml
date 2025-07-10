@@ -15,7 +15,7 @@ crate-type = ["cdylib"]
 [dependencies]
 js-sys.workspace = true
 wasm-bindgen.workspace = true
-pcap = { path = "../pcap" }
+pcap = { path = "../parser" }
 instant= {workspace = true, features = ["wasm-bindgen"]}
 serde = { workspace = true, features = ["derive"]}
 serde_json.workspace = true

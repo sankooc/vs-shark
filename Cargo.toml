@@ -3,7 +3,7 @@ resolver = "2"
 members = [
 "crates/wasm",
 "crates/tui",
-"crates/pcap"]
+"crates/parser"]
 
 
 [profile.release]
