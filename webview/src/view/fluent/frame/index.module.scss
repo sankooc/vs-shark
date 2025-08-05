@@ -1,7 +1,14 @@
 @use "../../scss/common";
 
+
+.cellfont {
+    font-weight: 450 !important;
+    &[aria-selected=true] {
+        font-weight:  650 !important;
+    }
+}
 .cell {
-    font-weight: bold;
+    font-family: common.$base-family;
     text-overflow: ellipsis;
     white-space: nowrap;
     overflow: hidden;

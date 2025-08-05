@@ -71,7 +71,7 @@
 	"dependencies": {
 		"lodash": "^4.17.21",
 		"mitt": "^3.0.1",
-		"rshark": "file:../crates/wasm2/node"
+		"rshark": "file:../crates/wasm/build/node"
 	},
 	"devDependencies": {
 		"@types/mocha": "^10.0.6",
