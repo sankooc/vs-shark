@@ -1,6 +1,6 @@
 import { teamsDarkTheme, teamsLightTheme, Theme, webDarkTheme } from "@fluentui/react-components";
 
-const mapper:  Partial<Record<keyof Theme, string>> = {
+const mapper: Partial<Record<keyof Theme, string>> = {
     "colorNeutralForeground1": "--vscode-foreground",
     "colorNeutralForeground2": "--vscode-descriptionForeground",
     "colorNeutralForeground3": "--vscode-editorLineNumber-foreground",
@@ -145,7 +145,6 @@ const mapper:  Partial<Record<keyof Theme, string>> = {
 export const buildTheme = () => {
     let isWebview = typeof acquireVsCodeApi === 'function';
     if (!isWebview) {
-        
         console.log('no webview used webDarkTheme');
         import('../../scss/var.scss');
         return webDarkTheme;
@@ -159,14 +158,42 @@ export const buildTheme = () => {
 
 export const _buildTheme = (base: Theme): Theme => {
     const rs = { ...base };
+    const style = getComputedStyle(document.documentElement);
+    // const computed = getComputedStyle(document.documentElement);
+    const allVars = {};
+    for (const key in style) {
+        if (typeof style[key] === 'string' && key.startsWith('--vscode-')) {
+            console.log(key);
+            // allVars[key] = style.getPropertyValue(key);
+        }
+    }
+    console.log(allVars);
+    // const vars = [];
+    // for (let i = 0; i < style.length; i++) {
+    //     const name = style[i];
+    //     const value = style.getPropertyValue(name);
+    //     console.log(`${name}: ${value}`);
+    //     if (name.startsWith('--vscode')) {
+    //         vars.push(name);
+    //     }
+    // }
+    // console.log(vars);
     for (const key in mapper) {
         const typedKey = key as keyof Theme;
         const cssVar = mapper[typedKey];
-        const style = getComputedStyle(document.documentElement);
         const value = style.getPropertyValue(cssVar!);
         if (value) {
             (rs as any)[typedKey] = value;
+            // console.log('set', cssVar, 'to', value);
         }
     }
+    //     const styles = getComputedStyle(document.documentElement);
+    // const allVars = {};
+    // for (let i = 0; i < styles.length; i++) {
+    //   const name = styles[i];
+    //   if (name.startsWith('--vscode-')) {
+    //     allVars[name] = styles.getPropertyValue(name);
+    //   }
+    // }
     return rs;
 }

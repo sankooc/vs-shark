@@ -8,8 +8,7 @@ clap = { workspace = true, features = ["derive"] }
 log.workspace = true
 crossterm.workspace = true
 ratatui.workspace = true
-# shark = { path = "../shark"}
-pcap = { path = "../pcap" }
+pcap = { path = "../parser" }
 anyhow.workspace = true
 tui-tree-widget.workspace = true
 enum_dispatch.workspace = true

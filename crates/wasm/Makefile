@@ -1,11 +1,7 @@
 loc:
-	RUST_LOG=info wasm-pack build --target nodejs -d node
+	rm -rf build/node    && RUST_LOG=debug wasm-pack build --target nodejs -d build/node
 web:
-	rm -rf pkg && wasm-pack build --target web
-web-debug:
-	rm -rf pkg && wasm-pack build --target web --debug
-test:
-	RUST_LOG=debug RUST_BACKTRACE=full cargo test --tests -- --nocapture
+	rm -rf build/browser && RUST_LOG=debug wasm-pack build --target web    -d build/browser
 clean:
 	rm -rf ~/.cargo/registry/index/* ~/.cargo/.package-cache
 .PHONY: 

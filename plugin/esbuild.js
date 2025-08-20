@@ -31,13 +31,10 @@ const copyWasmPlugin = {
 	name: 'copy-wasm',
 	setup(build) {
 		build.onEnd(() => {
-			// 确保dist目录存在
 			if (!fs.existsSync('dist')) {
 				fs.mkdirSync('dist', { recursive: true });
 			}
-
-			// 复制node_modules中的wasm文件到dist目录
-			const wasmSourcePath = path.resolve(__dirname, 'node_modules/.pnpm/wasm-pcps@file+..+crates+wasm2+node/node_modules/wasm-pcps/wasm_pcps_bg.wasm');
+			const wasmSourcePath = path.resolve(__dirname, 'node_modules/.pnpm/wasm-pcps@file+..+crates+wasm+node/node_modules/wasm-pcps/wasm_pcps_bg.wasm');
 			const wasmDestPath = path.resolve(__dirname, 'dist/wasm_pcps_bg.wasm');
 			
 			if (fs.existsSync(wasmSourcePath)) {

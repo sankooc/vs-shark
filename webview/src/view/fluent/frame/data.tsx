@@ -19,6 +19,10 @@ import {
 import { IFrameInfo } from '../../../share/gen';
 import indexCss from './index.module.scss';
 import React from 'react';
+// import { makeStyles, tokens, shorthands } from '@fluentui/react-components';
+import { frameColor } from '../../colors';
+
+
 
 const columns: TableColumnDefinition<IFrameInfo>[] = [
     createTableColumn<IFrameInfo>({
@@ -27,13 +31,13 @@ const columns: TableColumnDefinition<IFrameInfo>[] = [
             return 'Index';
         },
         renderCell: (item: IFrameInfo) => {
-            let cn = indexCss.headcell + ' ' + indexCss.cell;
-            const protocol = item.protocol;
-            if (indexCss[protocol]) {
-                cn += ' ' + indexCss[protocol];
-            }
+            // let cn = indexCss.cell;
+            // const protocol = item.protocol;
+            // if (indexCss[protocol]) {
+            //     cn += ' ' + indexCss[protocol];
+            // }
             return (
-                <TableCellLayout className={cn}>
+                <TableCellLayout className={indexCss.cell}>
                     {item.index + 1}
                 </TableCellLayout>
             );
@@ -106,14 +110,6 @@ const columns: TableColumnDefinition<IFrameInfo>[] = [
     }),
 ];
 
-const renderRow: RowRenderer<any> = ({ item, rowId }, style) => (
-    <DataGridRow<any> key={rowId} style={{...style}}>
-        {({ renderCell }) => (
-            <DataGridCell focusMode="group">{renderCell(item)}</DataGridCell>
-        )}
-    </DataGridRow>
-);
-
 interface Props<T> {
     bodyHeight: number;
     items: T[];
@@ -131,7 +127,8 @@ const useStyles = makeStyles({
         '& [role="row"] > [role="gridcell"]:first-child': {
             display: 'none'
         }
-    }
+    },
+    ...frameColor
 });
 
 export const VirtualizedDataGrid = (props: Props<any>) => {
@@ -139,6 +136,26 @@ export const VirtualizedDataGrid = (props: Props<any>) => {
     const [select, setSelect] = React.useState<number | undefined>(undefined);
     const scrollbarWidth = useScrollbarWidth({ targetDocument });
     const styles = useStyles();
+    const renderRow: RowRenderer<any> = ({ item, rowId }, style) => {
+        // console.log(item);
+        let claz = indexCss.cellfont;
+        if (styles.hasOwnProperty(item.protocol)) {
+            claz += ' ' +(styles as any)[item.protocol];
+        }
+            console.log(claz);
+        // if (select !== undefined && select >= 0) {
+        //     const selectedItem = props.items[select];
+        //     if (claz && selectedItem && selectedItem.index === item.index) {
+        //         claz += claz + ' acdc'
+        //     }
+        // }
+                // console.log('class', claz);
+        return <DataGridRow<any> key={rowId} style={{ ...style }} className={claz}>
+            {({ renderCell }) => (
+                <DataGridCell focusMode="group">{renderCell(item)}</DataGridCell>
+            )}
+        </DataGridRow>;
+    };
     const onSelectionChange = (_event: any, data: OnSelectionChangeData) => {
         if (data.selectedItems.size > 0) {
             const selected = data.selectedItems.values().next().value as number;
@@ -156,8 +173,10 @@ export const VirtualizedDataGrid = (props: Props<any>) => {
             columns={columns}
             columnSizingOptions={columnSizingOptions}
             selectionMode="single"
+            selectionAppearance="none"
             resizableColumns
-            className={styles.hideSelectionColumn}
+            focusMode="row_unstable"
+            // className={styles.hideSelectionColumn}
             onSelectionChange={onSelectionChange}
         >
             <DataGridHeader style={{ paddingRight: scrollbarWidth }}>
@@ -167,7 +186,7 @@ export const VirtualizedDataGrid = (props: Props<any>) => {
                     )}
                 </DataGridRow>
             </DataGridHeader>
-            <DataGridBody<any> itemSize={30} height={props.bodyHeight} style={{overflowX: 'hidden'}}>
+            <DataGridBody<any> itemSize={30} height={props.bodyHeight} style={{ overflowX: 'hidden' }}>
                 {renderRow}
             </DataGridBody>
         </DataGrid>

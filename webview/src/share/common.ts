@@ -117,51 +117,6 @@ export class VRange {
   }
 }
 
-// export class OverviewSource {
-//   legends!: string[];
-//   labels!: number[];
-//   counts!: number[];
-//   valMap: any;
-// }
-// export interface ICase {
-//   name: string;
-//   value: number;
-// }
-// export interface IStatistic {
-//   http_method: ICase[];
-//   http_status: ICase[];
-//   http_type: ICase[];
-//   ip: ICase[];
-//   ip_type: ICase[];
-// }
-// export interface IContextInfo {
-//   file_type: string;
-//   start_time: number;
-//   end_time: number;
-//   frame_count: number;
-//   http_count: number;
-//   dns_count: number;
-//   tcp_count: number;
-//   tls_count: number;
-//   cost: number;
-// }
-
-// export interface ILineData {
-//   name: string;
-//   data: number[];
-// }
-// export interface ILines {
-//   x: string[];
-//   y: string[];
-//   data: ILineData[];
-// }
-
-// export interface IOverviewData {
-//   legends: any[];
-//   labels: any[];
-//   datas: any[];
-// }
-
 export class Pagination {
   start?: number;
   size?: number;
