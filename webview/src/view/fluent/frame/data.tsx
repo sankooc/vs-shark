@@ -19,7 +19,6 @@ import {
 import { IFrameInfo } from '../../../share/gen';
 import indexCss from './index.module.scss';
 import React from 'react';
-// import { makeStyles, tokens, shorthands } from '@fluentui/react-components';
 import { frameColor } from '../../colors';
 
 
@@ -137,20 +136,18 @@ export const VirtualizedDataGrid = (props: Props<any>) => {
     const scrollbarWidth = useScrollbarWidth({ targetDocument });
     const styles = useStyles();
     const renderRow: RowRenderer<any> = ({ item, rowId }, style) => {
-        // console.log(item);
         let claz = indexCss.cellfont;
+        // eslint-disable-next-line no-prototype-builtins
         if (styles.hasOwnProperty(item.protocol)) {
             claz += ' ' +(styles as any)[item.protocol];
         }
-            console.log(claz);
         // if (select !== undefined && select >= 0) {
         //     const selectedItem = props.items[select];
         //     if (claz && selectedItem && selectedItem.index === item.index) {
         //         claz += claz + ' acdc'
         //     }
         // }
-                // console.log('class', claz);
-        return <DataGridRow<any> key={rowId} style={{ ...style }} className={claz}>
+        return <DataGridRow key={rowId} style={{ ...style }} className={claz}>
             {({ renderCell }) => (
                 <DataGridCell focusMode="group">{renderCell(item)}</DataGridCell>
             )}

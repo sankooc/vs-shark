@@ -16,7 +16,7 @@ const useStyles = makeStyles({
     '--fontWeightRegular': 'bold',
   },
   itemSelect: {
-    backgroundColor: 'var(--colorBrandBackground2)',
+    backgroundColor: '#524c42',
   },
 });
 
@@ -49,7 +49,7 @@ export default function Stack(props: StackProps) {
 
   const send = (selected: IField) => {
     if (selected.source) {
-      let extra = data.extra;
+      const extra = data.extra;
       const cursor = {
         scope: new VRange(0, extra?.length || 0),
         data: extra,

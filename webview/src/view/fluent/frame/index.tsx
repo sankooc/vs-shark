@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import { useEffect, useState } from "react";
 import { useStore } from "../../store";
 import { compute, ComRequest } from "../../../share/common";
@@ -9,7 +10,7 @@ import AutoSizer from "react-virtualized-auto-sizer";
 import { VirtualizedDataGrid } from './data';
 import Stack from "./stack";
 import { frame_size } from "../../conf";
-import Paging from '../pagination';
+import Paging from '../pagination2';
 
 // const useCSS = makeStyles({
 //   pagnation: {
@@ -82,7 +83,6 @@ function Component() {
   const [select, setSelect] = useState<IFrameInfo | undefined>(undefined);
 
   const size = frame_size;
-
   useEffect(() => {
     const data: ComRequest = {
       catelog: "frame",

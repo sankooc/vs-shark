@@ -6,7 +6,7 @@ interface PlainProps {
 }
 
 const Component = (props: PlainProps) => {
-    return <div>{props.text}</div>
+    return <div style={{padding: '10px'}}>{props.text}</div>
 }
 
 export default Component;
