@@ -4,15 +4,16 @@ import { makeStyles, SelectTabData, SelectTabEvent, Tab, TabList, TabValue, Tree
 import { format_bytes_single_unit, HttpMessageWrap, MessageCompress } from "../../../share/common";
 // import { Fade } from "@fluentui/react-motion-components-preview";
 import indexCss from './index.module.scss';
-import HexView from "./hexview";
-import PlainText from './plain';
 import { BreadItem, HttpIcon } from "../common";
 import { DocumentGlobeRegular, PanelTopContractRegular, PanelTopExpandRegular } from "@fluentui/react-icons";
+import ContentComponent from './content';
+
 
 const useStyles = makeStyles({
     customTree: {
         '--spacingHorizontalXXL': '12px',
         '--fontWeightRegular': 'bold',
+        'padding': '5px',
     },
 });
 
@@ -37,8 +38,6 @@ export default function ConnectionList() {
         setSelectedValue(data.value);
     };
 
-    // const [tabSelect, setTabSelect] = useState<string>('binary');
-    // const [hmw, setHmw] = useState<HttpMessageWrap | undefined>();
     useEffect(() => {
         const connection = getHttpCache();
         if (!connection) {
@@ -118,16 +117,7 @@ export default function ConnectionList() {
         { name: "HTTP Requests", icon: <HttpIcon />, path: "/https" },
         { name: title, path: "/http/detail" }
     ]
-    const buildContentPreview = (hmw: HttpMessageWrap) => {
-        if(hmw.parsed_content){
-            return <PlainText text={hmw!.parsed_content!} mime={hmw.mime} />
-        }
-        if(hmw.raw?.length){
-            return <HexView data={hmw.raw || new Uint8Array()} maxLength={1024 * 1024} />
-        }
-        return <div className="flex justify-content-center align-content-center" >Empty</div>;
 
-    }
     const contentRender = () => {
         switch (selectedValue) {
             case 'Header': {
@@ -138,21 +128,21 @@ export default function ConnectionList() {
             case 'Payload': {
                 if (_list && _list.length) {
                     const hmw = _list[0];
-                    return buildContentPreview(hmw);
+                    return <ContentComponent hmw={hmw} />
                 }
                 break;
             }
             case 'Response': {
                 if (_list && _list.length > 1) {
                     const hmw = _list[1];
-                    return buildContentPreview(hmw);
+                    return <ContentComponent hmw={hmw} />
                 }
                 break;
             }
         }
         return <div className="flex justify-content-center align-content-center" >Empty</div>
     }
-    return (<>
+    return (<div className="flex flex-column" style={{ height: '100%' }}>
         <BreadItem items={breads} ></BreadItem>
         <TabList selectedValue={selectedValue} onTabSelect={onTabSelect}>
             <Tab id="Header" icon={<DocumentGlobeRegular />} value="Header">
@@ -165,28 +155,8 @@ export default function ConnectionList() {
                 Response
             </Tab>
         </TabList>
-        {contentRender()}
-    </>);
-
-    // return <>
-    //     <BreadItem items={breads} ></BreadItem>
-    //     <div className="flex flex-row h-full" style={{ overflowX: "hidden", overflowY: "auto" }}>
-    //         <div className="flex-1" style={{ overflow: "auto", padding: "5px 10px" }}>
-    //             <Tree aria-label="Default" size="small" className={styles.customTree}>
-    //                 {_list.map(build)}
-    //             </Tree>
-    //         </div>
-    //         <Fade visible={hasContent}>
-    //             <div className="flex-1 flex flex-column" style={{ padding: "5px 10px", borderLeft: "1px solid #ccc", overflowY: "hidden" }}>
-    //                 <TabList size="small" defaultSelectedValue={tabSelect} onTabSelect={(_, { value }: any) => { setTabSelect(value) }}>
-    //                     <Tab value="binary">Raw</Tab>
-    //                     {tabList(hmw)}
-    //                 </TabList>
-    //                 <div style={{ margin: "10px 0px", padding: "5px 10px", border: "1px solid #ccc", overflowY: "auto" }}>
-    //                     {tabContent(hmw, tabSelect)}
-    //                 </div>
-    //             </div>
-    //         </Fade>
-    //     </div>
-    // </>
+        <div className="flex-grow-1" style={{ border: '1px solid #ddd' }} >
+            {contentRender()}
+        </div>
+    </div>);
 }

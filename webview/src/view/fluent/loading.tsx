@@ -12,10 +12,14 @@ interface LoadingProps {
     info?: PcapFile;
     progress?: IProgressStatus;
 }
-function Component (props: LoadingProps) {
+function Component(props: LoadingProps) {
     const styles = useCSS();
     if (!props.progress) {
-        return <div className={styles.root}>No Selected file</div>
+        if (window["acquireVsCodeApi"]) {
+            return <div className={styles.root}>Loading</div>
+        } else {
+            return <div className={styles.root}>No Selected file</div>
+        }
     }
     return <div className={styles.root}>Loading</div>
 }

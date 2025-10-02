@@ -8,128 +8,16 @@ import { useNavigate } from "react-router";
 import Grid from "../grid";
 import { http_size } from "../../conf";
 import { HttpIcon } from "../common";
-
-// const useStyles = makeStyles({
-//     customTree: {
-//         '--spacingHorizontalXXL': '12px',
-//         '--fontWeightRegular': 'bold',
-//     },
-// });
-
-// class ConnectProper {
-//     connection!: IVHttpConnection;
-// }
-
-// const tabList = (hmw: HttpMessageWrap | undefined): React.ReactNode[] => {
-//     const list:React.ReactNode[] = [];
-//     if(hmw){
-//         if (hmw.parsed_content){
-//             list.push(<Tab value="plaintext">plaintext</Tab>)
-//         }
-//     }
-//     return list;
-// }
-
-
-// const ConnectionList = (props: ConnectProper) => {
-//     const httpDetail = useStore((state) => state.httpDetail);
-//     const [_list, setList] = useState<HttpMessageWrap[]>([]);
-//     const [select, setSelect] = useState<string>('');
-//     const [tabSelect, setTabSelect] = useState<string>('binary');
-//     const [hmw, setHmw] = useState<HttpMessageWrap | undefined>();
-//     useEffect(() => {
-//         httpDetail(props.connection).then((rs: MessageCompress[]) => {
-//             const list: HttpMessageWrap[] = rs.map((r: MessageCompress) => {
-//                 const rt = JSON.parse(r.json);
-//                 if (r.data.length > 0) {
-//                     rt.raw = r.data;
-//                 }
-//                 return rt;
-//             });
-//             setList(list);
-//         });
-//     }, []);
-//     const styles = useStyles();
-//     const build = (hmw: HttpMessageWrap) => {
-//         const it = hmw.headers;
-//         const head = it[0];
-//         const items = [];
-//         for (let i = 1; i < it.length; i += 1) {
-//             const text = it[i];
-//             items.push(<TreeItem itemType="leaf" key={text}>
-//                 <TreeItemLayout onClick={() => {
-//                     setSelect(text);
-//                     setHmw(undefined);
-//                     // setTabSelect('binary');
-//                 }} className={select === text ? indexCss.treeitem_select : indexCss.treeitem} >{text}</TreeItemLayout>
-//             </TreeItem>);
-//         }
-//         if(hmw.raw && hmw.raw.length > 0){
-//             const len = hmw.raw.length;
-//             const key = `content-${hmw.headers[0]}`;
-//             items.push(<TreeItem itemType="leaf" key={key}>
-//                 <TreeItemLayout onClick={() => {
-//                     setSelect(key);
-//                     setHmw(hmw);
-//                     // setTabSelect('binary');
-//                 }} className={select === key ? indexCss.treeitem_select : indexCss.treeitem} >Entity({format_bytes_single_unit(len)})</TreeItemLayout>
-//             </TreeItem>);
-//         }
-        
-//         return <TreeItem itemType="branch" key={head}>
-//             <TreeItemLayout onClick={() => {
-//                 setSelect(head);
-//                 setHmw(undefined);
-//                 // setTabSelect('binary');
-//             }} className={select === head ? indexCss.treeitem_select : indexCss.treeitem} >{head}</TreeItemLayout>
-//             <Tree size="small">
-//                 {items}
-//             </Tree>
-//         </TreeItem>
-//     }
-//     const hasContent = hmw?.raw && hmw.raw.length > 0;
-    
-//     const tabContent = (hmw: HttpMessageWrap | undefined, tabSelect: string) => {
-//         if (hmw && tabSelect === 'binary') {
-//             return <HexView data={hmw.raw || new Uint8Array()} maxLength={1024 * 1024}/>
-//         }
-//         if (hmw && tabSelect === 'plaintext') {
-//             return <PlainText text={hmw!.parsed_content!} mime={hmw.mime} />
-//         }
-//         return <></>
-//     }
-//     return <div className="flex flex-row h-full" style={{ overflowX: "hidden", overflowY: "auto" }}>
-//         <div className="flex-1" style={{ overflow: "auto", padding: "5px 10px" }}>
-//             <Tree aria-label="Default" size="small" className={styles.customTree}>
-//                 {_list.map(build)}
-//             </Tree>
-//         </div>
-//         <Fade visible={hasContent}>
-//          <div className="flex-1 flex flex-column" style={{ padding: "5px 10px", borderLeft: "1px solid #ccc", overflowY: "hidden" }}>
-//             <TabList size="small" defaultSelectedValue={tabSelect} onTabSelect={(_, {value}: any) => {setTabSelect(value)}}>
-//                 <Tab value="binary">Raw</Tab>
-//                 {tabList(hmw)}
-//             </TabList>
-//             <div style={{ margin: "10px 0px", padding: "5px 10px", border: "1px solid #ccc", overflowY: "auto" }}>
-//                 {tabContent(hmw, tabSelect)}
-//             </div>
-//         </div>
-//         </Fade>
-//     </div>
-// }
+import { BorderAllRegular, ClipboardCodeRegular, DesktopSignalRegular, ImageRegular, TextWordCountRegular, TimePickerRegular } from "@fluentui/react-icons";
 
 function Component() {
     const httpConnections = useStore((state) => state.httpConnections);
     const cachehttp = useStore((state) => state.cachehttp);
     const navigate = useNavigate();
-    // const [select, setSelect] = useState<IVHttpConnection | undefined>(undefined);
-    // const [open, setOpen] = useState<boolean>(false);
     const columns: TableColumnDefinition<IVHttpConnection>[] = [
         createTableColumn<IVHttpConnection>({
             columnId: "status",
-            renderHeaderCell: () => {
-                return "Status";
-            },
+            renderHeaderCell: () => <><ClipboardCodeRegular /> Status</>,
             renderCell: (item) => {
                 let status = 'N/A';
                 if (item?.response) {
@@ -147,9 +35,7 @@ function Component() {
         }),
         createTableColumn<IVHttpConnection>({
             columnId: "method",
-            renderHeaderCell: () => {
-                return "Method";
-            },
+            renderHeaderCell: () => <><BorderAllRegular />Method</>,
             renderCell: (item) => {
                 let method = 'N/A';
                 if (item?.request) {
@@ -167,9 +53,7 @@ function Component() {
         }),
         createTableColumn<IVHttpConnection>({
             columnId: "host",
-            renderHeaderCell: () => {
-                return "Host";
-            },
+            renderHeaderCell: () => <><DesktopSignalRegular /> Host</>,
             renderCell: (item) => {
                 let host = 'N/A';
                 if (item?.request) {
@@ -187,30 +71,21 @@ function Component() {
         }),
         createTableColumn<IVHttpConnection>({
             columnId: "length",
-            renderHeaderCell: () => {
-                return "Length";
-            },
-
+            renderHeaderCell: () => <><TextWordCountRegular /> Length</>,
             renderCell: (item) => {
                 return format_bytes_single_unit(item.length);
             },
         }),
         createTableColumn<IVHttpConnection>({
             columnId: "content_type",
-            renderHeaderCell: () => {
-                return "Content-Type";
-            },
-
+            renderHeaderCell: () => <><ImageRegular /> Content-Type</>,
             renderCell: (item) => {
                 return item.content_type;
             },
         }),
         createTableColumn<IVHttpConnection>({
             columnId: "time",
-            renderHeaderCell: () => {
-                return "Time";
-            },
-
+            renderHeaderCell: () => <><TimePickerRegular /> Time</>,
             renderCell: (item) => {
                 return item.rt;
             },
@@ -219,8 +94,6 @@ function Component() {
     const onClick = (item: IVHttpConnection) => {
         cachehttp(item);
         navigate('/http/detail', { state: { title: '' } });
-        // setOpen(true);
-        // setSelect(item);
     };
     const pageSize = http_size;
     const load = async (page: number) => {
@@ -270,7 +143,7 @@ function Component() {
     const breads = [
         { name: "HTTP Requests", icon: <HttpIcon/>, path: "/https" }
     ]
-    return <div className="flex flex-column h-full" style={{ overflowX: "hidden", overflowY: "auto" }}>
+    return <div className={"flex flex-column h-full " + indexCss.fixframe}>
         <Grid columns={columns} onClick={onClick} pageSize={pageSize} load={load} columnSizingOptions={columnSizingOptions} breads={breads} />
     </div>
 }

@@ -22,7 +22,7 @@ const HexView: React.FC<HexViewProps> = ({ data, maxLength = 32 }) => {
   const remainingBytes = data.length - maxLength;
 
   return (
-    <div className={styles.hexView}>
+    <div className={styles.hexView + " flex-grow-1"}>
       <span>{hexString}</span>
       {isTruncated && (
         <span className={styles.truncationIndicator}>

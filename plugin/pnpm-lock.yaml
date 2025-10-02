@@ -19,8 +19,8 @@ importers:
         specifier: ^3.0.1
         version: 3.0.1
       rshark:
-        specifier: file:../crates/wasm2/node
-        version: wasm-pcps@file:../crates/wasm2/node
+        specifier: file:../crates/wasm/build/node
+        version: wasm-pcps@file:../crates/wasm/build/node
     devDependencies:
       '@types/mocha':
         specifier: ^10.0.6
@@ -1563,8 +1563,8 @@ packages:
   validate-npm-package-license@3.0.4:
     resolution: {integrity: sha512-DpKm2Ui/xN7/HQKCtpZxoRWBhZ9Z0kqtygG8XCgNQ8ZlDnxuQmWhj566j8fN4Cu3/JmbhsDo7fcAJq4s9h27Ew==}
 
-  wasm-pcps@file:../crates/wasm2/node:
-    resolution: {directory: ../crates/wasm2/node, type: directory}
+  wasm-pcps@file:../crates/wasm/build/node:
+    resolution: {directory: ../crates/wasm/build/node, type: directory}
 
   which-boxed-primitive@1.1.1:
     resolution: {integrity: sha512-TbX3mj8n0odCBFVlY8AxkqcHASw3L60jIuF8jFP78az3C2YhmGvqbHBpAjTRH2/xqYunrJ9g1jSyjCjpoWzIAA==}
@@ -3302,7 +3302,7 @@ snapshots:
       spdx-correct: 3.2.0
       spdx-expression-parse: 3.0.1
 
-  wasm-pcps@file:../crates/wasm2/node: {}
+  wasm-pcps@file:../crates/wasm/build/node: {}
 
   which-boxed-primitive@1.1.1:
     dependencies:
