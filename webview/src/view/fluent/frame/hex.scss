@@ -47,7 +47,7 @@ $code-width: 10px;
       flex-wrap: wrap;
       flex-shrink: 0;
       flex-grow: 0;
-      background-color: var(--vscode-statusBar-background);
+      background-color: common.$c-aqua;
       code {
         border-radius: 0 !important;
       }

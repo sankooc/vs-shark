@@ -2,8 +2,9 @@
 	"name": "pcapviewer",
 	"displayName": "pcapviewer",
 	"description": "pcap/pcapng file analyzer",
-	"version": "0.4.0",
+	"version": "0.4.1",
 	"publisher": "sankooc",
+	"private": true,
 	"repository": {
 		"type": "git",
 		"url": "https://github.com/sankooc/vs-shark/tree/master/plugin"
@@ -45,7 +46,6 @@
 		]
 	},
 	"scripts": {
-		"vscode:prepublish": "pnpm run package",
 		"cp": "cp -r ../webview/src/share/ src/",
 		"compile": "pnpm run check-types && pnpm run lint && node esbuild.js",
 		"watch": "npm-run-all -p watch:*",

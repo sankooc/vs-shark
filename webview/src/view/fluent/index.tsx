@@ -8,7 +8,6 @@ import { useStore } from '../store';
 
 const UI = () => {
   const theme = useStore((state) => state.theme);
-  console.log('apply theme', theme);
   return <FluentProvider theme={theme} className="h-full">
     <Application/>
   </FluentProvider>

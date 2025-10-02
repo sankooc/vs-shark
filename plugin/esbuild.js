@@ -34,7 +34,7 @@ const copyWasmPlugin = {
 			if (!fs.existsSync('dist')) {
 				fs.mkdirSync('dist', { recursive: true });
 			}
-			const wasmSourcePath = path.resolve(__dirname, 'node_modules/.pnpm/wasm-pcps@file+..+crates+wasm+node/node_modules/wasm-pcps/wasm_pcps_bg.wasm');
+			const wasmSourcePath = path.resolve(__dirname, 'node_modules/.pnpm/wasm-pcps@file+..+crates+wasm+build+node/node_modules/wasm-pcps/wasm_pcps_bg.wasm');
 			const wasmDestPath = path.resolve(__dirname, 'dist/wasm_pcps_bg.wasm');
 			
 			if (fs.existsSync(wasmSourcePath)) {

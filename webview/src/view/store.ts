@@ -35,6 +35,8 @@ interface PcapState {
   connections: (data: any) => Promise<IListResult<IVConnection>>;
   httpConnections: (data: any) => Promise<IListResult<IVHttpConnection>>;
   httpDetail: (data: IVHttpConnection) => Promise<MessageCompress[]>
+  cachehttp:(conn: IVHttpConnection | null) => void;
+  getHttpCache:() => IVHttpConnection | null;
   // frameList: (page: number, size: number) => Promise<IListResult<IFrameInfo>>;
 }
 // const compute = (page: number, size: number): Pagination => {
@@ -81,21 +83,27 @@ export const useStore = create<PcapState>()((set) => {
         break;
       }
       case ComType.FILEINFO:
-        const fileinfo = body as PcapFile;
-        set((state) => ({ ...state, fileinfo: fileinfo }));
-        break;
+        {
+          const fileinfo = body as PcapFile;
+          set((state) => ({ ...state, fileinfo: fileinfo }));
+          break;
+        }
       case ComType.PRGRESS_STATUS:
-        const progress = deserialize(body) as IProgressStatus;
-        set((state) => ({ ...state, progress }));
-        break;
+        {
+          const progress = deserialize(body) as IProgressStatus;
+          set((state) => ({ ...state, progress }));
+          break;
+        }
       // case ComType.FRAME_SCOPE_RES:
       //   const range = body as VRange;
       //   break;
       
       case ComType.FRAMES_SELECT:
-        let fr: IFrameSelect = { start: body.start, end: body.end, data: body.data, fields: deserialize(body.liststr), extra: body.extra };
-        emitter.emit(id, fr);
-        break;
+        {
+          const fr: IFrameSelect = { start: body.start, end: body.end, data: body.data, fields: deserialize(body.liststr), extra: body.extra };
+          emitter.emit(id, fr);
+          break;
+        }
       case ComType.FRAMES:
       case ComType.CONVERSATIONS:
       case ComType.CONNECTIONS:
@@ -116,6 +124,9 @@ export const useStore = create<PcapState>()((set) => {
   });
   emitMessage(ComMessage.new(ComType.CLIENT_REDAY, Date.now()));
   const ctheme = buildTheme();
+
+  let httpCache: IVHttpConnection | null = null;
+  
   return {
     theme: ctheme,
     sendReady: () => {
@@ -148,7 +159,12 @@ export const useStore = create<PcapState>()((set) => {
       const req = new ComMessage(ComType.HTTP_DETAIL_REQ, data);
       return doRequest<MessageCompress[]>(req);
     },
-
+    cachehttp:(conn: IVHttpConnection | null) => {
+      httpCache = conn;
+    },
+    getHttpCache:() => {
+      return httpCache;
+    },
     // frameList: (page: number, size: number): Promise<IListResult<IFrameInfo>> => {
     //   const _req = new ComMessage(ComType.REQUEST, {
     //     catelog: "frame",

@@ -13,7 +13,8 @@
     overflow: hidden;
 }
 .treeitem_select {
-    background-color: var(--colorBrandBackground2);
+    // background-color: var(--colorBrandBackground2);
+    // background-color: red;
     text-overflow: ellipsis;
     white-space: nowrap;
     overflow: hidden;
@@ -23,4 +24,8 @@
     padding-left: 8px;
     border-left-width: 8px;
     border-left-style: solid;
+}
+
+.fixframe {
+    overflow: hidden auto;
 }
