@@ -87,8 +87,8 @@ impl WContext {
         serde_json::to_string(&rs).unwrap_or("{}".into())
     }
     #[wasm_bindgen]
-    pub fn list_http(&self,start: usize, size: usize) -> String {
-        let rs = self.ctx.http_connections(Criteria { start, size });
+    pub fn list_http(&self, start: usize, size: usize, hostname: String, method: String) -> String {
+        let rs = self.ctx.http_connections(Criteria { start, size }, None);
         serde_json::to_string(&rs).unwrap_or("{}".into())
     }
     #[wasm_bindgen]
@@ -97,7 +97,7 @@ impl WContext {
         serde_json::to_string(&rs).unwrap_or("{}".into())
     }
     #[wasm_bindgen]
-    pub fn http_header_parse(&self,  head: String, header: &Uint8Array, body: &Uint8Array) -> String  {
+    pub fn http_header_parse(&self, head: String, header: &Uint8Array, body: &Uint8Array) -> String {
         let slice = header.to_vec();
         let mut content = None;
         if body.length() > 0 {

@@ -1,15 +1,15 @@
 // Copyright (c) 2025 sankooc
-// 
+//
 // This file is part of the pcapview project.
 // Licensed under the MIT License - see https://opensource.org/licenses/MIT
 
+use crate::add_field_format;
 use crate::common::concept::{Field, FrameIndex, MessageIndex};
-use crate::common::core::{Context, Segment, SegmentData, HttpMessage};
+use crate::common::core::{Context, HttpMessage, Segment, SegmentData};
 use crate::common::enum_def::{ProtocolInfoField, SegmentStatus};
 use crate::common::io::Reader;
 use crate::common::{enum_def::Protocol, Frame};
 use crate::common::{hex_num, quick_trim_num, std_string, trim_data};
-use crate::add_field_format;
 use anyhow::Result;
 
 pub fn detect(reader: &Reader) -> (bool, bool) {
@@ -24,7 +24,9 @@ pub fn detect(reader: &Reader) -> (bool, bool) {
             _ => (),
         }
     }
-    if &buffer[0..7] == b"HTTP/1." { return (true, false) }
+    if &buffer[0..7] == b"HTTP/1." {
+        return (true, false);
+    }
     (false, false)
 }
 
@@ -72,6 +74,18 @@ pub fn detect_type(data: &[u8]) -> Option<String> {
     }
     None
 }
+pub fn detect_hostname(data: &[u8]) -> Option<String> {
+    let size = data.len();
+    if size >= 5 {
+        match &data[0..5] {
+            b"Host:" | b"host:" | b"HOST:" => {
+                return Some(String::from_utf8_lossy(trim_data(&data[5..])).to_string());
+            }
+            _ => {}
+        }
+    }
+    None
+}
 
 fn read_line(reader: &mut Reader, len: usize) -> Result<String> {
     let data = reader.slice(len, true)?;
@@ -113,6 +127,15 @@ pub fn parse_http_header(record: &mut HttpMessage, reader: &mut Reader, message_
             }
             if record.content_type.is_none() {
                 record.content_type = detect_type(data);
+            }
+
+            if record.hostname.is_none() {
+                record.hostname = detect_hostname(data);
+                // if let Some(hn) = &record.hostname {
+                //     let name = hn.clone();
+                //     ctx.add_http_hostname(message_index, &name);
+
+                // }
             }
             reader.forward(2);
         } else {
@@ -196,19 +219,30 @@ fn parse_http(ctx: &mut Context, reader: &mut Reader, frame_index: FrameIndex, s
         SegmentStatus::HttpDetected(message_index) => {
             if let Some(record) = ctx.get_http_message(message_index) {
                 let cursor = reader.cursor;
+                // let connect =
                 let status = parse_http_header(record, reader, message_index)?;
+
                 let segment = Segment {
                     index: frame_index,
                     range: cursor..reader.cursor,
                 };
                 let orgin = std::mem::take(&mut record.headers);
+
                 match &status {
                     SegmentStatus::HttpHeaderContinue(_, _) => {
                         record.headers = segment_append(orgin, segment);
+                        if let Some(hn) = &record.hostname {
+                            let name = hn.clone();
+                            ctx.add_http_hostname(message_index, &name);
+                        }
                         Ok(status)
                     }
                     _ => {
                         record.headers = segment_append(orgin, segment);
+                        if let Some(hn) = &record.hostname {
+                            let name = hn.clone();
+                            ctx.add_http_hostname(message_index, &name);
+                        }
                         parse_http(ctx, reader, frame_index, status)
                     }
                 }
@@ -235,6 +269,13 @@ fn parse_http(ctx: &mut Context, reader: &mut Reader, frame_index: FrameIndex, s
                     }
                     if record.content_type.is_none() {
                         record.content_type = detect_type(&extra);
+                    }
+                    if record.hostname.is_none() {
+                        record.hostname = detect_hostname(&extra);
+                        if let Some(hn) = &record.hostname {
+                            let name = hn.clone();
+                            ctx.add_http_hostname(message_index, &name);
+                        }
                     }
                     reader.forward(2);
                     parse_http(ctx, reader, frame_index, SegmentStatus::HttpDetected(message_index))
@@ -308,7 +349,6 @@ fn parse_http(ctx: &mut Context, reader: &mut Reader, frame_index: FrameIndex, s
                             record.length = Some(ll + len);
                         }
                         return parse_http_chunked(record, frame_index, reader, message_index, len + 2);
-                    
                     }
                 } else {
                     return Ok(SegmentStatus::Error);
@@ -317,9 +357,7 @@ fn parse_http(ctx: &mut Context, reader: &mut Reader, frame_index: FrameIndex, s
             }
             Ok(SegmentStatus::Finish)
         }
-        _ => {
-            Ok(status)
-        }
+        _ => Ok(status),
     }
 }
 pub struct Visitor;
@@ -354,6 +392,7 @@ impl Visitor {
                             let line = String::from_utf8_lossy(&data).to_string();
                             // let mut mi = None;
                             reader.forward(2);
+                            // let hostname = re
                             let message_index = ctx.init_segment_message(frame_index, line.clone(), rs.1, conversation_key, ts);
                             next_status = parse_http(ctx, &mut reader, frame_index, SegmentStatus::HttpDetected(message_index))?;
                             frame.protocol_field = ProtocolInfoField::Http(line, message_index);
@@ -392,14 +431,14 @@ impl Visitor {
             }
             // ProtocolInfoField::HttpSegment(mi) => {
 
-                // let left = reader.left();
-                // field.summary = format!("Http Segment Frame {}", left);
-                // if let Some(sm) = ctx.segment_messages.get(*mi) {
-                //     for segment in sm.segments.iter() {
-                //         add_field_label_no_range!(field, format!("Frame {} [{}]", segment.index + 1, segment.range.end - segment.range.start));
-                //     }
-                // }
-                // reader.forward(left);
+            // let left = reader.left();
+            // field.summary = format!("Http Segment Frame {}", left);
+            // if let Some(sm) = ctx.segment_messages.get(*mi) {
+            //     for segment in sm.segments.iter() {
+            //         add_field_label_no_range!(field, format!("Frame {} [{}]", segment.index + 1, segment.range.end - segment.range.start));
+            //     }
+            // }
+            // reader.forward(left);
             // }
             _ => {}
         }

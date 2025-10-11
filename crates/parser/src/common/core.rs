@@ -4,8 +4,7 @@
 // Licensed under the MIT License - see https://opensource.org/licenses/MIT
 
 use std::{
-    net::{Ipv4Addr, Ipv6Addr},
-    ops::Range,
+    net::{Ipv4Addr, Ipv6Addr}, ops::Range
 };
 
 use anyhow::{bail, Result};
@@ -60,11 +59,13 @@ fn segment_append(data: SegmentData, segment: Segment) -> SegmentData {
 pub struct HttpMessage {
     pub frame_index: FrameIndex,
     pub host: String,
+    pub hostname: Option<String>,
     pub length: Option<usize>,
     pub chunked: bool,
     pub content_type: Option<String>,
     pub headers: SegmentData,
     pub content: SegmentData,
+    pub http_connect_index: Option<HttpConnectIndex>,
 }
 
 impl HttpMessage {
@@ -80,6 +81,7 @@ pub struct HttpConntect {
     pub index: ConnectionIndex,
     pub request: Option<MessageIndex>,
     pub response: Option<MessageIndex>,
+    pub hostname: Option<String>,
     pub rt: Timestamp,
 }
 
@@ -90,6 +92,7 @@ impl HttpConntect {
             if let Some(message) = ctx.http_messages.get(*request_index as usize) {
                 rs.request_headers = message.headers.to_vec();
                 rs.request_body = message.content.to_vec();
+                rs.hostname = message.hostname.clone().unwrap_or("".to_string());
                 if let Some(ll) = &message.length {
                     rs.length = *ll;
                 }
@@ -145,6 +148,7 @@ pub struct Context {
     pub http_connections_map: FastHashMap<ConnectionIndex, (HttpConnectIndex, Timestamp)>,
     pub http_connections: Vec<HttpConntect>,
     pub http_messages: Vec<HttpMessage>,
+    pub http_hostnames: FastHashMap<String, u8>,
     // ethernet
     pub ethermap: FastHashMap<u64, EthernetCache>,
     pub ipv6map: FastHashMap<u64, (u8, Ipv6Addr, Ipv6Addr)>,
@@ -163,14 +167,15 @@ impl Context {
     }
     pub fn init_segment_message(&mut self, frame_index: FrameIndex, host: String, is_request: bool, connect_index: ConnectionIndex, timestamp: Timestamp) -> MessageIndex {
         let message_index = self.http_messages.len() as MessageIndex;
-        let sg = HttpMessage { frame_index, host, ..Default::default() };
-        self.http_messages.push(sg);
+        let mut sg = HttpMessage { frame_index, host, ..Default::default() };
+        // self.http_messages.push(sg);
 
         if is_request {
             let http_connect_index = self.http_connections.len() as HttpConnectIndex;
             let connect = HttpConntect::request(connect_index, message_index);
             self.http_connections.push(connect);
             self.http_connections_map.insert(connect_index, (http_connect_index, timestamp));
+            sg.http_connect_index = Some(http_connect_index);
         } else if let Some((http_connect_index, ts)) = self.http_connections_map.get(&connect_index) {
             if let Some(connect) = self.http_connections.get_mut(*http_connect_index as usize) {
                 let fd = timestamp.saturating_sub(*ts);
@@ -180,6 +185,7 @@ impl Context {
         } else {
             self.http_connections.push(HttpConntect::response(connect_index, message_index));
         }
+        self.http_messages.push(sg);
         message_index
     }
     pub fn get_http_message(&mut self, message_index: MessageIndex) -> Option<&mut HttpMessage> {
@@ -350,5 +356,16 @@ impl Context {
             }
         }
         None
+    }
+    pub fn add_http_hostname(&mut self, message_index: MessageIndex, hostname: &str){
+        if let Some(message) = self.http_messages.get(message_index as usize) {
+            if let Some(http_connect_index) = &message.http_connect_index {
+                if let Some(connect) = self.http_connections.get_mut(*http_connect_index as usize) {
+                    let hn = hostname.trim().to_lowercase();
+                    *self.http_hostnames.entry(hn.clone()).or_insert(1) += 1;
+                    connect.hostname = Some(hn);
+                }
+            }
+        }
     }
 }

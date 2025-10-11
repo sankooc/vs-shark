@@ -22,9 +22,19 @@ pub type ConversationKey = (u64, u64);
 pub type Timestamp = u64;
 
 pub struct Criteria {
-    // pub criteria: String,
     pub size: usize,
     pub start: usize,
+}
+
+pub struct HttpCriteria {
+    pub hostname: Option<String>,
+    // pub method: Option<String>,
+}
+
+impl HttpCriteria {
+    pub fn hostname(hostname: String) -> Self {
+        Self { hostname: Some(hostname) }
+    }
 }
 
 #[derive(Default, Copy, Clone)]
@@ -283,6 +293,7 @@ pub struct VHttpConnection {
     pub request: Option<String>,
     pub response: Option<String>,
     pub rt: String,
+    pub hostname: String,
     pub content_type: String,
     pub length: usize,
     pub request_headers: Vec<(usize, usize)>,
