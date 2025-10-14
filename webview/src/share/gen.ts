@@ -65,3 +65,8 @@ export interface IVHttpConnection {
     request_body: [number, number][];
     response_body: [number, number][];
 }
+
+export interface IHttpStatistics {
+    host: string;
+    count: number;
+}

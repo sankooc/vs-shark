@@ -85,7 +85,8 @@ export abstract class PCAPClient {
             this.emitMessage(ComMessage.new(ComType.CONNECTIONS, rs, requestId));
             return;
           case "http_connection":
-            rs = this.ctx.list_http(start, size);
+            console.log('paramhost', param.host);
+            rs = this.ctx.list_http(start, size, param.host || '', '');
             this.emitMessage(ComMessage.new(ComType.HTTP_CONNECTIONS, rs, requestId));
             return;
           default:
@@ -171,6 +172,12 @@ export abstract class PCAPClient {
     }
     return concatLargeUint8Arrays(list);
   }
+  private async http_stat(): Promise<string> {
+    if (this.ctx) {
+      return this.ctx.http_hostname_stats();
+    }
+    return "[]";
+  }
 
 
   // private async scope(requestId: string, catelog: string, index: number): Promise<void> {
@@ -240,8 +247,10 @@ export abstract class PCAPClient {
         //   this.emitMessage(ComMessage.new(ComType.FRAME_SCOPE_RES, { start: range.start, end: range.end }));
         //   break;
         case ComType.PROCESS_DATA:
-          const data = body.data as Uint8Array;
-          await this.update(data);
+          {
+            const data = body.data as Uint8Array;
+            await this.update(data);
+          }
           // this.emitMessage(ComMessage.new(ComType.PRGRESS_STATUS, rs));
           break;
         case ComType.log:
@@ -272,6 +281,13 @@ export abstract class PCAPClient {
             ComMessage.new(ComType.HTTP_DETAIL_RES, rs, id),
           );
           break;
+        case ComType.HTTP_STATISTICS_REQ: {
+          const rs = await this.http_stat();
+          this.emitMessage(
+            ComMessage.new(ComType.HTTP_STATISTICS_RES, rs, id),
+          );
+          break;
+        }
         default:
         // console.log(msg.body);
       }

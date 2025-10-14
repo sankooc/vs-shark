@@ -12,7 +12,7 @@ import {
   PcapFile,
   VRange,
 } from "../share/common";
-import { IFrameInfo, IListResult, IProgressStatus, IVConnection, IVConversation, IVHttpConnection } from "../share/gen";
+import { IFrameInfo, IHttpStatistics, IListResult, IProgressStatus, IVConnection, IVConversation, IVHttpConnection } from "../share/gen";
 import mitt from "mitt";
 
 
@@ -35,8 +35,9 @@ interface PcapState {
   connections: (data: any) => Promise<IListResult<IVConnection>>;
   httpConnections: (data: any) => Promise<IListResult<IVHttpConnection>>;
   httpDetail: (data: IVHttpConnection) => Promise<MessageCompress[]>
-  cachehttp:(conn: IVHttpConnection | null) => void;
-  getHttpCache:() => IVHttpConnection | null;
+  cachehttp: (conn: IVHttpConnection | null) => void;
+  getHttpCache: () => IVHttpConnection | null;
+  httpStat: () => Promise<IHttpStatistics[]> ;
   // frameList: (page: number, size: number) => Promise<IListResult<IFrameInfo>>;
 }
 // const compute = (page: number, size: number): Pagination => {
@@ -56,7 +57,7 @@ const doRequest = <F>(data: ComMessage<any>): Promise<F> => {
   return new Promise<F>((resolve, reject) => {
     emitter.on(id, (event: any) => {
       emitter.off(id);
-      if (event == "error"){
+      if (event == "error") {
         reject("error");
       } else {
         resolve(event as F);
@@ -71,8 +72,6 @@ export const useStore = create<PcapState>()((set) => {
   onMessage("message", (e: any) => {
     const { type, body, id } = e.data;
     if (type === "vscode-theme-change") {
-      console.log('detect theme change');
-      console.log(body);
       const _theme = buildTheme();
       set((state) => ({ ...state, theme: _theme }));
       return;
@@ -88,16 +87,15 @@ export const useStore = create<PcapState>()((set) => {
           set((state) => ({ ...state, fileinfo: fileinfo }));
           break;
         }
-      case ComType.PRGRESS_STATUS:
-        {
-          const progress = deserialize(body) as IProgressStatus;
-          set((state) => ({ ...state, progress }));
-          break;
-        }
-      // case ComType.FRAME_SCOPE_RES:
-      //   const range = body as VRange;
-      //   break;
-      
+      case ComType.PRGRESS_STATUS: {
+        const progress = deserialize(body) as IProgressStatus;
+        set((state) => ({ ...state, progress }));
+        break;
+      }
+      case ComType.HTTP_STATISTICS_RES: {
+        emitter.emit(id, deserialize(body));
+        break;
+      }
       case ComType.FRAMES_SELECT:
         {
           const fr: IFrameSelect = { start: body.start, end: body.end, data: body.data, fields: deserialize(body.liststr), extra: body.extra };
@@ -126,7 +124,7 @@ export const useStore = create<PcapState>()((set) => {
   const ctheme = buildTheme();
 
   let httpCache: IVHttpConnection | null = null;
-  
+
   return {
     theme: ctheme,
     sendReady: () => {
@@ -159,19 +157,15 @@ export const useStore = create<PcapState>()((set) => {
       const req = new ComMessage(ComType.HTTP_DETAIL_REQ, data);
       return doRequest<MessageCompress[]>(req);
     },
-    cachehttp:(conn: IVHttpConnection | null) => {
+    cachehttp: (conn: IVHttpConnection | null) => {
       httpCache = conn;
     },
-    getHttpCache:() => {
+    getHttpCache: () => {
       return httpCache;
     },
-    // frameList: (page: number, size: number): Promise<IListResult<IFrameInfo>> => {
-    //   const _req = new ComMessage(ComType.REQUEST, {
-    //     catelog: "frame",
-    //     type: "list",
-    //     param: compute(page, size),
-    //   });
-
-    // }
+    httpStat: (): Promise<IHttpStatistics[]> => {
+      const req = new ComMessage(ComType.HTTP_STATISTICS_REQ, {});
+      return doRequest<IHttpStatistics[]>(req);
+    }
   };
 });

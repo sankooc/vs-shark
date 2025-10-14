@@ -24,12 +24,8 @@ function Component<T>(props: GridProps<T>) {
         items: [],
     });
     const mountHook = () => {
-        // setLoading(true);
         if (page >= 1) {
-            props.load(page).then((rs: IListResult<T>) => {
-                setResult(rs);
-                // setLoading(false);
-            })
+            props.load(page).then(setResult)
         }
     };
     useEffect(mountHook, [page]);

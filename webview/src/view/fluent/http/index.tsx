@@ -1,20 +1,54 @@
 // import React, { useEffect, useState } from "react";
 import { useStore } from "../../store";
-import { IVHttpConnection } from "../../../share/gen";
-import { createTableColumn, TableCellLayout, TableColumnDefinition } from "@fluentui/react-components";
+import { IVHttpConnection, IHttpStatistics } from "../../../share/gen";
+import { createTableColumn, Select, TableCellLayout, TableColumnDefinition } from "@fluentui/react-components";
 import { compute, ComRequest, format_bytes_single_unit } from "../../../share/common";
 import indexCss from './index.module.scss';
 import { useNavigate } from "react-router";
-import Grid from "../grid";
+import Grid from "../table";
 import { http_size } from "../../conf";
 import { HttpIcon } from "../common";
-import { BorderAllRegular, ClipboardCodeRegular, DesktopSignalRegular, ImageRegular, TextWordCountRegular, TimePickerRegular } from "@fluentui/react-icons";
+import { Image28Color, CodeBlock28Color,ContentView28Color, BorderAllRegular, ClipboardCodeRegular, DesktopSignalRegular, ImageRegular, TextWordCountRegular, TimePickerRegular } from "@fluentui/react-icons";
+
+import { useId, Label } from "@fluentui/react-components";
+
+import { useEffect, useState } from "react";
+
+const NoneOption = "ANY";
+
+const docIcon = (item: IVHttpConnection) => {
+    // return <Image28Color />
+    // return <CodeBlock28Color />
+    const _type = (item.content_type || '').toLocaleLowerCase();
+    if(_type.indexOf('css') >= 0 || _type.indexOf('javascript') >= 0 || _type.indexOf('xml') >= 0) {
+        return <CodeBlock28Color />
+    }
+    if(_type.indexOf('png') >= 0 || _type.indexOf('jpeg') >= 0 || _type.indexOf('gif') >= 0) {
+        return <Image28Color />
+    }
+    return <ContentView28Color />
+}
 
 function Component() {
     const httpConnections = useStore((state) => state.httpConnections);
     const cachehttp = useStore((state) => state.cachehttp);
+    const httpStat = useStore((state) => state.httpStat);
+    const [httpHosts, setHttpHosts] = useState<IHttpStatistics[]>([]);
+    const [hostSelect, setHostSelect] = useState<string>(NoneOption);
+    useEffect(() => {
+        httpStat().then(setHttpHosts);
+    }, [])
     const navigate = useNavigate();
     const columns: TableColumnDefinition<IVHttpConnection>[] = [
+        createTableColumn<IVHttpConnection>({
+            columnId: "icon",
+            renderHeaderCell: () => <></>,
+            renderCell: (item) => {
+                return (
+                    docIcon(item)
+                );
+            },
+        }),
         createTableColumn<IVHttpConnection>({
             columnId: "status",
             renderHeaderCell: () => <><ClipboardCodeRegular /> Status</>,
@@ -27,7 +61,7 @@ function Component() {
                     }
                 }
                 return (
-                    <TableCellLayout>
+                    <TableCellLayout style={{textAlign: 'center'}}>
                         {status}
                     </TableCellLayout>
                 );
@@ -96,25 +130,31 @@ function Component() {
         navigate('/http/detail', { state: { title: '' } });
     };
     const pageSize = http_size;
-    const load = async (page: number) => {
+    const load = async (page: number, _: any) => {
+        let host = hostSelect === NoneOption ? '' : hostSelect;
         const data: ComRequest = {
             catelog: "http_connection",
             type: "list",
-            param: { ...compute(page, pageSize) },
+            param: { ...compute(page, pageSize), host },
         };
         return httpConnections(data);
     }
 
     const columnSizingOptions = {
-        status: {
+        icon: {
             idealWidth: 50,
             minWidth: 50,
             defaultWidth: 50,
         },
+        status: {
+            idealWidth: 80,
+            minWidth: 80,
+            defaultWidth: 80,
+        },
         method: {
-            idealWidth: 50,
-            minWidth: 50,
-            defaultWidth: 50,
+            idealWidth: 80,
+            minWidth: 80,
+            defaultWidth: 80,
         },
         host: {
             autoFitColumns: true,
@@ -139,13 +179,29 @@ function Component() {
             autoFitColumns: true,
         },
     }
-    
+
     const breads = [
-        { name: "HTTP Requests", icon: <HttpIcon/>, path: "/https" }
+        { name: "HTTP Requests", icon: <HttpIcon />, path: "/https" }
     ]
-    return <div className={"flex flex-column h-full " + indexCss.fixframe}>
-        <Grid columns={columns} onClick={onClick} pageSize={pageSize} load={load} columnSizingOptions={columnSizingOptions} breads={breads} />
-    </div>
+
+    const selectId = useId();
+    const onChange = (_: any, val: any) => {
+        setHostSelect(val.value);
+    }
+    const gridProps = {
+        filterComponent: (<>
+            <Label size="small" htmlFor={selectId} style={{ paddingInlineEnd: "5px" }}>Hostname:</Label>
+            <Select size="small" id={selectId} onChange={onChange} value={hostSelect} >
+                <option>{NoneOption}</option>
+                {httpHosts.map((h) => {
+                    return <option key={h.host}>{h.host}</option>
+                })}
+            </Select>
+        </>),
+        columns, onClick, pageSize, load, columnSizingOptions, breads
+    };
+
+    return <Grid {...gridProps} />;
 }
 
 export default Component;

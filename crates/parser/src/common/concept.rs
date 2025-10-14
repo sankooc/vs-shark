@@ -43,6 +43,19 @@ pub struct InstanceConfig {
 }
 
 #[derive(Serialize)]
+pub struct HttpHostRecord {
+    pub host: String,
+    pub count: usize,
+}
+
+impl HttpHostRecord {
+    pub fn new(host: String, count: usize) -> Self {
+        Self { host, count }
+    }
+}
+
+
+#[derive(Serialize)]
 pub struct ProgressStatus {
     pub total: usize,
     pub cursor: usize,

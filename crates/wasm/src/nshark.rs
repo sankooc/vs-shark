@@ -1,5 +1,5 @@
 use js_sys::Uint8Array;
-use pcap::common::{concept::Criteria, Instance};
+use pcap::common::{Instance, concept::{Criteria, HttpCriteria}};
 use wasm_bindgen::prelude::*;
 
 use crate::entity::{parse_http_message, Conf, FrameRange, FrameResult};
@@ -87,8 +87,13 @@ impl WContext {
         serde_json::to_string(&rs).unwrap_or("{}".into())
     }
     #[wasm_bindgen]
-    pub fn list_http(&self, start: usize, size: usize, hostname: String, method: String) -> String {
-        let rs = self.ctx.http_connections(Criteria { start, size }, None);
+    pub fn list_http(&self, start: usize, size: usize, hostname: String, _method: String) -> String {
+        let filter = if hostname.is_empty() {
+            None
+        } else {
+            Some(HttpCriteria::hostname(hostname))
+        };
+        let rs = self.ctx.http_connections(Criteria { start, size }, filter);
         serde_json::to_string(&rs).unwrap_or("{}".into())
     }
     #[wasm_bindgen]
@@ -104,6 +109,11 @@ impl WContext {
             content = Some(body.to_vec());
         }
         let rs = parse_http_message(&head, slice, content);
+        serde_json::to_string(&rs).unwrap_or("{}".into())
+    }
+    #[wasm_bindgen]
+    pub fn http_hostname_stats(&self) -> String{
+        let rs = self.ctx.get_context().http_record_stat();
         serde_json::to_string(&rs).unwrap_or("{}".into())
     }
 }

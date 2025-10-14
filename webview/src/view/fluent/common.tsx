@@ -20,7 +20,7 @@ interface ConnectProp {
 
 export function BreadItem(props: ConnectProp) {
     const navigate = useNavigate();
-    return (<Breadcrumb aria-label="Breadcrumb" style={{backgroundColor: '#282828', borderBottom: "2px double #ddd", padding: "5px 0px", margin: 0}}>
+    return (<Breadcrumb aria-label="Breadcrumb" style={{padding: "5px 0px", margin: 0}}>
         {
             props.items.map((item, index) => {
                 return <React.Fragment key={"bi" + index}>

@@ -24,6 +24,30 @@ impl Conf {
     }
 }
 
+// #[wasm_bindgen]
+// #[derive(Serialize)]
+// pub struct HttpHostRecord {
+//     pub host: String,
+//     pub count: usize,
+// }
+
+// #[wasm_bindgen]
+// impl HttpHostRecord {
+//     pub fn new(host: String, count: usize) -> Self {
+//         Self { host, count }
+//     }
+//     #[wasm_bindgen]
+//     pub fn host(&self) -> String {
+//         self.host.clone()
+//     }
+//     #[wasm_bindgen]
+//     pub fn count(&self) -> usize {
+//         self.count
+//     }
+// }
+
+
+
 #[wasm_bindgen]
 #[derive(Clone, Copy)]
 pub struct Range {

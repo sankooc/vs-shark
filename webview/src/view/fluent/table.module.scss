@@ -1,0 +1,7 @@
+@use "../scss/common";
+
+
+.fixframe {
+    overflow: hidden auto;
+    background-color: common.$background;
+}

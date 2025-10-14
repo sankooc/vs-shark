@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import { useStore } from "../../store";
-import { makeStyles, SelectTabData, SelectTabEvent, Tab, TabList, TabValue, Tree, TreeItem, TreeItemLayout } from "@fluentui/react-components";
+import { Card, makeStyles, SelectTabData, SelectTabEvent, Tab, TabList, TabValue, Tree, TreeItem, TreeItemLayout } from "@fluentui/react-components";
 import { format_bytes_single_unit, HttpMessageWrap, MessageCompress } from "../../../share/common";
 // import { Fade } from "@fluentui/react-motion-components-preview";
 import indexCss from './index.module.scss';
 import { BreadItem, HttpIcon } from "../common";
 import { DocumentGlobeRegular, PanelTopContractRegular, PanelTopExpandRegular } from "@fluentui/react-icons";
 import ContentComponent from './content';
+import Empty from "./content/empty";
 
 
 const useStyles = makeStyles({
@@ -45,6 +46,7 @@ export default function ConnectionList() {
         }
         httpDetail(connection).then((rs: MessageCompress[]) => {
             const list: HttpMessageWrap[] = rs.map((r: MessageCompress) => {
+                console.log(r);
                 const rt = JSON.parse(r.json);
                 if (r.data.length > 0) {
                     rt.raw = r.data;
@@ -74,8 +76,6 @@ export default function ConnectionList() {
             items.push(<TreeItem itemType="leaf" key={key}>
                 <TreeItemLayout onClick={() => {
                     setSelect(key);
-                    // setHmw(hmw);
-                    // setTabSelect('binary');
                 }} className={select === key ? indexCss.treeitem_select : indexCss.treeitem} >Entity({format_bytes_single_unit(len)})</TreeItemLayout>
             </TreeItem>);
         }
@@ -83,26 +83,12 @@ export default function ConnectionList() {
         return <TreeItem itemType="branch" key={head}>
             <TreeItemLayout onClick={() => {
                 setSelect(head);
-                // setHmw(undefined);
-                // setTabSelect('binary');
             }} className={select === head ? indexCss.treeitem_select : indexCss.treeitem} >{head}</TreeItemLayout>
             <Tree size="small">
                 {items}
             </Tree>
         </TreeItem>
     }
-    // const hasContent = hmw?.raw && hmw.raw.length > 0;
-
-    // const tabContent = (hmw: HttpMessageWrap | undefined, tabSelect: string) => {
-    //     if (hmw && tabSelect === 'binary') {
-    //         return <HexView data={hmw.raw || new Uint8Array()} maxLength={1024 * 1024} />
-    //     }
-    //     if (hmw && tabSelect === 'plaintext') {
-    //         return <PlainText text={hmw!.parsed_content!} mime={hmw.mime} />
-    //     }
-    //     return <></>
-    // }
-
     let title = "Request";
     if (_list && _list.length) {
         const hmw = _list[0];
@@ -140,23 +126,25 @@ export default function ConnectionList() {
                 break;
             }
         }
-        return <div className="flex justify-content-center align-content-center" >Empty</div>
+        return <Empty/>
     }
-    return (<div className="flex flex-column" style={{ height: '100%' }}>
+    return (<div className={"flex flex-column h-full w-full " + indexCss.fixframe}>
         <BreadItem items={breads} ></BreadItem>
-        <TabList selectedValue={selectedValue} onTabSelect={onTabSelect}>
-            <Tab id="Header" icon={<DocumentGlobeRegular />} value="Header">
-                Header
-            </Tab>
-            <Tab id="Payload" icon={<PanelTopContractRegular />} value="Payload">
-                Payload
-            </Tab>
-            <Tab id="Response" icon={<PanelTopExpandRegular />} value="Response">
-                Response
-            </Tab>
-        </TabList>
-        <div className="flex-grow-1" style={{ border: '1px solid #ddd' }} >
-            {contentRender()}
-        </div>
+        <Card className="flex flex-column flex-grow-1" style={{margin: "10px"}}>
+            <TabList selectedValue={selectedValue} onTabSelect={onTabSelect}>
+                <Tab id="Header" icon={<DocumentGlobeRegular />} value="Header">
+                    Header
+                </Tab>
+                <Tab id="Payload" icon={<PanelTopContractRegular />} value="Payload">
+                    Payload
+                </Tab>
+                <Tab id="Response" icon={<PanelTopExpandRegular />} value="Response">
+                    Response
+                </Tab>
+            </TabList>
+            <div className="flex-grow-1" style={{ border: '1px solid #ddd' }} >
+                {contentRender()}
+            </div>
+        </Card>
     </div>);
 }

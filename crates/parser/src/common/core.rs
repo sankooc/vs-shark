@@ -10,7 +10,7 @@ use std::{
 use anyhow::{bail, Result};
 
 use crate::common::{
-    concept::{ConnectionIndex, Conversation, ConversationKey, FrameIndex, HttpConnectIndex, MessageIndex, Timestamp, VHttpConnection},
+    concept::{ConnectionIndex, Conversation, ConversationKey, FrameIndex, HttpConnectIndex, HttpHostRecord, MessageIndex, Timestamp, VHttpConnection},
     enum_def::AddressField,
 };
 
@@ -367,5 +367,8 @@ impl Context {
                 }
             }
         }
+    }
+    pub fn http_record_stat(&self) -> Vec<HttpHostRecord> {
+        self.http_hostnames.iter().map(|(k, v)| HttpHostRecord::new(k.clone(), *v as usize)).collect()
     }
 }

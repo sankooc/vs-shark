@@ -44,7 +44,7 @@ const Nav = () => {
     path: 'conversations',
     icon: ConversationIcon,
   }, {
-    name: 'HTTPs',
+    name: 'HTTP',
     path: 'https',
     icon: HttpIcon,
   }];

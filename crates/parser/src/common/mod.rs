@@ -483,8 +483,6 @@ impl Instance {
         let list = self._http_iter(_data);
         ListResult::new(start, total, list)
     }
-    
-
     fn _http_iter<T>(&self, list: &[T]) -> Vec<VHttpConnection> where T: Borrow<HttpConntect> {
         list.iter().map(|item| item.borrow().into(&self.ctx)).collect()
     }

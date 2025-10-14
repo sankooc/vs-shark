@@ -24,6 +24,8 @@ export enum ComType {
   HTTP_CONNECTIONS = "http_connections",
   HTTP_DETAIL_REQ = "http_detail_req",
   HTTP_DETAIL_RES = "http_detail_res",
+  HTTP_STATISTICS_REQ = "http_statistics_req",
+  HTTP_STATISTICS_RES = "http_statistics_res",
 }
 
 export interface ComRequest {

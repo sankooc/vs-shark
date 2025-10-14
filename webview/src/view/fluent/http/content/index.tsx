@@ -18,7 +18,11 @@ const renderContent = (hmw: HttpMessageWrap) => {
     };
     const inContent = () => {
         if (selectedValue === 'preview') {
-            return <PlainText text={hmw!.parsed_content!} mime={hmw.mime} />
+            const _mime: string = hmw.mime.toLocaleLowerCase() || "";
+            if (_mime.indexOf("json") >= 0 || _mime.indexOf("text") >= 0 || _mime.indexOf("xml") >= 0 || _mime.indexOf("html") >= 0) {
+                return <PlainText text={hmw!.parsed_content!} mime={hmw.mime} />
+            }
+            return <span> No Preview </span>
         } else {
             return <HexView data={hmw.raw || new Uint8Array()} maxLength={1024 * 1024} />
         }
