@@ -4,13 +4,13 @@
 // Licensed under the MIT License - see https://opensource.org/licenses/MIT
 
 use std::{
-    net::{Ipv4Addr, Ipv6Addr}, ops::Range
+    net::{Ipv4Addr, Ipv6Addr}, ops::{AddAssign, Range}
 };
 
 use anyhow::{bail, Result};
 
 use crate::common::{
-    concept::{ConnectionIndex, Conversation, ConversationKey, FrameIndex, HttpConnectIndex, HttpHostRecord, MessageIndex, Timestamp, VHttpConnection},
+    concept::{ConnectionIndex, Conversation, ConversationKey, CounterItem, FrameIndex, HttpConnectIndex, MessageIndex, Timestamp, VHttpConnection},
     enum_def::AddressField,
 };
 
@@ -149,6 +149,8 @@ pub struct Context {
     pub http_connections: Vec<HttpConntect>,
     pub http_messages: Vec<HttpMessage>,
     pub http_hostnames: FastHashMap<String, u8>,
+
+    pub tls_sni: FastHashMap<String, u8>,
     // ethernet
     pub ethermap: FastHashMap<u64, EthernetCache>,
     pub ipv6map: FastHashMap<u64, (u8, Ipv6Addr, Ipv6Addr)>,
@@ -362,13 +364,36 @@ impl Context {
             if let Some(http_connect_index) = &message.http_connect_index {
                 if let Some(connect) = self.http_connections.get_mut(*http_connect_index as usize) {
                     let hn = hostname.trim().to_lowercase();
-                    *self.http_hostnames.entry(hn.clone()).or_insert(1) += 1;
-                    connect.hostname = Some(hn);
+                    connect.hostname = Some(hn.clone());
+                    Context::_add_map(hn, &mut self.http_hostnames);
                 }
             }
         }
     }
-    pub fn http_record_stat(&self) -> Vec<HttpHostRecord> {
-        self.http_hostnames.iter().map(|(k, v)| HttpHostRecord::new(k.clone(), *v as usize)).collect()
+    pub fn http_record_stat(&self) -> String {
+        Context::_list_map(&self.http_hostnames)
+        // self.http_hostnames.iter().map(|(k, v)| HttpHostRecord::new(k.clone(), *v as usize)).collect()
+    }
+    
+}
+
+
+impl Context {
+    fn _add_map<T>(key: String, map: &mut FastHashMap<String, T>) where T: AddAssign + Default + Copy + From<u8> {
+        if let Some(v) = map.get_mut(&key) {
+            *v += T::from(1);
+        } else {
+            map.insert(key, T::from(1));
+        }
+    }
+    fn _list_map<T>(map: &FastHashMap<String, T>) -> String where T: Copy + Into<usize>{
+        let rs:Vec<CounterItem> = map.iter().map(|(k, v)| CounterItem::new(k.clone(), (*v).into())).collect();
+        serde_json::to_string(&rs).unwrap_or("[]".into())
+    }
+    pub fn add_tls_sni(&mut self, sni: String) {
+        Context::_add_map(sni, &mut self.tls_sni);
+    }
+    pub fn get_tls_sni_list(&self) -> String {
+        Context::_list_map(&self.tls_sni)
     }
 }

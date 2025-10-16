@@ -42,15 +42,27 @@ pub struct InstanceConfig {
     pub batch_size: usize,
 }
 
+// #[derive(Serialize)]
+// pub struct HttpHostRecord {
+//     pub host: String,
+//     pub count: usize,
+// }
+
+// impl HttpHostRecord {
+//     pub fn new(host: String, count: usize) -> Self {
+//         Self { host, count }
+//     }
+// }
+
 #[derive(Serialize)]
-pub struct HttpHostRecord {
-    pub host: String,
+pub struct CounterItem {
+    pub key: String,
     pub count: usize,
 }
 
-impl HttpHostRecord {
-    pub fn new(host: String, count: usize) -> Self {
-        Self { host, count }
+impl CounterItem {
+    pub fn new(key: String, count: usize) -> Self {
+        Self { key, count }
     }
 }
 

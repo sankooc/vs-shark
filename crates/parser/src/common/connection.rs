@@ -144,14 +144,16 @@ impl TCPSegment {
 #[derive(Clone)]
 pub struct TlsData {
     pub content_type: u8,
+    pub sub_type: Option<u8>,
     pub total: usize,
     pub segments: Vec<TCPSegment>,
 }
 
 impl TlsData {
-    pub fn new(content_type: u8) -> Self {
+    pub fn new(content_type: u8, sub_type: Option<u8>) -> Self {
         Self {
             content_type,
+            sub_type,
             total: 0,
             segments: vec![],
         }
@@ -159,6 +161,7 @@ impl TlsData {
     pub fn single(content_type: u8, segment: TCPSegment) -> Self {
         Self {
             content_type,
+            sub_type: None,
             total: segment.size(),
             segments: vec![segment],
         }
@@ -184,13 +187,15 @@ impl TlsData {
 #[derive(Clone)]
 pub struct TLSSegment {
     pub content_type: u8,
+    pub sub_type: Option<u8>,
     pub total: u16,
     pub len: u16,
     pub segments: Vec<TCPSegment>,
 }
 impl TLSSegment {
-    pub fn new(content_type: u8, len: u16) -> Self {
+    pub fn new(content_type: u8, len: u16, sub_type: Option<u8>) -> Self {
         Self {
+            sub_type,
             content_type,
             len,
             total: len,
@@ -212,6 +217,7 @@ impl TLSSegment {
 impl From<TLSSegment> for TlsData {
     fn from(val: TLSSegment) -> Self {
         TlsData {
+            sub_type: val.sub_type,
             content_type: val.content_type,
             segments: val.segments,
             total: val.total as usize,

@@ -1,5 +1,8 @@
 use js_sys::Uint8Array;
-use pcap::common::{Instance, concept::{Criteria, HttpCriteria}};
+use pcap::common::{
+    concept::{Criteria, HttpCriteria},
+    Instance,
+};
 use wasm_bindgen::prelude::*;
 
 use crate::entity::{parse_http_message, Conf, FrameRange, FrameResult};
@@ -88,11 +91,7 @@ impl WContext {
     }
     #[wasm_bindgen]
     pub fn list_http(&self, start: usize, size: usize, hostname: String, _method: String) -> String {
-        let filter = if hostname.is_empty() {
-            None
-        } else {
-            Some(HttpCriteria::hostname(hostname))
-        };
+        let filter = if hostname.is_empty() { None } else { Some(HttpCriteria::hostname(hostname)) };
         let rs = self.ctx.http_connections(Criteria { start, size }, filter);
         serde_json::to_string(&rs).unwrap_or("{}".into())
     }
@@ -112,9 +111,12 @@ impl WContext {
         serde_json::to_string(&rs).unwrap_or("{}".into())
     }
     #[wasm_bindgen]
-    pub fn http_hostname_stats(&self) -> String{
-        let rs = self.ctx.get_context().http_record_stat();
-        serde_json::to_string(&rs).unwrap_or("{}".into())
+    pub fn http_hostname_stats(&self) -> String {
+        self.ctx.get_context().http_record_stat()
+    }
+    #[wasm_bindgen]
+    pub fn tls_hostname_stats(&self) -> String {
+        self.ctx.get_context().get_tls_sni_list()
     }
 }
 

@@ -1,5 +1,5 @@
 // Copyright (c) 2025 sankooc
-// 
+//
 // This file is part of the pcapview project.
 // Licensed under the MIT License - see https://opensource.org/licenses/MIT
 
@@ -10,10 +10,10 @@ use crate::common::enum_def::{ProtocolInfoField, SegmentStatus};
 use crate::common::io::DataSource;
 use crate::common::{enum_def::Protocol, io::Reader, Frame};
 use crate::{add_field_format, add_field_format_fn};
-use anyhow::Result;
+use anyhow::{bail, Result};
 use record::parse_record_detail;
-pub mod record;
 mod extension;
+pub mod record;
 mod x509;
 
 #[derive(Default)]
@@ -36,7 +36,7 @@ impl TLSList {
     }
 }
 
-fn stamp(index: FrameIndex, reader: &Reader) -> TCPSegment {
+fn make_tls_segment(index: FrameIndex, reader: &Reader) -> TCPSegment {
     let start = reader.range.start;
     let end = reader.cursor;
     TCPSegment { index, range: start..end }
@@ -60,7 +60,7 @@ impl Visitor {
             ProtocolInfoField::TLS(list) => {
                 let str = tls_type(list.get(0).unwrap().content_type);
                 Some(str)
-            },
+            }
             ProtocolInfoField::TLSSegment => frame.tcp_description(),
             _ => frame.tcp_description(),
         }
@@ -97,19 +97,21 @@ impl Visitor {
                         content.extend(_data);
                         let content_type = content[0];
                         let len = u16::from_be_bytes(content[3..5].try_into()?);
+                        let sub_type = reader.next().ok();
                         if reader.left() >= len as usize {
                             reader.forward(len as usize);
-                            let current = stamp(index, &reader);
-                            let mut tlsdata = TlsData::new(content_type);
+                            let current = make_tls_segment(index, &reader);
+                            let mut tlsdata = TlsData::new(content_type, sub_type);
                             tlsdata.append(segment);
                             tlsdata.append(current);
+                            check_sni(&mut reader, &tlsdata);
                             list.push(tlsdata);
                             endpoint.segment_status = recycle(index, &mut reader, &mut list)?;
                         } else {
                             reader.forward(reader.left());
-                            let mut _seg = TLSSegment::new(content_type, len + 5);
+                            let mut _seg = TLSSegment::new(content_type, len + 5, sub_type);
                             _seg.append(segment)?;
-                            let current = stamp(index, &reader);
+                            let current = make_tls_segment(index, &reader);
                             _seg.append(current)?;
                             endpoint.segment_status = SegmentStatus::TlsSegment(_seg);
                         }
@@ -121,14 +123,16 @@ impl Visitor {
                     let _len = _seg.len;
                     if _len as usize > reader.left() {
                         reader.forward(reader.left());
-                        let current = stamp(index, &reader);
+                        let current = make_tls_segment(index, &reader);
                         _seg.append(current)?;
                         endpoint.segment_status = SegmentStatus::TlsSegment(_seg);
                     } else {
                         reader.forward(_len as usize);
-                        let current = stamp(index, &reader);
+                        let current = make_tls_segment(index, &reader);
                         _seg.append(current)?;
-                        list.push(_seg.into());
+                        let seg: TlsData = _seg.into();
+                        check_sni(&mut reader, &seg);
+                        list.push(seg);
 
                         let _left = reader.left();
                         if _left == 0 {
@@ -197,6 +201,38 @@ fn tls_version(val: u16) -> String {
     }
 }
 
+fn parse_nsi(reader: &mut Reader) -> Result<String> {
+    // let start = reader.cursor;
+    reader.forward(3); // length
+    let _len = reader.read16(true)?;
+    let mut record_reader = reader.slice_as_reader(_len as usize)?;
+    let _sub_type = record_reader.read8()?;
+    let _ = record_reader.read24()?;
+    record_reader.forward(34);
+    let session_id_len = record_reader.read8()?;
+    record_reader.forward(session_id_len as usize);
+    let cipher_suite_len = record_reader.read16(true)?;
+    record_reader.forward(cipher_suite_len as usize);
+    let compression_len = record_reader.read8()?;
+    record_reader.forward(compression_len as usize);
+    let extention_len = record_reader.read16(true)?;
+    if extention_len > 0 {
+        let mut extention_reader = record_reader.slice_as_reader(extention_len as usize)?;
+        while extention_reader.left() >= 4 {
+            let extention_type = extention_reader.read16(true)?;
+            let extention_len = extention_reader.read16(true)?;
+            if extention_type == 0 {
+                let mut ext_reader = extention_reader.slice_as_reader(extention_len as usize)?;
+                ext_reader.forward(5);
+                let sni = ext_reader.read_string((extention_len - 5) as usize)?;
+                return Ok(sni);
+            } else {
+                extention_reader.forward(extention_len as usize);
+            }
+        }
+    }
+    bail!("")
+}
 fn parse_segment(mut reader: Reader, source: u8) -> Result<Field> {
     let start = reader.cursor;
     let mut field = Field::with_children("".to_string(), start, 0);
@@ -230,6 +266,30 @@ pub fn detect(reader: &Reader) -> bool {
     }
 }
 
+fn check_sni(_reader: &mut Reader, segment: &TlsData) {
+    if segment.content_type == 22 {
+        if let Some(sub_type) = segment.sub_type {
+            if sub_type == 1 {
+                get_sni_info(_reader, segment).ok();
+            }
+        }
+    }
+}
+fn get_sni_info(_reader: &mut Reader, item: &TlsData) -> Result<String> {
+    if item.segments.len() == 1 {
+        let range = item.segments.first().unwrap().range.clone();
+        let ds = _reader.ds();
+        parse_nsi(&mut Reader::new_sub(ds, range)?)
+    } else {
+        let data = item.combind(_reader.ds());
+        let ds = DataSource::create(data, 0..0);
+        // Reader::new(&ds)
+        parse_nsi(&mut Reader::new(&ds))
+    }
+                // parse_nsi(&mut reader);
+    // Ok("".to_string())
+}
+
 fn recycle(index: FrameIndex, _reader: &mut Reader, list: &mut TLSList) -> Result<SegmentStatus> {
     let _left = _reader.left();
     if _left == 0 {
@@ -245,7 +305,7 @@ fn recycle(index: FrameIndex, _reader: &mut Reader, list: &mut TLSList) -> Resul
             let data = reader.slice(extra, true)?.to_vec();
             let content_type = data[0];
             if content_type > 19 && content_type < 25 {
-                let segment = stamp(index, &reader);
+                let segment = make_tls_segment(index, &reader);
                 return Ok(SegmentStatus::TlsHead(segment, data));
             } else {
                 // todo
@@ -257,20 +317,22 @@ fn recycle(index: FrameIndex, _reader: &mut Reader, list: &mut TLSList) -> Resul
             let content_type = reader.read8()?;
             reader.forward(2);
             let len = reader.read16(true)? as usize;
+            let sub_type = reader.next().ok();
             if reader.left() >= len {
                 reader.forward(len);
-                let segment = stamp(index, &reader);
-                list.push(TlsData::single(content_type, segment));
+                let mut segment = TlsData::single(content_type, make_tls_segment(index, &reader));
+                segment.sub_type = sub_type;
+                check_sni(&mut reader, &segment);
+                list.push(segment);
                 let _left = reader.left();
                 if _left == 0 {
                     continue;
                 }
                 reader = reader.slice_as_reader(_left)?;
             } else {
-                // let extra = len - reader.left();
                 reader.forward(reader.left());
-                let mut _seg = TLSSegment::new(content_type, (len + 5) as u16);
-                let segment = stamp(index, &reader);
+                let mut _seg = TLSSegment::new(content_type, (len + 5) as u16, sub_type);
+                let segment: TCPSegment = make_tls_segment(index, &reader);
                 _seg.append(segment)?;
                 return Ok(SegmentStatus::TlsSegment(_seg));
             }
