@@ -1,13 +1,15 @@
 import { useEffect, useState } from "react";
 import { useStore } from "../../store";
-import { Card, makeStyles, SelectTabData, SelectTabEvent, Tab, TabList, TabValue, Tree, TreeItem, TreeItemLayout } from "@fluentui/react-components";
+import { makeStyles, SelectTabData, SelectTabEvent, Tab, TabList, TabValue, Tree, TreeItem, TreeItemLayout } from "@fluentui/react-components";
 import { format_bytes_single_unit, HttpMessageWrap, MessageCompress } from "../../../share/common";
 // import { Fade } from "@fluentui/react-motion-components-preview";
 import indexCss from './index.module.scss';
-import { BreadItem, HttpIcon } from "../common";
+import { HttpIcon } from "../common";
 import { DocumentGlobeRegular, PanelTopContractRegular, PanelTopExpandRegular } from "@fluentui/react-icons";
 import ContentComponent from './content';
 import Empty from "./content/empty";
+
+import {PageFrame} from '../table';
 
 
 const useStyles = makeStyles({
@@ -128,9 +130,8 @@ export default function ConnectionList() {
         }
         return <Empty/>
     }
-    return (<div className={"flex flex-column h-full w-full " + indexCss.fixframe}>
-        <BreadItem items={breads} ></BreadItem>
-        <Card className="flex flex-column flex-grow-1" style={{margin: "10px"}}>
+    return (<PageFrame breads={breads}>
+        <>
             <TabList selectedValue={selectedValue} onTabSelect={onTabSelect}>
                 <Tab id="Header" icon={<DocumentGlobeRegular />} value="Header">
                     Header
@@ -145,6 +146,6 @@ export default function ConnectionList() {
             <div className="flex-grow-1" style={{ border: '1px solid #ddd' }} >
                 {contentRender()}
             </div>
-        </Card>
-    </div>);
+        </>
+    </PageFrame>);
 }

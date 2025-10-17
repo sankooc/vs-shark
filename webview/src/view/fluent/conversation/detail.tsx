@@ -153,6 +153,6 @@ export default function Component() {
         { name: title },
     ]
     return <div className="flex flex-column h-full" style={{ overflowX: "hidden", overflowY: "auto" }}>
-        <Grid columns={columns} onClick={onClick} pageSize={pageSize} load={load} breads={breads} />
+        <Grid size="small" columns={columns} onClick={onClick} pageSize={pageSize} load={load} breads={breads} />
     </div>
 }

@@ -66,7 +66,7 @@ export interface IVHttpConnection {
     response_body: [number, number][];
 }
 
-export interface IHttpStatistics {
-    host: string;
+export interface ICounterItem {
+    key: string;
     count: number;
 }

@@ -12,7 +12,7 @@ import {
   PcapFile,
   VRange,
 } from "../share/common";
-import { IFrameInfo, IHttpStatistics, IListResult, IProgressStatus, IVConnection, IVConversation, IVHttpConnection } from "../share/gen";
+import { IFrameInfo, ICounterItem, IListResult, IProgressStatus, IVConnection, IVConversation, IVHttpConnection } from "../share/gen";
 import mitt from "mitt";
 
 
@@ -37,7 +37,8 @@ interface PcapState {
   httpDetail: (data: IVHttpConnection) => Promise<MessageCompress[]>
   cachehttp: (conn: IVHttpConnection | null) => void;
   getHttpCache: () => IVHttpConnection | null;
-  httpStat: () => Promise<IHttpStatistics[]> ;
+  httpStat: () => Promise<ICounterItem[]> ;
+  tlsStat: () => Promise<ICounterItem[]> ;
   // frameList: (page: number, size: number) => Promise<IListResult<IFrameInfo>>;
 }
 // const compute = (page: number, size: number): Pagination => {
@@ -92,7 +93,9 @@ export const useStore = create<PcapState>()((set) => {
         set((state) => ({ ...state, progress }));
         break;
       }
-      case ComType.HTTP_STATISTICS_RES: {
+      case ComType.HTTP_STATISTICS_RES:
+      case ComType.TLS_STATISTICS_RES:
+      {
         emitter.emit(id, deserialize(body));
         break;
       }
@@ -163,9 +166,13 @@ export const useStore = create<PcapState>()((set) => {
     getHttpCache: () => {
       return httpCache;
     },
-    httpStat: (): Promise<IHttpStatistics[]> => {
+    httpStat: (): Promise<ICounterItem[]> => {
       const req = new ComMessage(ComType.HTTP_STATISTICS_REQ, {});
-      return doRequest<IHttpStatistics[]>(req);
+      return doRequest<ICounterItem[]>(req);
+    },
+    tlsStat: (): Promise<ICounterItem[]> => {
+      const req = new ComMessage(ComType.TLS_STATISTICS_REQ, {});
+      return doRequest<ICounterItem[]>(req);
     }
   };
 });

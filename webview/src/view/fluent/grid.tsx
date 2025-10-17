@@ -12,6 +12,7 @@ interface GridProps<T> {
     pageSize: number;
     columnSizingOptions?: TableColumnSizingOptions,
     breads?: { icon?: Slot<'span'>, name: string, path?: string}[],
+    size: string 
 }
 
 function Component<T>(props: GridProps<T>) {

@@ -83,11 +83,15 @@ impl Visitor {
         let mut reader = _reader.slice_as_reader(left)?;
         let mut list = TLSList::default();
 
+
+        // let mut tlsmap = &ctx.tls_sni;
+        // let mut sni: Option<String> = None;
         if let Some((_, endpoint)) = ctx.connection(frame) {
+            let mut sni: Option<String> = None;
             // let endpoint = conn.source_endpoint();
             let mut _status = std::mem::replace(&mut endpoint.segment_status, SegmentStatus::Init);
             match _status {
-                SegmentStatus::Init => endpoint.segment_status = recycle(index, &mut reader, &mut list)?,
+                SegmentStatus::Init => endpoint.segment_status = recycle(&mut sni, index, &mut reader, &mut list)?,
                 SegmentStatus::TlsHead(segment, data) => {
                     let _len = data.len();
                     if _len < 5 {
@@ -104,9 +108,9 @@ impl Visitor {
                             let mut tlsdata = TlsData::new(content_type, sub_type);
                             tlsdata.append(segment);
                             tlsdata.append(current);
-                            check_sni(&mut reader, &tlsdata);
+                            check_sni(&mut sni, &mut reader, &tlsdata);
                             list.push(tlsdata);
-                            endpoint.segment_status = recycle(index, &mut reader, &mut list)?;
+                            endpoint.segment_status = recycle(&mut sni, index, &mut reader, &mut list)?;
                         } else {
                             reader.forward(reader.left());
                             let mut _seg = TLSSegment::new(content_type, len + 5, sub_type);
@@ -131,7 +135,7 @@ impl Visitor {
                         let current = make_tls_segment(index, &reader);
                         _seg.append(current)?;
                         let seg: TlsData = _seg.into();
-                        check_sni(&mut reader, &seg);
+                        check_sni(&mut sni, &mut reader, &seg);
                         list.push(seg);
 
                         let _left = reader.left();
@@ -140,13 +144,17 @@ impl Visitor {
                             return Ok(Protocol::None);
                         }
                         reader = reader.slice_as_reader(_left)?;
-                        endpoint.segment_status = recycle(index, &mut reader, &mut list)?;
+                        endpoint.segment_status = recycle(&mut sni, index, &mut reader, &mut list)?;
                     }
                 }
                 _ => {
                     endpoint.segment_status = SegmentStatus::Init;
                 }
             }
+
+            if let Some(sni_name) = sni {
+                ctx.add_tls_sni(sni_name);
+            }   
         }
 
         if list.len() > 0 {
@@ -266,11 +274,13 @@ pub fn detect(reader: &Reader) -> bool {
     }
 }
 
-fn check_sni(_reader: &mut Reader, segment: &TlsData) {
+fn check_sni(sni_option: &mut Option<String>, _reader: &mut Reader, segment: &TlsData) {
     if segment.content_type == 22 {
         if let Some(sub_type) = segment.sub_type {
             if sub_type == 1 {
-                get_sni_info(_reader, segment).ok();
+                if let Some(sni) = get_sni_info(_reader, segment).ok() {
+                    *sni_option = Some(sni);
+                }
             }
         }
     }
@@ -290,7 +300,7 @@ fn get_sni_info(_reader: &mut Reader, item: &TlsData) -> Result<String> {
     // Ok("".to_string())
 }
 
-fn recycle(index: FrameIndex, _reader: &mut Reader, list: &mut TLSList) -> Result<SegmentStatus> {
+fn recycle(sni_option: &mut Option<String>, index: FrameIndex, _reader: &mut Reader, list: &mut TLSList) -> Result<SegmentStatus> {
     let _left = _reader.left();
     if _left == 0 {
         return Ok(SegmentStatus::Init);
@@ -322,7 +332,7 @@ fn recycle(index: FrameIndex, _reader: &mut Reader, list: &mut TLSList) -> Resul
                 reader.forward(len);
                 let mut segment = TlsData::single(content_type, make_tls_segment(index, &reader));
                 segment.sub_type = sub_type;
-                check_sni(&mut reader, &segment);
+                check_sni(sni_option, &mut reader, &segment);
                 list.push(segment);
                 let _left = reader.left();
                 if _left == 0 {

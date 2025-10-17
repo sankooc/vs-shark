@@ -2,17 +2,31 @@ import { Button, Card, DataGrid, DataGridBody, DataGridCell, DataGridHeader, Dat
 import { IListResult } from "../../share/gen";
 import Pagination from './pagination2';
 
-import { JSX, useEffect, useState } from "react";
+import { JSX, ReactNode, useEffect, useState } from "react";
 import { BreadItem } from "./common";
-import indexCss from './table.module.scss';
 interface GridProps<T> {
     columns: TableColumnDefinition<T>[];
     filterComponent?: JSX.Element;
-    onClick: (item: T) => void;
+    onClick?: (item: T) => void;
     load: (page: number, filter: any) => Promise<IListResult<T>>;
     pageSize: number;
     columnSizingOptions?: TableColumnSizingOptions,
     breads?: { icon?: Slot<'span'>, name: string, path?: string }[],
+    size?: "small" | "medium" | "extra-small",
+}
+interface PageProps {
+    children: React.ReactElement<ReactNode>;
+    breads?: { icon?: Slot<'span'>, name: string, path?: string }[],
+}
+export function PageFrame(props: PageProps) {
+    return (<div className="flex flex-column page-card">
+        {
+            props.breads && props.breads.length > 0 && <BreadItem items={props.breads} ></BreadItem>
+        }
+        <Card className="flex flex-grow-1" style={{ margin: '0', padding: '5px', alignItems: 'stretch', justifyContent: 'space-between', overflow: 'auto' }} orientation="vertical">
+            {props.children}
+        </Card>
+    </div>)
 }
 
 function Component<T>(props: GridProps<T>) {
@@ -37,24 +51,24 @@ function Component<T>(props: GridProps<T>) {
     useEffect(mountHook, [page]);
     const columnSizingOptions = { ...props.columnSizingOptions };
 
-    return (<div className={"flex flex-column h-full w-full " + indexCss.fixframe}>
+    return (<div className="flex flex-column page-card">
         {
             props.breads && props.breads.length > 0 && <BreadItem items={props.breads} ></BreadItem>
         }
         {
-            props.filterComponent && (<Card style={{ margin: '10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }} orientation="horizontal">
+            props.filterComponent && (<Card className="w-full" style={{margin: '0 0 5px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }} orientation="horizontal">
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                     {props.filterComponent}
                 </div>
                 <Button style={{ marginLeft: 'auto' }} size="small" onClick={doSearch}>Search</Button>
             </Card>)
         }
-        <Card className="flex flex-grow-1" style={{ margin: '10px', padding: '5px', alignItems: 'center', justifyContent: 'space-between' }} orientation="vertical">
+        <Card className="flex flex-grow-1" style={{ margin: '0px', padding: 0, alignItems: 'center', justifyContent: 'space-between' }} orientation="vertical">
             <DataGrid items={result.items}
-                size="small"
+                size={props.size}
                 resizableColumns
                 columnSizingOptions={columnSizingOptions}
-                columns={props.columns} style={{ minWidth: "auto", overflow: 'hidden auto'}} className="h-full w-full" >
+                columns={props.columns} style={{ minWidth: "auto", overflow: 'hidden auto' }} className="h-full w-full" >
                 <DataGridHeader style={{ paddingRight: scrollbarWidth, backgroundColor: '#458588' }}>
                     <DataGridRow>
                         {({ renderHeaderCell }) => (
@@ -65,7 +79,7 @@ function Component<T>(props: GridProps<T>) {
                 <DataGridBody<T>>
                     {({ item, rowId }) => (
                         <DataGridRow key={rowId} onClick={() => {
-                            props.onClick(item);
+                            props.onClick && props.onClick(item);
                         }} >
                             {({ renderCell }) => (
                                 <DataGridCell>{renderCell(item)}</DataGridCell>

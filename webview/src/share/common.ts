@@ -26,6 +26,8 @@ export enum ComType {
   HTTP_DETAIL_RES = "http_detail_res",
   HTTP_STATISTICS_REQ = "http_statistics_req",
   HTTP_STATISTICS_RES = "http_statistics_res",
+  TLS_STATISTICS_REQ = "tls_statistics_req",
+  TLS_STATISTICS_RES = "tls_statistics_res",
 }
 
 export interface ComRequest {

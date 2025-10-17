@@ -52,7 +52,7 @@ function Component() {
         }),
         createTableColumn<IVConversation>({
             columnId: "receiver_packets",
-            renderHeaderCell: () =>  <><FolderListRegular /> TX Packets</>,
+            renderHeaderCell: () => <><FolderListRegular /> TX Packets</>,
             renderCell: (item) => {
                 return item.receiver_packets;
             },
@@ -87,10 +87,23 @@ function Component() {
     }
 
     const breads = [
-        { name: "Conversations", icon: <ConversationIcon/>, path: "/conversations" }
+        { name: "Conversations", icon: <ConversationIcon />, path: "/conversations" }
     ]
+    const columnSizingOptions = {
+        sender: {
+            minWidth: 200,
+            idealWidth: 250,
+            autoFitColumns: true,
+        },
+        receiver: {
+            minWidth: 200,
+            idealWidth: 250,
+            autoFitColumns: true,
+        }
+
+    };
     return <div className="flex flex-column h-full" style={{ overflowX: "hidden", overflowY: "auto" }}>
-        <Grid columns={columns} onClick={onClick} pageSize={pageSize} load={load} breads={breads} />
+        <Grid size="small" columns={columns} onClick={onClick} pageSize={pageSize} load={load} breads={breads} columnSizingOptions={columnSizingOptions} />
     </div>
 }
 

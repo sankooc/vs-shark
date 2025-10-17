@@ -365,7 +365,7 @@ impl Context {
                 if let Some(connect) = self.http_connections.get_mut(*http_connect_index as usize) {
                     let hn = hostname.trim().to_lowercase();
                     connect.hostname = Some(hn.clone());
-                    Context::_add_map(hn, &mut self.http_hostnames);
+                    Context::add_map(hn, &mut self.http_hostnames);
                 }
             }
         }
@@ -379,7 +379,7 @@ impl Context {
 
 
 impl Context {
-    fn _add_map<T>(key: String, map: &mut FastHashMap<String, T>) where T: AddAssign + Default + Copy + From<u8> {
+    pub fn add_map<T>(key: String, map: &mut FastHashMap<String, T>) where T: AddAssign + Default + Copy + From<u8> {
         if let Some(v) = map.get_mut(&key) {
             *v += T::from(1);
         } else {
@@ -391,7 +391,7 @@ impl Context {
         serde_json::to_string(&rs).unwrap_or("[]".into())
     }
     pub fn add_tls_sni(&mut self, sni: String) {
-        Context::_add_map(sni, &mut self.tls_sni);
+        Context::add_map(sni, &mut self.tls_sni);
     }
     pub fn get_tls_sni_list(&self) -> String {
         Context::_list_map(&self.tls_sni)

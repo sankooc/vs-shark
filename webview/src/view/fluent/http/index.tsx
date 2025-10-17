@@ -1,54 +1,81 @@
 // import React, { useEffect, useState } from "react";
 import { useStore } from "../../store";
-import { IVHttpConnection, IHttpStatistics } from "../../../share/gen";
-import { createTableColumn, Select, TableCellLayout, TableColumnDefinition } from "@fluentui/react-components";
+import { IVHttpConnection, ICounterItem } from "../../../share/gen";
+import { createTableColumn, Select, TableCellLayout, TableColumnDefinition, Toolbar, ToolbarButton } from "@fluentui/react-components";
 import { compute, ComRequest, format_bytes_single_unit } from "../../../share/common";
 import indexCss from './index.module.scss';
 import { useNavigate } from "react-router";
 import Grid from "../table";
 import { http_size } from "../../conf";
 import { HttpIcon } from "../common";
-import { Image28Color, CodeBlock28Color,ContentView28Color, BorderAllRegular, ClipboardCodeRegular, DesktopSignalRegular, ImageRegular, TextWordCountRegular, TimePickerRegular } from "@fluentui/react-icons";
+import { BorderAllRegular, ClockBillRegular, ClockDismissRegular, ClipboardCodeRegular, DesktopSignalRegular, ImageRegular, TextWordCountRegular, AppsListDetailRegular, CodeBlockRegular, ContentViewRegular, TextBulletListSquareColor, MoreHorizontalFilled, ClockRegular, WarningRegular, CheckmarkSquareRegular } from "@fluentui/react-icons";
 
 import { useId, Label } from "@fluentui/react-components";
 
 import { useEffect, useState } from "react";
+import Empty from "./content/empty";
 
 const NoneOption = "ANY";
 
+const SIZE: "small" | "medium" = 'small';
 const docIcon = (item: IVHttpConnection) => {
-    // return <Image28Color />
-    // return <CodeBlock28Color />
     const _type = (item.content_type || '').toLocaleLowerCase();
-    if(_type.indexOf('css') >= 0 || _type.indexOf('javascript') >= 0 || _type.indexOf('xml') >= 0) {
-        return <CodeBlock28Color />
+    if (_type.indexOf('css') >= 0 || _type.indexOf('javascript') >= 0 || _type.indexOf('xml') >= 0) {
+        return <CodeBlockRegular />
     }
-    if(_type.indexOf('png') >= 0 || _type.indexOf('jpeg') >= 0 || _type.indexOf('gif') >= 0) {
-        return <Image28Color />
+    if (_type.indexOf('png') >= 0 || _type.indexOf('jpeg') >= 0 || _type.indexOf('gif') >= 0) {
+        return <ImageRegular />
     }
-    return <ContentView28Color />
+    return <ContentViewRegular />
+}
+
+const http_rt_icon = (item: IVHttpConnection) => {
+    const timeStr = item.rt;
+    if (timeStr) {
+        try {
+            if ('N/A' === timeStr) {
+                return <ClockDismissRegular />
+            }
+            if (timeStr.indexOf('µs') >= 0) {
+                const time: number = parseInt(timeStr.substring(0, timeStr.length - 2));
+                if (time > 10000) {
+                    return <ClockBillRegular />
+                }
+            }
+
+        } catch (e) {
+
+        }
+    }
+    return <ClockRegular />;
+}
+
+const http_connct_status = (status: string) => {
+    try {
+        if(parseInt(status) > 0){
+            return <CheckmarkSquareRegular />
+        }
+    }catch(e) {}
+    return <WarningRegular />
 }
 
 function Component() {
     const httpConnections = useStore((state) => state.httpConnections);
     const cachehttp = useStore((state) => state.cachehttp);
     const httpStat = useStore((state) => state.httpStat);
-    const [httpHosts, setHttpHosts] = useState<IHttpStatistics[]>([]);
+    const [httpHosts, setHttpHosts] = useState<ICounterItem[]>([]);
     const [hostSelect, setHostSelect] = useState<string>(NoneOption);
     useEffect(() => {
         httpStat().then(setHttpHosts);
     }, [])
     const navigate = useNavigate();
+    const selectId = useId();
+
+    if(httpHosts.length === 0){
+        return <Empty/>
+    }
+
     const columns: TableColumnDefinition<IVHttpConnection>[] = [
-        createTableColumn<IVHttpConnection>({
-            columnId: "icon",
-            renderHeaderCell: () => <></>,
-            renderCell: (item) => {
-                return (
-                    docIcon(item)
-                );
-            },
-        }),
         createTableColumn<IVHttpConnection>({
             columnId: "status",
             renderHeaderCell: () => <><ClipboardCodeRegular /> Status</>,
@@ -60,8 +87,9 @@ function Component() {
                         status = ss[1];
                     }
                 }
+                const media = http_connct_status(status);
                 return (
-                    <TableCellLayout style={{textAlign: 'center'}}>
+                    <TableCellLayout media={media} style={{ textAlign: 'center' }}>
                         {status}
                     </TableCellLayout>
                 );
@@ -114,14 +142,34 @@ function Component() {
             columnId: "content_type",
             renderHeaderCell: () => <><ImageRegular /> Content-Type</>,
             renderCell: (item) => {
-                return item.content_type;
+                const contentType = item.content_type;
+                if(contentType){
+                    return  <TableCellLayout media={docIcon(item)} style={{ textAlign: 'center' }}>
+                        {contentType}
+                    </TableCellLayout>
+                }
+                return '';
             },
         }),
         createTableColumn<IVHttpConnection>({
             columnId: "time",
-            renderHeaderCell: () => <><TimePickerRegular /> Time</>,
+            renderHeaderCell: () => <><ClockRegular /> Time</>,
             renderCell: (item) => {
-                return item.rt;
+                const timeStr = item.rt;
+                return <TableCellLayout media={http_rt_icon(item)}>
+                    {timeStr}
+                </TableCellLayout>
+            },
+        }),
+        createTableColumn<IVHttpConnection>({
+            columnId: "ops",
+            renderHeaderCell: () => <AppsListDetailRegular />,
+            renderCell: (item) => {
+                return <Toolbar aria-label="Default" size="small">
+                    <ToolbarButton icon={<TextBulletListSquareColor />} onClick={() => { onClick(item) }} />
+                    <ToolbarButton icon={<MoreHorizontalFilled />} />
+                </Toolbar>
+                // return <TableCellLayout media={<TextBulletListSquareColor />} style={{cursor: 'pointer'}}></TableCellLayout>
             },
         }),
     ];
@@ -169,8 +217,8 @@ function Component() {
             minWidth: 100,
         },
         content_type: {
-            defaultWidth: 200,
-            minWidth: 200,
+            defaultWidth: 250,
+            minWidth: 250,
             autoFitColumns: true,
         },
         time: {
@@ -178,27 +226,33 @@ function Component() {
             minWidth: 120,
             autoFitColumns: true,
         },
+        ops: {
+            defaultWidth: 100,
+            minWidth: 100,
+            autoFitColumns: true,
+
+        }
     }
 
     const breads = [
         { name: "HTTP Requests", icon: <HttpIcon />, path: "/https" }
     ]
 
-    const selectId = useId();
     const onChange = (_: any, val: any) => {
         setHostSelect(val.value);
     }
     const gridProps = {
         filterComponent: (<>
-            <Label size="small" htmlFor={selectId} style={{ paddingInlineEnd: "5px" }}>Hostname:</Label>
-            <Select size="small" id={selectId} onChange={onChange} value={hostSelect} >
+            <Label size={SIZE} htmlFor={selectId} style={{ paddingInlineEnd: "5px" }}>Hostname:</Label>
+            <Select size={SIZE} id={selectId} onChange={onChange} value={hostSelect} >
                 <option>{NoneOption}</option>
                 {httpHosts.map((h) => {
-                    return <option key={h.host}>{h.host}</option>
+                    return <option key={h.key}>{h.key}</option>
                 })}
             </Select>
         </>),
-        columns, onClick, pageSize, load, columnSizingOptions, breads
+        size: SIZE,
+        columns, pageSize, load, columnSizingOptions, breads
     };
 
     return <Grid {...gridProps} />;

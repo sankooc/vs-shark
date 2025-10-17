@@ -5,7 +5,7 @@ import {
     BreadcrumbButton,
     Slot,
 } from "@fluentui/react-components";
-import { bundleIcon, FormSparkle20Filled, FormSparkle20Regular, GlobeColor, LockClosedKeyRegular, PlugConnected20Filled, PlugConnected20Regular, QuestionFilled, TextboxRotate9020Filled, TextboxRotate9020Regular, TriangleLeft20Filled, TriangleLeft20Regular, TriangleRight20Filled, TriangleRight20Regular } from "@fluentui/react-icons";
+import { bundleIcon, ClipboardBulletListRtlFilled, ClipboardBulletListRtlRegular, FormSparkle20Filled, FormSparkle20Regular, GlobeColor, LockClosedKeyRegular, PlugConnected20Filled, PlugConnected20Regular, QuestionFilled, ShieldLock20Filled, ShieldLock20Regular, TextboxRotate9020Filled, TextboxRotate9020Regular, TriangleLeft20Filled, TriangleLeft20Regular, TriangleRight20Filled, TriangleRight20Regular } from "@fluentui/react-icons";
 import React from "react";
 
 import { useNavigate } from "react-router";
@@ -40,9 +40,11 @@ export function BreadItem(props: ConnectProp) {
 export const ConversationIcon = bundleIcon(FormSparkle20Filled, FormSparkle20Regular);
 export const FrameIcon = bundleIcon(TextboxRotate9020Filled, TextboxRotate9020Regular);
 export const HttpIcon = bundleIcon(PlugConnected20Filled, PlugConnected20Regular);
+export const TLSIcon = bundleIcon(ShieldLock20Filled, ShieldLock20Regular)
 export const NextIcon = bundleIcon(TriangleRight20Filled, TriangleRight20Regular);
 export const PrevIcon = bundleIcon(TriangleLeft20Filled, TriangleLeft20Regular);
 
+export const DetailIcon = bundleIcon(ClipboardBulletListRtlFilled, ClipboardBulletListRtlRegular)
 
 // eslint-disable-next-line react-refresh/only-export-components
 export function protocolText(text: string): React.ReactNode {

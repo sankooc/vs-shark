@@ -85,7 +85,6 @@ export abstract class PCAPClient {
             this.emitMessage(ComMessage.new(ComType.CONNECTIONS, rs, requestId));
             return;
           case "http_connection":
-            console.log('paramhost', param.host);
             rs = this.ctx.list_http(start, size, param.host || '', '');
             this.emitMessage(ComMessage.new(ComType.HTTP_CONNECTIONS, rs, requestId));
             return;
@@ -177,6 +176,12 @@ export abstract class PCAPClient {
       return this.ctx.http_hostname_stats();
     }
     return "[]";
+  }
+  private async tls_stat(): Promise<string> {
+    if(this.ctx){
+      return this.ctx.tls_hostname_stats();
+    }
+    return '[]';
   }
 
 
@@ -285,6 +290,13 @@ export abstract class PCAPClient {
           const rs = await this.http_stat();
           this.emitMessage(
             ComMessage.new(ComType.HTTP_STATISTICS_RES, rs, id),
+          );
+          break;
+        }
+        case ComType.TLS_STATISTICS_REQ: {
+          const rs = await this.tls_stat();
+          this.emitMessage(
+            ComMessage.new(ComType.TLS_STATISTICS_RES, rs, id),
           );
           break;
         }
