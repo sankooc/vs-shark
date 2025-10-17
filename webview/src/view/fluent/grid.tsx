@@ -7,7 +7,7 @@ import { BreadItem } from "./common";
 
 interface GridProps<T> {
     columns: TableColumnDefinition<T>[];
-    onClick: (item: T) => void;
+    onClick?: (item: T) => void;
     load: (page: number) => Promise<IListResult<T>>;
     pageSize: number;
     columnSizingOptions?: TableColumnSizingOptions,
@@ -51,7 +51,7 @@ function Component<T>(props: GridProps<T>) {
             <DataGridBody<T>>
                 {({ item, rowId }) => (
                     <DataGridRow key={rowId} onClick={() => {
-                        props.onClick(item);
+                        props.onClick && props.onClick(item);
                     }} >
                         {({ renderCell }) => (
                             <DataGridCell>{renderCell(item)}</DataGridCell>

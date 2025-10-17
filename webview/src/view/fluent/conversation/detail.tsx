@@ -2,11 +2,14 @@ import { useStore } from "../../store";
 import { IVConnection} from "../../../share/gen";
 import { createTableColumn, TableCellLayout, TableColumnDefinition } from "@fluentui/react-components";
 import { compute, ComRequest, format_bytes_single_unit } from "../../../share/common";
-import Grid from "../grid";
+import Grid from "../table";
 import { connect_size } from "../../conf";
 import { useParams, useLocation } from "react-router";
 import { ConversationIcon, protocolText } from "../common";
 import { ArrowDownloadRegular, ArrowUploadRegular, DesktopMacRegular, TextBulletListSquareRegular, UsbPlugFilled } from "@fluentui/react-icons";
+
+
+const SIZE: "small" | "medium" = 'small';
 
 export default function Component() {
     const { conversationIndex } = useParams();
@@ -137,8 +140,6 @@ export default function Component() {
             },
         }),
     ];
-    const onClick = (_item: IVConnection) => {
-    };
     const load = async (page: number) => {
         const data: ComRequest = {
             catelog: "connection",
@@ -152,7 +153,13 @@ export default function Component() {
         { name: "Conversations",icon: <ConversationIcon/>, path: "/conversations" },
         { name: title },
     ]
-    return <div className="flex flex-column h-full" style={{ overflowX: "hidden", overflowY: "auto" }}>
-        <Grid size="small" columns={columns} onClick={onClick} pageSize={pageSize} load={load} breads={breads} />
-    </div>
+
+    const gridProps = {
+        size: SIZE,
+        columns, pageSize, load, breads
+    };
+    return <Grid {...gridProps} />;
+    // return <div className="flex flex-column h-full" style={{ overflowX: "hidden", overflowY: "auto" }}>
+    //     <Grid size="small" columns={columns} onClick={onClick} pageSize={pageSize} load={load} breads={breads} />
+    // </div>
 }

@@ -8,7 +8,7 @@ import { useNavigate } from "react-router";
 import Grid from "../table";
 import { http_size } from "../../conf";
 import { HttpIcon } from "../common";
-import { BorderAllRegular, ClockBillRegular, ClockDismissRegular, ClipboardCodeRegular, DesktopSignalRegular, ImageRegular, TextWordCountRegular, AppsListDetailRegular, CodeBlockRegular, ContentViewRegular, TextBulletListSquareColor, MoreHorizontalFilled, ClockRegular, WarningRegular, CheckmarkSquareRegular } from "@fluentui/react-icons";
+import { BorderAllRegular, ClockBillRegular, ClockDismissRegular, ClipboardCodeRegular, DesktopSignalRegular, ImageRegular, TextWordCountRegular, CodeBlockRegular, ContentViewRegular, TextBulletListSquareColor, MoreHorizontalFilled, ClockRegular, WarningRegular, CheckmarkSquareRegular } from "@fluentui/react-icons";
 
 import { useId, Label } from "@fluentui/react-components";
 
@@ -163,7 +163,7 @@ function Component() {
         }),
         createTableColumn<IVHttpConnection>({
             columnId: "ops",
-            renderHeaderCell: () => <AppsListDetailRegular />,
+            renderHeaderCell: () => "ext",
             renderCell: (item) => {
                 return <Toolbar aria-label="Default" size="small">
                     <ToolbarButton icon={<TextBulletListSquareColor />} onClick={() => { onClick(item) }} />
