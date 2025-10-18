@@ -24,12 +24,22 @@ export enum ComType {
   HTTP_CONNECTIONS = "http_connections",
   HTTP_DETAIL_REQ = "http_detail_req",
   HTTP_DETAIL_RES = "http_detail_res",
+  STAT_REQ = "STAT_REQ",
+  STAT_RES = "STAT_RES",
+  // HTTP_STATISTICS_REQ = "http_statistics_req",
+  // HTTP_STATISTICS_RES = "http_statistics_res",
+  // TLS_STATISTICS_REQ = "tls_statistics_req",
+  // TLS_STATISTICS_RES = "tls_statistics_res",
 }
 
 export interface ComRequest {
   catelog: string;
   type: string;
   param: any;
+}
+
+export interface StatRequest {
+  field: string
 }
 
 // export interface Pagination {

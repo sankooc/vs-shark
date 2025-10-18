@@ -56,7 +56,7 @@ function Component(props: PageProps) {
     }
     return <Toolbar
       checkedValues={{pageNum: [props.page + '']}}
-      style={{ justifyContent: "right" }}
+      style={{ justifyContent: "right", alignSelf: "flex-end" }}
     >
       <ToolbarButton
         icon={<PrevIcon />}

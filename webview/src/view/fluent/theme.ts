@@ -145,7 +145,6 @@ const mapper: Partial<Record<keyof Theme, string>> = {
 export const buildTheme = () => {
     let isWebview = typeof acquireVsCodeApi === 'function';
     if (!isWebview) {
-        console.log('no webview used webDarkTheme');
         import('../../scss/var.scss');
         return webDarkTheme;
     }
@@ -161,19 +160,16 @@ export const _buildTheme = (base: Theme): Theme => {
     const style = getComputedStyle(document.documentElement);
     // const computed = getComputedStyle(document.documentElement);
     // const allVars = {};
-    for (const key in style) {
-        if (typeof style[key] === 'string' && key.startsWith('--vscode-')) {
-            // console.log(key);
-            // allVars[key] = style.getPropertyValue(key);
-        }
-    }
+    // for (const key in style) {
+    //     if (typeof style[key] === 'string' && key.startsWith('--vscode-')) {
+    //     }
+    // }
     for (const key in mapper) {
         const typedKey = key as keyof Theme;
         const cssVar = mapper[typedKey];
         const value = style.getPropertyValue(cssVar!);
         if (value) {
             (rs as any)[typedKey] = value;
-            // console.log('set', cssVar, 'to', value);
         }
     }
     return rs;

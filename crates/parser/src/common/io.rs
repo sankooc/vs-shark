@@ -1,5 +1,5 @@
 // Copyright (c) 2025 sankooc
-// 
+//
 // This file is part of the pcapview project.
 // Licensed under the MIT License - see https://opensource.org/licenses/MIT
 
@@ -318,6 +318,16 @@ impl Reader<'_> {
             _val = unsafe { ptr::read_unaligned(bytes.as_ptr() as *const u16).to_le() }
         }
         Ok(_val)
+    }
+    pub fn read24(&mut self) -> Result<u32> {
+        if self.left() >= 3 {
+            let b1 = self.read8()?;
+            let b2 = self.read8()?;
+            let b3 = self.read8()?;
+            let length = ((b1 as u32) << 16) | ((b2 as u32) << 8) | (b3 as u32);
+            return Ok(length);
+        }
+        bail!(DataError::BitSize)
     }
     pub fn read32(&mut self, endian: bool) -> Result<u32> {
         let len = 4;

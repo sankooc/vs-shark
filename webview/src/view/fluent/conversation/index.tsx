@@ -1,14 +1,18 @@
 import { useStore } from "../../store";
 import { IVConversation } from "../../../share/gen";
-import { createTableColumn, TableCellLayout, TableColumnDefinition } from "@fluentui/react-components";
+import { createTableColumn, TableCellLayout, TableColumnDefinition, Toolbar, ToolbarButton } from "@fluentui/react-components";
 import { compute, ComRequest, format_bytes_single_unit } from "../../../share/common";
 
-import Grid from "../grid";
+import Grid from "../table";
 import { conversation_size } from "../../conf";
 
 import { useNavigate } from "react-router";
 import { ConversationIcon } from "../common";
-import { BoxRegular, DesktopMacRegular, DocumentTextRegular, FolderListRegular } from "@fluentui/react-icons";
+import { BoxRegular, DesktopMacRegular, DocumentTextRegular, FolderListRegular, MoreHorizontalFilled, TextBulletListSquareColor } from "@fluentui/react-icons";
+
+// import { PageFrame } from '../table';
+
+const SIZE: "small" | "medium" = 'small';
 
 function Component() {
     const conversations = useStore((state) => state.conversations);
@@ -52,7 +56,7 @@ function Component() {
         }),
         createTableColumn<IVConversation>({
             columnId: "receiver_packets",
-            renderHeaderCell: () =>  <><FolderListRegular /> TX Packets</>,
+            renderHeaderCell: () => <><FolderListRegular /> TX Packets</>,
             renderCell: (item) => {
                 return item.receiver_packets;
             },
@@ -71,6 +75,17 @@ function Component() {
                 return format_bytes_single_unit(item.receiver_bytes);
             },
         }),
+        createTableColumn<IVConversation>({
+            columnId: "ops",
+            renderHeaderCell: () => "ext",
+            renderCell: (item) => {
+                return <Toolbar aria-label="Default" size="small">
+                    <ToolbarButton icon={<TextBulletListSquareColor />} onClick={() => { onClick(item) }} />
+                    <ToolbarButton icon={<MoreHorizontalFilled />} />
+                </Toolbar>
+                // return <TableCellLayout media={<TextBulletListSquareColor />} style={{cursor: 'pointer'}}></TableCellLayout>
+            },
+        }),
     ];
     const onClick = (item: IVConversation) => {
         const title = `${item.sender} / ${item.receiver}`;
@@ -87,11 +102,26 @@ function Component() {
     }
 
     const breads = [
-        { name: "Conversations", icon: <ConversationIcon/>, path: "/conversations" }
+        { name: "Conversations", icon: <ConversationIcon />, path: "/conversations" }
     ]
-    return <div className="flex flex-column h-full" style={{ overflowX: "hidden", overflowY: "auto" }}>
-        <Grid columns={columns} onClick={onClick} pageSize={pageSize} load={load} breads={breads} />
-    </div>
+    const columnSizingOptions = {
+        sender: {
+            minWidth: 200,
+            idealWidth: 250,
+            autoFitColumns: true,
+        },
+        receiver: {
+            minWidth: 200,
+            idealWidth: 250,
+            autoFitColumns: true,
+        }
+
+    };
+    const gridProps = {
+        size: SIZE,
+        columns, pageSize, load, columnSizingOptions, breads
+    };
+    return <Grid {...gridProps} />;
 }
 
 export default Component;

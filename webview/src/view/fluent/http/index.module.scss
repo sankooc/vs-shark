@@ -1,4 +1,4 @@
-@use "../../scss/common";
+@use "../../../scss/common";
 
 .cell {
     // font-weight: bold;
@@ -13,8 +13,6 @@
     overflow: hidden;
 }
 .treeitem_select {
-    // background-color: var(--colorBrandBackground2);
-    // background-color: red;
     text-overflow: ellipsis;
     white-space: nowrap;
     overflow: hidden;
@@ -25,7 +23,6 @@
     border-left-width: 8px;
     border-left-style: solid;
 }
-
-.fixframe {
-    overflow: hidden auto;
+.cardframe {
+    margin: '10px';
 }

@@ -36,9 +36,12 @@ impl PCAPNG {
         if reader.left() < 8 {
             bail!(DataError::EndOfStream)
         }
+        // println!("index: {:#010x}", reader.cursor);
+        // 
         let block_type = format!("{:#010x}", reader.read32(false)?);
         let len = reader.read32(false)?;
         let packet_size = len as usize - 12;
+
         //
         if reader.left() < packet_size {
             reader.back(8);

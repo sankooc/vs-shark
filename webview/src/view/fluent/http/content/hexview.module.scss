@@ -1,3 +1,4 @@
+@use "../../../../scss/common";
 .hexView {
   font-family: 'Courier New', Courier, monospace;
   white-space: pre-wrap;
@@ -9,4 +10,17 @@
 .truncationIndicator {
   color: var(--vscode-descriptionForeground);
   margin-left: 4px;
+}
+
+
+.hexViewContainer {
+  flex: 1 !important;
+  display: grid;
+  row-gap: 5px;
+  grid-template-rows: repeat(22, 1.2rem);
+  row-gap: 0;
+  grid-template-columns: 1.5fr repeat(32, 1fr);
+}
+.cell{
+  background-color: common.$c-blue;
 }

@@ -1,31 +1,29 @@
 import { useEffect, useState } from "react";
 import { useStore } from "../../store";
-import { makeStyles, SelectTabData, SelectTabEvent, Tab, TabList, TabValue, Tree, TreeItem, TreeItemLayout } from "@fluentui/react-components";
+import { SelectTabData, SelectTabEvent, Tab, TabList, TabValue, Tree, TreeItem, TreeItemLayout } from "@fluentui/react-components";
 import { format_bytes_single_unit, HttpMessageWrap, MessageCompress } from "../../../share/common";
-// import { Fade } from "@fluentui/react-motion-components-preview";
 import indexCss from './index.module.scss';
-import { BreadItem, HttpIcon } from "../common";
+import { HttpIcon } from "../common";
 import { DocumentGlobeRegular, PanelTopContractRegular, PanelTopExpandRegular } from "@fluentui/react-icons";
 import ContentComponent from './content';
+import Empty from "./content/empty";
+
+import {PageFrame} from '../table';
 
 
-const useStyles = makeStyles({
-    customTree: {
-        '--spacingHorizontalXXL': '12px',
-        '--fontWeightRegular': 'bold',
-        'padding': '5px',
-    },
-});
-
-// const tabList = (hmw: HttpMessageWrap | undefined): React.ReactNode[] => {
-//     const list: React.ReactNode[] = [];
-//     if (hmw) {
-//         if (hmw.parsed_content) {
-//             list.push(<Tab value="plaintext">plaintext</Tab>)
+// const useStyles = makeStyles({
+//     customTree: {
+//         '--spacingHorizontalXXL': '12px',
+//         '--fontWeightRegular': 'bold',
+//         'padding': '5px',
+//     },
+//     tab: {
+//         button: {
+//             color: 'red'
 //         }
 //     }
-//     return list;
-// }
+// });
+
 export default function ConnectionList() {
 
     const httpDetail = useStore((state) => state.httpDetail);
@@ -54,7 +52,7 @@ export default function ConnectionList() {
             setList(list);
         });
     }, []);
-    const styles = useStyles();
+    // const styles = useStyles();
     const build = (hmw: HttpMessageWrap) => {
         const it = hmw.headers;
         const head = it[0];
@@ -74,8 +72,6 @@ export default function ConnectionList() {
             items.push(<TreeItem itemType="leaf" key={key}>
                 <TreeItemLayout onClick={() => {
                     setSelect(key);
-                    // setHmw(hmw);
-                    // setTabSelect('binary');
                 }} className={select === key ? indexCss.treeitem_select : indexCss.treeitem} >Entity({format_bytes_single_unit(len)})</TreeItemLayout>
             </TreeItem>);
         }
@@ -83,26 +79,12 @@ export default function ConnectionList() {
         return <TreeItem itemType="branch" key={head}>
             <TreeItemLayout onClick={() => {
                 setSelect(head);
-                // setHmw(undefined);
-                // setTabSelect('binary');
             }} className={select === head ? indexCss.treeitem_select : indexCss.treeitem} >{head}</TreeItemLayout>
             <Tree size="small">
                 {items}
             </Tree>
         </TreeItem>
     }
-    // const hasContent = hmw?.raw && hmw.raw.length > 0;
-
-    // const tabContent = (hmw: HttpMessageWrap | undefined, tabSelect: string) => {
-    //     if (hmw && tabSelect === 'binary') {
-    //         return <HexView data={hmw.raw || new Uint8Array()} maxLength={1024 * 1024} />
-    //     }
-    //     if (hmw && tabSelect === 'plaintext') {
-    //         return <PlainText text={hmw!.parsed_content!} mime={hmw.mime} />
-    //     }
-    //     return <></>
-    // }
-
     let title = "Request";
     if (_list && _list.length) {
         const hmw = _list[0];
@@ -121,7 +103,7 @@ export default function ConnectionList() {
     const contentRender = () => {
         switch (selectedValue) {
             case 'Header': {
-                return <Tree aria-label="Default" size="small" className={styles.customTree}>
+                return <Tree aria-label="Default" size="small">
                     {_list.map(build)}
                 </Tree>
             }
@@ -140,23 +122,24 @@ export default function ConnectionList() {
                 break;
             }
         }
-        return <div className="flex justify-content-center align-content-center" >Empty</div>
+        return <Empty/>
     }
-    return (<div className="flex flex-column" style={{ height: '100%' }}>
-        <BreadItem items={breads} ></BreadItem>
-        <TabList selectedValue={selectedValue} onTabSelect={onTabSelect}>
-            <Tab id="Header" icon={<DocumentGlobeRegular />} value="Header">
-                Header
-            </Tab>
-            <Tab id="Payload" icon={<PanelTopContractRegular />} value="Payload">
-                Payload
-            </Tab>
-            <Tab id="Response" icon={<PanelTopExpandRegular />} value="Response">
-                Response
-            </Tab>
-        </TabList>
-        <div className="flex-grow-1" style={{ border: '1px solid #ddd' }} >
-            {contentRender()}
-        </div>
-    </div>);
+    return (<PageFrame breads={breads}>
+        <>
+            <TabList selectedValue={selectedValue} onTabSelect={onTabSelect} >
+                <Tab id="Header" icon={<DocumentGlobeRegular />} value="Header">
+                    Header
+                </Tab>
+                <Tab id="Payload" icon={<PanelTopContractRegular />} value="Payload">
+                    Payload
+                </Tab>
+                <Tab id="Response" icon={<PanelTopExpandRegular />} value="Response">
+                    Response
+                </Tab>
+            </TabList>
+            <div className="flex-1" style={{ border: '1px solid #ddd', overflow: 'auto' }} >
+                {contentRender()}
+            </div>
+        </>
+    </PageFrame>);
 }

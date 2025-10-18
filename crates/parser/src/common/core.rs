@@ -4,14 +4,13 @@
 // Licensed under the MIT License - see https://opensource.org/licenses/MIT
 
 use std::{
-    net::{Ipv4Addr, Ipv6Addr},
-    ops::Range,
+    net::{Ipv4Addr, Ipv6Addr}, ops::{AddAssign, Range}
 };
 
 use anyhow::{bail, Result};
 
 use crate::common::{
-    concept::{ConnectionIndex, Conversation, ConversationKey, FrameIndex, HttpConnectIndex, MessageIndex, Timestamp, VHttpConnection},
+    concept::{ConnectionIndex, Conversation, ConversationKey, CounterItem, FrameIndex, HttpConnectIndex, MessageIndex, Timestamp, VHttpConnection},
     enum_def::AddressField,
 };
 
@@ -60,11 +59,13 @@ fn segment_append(data: SegmentData, segment: Segment) -> SegmentData {
 pub struct HttpMessage {
     pub frame_index: FrameIndex,
     pub host: String,
+    pub hostname: Option<String>,
     pub length: Option<usize>,
     pub chunked: bool,
     pub content_type: Option<String>,
     pub headers: SegmentData,
     pub content: SegmentData,
+    pub http_connect_index: Option<HttpConnectIndex>,
 }
 
 impl HttpMessage {
@@ -80,6 +81,7 @@ pub struct HttpConntect {
     pub index: ConnectionIndex,
     pub request: Option<MessageIndex>,
     pub response: Option<MessageIndex>,
+    pub hostname: Option<String>,
     pub rt: Timestamp,
 }
 
@@ -90,6 +92,7 @@ impl HttpConntect {
             if let Some(message) = ctx.http_messages.get(*request_index as usize) {
                 rs.request_headers = message.headers.to_vec();
                 rs.request_body = message.content.to_vec();
+                rs.hostname = message.hostname.clone().unwrap_or("".to_string());
                 if let Some(ll) = &message.length {
                     rs.length = *ll;
                 }
@@ -145,10 +148,16 @@ pub struct Context {
     pub http_connections_map: FastHashMap<ConnectionIndex, (HttpConnectIndex, Timestamp)>,
     pub http_connections: Vec<HttpConntect>,
     pub http_messages: Vec<HttpMessage>,
+    pub http_hostnames: FastHashMap<String, u16>,
+
+    pub tls_sni: FastHashMap<String, u16>,
     // ethernet
     pub ethermap: FastHashMap<u64, EthernetCache>,
     pub ipv6map: FastHashMap<u64, (u8, Ipv6Addr, Ipv6Addr)>,
     pub string_map: FastHashMap<u64, NString>,
+
+    pub stat_ip4: FastHashMap<Ipv4Addr, u16>,
+    pub stat_ip6: FastHashMap<Ipv6Addr, u16>,
 }
 
 impl Context {
@@ -163,14 +172,15 @@ impl Context {
     }
     pub fn init_segment_message(&mut self, frame_index: FrameIndex, host: String, is_request: bool, connect_index: ConnectionIndex, timestamp: Timestamp) -> MessageIndex {
         let message_index = self.http_messages.len() as MessageIndex;
-        let sg = HttpMessage { frame_index, host, ..Default::default() };
-        self.http_messages.push(sg);
+        let mut sg = HttpMessage { frame_index, host, ..Default::default() };
+        // self.http_messages.push(sg);
 
         if is_request {
             let http_connect_index = self.http_connections.len() as HttpConnectIndex;
             let connect = HttpConntect::request(connect_index, message_index);
             self.http_connections.push(connect);
             self.http_connections_map.insert(connect_index, (http_connect_index, timestamp));
+            sg.http_connect_index = Some(http_connect_index);
         } else if let Some((http_connect_index, ts)) = self.http_connections_map.get(&connect_index) {
             if let Some(connect) = self.http_connections.get_mut(*http_connect_index as usize) {
                 let fd = timestamp.saturating_sub(*ts);
@@ -180,6 +190,7 @@ impl Context {
         } else {
             self.http_connections.push(HttpConntect::response(connect_index, message_index));
         }
+        self.http_messages.push(sg);
         message_index
     }
     pub fn get_http_message(&mut self, message_index: MessageIndex) -> Option<&mut HttpMessage> {
@@ -350,5 +361,57 @@ impl Context {
             }
         }
         None
+    }
+    pub fn add_http_hostname(&mut self, message_index: MessageIndex, hostname: &str){
+        if let Some(message) = self.http_messages.get(message_index as usize) {
+            if let Some(http_connect_index) = &message.http_connect_index {
+                if let Some(connect) = self.http_connections.get_mut(*http_connect_index as usize) {
+                    let hn = hostname.trim().to_lowercase();
+                    Context::add_map(&hn, &mut self.http_hostnames);
+                    connect.hostname = Some(hn);
+                }
+            }
+        }
+    }
+    
+}
+
+
+impl Context {
+    fn add_map<K, T>(key: &K, map: &mut FastHashMap<K, T>) where K: core::hash::Hash + Eq + Clone, T: AddAssign + Default + Copy + From<u8> {
+        if let Some(v) = map.get_mut(key) {
+            *v += T::from(1);
+        } else {
+            map.insert(key.clone(), T::from(1));
+        }
+    }
+    fn _list_map<K, T>(map: &FastHashMap<K, T>) -> String where K: core::hash::Hash + Eq + ToString, T: Copy + Into<usize>{
+        let rs:Vec<CounterItem> = map.iter().map(|(k, v)| CounterItem::new(k.to_string(), (*v).into())).collect();
+        serde_json::to_string(&rs).unwrap_or("[]".into())
+    }
+}
+
+
+impl Context {
+    pub fn stat_http_host(&self) -> String {
+        Context::_list_map(&self.http_hostnames)
+    }
+    pub fn add_tls_sni(&mut self, sni: String) {
+        Context::add_map(&sni, &mut self.tls_sni);
+    }
+    pub fn stat_tls_sni(&self) -> String {
+        Context::_list_map(&self.tls_sni)
+    }
+    pub fn add_ip4(&mut self, ip: &Ipv4Addr){
+        Context::add_map(ip, &mut self.stat_ip4);
+    }
+    pub fn add_ip6(&mut self, ip: &Ipv6Addr){
+        Context::add_map(ip, &mut self.stat_ip6);
+    }
+    pub fn stat_ip4(&self) -> String {
+        Context::_list_map(&self.stat_ip4)
+    }
+    pub fn stat_ip6(&self) -> String {
+        Context::_list_map(&self.stat_ip6)
     }
 }

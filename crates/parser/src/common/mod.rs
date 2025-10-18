@@ -5,15 +5,12 @@
 
 use core::Context;
 use std::{
-    cmp,
-    collections::HashMap,
-    hash::{BuildHasherDefault, Hash, Hasher},
-    ops::Range,
+    borrow::Borrow, cmp, collections::HashMap, hash::{BuildHasherDefault, Hash, Hasher}, ops::Range
 };
 
 use crate::{
     add_field_label_no_range,
-    common::{concept::{VConnection, VConversation, VHttpConnection}, connection::TcpFlagField, util::date_str},
+    common::{concept::{HttpCriteria, VConnection, VConversation, VHttpConnection}, connection::TcpFlagField, core::HttpConntect, util::date_str},
     files::{pcap::PCAP, pcapng::PCAPNG},
     protocol::{detail, link_type_map, parse, summary},
 };
@@ -299,6 +296,11 @@ impl Instance {
         let start = cri.start;
         let size = cri.size;
         let fs: &[Frame] = &self.ctx.list;
+
+        // for frame in fs {
+            // frame.
+            //TODO
+        // }
         let total = fs.len();
         let mut items = Vec::new();
         if total <= start {
@@ -418,10 +420,7 @@ impl Instance {
         }
         Ok("[]".into())
     }
-
-    // pub fn connection_count(&self) -> usize {
-    //     self.ctx.connections.len()
-    // }
+    
     pub fn conversation_count(&self) -> usize {
         self.ctx.conversation_list.len()
     }
@@ -457,19 +456,37 @@ impl Instance {
 
         ListResult::empty()
     }
-    pub fn http_connections(&self, cri: Criteria) -> ListResult<VHttpConnection> {
+    pub fn http_connections(&self, cri: Criteria, filter: Option<HttpCriteria>) -> ListResult<VHttpConnection> {
         let Criteria { start, size } = cri;
-        let total = self.ctx.http_connections.len();
+        if let Some(fil) = filter {
+            let _hostname = fil.hostname.unwrap();
+            let mut total = 0;
+            let mut list = vec![];
+            for item in &self.ctx.http_connections {
+                if let Some(hn) = item.hostname.clone() {
+                    if hn.contains(&_hostname) {
+                        total += 1;
+                        if list.len() < size {
+                            list.push(item);
+                        }
+                    }
+                }
+            }
+            let result = self._http_iter(&list);
+            return ListResult::new(start, total, result)
+        }
+        let all_collections = &self.ctx.http_connections;
+        let total = all_collections.len();
         let end = cmp::min(start + size, total);
         if end <= start {
             return ListResult::new(start, 0, vec![]);
         }
-        let _data = &self.ctx.http_connections[start..end];
-        let mut list = vec![];
-        for item in _data {
-            list.push(item.into(&self.ctx));
-        }
+        let _data = &all_collections[start..end];
+        let list = self._http_iter(_data);
         ListResult::new(start, total, list)
+    }
+    fn _http_iter<T>(&self, list: &[T]) -> Vec<VHttpConnection> where T: Borrow<HttpConntect> {
+        list.iter().map(|item| item.borrow().into(&self.ctx)).collect()
     }
 }
 pub mod concept;

@@ -1,5 +1,8 @@
 use js_sys::Uint8Array;
-use pcap::common::{concept::Criteria, Instance};
+use pcap::common::{
+    concept::{Criteria, HttpCriteria},
+    Instance,
+};
 use wasm_bindgen::prelude::*;
 
 use crate::entity::{parse_http_message, Conf, FrameRange, FrameResult};
@@ -87,8 +90,9 @@ impl WContext {
         serde_json::to_string(&rs).unwrap_or("{}".into())
     }
     #[wasm_bindgen]
-    pub fn list_http(&self,start: usize, size: usize) -> String {
-        let rs = self.ctx.http_connections(Criteria { start, size });
+    pub fn list_http(&self, start: usize, size: usize, hostname: String, _method: String) -> String {
+        let filter = if hostname.is_empty() { None } else { Some(HttpCriteria::hostname(hostname)) };
+        let rs = self.ctx.http_connections(Criteria { start, size }, filter);
         serde_json::to_string(&rs).unwrap_or("{}".into())
     }
     #[wasm_bindgen]
@@ -97,7 +101,7 @@ impl WContext {
         serde_json::to_string(&rs).unwrap_or("{}".into())
     }
     #[wasm_bindgen]
-    pub fn http_header_parse(&self,  head: String, header: &Uint8Array, body: &Uint8Array) -> String  {
+    pub fn http_header_parse(&self, head: String, header: &Uint8Array, body: &Uint8Array) -> String {
         let slice = header.to_vec();
         let mut content = None;
         if body.length() > 0 {
@@ -105,6 +109,16 @@ impl WContext {
         }
         let rs = parse_http_message(&head, slice, content);
         serde_json::to_string(&rs).unwrap_or("{}".into())
+    }
+    #[wasm_bindgen]
+    pub fn stat(&self, field: String) -> String {
+        match field.as_str() {
+            "http_host" => self.ctx.get_context().stat_http_host(),
+            "tls_sni" => self.ctx.get_context().stat_tls_sni(),
+            "ip4" => self.ctx.get_context().stat_ip4(),
+            "ip6" => self.ctx.get_context().stat_ip6(),
+            _ => "[]".to_string(),
+        }
     }
 }
 

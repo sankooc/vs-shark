@@ -7,11 +7,12 @@ import { BreadItem } from "./common";
 
 interface GridProps<T> {
     columns: TableColumnDefinition<T>[];
-    onClick: (item: T) => void;
+    onClick?: (item: T) => void;
     load: (page: number) => Promise<IListResult<T>>;
     pageSize: number;
     columnSizingOptions?: TableColumnSizingOptions,
     breads?: { icon?: Slot<'span'>, name: string, path?: string}[],
+    size: string 
 }
 
 function Component<T>(props: GridProps<T>) {
@@ -24,12 +25,8 @@ function Component<T>(props: GridProps<T>) {
         items: [],
     });
     const mountHook = () => {
-        // setLoading(true);
         if (page >= 1) {
-            props.load(page).then((rs: IListResult<T>) => {
-                setResult(rs);
-                // setLoading(false);
-            })
+            props.load(page).then(setResult)
         }
     };
     useEffect(mountHook, [page]);
@@ -54,7 +51,7 @@ function Component<T>(props: GridProps<T>) {
             <DataGridBody<T>>
                 {({ item, rowId }) => (
                     <DataGridRow key={rowId} onClick={() => {
-                        props.onClick(item);
+                        props.onClick && props.onClick(item);
                     }} >
                         {({ renderCell }) => (
                             <DataGridCell>{renderCell(item)}</DataGridCell>

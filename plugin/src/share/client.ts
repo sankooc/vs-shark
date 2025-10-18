@@ -1,5 +1,5 @@
 import { load, WContext, Conf } from "rshark";
-import { ComLog, ComMessage, ComRequest, ComType, MessageCompress, PcapFile } from "./common";
+import { ComLog, ComMessage, ComRequest, ComType, MessageCompress, PcapFile, StatRequest } from "./common";
 import mitt, { Emitter } from "mitt";
 import { IVHttpConnection } from "./gen";
 
@@ -11,8 +11,8 @@ function concatLargeUint8Arrays(arrays: Uint8Array[]): Uint8Array {
   const result = new Uint8Array(buffer);
   let offset = 0;
   for (let arr of arrays) {
-      result.set(arr, offset);
-      offset += arr.length;
+    result.set(arr, offset);
+    offset += arr.length;
   }
   return result;
 }
@@ -53,10 +53,6 @@ export abstract class PCAPClient {
   abstract printLog(log: ComLog): void;
   abstract emitMessage(msg: ComMessage<any>): void;
   abstract pickData(start: number, end: number): Promise<Uint8Array>;
-  // private async frameData(index: number): Promise<Uint8Array> {
-  //   const range = this.ctx!.frame_range(index);
-  //   return this.pickData(range.data.start, range.data.end);
-  // }
 
   private touchFile(fileInfo: PcapFile): void {
     this.info = fileInfo;
@@ -85,7 +81,7 @@ export abstract class PCAPClient {
             this.emitMessage(ComMessage.new(ComType.CONNECTIONS, rs, requestId));
             return;
           case "http_connection":
-            rs = this.ctx.list_http(start, size);
+            rs = this.ctx.list_http(start, size, param.host || '', '');
             this.emitMessage(ComMessage.new(ComType.HTTP_CONNECTIONS, rs, requestId));
             return;
           default:
@@ -139,7 +135,7 @@ export abstract class PCAPClient {
     );
   }
   private async http_detail(http_connection: IVHttpConnection): Promise<MessageCompress[]> {
-    const {request, response} = http_connection;
+    const { request, response } = http_connection;
     const list = [];
     if (request) {
       const { request_headers: headers, request_body: body } = http_connection;
@@ -171,30 +167,12 @@ export abstract class PCAPClient {
     }
     return concatLargeUint8Arrays(list);
   }
-
-  
-  // private async scope(requestId: string, catelog: string, index: number): Promise<void> {
-  //   if (this.ctx) {
-  //     try {
-  //       switch (catelog) {
-  //         case "frame":
-  //           const range = this.ctx!.frame_range(index);
-  //           this.emitMessage(
-  //             ComMessage.new(ComType.FRAME_SCOPE_RES, {start: range.start, end: range.end}, requestId),
-  //           );
-  //           return;
-  //         default:
-  //           return;
-  //       }
-  //     } catch (e) {
-  //       console.error(e);
-  //     }
-  //   }
-  //   this.emitMessage(
-  //     ComMessage.new(ComType.error, "failed", requestId),
-  //   );
-  //   return;
-  // }
+  private async stat(field: string): Promise<string> {
+    if (this.ctx) {
+      return this.ctx.stat(field)
+    }
+    return "[]";
+  }
   private async process(): Promise<void> {
     if (this.isPendding) {
       return;
@@ -221,7 +199,7 @@ export abstract class PCAPClient {
     try {
       switch (type) {
         case ComType.CLIENT_REDAY:
-          if(!this.ready){
+          if (!this.ready) {
             this.ready = true;
             try {
               this.doReady();
@@ -240,14 +218,16 @@ export abstract class PCAPClient {
         //   this.emitMessage(ComMessage.new(ComType.FRAME_SCOPE_RES, { start: range.start, end: range.end }));
         //   break;
         case ComType.PROCESS_DATA:
-          const data = body.data as Uint8Array;
-          await this.update(data);
+          {
+            const data = body.data as Uint8Array;
+            await this.update(data);
+          }
           // this.emitMessage(ComMessage.new(ComType.PRGRESS_STATUS, rs));
           break;
         case ComType.log:
           this.printLog(body as ComLog);
           break;
-        case ComType.REQUEST:
+        case ComType.REQUEST:{
           const req: ComRequest = body;
           const { catelog, type, param } = req;
           switch (type) {
@@ -265,15 +245,22 @@ export abstract class PCAPClient {
             //   break;
           }
           break;
-
+        }
         case ComType.HTTP_DETAIL_REQ:
           const rs = await this.http_detail(body as IVHttpConnection);
           this.emitMessage(
             ComMessage.new(ComType.HTTP_DETAIL_RES, rs, id),
           );
           break;
+        case ComType.STAT_REQ: {
+          const req: StatRequest = body;
+          const rs = await this.stat(req.field);
+          this.emitMessage(
+            ComMessage.new(ComType.STAT_RES, rs, id),
+          );
+          break;
+        }
         default:
-        // console.log(msg.body);
       }
     } catch (e) {
       console.error(e);
@@ -285,7 +272,7 @@ export abstract class PCAPClient {
       return;
     }
     const { type, id } = msg;
-    if (type === ComType.PROCESS_DATA) {
+    if (type == ComType.PROCESS_DATA) {
       this.lowPirityQueue.push(msg);
     } else {
       this.highPirityQueue.push(msg);

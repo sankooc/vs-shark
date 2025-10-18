@@ -1,3 +1,5 @@
+@use "../../scss/common";
+
 html {
     margin: 0;
     padding: 0;
@@ -18,4 +20,23 @@ body {
 }
 .fui-DataGridRow:hover {
     background-color: #777 !important;
+}
+
+.page-card {
+    background-color: common.$c-bg-1;
+    overflow: hidden;
+    padding: 5px;
+    margin: 0;
+    height: calc(100% - 10px);
+    .page-card-item {
+        background-color: common.$background;
+    }
+}
+
+div[role=tablist] {
+    button:hover {
+        span {
+            color: #eee !important;
+        }
+    }
 }
