@@ -69,7 +69,7 @@ impl Visitor {
     pub fn parse(ctx: &mut Context, frame: &mut Frame, _reader: &mut Reader) -> Result<Protocol> {
         let mut reader = _reader.slice_as_reader(40)?;
         let data = reader.refer()?;
-        let key = quick_hash(data);
+        let key: u64 = quick_hash(data);
         frame.address_field = AddressField::IPv6(key);
 
         if let Some(enty) = ctx.ipv6map.get(&key) {
@@ -80,7 +80,9 @@ impl Visitor {
             let protocol_type = reader.read8()?;
             reader.read8()?; //hop
             let source = reader.read_ip6()?;
-            let target = reader.read_ip6()?; 
+            let target = reader.read_ip6()?;
+            ctx.add_ip6(&source);
+            ctx.add_ip6(&target);
             ctx.ipv6map.insert(key, (protocol_type, source, target));
             Ok(ip4_mapper(protocol_type))
         }

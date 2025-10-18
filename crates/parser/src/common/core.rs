@@ -148,13 +148,16 @@ pub struct Context {
     pub http_connections_map: FastHashMap<ConnectionIndex, (HttpConnectIndex, Timestamp)>,
     pub http_connections: Vec<HttpConntect>,
     pub http_messages: Vec<HttpMessage>,
-    pub http_hostnames: FastHashMap<String, u8>,
+    pub http_hostnames: FastHashMap<String, u16>,
 
-    pub tls_sni: FastHashMap<String, u8>,
+    pub tls_sni: FastHashMap<String, u16>,
     // ethernet
     pub ethermap: FastHashMap<u64, EthernetCache>,
     pub ipv6map: FastHashMap<u64, (u8, Ipv6Addr, Ipv6Addr)>,
     pub string_map: FastHashMap<u64, NString>,
+
+    pub stat_ip4: FastHashMap<Ipv4Addr, u16>,
+    pub stat_ip6: FastHashMap<Ipv6Addr, u16>,
 }
 
 impl Context {
@@ -364,36 +367,51 @@ impl Context {
             if let Some(http_connect_index) = &message.http_connect_index {
                 if let Some(connect) = self.http_connections.get_mut(*http_connect_index as usize) {
                     let hn = hostname.trim().to_lowercase();
-                    connect.hostname = Some(hn.clone());
-                    Context::add_map(hn, &mut self.http_hostnames);
+                    Context::add_map(&hn, &mut self.http_hostnames);
+                    connect.hostname = Some(hn);
                 }
             }
         }
-    }
-    pub fn http_record_stat(&self) -> String {
-        Context::_list_map(&self.http_hostnames)
-        // self.http_hostnames.iter().map(|(k, v)| HttpHostRecord::new(k.clone(), *v as usize)).collect()
     }
     
 }
 
 
 impl Context {
-    pub fn add_map<T>(key: String, map: &mut FastHashMap<String, T>) where T: AddAssign + Default + Copy + From<u8> {
-        if let Some(v) = map.get_mut(&key) {
+    fn add_map<K, T>(key: &K, map: &mut FastHashMap<K, T>) where K: core::hash::Hash + Eq + Clone, T: AddAssign + Default + Copy + From<u8> {
+        if let Some(v) = map.get_mut(key) {
             *v += T::from(1);
         } else {
-            map.insert(key, T::from(1));
+            map.insert(key.clone(), T::from(1));
         }
     }
-    fn _list_map<T>(map: &FastHashMap<String, T>) -> String where T: Copy + Into<usize>{
-        let rs:Vec<CounterItem> = map.iter().map(|(k, v)| CounterItem::new(k.clone(), (*v).into())).collect();
+    fn _list_map<K, T>(map: &FastHashMap<K, T>) -> String where K: core::hash::Hash + Eq + ToString, T: Copy + Into<usize>{
+        let rs:Vec<CounterItem> = map.iter().map(|(k, v)| CounterItem::new(k.to_string(), (*v).into())).collect();
         serde_json::to_string(&rs).unwrap_or("[]".into())
     }
-    pub fn add_tls_sni(&mut self, sni: String) {
-        Context::add_map(sni, &mut self.tls_sni);
+}
+
+
+impl Context {
+    pub fn stat_http_host(&self) -> String {
+        Context::_list_map(&self.http_hostnames)
     }
-    pub fn get_tls_sni_list(&self) -> String {
+    pub fn add_tls_sni(&mut self, sni: String) {
+        Context::add_map(&sni, &mut self.tls_sni);
+    }
+    pub fn stat_tls_sni(&self) -> String {
         Context::_list_map(&self.tls_sni)
+    }
+    pub fn add_ip4(&mut self, ip: &Ipv4Addr){
+        Context::add_map(ip, &mut self.stat_ip4);
+    }
+    pub fn add_ip6(&mut self, ip: &Ipv6Addr){
+        Context::add_map(ip, &mut self.stat_ip6);
+    }
+    pub fn stat_ip4(&self) -> String {
+        Context::_list_map(&self.stat_ip4)
+    }
+    pub fn stat_ip6(&self) -> String {
+        Context::_list_map(&self.stat_ip6)
     }
 }

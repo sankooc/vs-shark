@@ -6,25 +6,61 @@ import Empty from './empty';
 import { SelectTabData, SelectTabEvent, Tab, TabList, TabValue } from "@fluentui/react-components";
 import { bundleIcon, CalendarAgendaFilled, CalendarAgendaRegular } from "@fluentui/react-icons";
 import { useState } from "react";
+import ImageView from "./image";
 type ContentProps = {
     hmw: HttpMessageWrap;
 }
 const CalendarAgenda = bundleIcon(CalendarAgendaFilled, CalendarAgendaRegular);
+
+
+const detectText = (mime: string): boolean => {
+    return mime.indexOf("json") >= 0 || mime.indexOf("javascript") >= 0 || mime.indexOf("text") >= 0 || mime.indexOf("xml") >= 0 || mime.indexOf("html") >= 0;
+}
+const imageMimeTypes = [
+    'image/jpeg',
+    'image/png',
+    'image/gif',
+    'image/webp',
+    'image/bmp',
+    'image/tiff',
+    'image/svg+xml',
+    'image/x-icon',
+    'image/apng',
+    'image/avif'
+];
+const detectImage = (mime: string): boolean => {
+    return imageMimeTypes.includes(mime);
+}
+
+const parseMime = (headers: string[]): string => {
+    if(headers && headers.length){
+        for(const _header of headers){
+            const header = _header.toLocaleLowerCase();
+            if(header.startsWith('content-type')) {
+                return header.substring(13).trim();
+            }
+        }
+    }
+    return '';
+}
 const renderContent = (hmw: HttpMessageWrap) => {
     const ds = !!hmw.parsed_content ? 'preview' : 'raw';
     const [selectedValue, setSelectedValue] = useState<TabValue>(ds);
     const onTabSelect = (_: SelectTabEvent, data: SelectTabData) => {
         setSelectedValue(data.value);
     };
+    const _mime = parseMime(hmw.headers);
     const inContent = () => {
         if (selectedValue === 'preview') {
-            const _mime: string = hmw.mime.toLocaleLowerCase() || "";
-            if (_mime.indexOf("json") >= 0 || _mime.indexOf("text") >= 0 || _mime.indexOf("xml") >= 0 || _mime.indexOf("html") >= 0) {
+            if (detectText(_mime) && hmw!.parsed_content) {
                 return <PlainText text={hmw!.parsed_content!} mime={hmw.mime} />
             }
-            return <span> No Preview </span>
+            if(detectImage(_mime) && hmw.raw?.length){
+                return <ImageView raw={hmw.raw} mime={_mime}/>
+            }
+            return <div style={{margin: '20px auto'}}> No Preview </div>
         } else {
-            return <HexView data={hmw.raw || new Uint8Array()} maxLength={1024 * 1024} />
+            return <HexView data={hmw.raw || new Uint8Array()} />
         }
 
     }

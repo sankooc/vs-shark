@@ -111,12 +111,14 @@ impl WContext {
         serde_json::to_string(&rs).unwrap_or("{}".into())
     }
     #[wasm_bindgen]
-    pub fn http_hostname_stats(&self) -> String {
-        self.ctx.get_context().http_record_stat()
-    }
-    #[wasm_bindgen]
-    pub fn tls_hostname_stats(&self) -> String {
-        self.ctx.get_context().get_tls_sni_list()
+    pub fn stat(&self, field: String) -> String {
+        match field.as_str() {
+            "http_host" => self.ctx.get_context().stat_http_host(),
+            "tls_sni" => self.ctx.get_context().stat_tls_sni(),
+            "ip4" => self.ctx.get_context().stat_ip4(),
+            "ip6" => self.ctx.get_context().stat_ip6(),
+            _ => "[]".to_string(),
+        }
     }
 }
 

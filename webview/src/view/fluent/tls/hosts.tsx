@@ -24,9 +24,9 @@ export default function Component() {
 
   const [list, setList] = useState<ICounterItem[]>([]);
 
-  const tlsStat = useStore((state) => state.tlsStat);
+  const stat = useStore((state) => state.stat);
   useEffect(() => {
-    tlsStat().then(setList);
+    stat({field: 'tls_sni'}).then(setList);
   }, [])
 
 

@@ -12,7 +12,7 @@ export default function CodeBlock( props: PlainProps) {
     language={props.mime}
   >
     {({ className: _, style, tokens, getLineProps, getTokenProps }) => (
-      <pre style={style} className="flex-grow-1">
+      <pre style={{...style, overflow: 'auto'}} className="flex-1">
         {tokens.map((line, i) => (
           <div key={i} {...getLineProps({ line })}>
             <span style={{display: 'inline-block', width: '25px'}}>{i + 1}</span>

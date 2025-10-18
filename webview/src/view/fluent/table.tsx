@@ -19,11 +19,11 @@ interface PageProps {
     breads?: { icon?: Slot<'span'>, name: string, path?: string }[],
 }
 export function PageFrame(props: PageProps) {
-    return (<div className="flex flex-column page-card">
+    return (<div className="flex flex-column page-card flex-grow-0">
         {
             props.breads && props.breads.length > 0 && <BreadItem items={props.breads} ></BreadItem>
         }
-        <Card className="flex flex-grow-1" style={{ margin: '0', padding: '5px', alignItems: 'stretch', justifyContent: 'space-between', overflow: 'auto' }} orientation="vertical">
+        <Card className="flex flex-1" style={{ margin: '0', padding: '5px', alignItems: 'stretch', justifyContent: 'space-between', overflow: 'auto' }} orientation="vertical">
             {props.children}
         </Card>
     </div>)

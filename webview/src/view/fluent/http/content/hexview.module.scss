@@ -14,7 +14,7 @@
 
 
 .hexViewContainer {
-  flex-grow: 1 !important;
+  flex: 1 !important;
   display: grid;
   row-gap: 5px;
   grid-template-rows: repeat(22, 1.2rem);

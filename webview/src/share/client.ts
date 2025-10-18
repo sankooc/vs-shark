@@ -1,5 +1,5 @@
 import { load, WContext, Conf } from "rshark";
-import { ComLog, ComMessage, ComRequest, ComType, MessageCompress, PcapFile } from "./common";
+import { ComLog, ComMessage, ComRequest, ComType, MessageCompress, PcapFile, StatRequest } from "./common";
 import mitt, { Emitter } from "mitt";
 import { IVHttpConnection } from "./gen";
 
@@ -53,10 +53,6 @@ export abstract class PCAPClient {
   abstract printLog(log: ComLog): void;
   abstract emitMessage(msg: ComMessage<any>): void;
   abstract pickData(start: number, end: number): Promise<Uint8Array>;
-  // private async frameData(index: number): Promise<Uint8Array> {
-  //   const range = this.ctx!.frame_range(index);
-  //   return this.pickData(range.data.start, range.data.end);
-  // }
 
   private touchFile(fileInfo: PcapFile): void {
     this.info = fileInfo;
@@ -171,42 +167,12 @@ export abstract class PCAPClient {
     }
     return concatLargeUint8Arrays(list);
   }
-  private async http_stat(): Promise<string> {
+  private async stat(field: string): Promise<string> {
     if (this.ctx) {
-      return this.ctx.http_hostname_stats();
+      return this.ctx.stat(field)
     }
     return "[]";
   }
-  private async tls_stat(): Promise<string> {
-    if(this.ctx){
-      return this.ctx.tls_hostname_stats();
-    }
-    return '[]';
-  }
-
-
-  // private async scope(requestId: string, catelog: string, index: number): Promise<void> {
-  //   if (this.ctx) {
-  //     try {
-  //       switch (catelog) {
-  //         case "frame":
-  //           const range = this.ctx!.frame_range(index);
-  //           this.emitMessage(
-  //             ComMessage.new(ComType.FRAME_SCOPE_RES, {start: range.start, end: range.end}, requestId),
-  //           );
-  //           return;
-  //         default:
-  //           return;
-  //       }
-  //     } catch (e) {
-  //       console.error(e);
-  //     }
-  //   }
-  //   this.emitMessage(
-  //     ComMessage.new(ComType.error, "failed", requestId),
-  //   );
-  //   return;
-  // }
   private async process(): Promise<void> {
     if (this.isPendding) {
       return;
@@ -261,7 +227,7 @@ export abstract class PCAPClient {
         case ComType.log:
           this.printLog(body as ComLog);
           break;
-        case ComType.REQUEST:
+        case ComType.REQUEST:{
           const req: ComRequest = body;
           const { catelog, type, param } = req;
           switch (type) {
@@ -279,29 +245,22 @@ export abstract class PCAPClient {
             //   break;
           }
           break;
-
+        }
         case ComType.HTTP_DETAIL_REQ:
           const rs = await this.http_detail(body as IVHttpConnection);
           this.emitMessage(
             ComMessage.new(ComType.HTTP_DETAIL_RES, rs, id),
           );
           break;
-        case ComType.HTTP_STATISTICS_REQ: {
-          const rs = await this.http_stat();
+        case ComType.STAT_REQ: {
+          const req: StatRequest = body;
+          const rs = await this.stat(req.field);
           this.emitMessage(
-            ComMessage.new(ComType.HTTP_STATISTICS_RES, rs, id),
-          );
-          break;
-        }
-        case ComType.TLS_STATISTICS_REQ: {
-          const rs = await this.tls_stat();
-          this.emitMessage(
-            ComMessage.new(ComType.TLS_STATISTICS_RES, rs, id),
+            ComMessage.new(ComType.STAT_RES, rs, id),
           );
           break;
         }
         default:
-        // console.log(msg.body);
       }
     } catch (e) {
       console.error(e);

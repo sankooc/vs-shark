@@ -134,7 +134,7 @@ impl Visitor {
         }
         None
     }
-    pub fn parse(_: &mut Context, frame: &mut Frame, reader: &mut Reader) -> Result<Protocol> {
+    pub fn parse(ctx: &mut Context, frame: &mut Frame, reader: &mut Reader) -> Result<Protocol> {
         let _start = reader.left();
         let head = reader.read8()?;
         let head_len = head & 0x0f;
@@ -148,6 +148,8 @@ impl Visitor {
         let _data = reader.slice(8, true)?;
         let source = Ipv4Addr::from(<[u8; 4]>::try_from(&_data[..4])?);
         let target = Ipv4Addr::from(<[u8; 4]>::try_from(&_data[4..])?);
+        ctx.add_ip4(&source);
+        ctx.add_ip4(&target);
         frame.address_field = AddressField::IPv4(source, target);
         if head_len < 5 {
             bail!(DataError::Ipv4HeadLengthInvalid)

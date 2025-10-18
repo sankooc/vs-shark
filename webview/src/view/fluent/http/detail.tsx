@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { useStore } from "../../store";
 import { makeStyles, SelectTabData, SelectTabEvent, Tab, TabList, TabValue, Tree, TreeItem, TreeItemLayout } from "@fluentui/react-components";
 import { format_bytes_single_unit, HttpMessageWrap, MessageCompress } from "../../../share/common";
-// import { Fade } from "@fluentui/react-motion-components-preview";
 import indexCss from './index.module.scss';
 import { HttpIcon } from "../common";
 import { DocumentGlobeRegular, PanelTopContractRegular, PanelTopExpandRegular } from "@fluentui/react-icons";
@@ -20,15 +19,6 @@ const useStyles = makeStyles({
     },
 });
 
-// const tabList = (hmw: HttpMessageWrap | undefined): React.ReactNode[] => {
-//     const list: React.ReactNode[] = [];
-//     if (hmw) {
-//         if (hmw.parsed_content) {
-//             list.push(<Tab value="plaintext">plaintext</Tab>)
-//         }
-//     }
-//     return list;
-// }
 export default function ConnectionList() {
 
     const httpDetail = useStore((state) => state.httpDetail);
@@ -48,7 +38,6 @@ export default function ConnectionList() {
         }
         httpDetail(connection).then((rs: MessageCompress[]) => {
             const list: HttpMessageWrap[] = rs.map((r: MessageCompress) => {
-                console.log(r);
                 const rt = JSON.parse(r.json);
                 if (r.data.length > 0) {
                     rt.raw = r.data;
@@ -143,7 +132,7 @@ export default function ConnectionList() {
                     Response
                 </Tab>
             </TabList>
-            <div className="flex-grow-1" style={{ border: '1px solid #ddd' }} >
+            <div className="flex-1" style={{ border: '1px solid #ddd', overflow: 'auto' }} >
                 {contentRender()}
             </div>
         </>

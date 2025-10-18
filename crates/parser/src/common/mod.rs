@@ -296,6 +296,11 @@ impl Instance {
         let start = cri.start;
         let size = cri.size;
         let fs: &[Frame] = &self.ctx.list;
+
+        // for frame in fs {
+            // frame.
+            //TODO
+        // }
         let total = fs.len();
         let mut items = Vec::new();
         if total <= start {
@@ -415,10 +420,7 @@ impl Instance {
         }
         Ok("[]".into())
     }
-
-    // pub fn connection_count(&self) -> usize {
-    //     self.ctx.connections.len()
-    // }
+    
     pub fn conversation_count(&self) -> usize {
         self.ctx.conversation_list.len()
     }

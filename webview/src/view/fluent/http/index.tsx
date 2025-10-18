@@ -62,11 +62,11 @@ const http_connct_status = (status: string) => {
 function Component() {
     const httpConnections = useStore((state) => state.httpConnections);
     const cachehttp = useStore((state) => state.cachehttp);
-    const httpStat = useStore((state) => state.httpStat);
+    const stat = useStore((state) => state.stat);
     const [httpHosts, setHttpHosts] = useState<ICounterItem[]>([]);
     const [hostSelect, setHostSelect] = useState<string>(NoneOption);
     useEffect(() => {
-        httpStat().then(setHttpHosts);
+        stat({field: 'http_host'}).then(setHttpHosts);
     }, [])
     const navigate = useNavigate();
     const selectId = useId();
