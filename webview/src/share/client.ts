@@ -10,7 +10,7 @@ function concatLargeUint8Arrays(arrays: Uint8Array[]): Uint8Array {
   const buffer = new ArrayBuffer(totalLength);
   const result = new Uint8Array(buffer);
   let offset = 0;
-  for (let arr of arrays) {
+  for (const arr of arrays) {
     result.set(arr, offset);
     offset += arr.length;
   }
@@ -101,7 +101,7 @@ export abstract class PCAPClient {
       try {
         // let rs;
         switch (catelog) {
-          case "frame":
+          case "frame": {
             const range = this.ctx!.frame_range(index);
             const data = await this.pickData(range.data.start, range.data.end);
             const frameResult = this.ctx.select_frame(index, data);
@@ -123,10 +123,11 @@ export abstract class PCAPClient {
               ComMessage.new(ComType.FRAMES_SELECT, rs, requestId),
             );
             return;
+          }
           default:
             return;
         }
-      } catch (e) {
+      } catch (_) {
         this.emitMessage(new ComMessage(ComType.error, "failed"));
       }
     }
@@ -246,12 +247,13 @@ export abstract class PCAPClient {
           }
           break;
         }
-        case ComType.HTTP_DETAIL_REQ:
+        case ComType.HTTP_DETAIL_REQ: {
           const rs = await this.http_detail(body as IVHttpConnection);
           this.emitMessage(
             ComMessage.new(ComType.HTTP_DETAIL_RES, rs, id),
           );
           break;
+        }
         case ComType.STAT_REQ: {
           const req: StatRequest = body;
           const rs = await this.stat(req.field);

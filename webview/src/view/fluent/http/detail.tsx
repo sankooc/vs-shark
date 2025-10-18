@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useStore } from "../../store";
-import { makeStyles, SelectTabData, SelectTabEvent, Tab, TabList, TabValue, Tree, TreeItem, TreeItemLayout } from "@fluentui/react-components";
+import { SelectTabData, SelectTabEvent, Tab, TabList, TabValue, Tree, TreeItem, TreeItemLayout } from "@fluentui/react-components";
 import { format_bytes_single_unit, HttpMessageWrap, MessageCompress } from "../../../share/common";
 import indexCss from './index.module.scss';
 import { HttpIcon } from "../common";
@@ -11,13 +11,18 @@ import Empty from "./content/empty";
 import {PageFrame} from '../table';
 
 
-const useStyles = makeStyles({
-    customTree: {
-        '--spacingHorizontalXXL': '12px',
-        '--fontWeightRegular': 'bold',
-        'padding': '5px',
-    },
-});
+// const useStyles = makeStyles({
+//     customTree: {
+//         '--spacingHorizontalXXL': '12px',
+//         '--fontWeightRegular': 'bold',
+//         'padding': '5px',
+//     },
+//     tab: {
+//         button: {
+//             color: 'red'
+//         }
+//     }
+// });
 
 export default function ConnectionList() {
 
@@ -47,7 +52,7 @@ export default function ConnectionList() {
             setList(list);
         });
     }, []);
-    const styles = useStyles();
+    // const styles = useStyles();
     const build = (hmw: HttpMessageWrap) => {
         const it = hmw.headers;
         const head = it[0];
@@ -98,7 +103,7 @@ export default function ConnectionList() {
     const contentRender = () => {
         switch (selectedValue) {
             case 'Header': {
-                return <Tree aria-label="Default" size="small" className={styles.customTree}>
+                return <Tree aria-label="Default" size="small">
                     {_list.map(build)}
                 </Tree>
             }
@@ -121,7 +126,7 @@ export default function ConnectionList() {
     }
     return (<PageFrame breads={breads}>
         <>
-            <TabList selectedValue={selectedValue} onTabSelect={onTabSelect}>
+            <TabList selectedValue={selectedValue} onTabSelect={onTabSelect} >
                 <Tab id="Header" icon={<DocumentGlobeRegular />} value="Header">
                     Header
                 </Tab>

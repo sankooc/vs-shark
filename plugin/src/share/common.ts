@@ -24,12 +24,22 @@ export enum ComType {
   HTTP_CONNECTIONS = "http_connections",
   HTTP_DETAIL_REQ = "http_detail_req",
   HTTP_DETAIL_RES = "http_detail_res",
+  STAT_REQ = "STAT_REQ",
+  STAT_RES = "STAT_RES",
+  // HTTP_STATISTICS_REQ = "http_statistics_req",
+  // HTTP_STATISTICS_RES = "http_statistics_res",
+  // TLS_STATISTICS_REQ = "tls_statistics_req",
+  // TLS_STATISTICS_RES = "tls_statistics_res",
 }
 
 export interface ComRequest {
   catelog: string;
   type: string;
   param: any;
+}
+
+export interface StatRequest {
+  field: string
 }
 
 // export interface Pagination {
@@ -41,8 +51,8 @@ let counter = 0;
 
 const getMessageId = (type: string) => {
   const cc = counter++;
-  return `${cc}_${type}_${Date.now()}`;
-};
+  return `${cc}_${type}_${Date.now()}`
+}
 
 export class ComMessage<T> {
   type: ComType;
@@ -117,51 +127,6 @@ export class VRange {
   }
 }
 
-// export class OverviewSource {
-//   legends!: string[];
-//   labels!: number[];
-//   counts!: number[];
-//   valMap: any;
-// }
-// export interface ICase {
-//   name: string;
-//   value: number;
-// }
-// export interface IStatistic {
-//   http_method: ICase[];
-//   http_status: ICase[];
-//   http_type: ICase[];
-//   ip: ICase[];
-//   ip_type: ICase[];
-// }
-// export interface IContextInfo {
-//   file_type: string;
-//   start_time: number;
-//   end_time: number;
-//   frame_count: number;
-//   http_count: number;
-//   dns_count: number;
-//   tcp_count: number;
-//   tls_count: number;
-//   cost: number;
-// }
-
-// export interface ILineData {
-//   name: string;
-//   data: number[];
-// }
-// export interface ILines {
-//   x: string[];
-//   y: string[];
-//   data: ILineData[];
-// }
-
-// export interface IOverviewData {
-//   legends: any[];
-//   labels: any[];
-//   datas: any[];
-// }
-
 export class Pagination {
   start?: number;
   size?: number;
@@ -223,4 +188,4 @@ export const format_bytes_single_unit = (bytes: number): string => {
   }
 
   return `${size}.${low} ${UNITS[unit_index]}`;
-};
+}

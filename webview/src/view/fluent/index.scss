@@ -23,9 +23,20 @@ body {
 }
 
 .page-card {
-    background-color: common.$background;
+    background-color: common.$c-bg-1;
     overflow: hidden;
     padding: 5px;
     margin: 0;
     height: calc(100% - 10px);
+    .page-card-item {
+        background-color: common.$background;
+    }
+}
+
+div[role=tablist] {
+    button:hover {
+        span {
+            color: #eee !important;
+        }
+    }
 }

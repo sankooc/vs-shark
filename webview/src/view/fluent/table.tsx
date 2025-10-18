@@ -23,7 +23,7 @@ export function PageFrame(props: PageProps) {
         {
             props.breads && props.breads.length > 0 && <BreadItem items={props.breads} ></BreadItem>
         }
-        <Card className="flex flex-1" style={{ margin: '0', padding: '5px', alignItems: 'stretch', justifyContent: 'space-between', overflow: 'auto' }} orientation="vertical">
+        <Card className="flex flex-1 justify-content-between align-items-stretch page-card-item" style={{ margin: '0', padding: '5px', overflow: 'auto' }} orientation="vertical">
             {props.children}
         </Card>
     </div>)
@@ -56,14 +56,14 @@ function Component<T>(props: GridProps<T>) {
             props.breads && props.breads.length > 0 && <BreadItem items={props.breads} ></BreadItem>
         }
         {
-            props.filterComponent && (<Card className="w-full" style={{margin: '0 0 5px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }} orientation="horizontal">
+            props.filterComponent && (<Card className="w-full flex justify-content-between align-items-center page-card-item" style={{margin: '0 0 5px 0'}} orientation="horizontal">
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                     {props.filterComponent}
                 </div>
                 <Button style={{ marginLeft: 'auto' }} size="small" onClick={doSearch}>Search</Button>
             </Card>)
         }
-        <Card className="flex flex-grow-1" style={{ margin: '0px', padding: 0, alignItems: 'center', justifyContent: 'space-between' }} orientation="vertical">
+        <Card className="flex flex-grow-1 justify-content-between align-items-center page-card-item" style={{ margin: '0px', padding: 0 }} orientation="vertical">
             <DataGrid items={result.items}
                 size={props.size}
                 resizableColumns
@@ -79,6 +79,7 @@ function Component<T>(props: GridProps<T>) {
                 <DataGridBody<T>>
                     {({ item, rowId }) => (
                         <DataGridRow key={rowId} onClick={() => {
+                            // eslint-disable-next-line @typescript-eslint/no-unused-expressions
                             props.onClick && props.onClick(item);
                         }} >
                             {({ renderCell }) => (
