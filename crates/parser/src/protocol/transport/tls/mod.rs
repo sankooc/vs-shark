@@ -278,7 +278,7 @@ fn check_sni(sni_option: &mut Option<String>, _reader: &mut Reader, segment: &Tl
     if segment.content_type == 22 {
         if let Some(sub_type) = segment.sub_type {
             if sub_type == 1 {
-                if let Some(sni) = get_sni_info(_reader, segment).ok() {
+                if let Ok(sni) = get_sni_info(_reader, segment) {
                     *sni_option = Some(sni);
                 }
             }

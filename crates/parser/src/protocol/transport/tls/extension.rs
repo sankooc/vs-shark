@@ -277,8 +277,7 @@ fn parse_signature_algorithms_item(reader: &mut Reader, field: &mut Field) -> Re
         11 => "rsa_pss_rsae_sha512",
         _ => "unknown",
     };
-
-    let alg_str = format!("Algorithm: {}_{}(0x{:04x})", hash_name, sign_name, sig_alg);
+    let alg_str = format!("Algorithm: {hash_name}_{sign_name}(0x{sig_alg:04x})");
     add_field_backstep!(field, reader, 2, alg_str);
     Ok(())
 }
@@ -303,8 +302,7 @@ fn parse_signature_algorithms(reader: &mut Reader, field: &mut Field) -> Result<
     for _ in 0..count {
         parse_signature_algorithms_item(reader, &mut list_field)?;
     }
-
-    field.summary = format!("Signature Hash Algorithms ({} algorithms)", count);
+    field.summary = format!("Signature Hash Algorithms ({count} algorithms)");
     // Add list field to parent
     if let Some(children) = &mut field.children {
         children.push(list_field);
@@ -371,7 +369,7 @@ fn parse_supported_versions(reader: &mut Reader, field: &mut Field) -> Result<()
     for _ in 0..count {
         parse_supported_versions_item(reader, field)?;
     }
-    field.summary = format!("Supported Versions: {}", versions_len);
+    field.summary = format!("Supported Versions: {versions_len}");
 
     Ok(())
 }

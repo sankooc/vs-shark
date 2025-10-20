@@ -1,10 +1,11 @@
 // Copyright (c) 2025 sankooc
-// 
+//
 // This file is part of the pcapview project.
 // Licensed under the MIT License - see https://opensource.org/licenses/MIT
 
 use std::{
-    net::{Ipv4Addr, Ipv6Addr}, ops::{AddAssign, Range}
+    net::{Ipv4Addr, Ipv6Addr},
+    ops::{AddAssign, Range},
 };
 
 use anyhow::{bail, Result};
@@ -122,10 +123,18 @@ impl HttpConntect {
 
 impl HttpConntect {
     fn request(index: ConnectionIndex, message_index: MessageIndex) -> Self {
-        Self{ index, request: Some(message_index), ..Default::default() }
+        Self {
+            index,
+            request: Some(message_index),
+            ..Default::default()
+        }
     }
     fn response(index: ConnectionIndex, message_index: MessageIndex) -> Self {
-        Self{ index, response: Some(message_index), ..Default::default() }
+        Self {
+            index,
+            response: Some(message_index),
+            ..Default::default()
+        }
     }
     fn add_response(&mut self, message_index: MessageIndex, ts: Timestamp) {
         self.response = Some(message_index);
@@ -172,7 +181,11 @@ impl Context {
     }
     pub fn init_segment_message(&mut self, frame_index: FrameIndex, host: String, is_request: bool, connect_index: ConnectionIndex, timestamp: Timestamp) -> MessageIndex {
         let message_index = self.http_messages.len() as MessageIndex;
-        let mut sg = HttpMessage { frame_index, host, ..Default::default() };
+        let mut sg = HttpMessage {
+            frame_index,
+            host,
+            ..Default::default()
+        };
         // self.http_messages.push(sg);
 
         if is_request {
@@ -362,7 +375,7 @@ impl Context {
         }
         None
     }
-    pub fn add_http_hostname(&mut self, message_index: MessageIndex, hostname: &str){
+    pub fn add_http_hostname(&mut self, message_index: MessageIndex, hostname: &str) {
         if let Some(message) = self.http_messages.get(message_index as usize) {
             if let Some(http_connect_index) = &message.http_connect_index {
                 if let Some(connect) = self.http_connections.get_mut(*http_connect_index as usize) {
@@ -373,24 +386,29 @@ impl Context {
             }
         }
     }
-    
 }
 
-
 impl Context {
-    fn add_map<K, T>(key: &K, map: &mut FastHashMap<K, T>) where K: core::hash::Hash + Eq + Clone, T: AddAssign + Default + Copy + From<u8> {
+    fn add_map<K, T>(key: &K, map: &mut FastHashMap<K, T>)
+    where
+        K: core::hash::Hash + Eq + Clone,
+        T: AddAssign + Default + Copy + From<u8>,
+    {
         if let Some(v) = map.get_mut(key) {
             *v += T::from(1);
         } else {
             map.insert(key.clone(), T::from(1));
         }
     }
-    fn _list_map<K, T>(map: &FastHashMap<K, T>) -> String where K: core::hash::Hash + Eq + ToString, T: Copy + Into<usize>{
-        let rs:Vec<CounterItem> = map.iter().map(|(k, v)| CounterItem::new(k.to_string(), (*v).into())).collect();
+    fn _list_map<K, T>(map: &FastHashMap<K, T>) -> String
+    where
+        K: core::hash::Hash + Eq + ToString,
+        T: Copy + Into<usize>,
+    {
+        let rs: Vec<CounterItem> = map.iter().map(|(k, v)| CounterItem::new(k.to_string(), (*v).into())).collect();
         serde_json::to_string(&rs).unwrap_or("[]".into())
     }
 }
-
 
 impl Context {
     pub fn stat_http_host(&self) -> String {
@@ -402,10 +420,10 @@ impl Context {
     pub fn stat_tls_sni(&self) -> String {
         Context::_list_map(&self.tls_sni)
     }
-    pub fn add_ip4(&mut self, ip: &Ipv4Addr){
+    pub fn add_ip4(&mut self, ip: &Ipv4Addr) {
         Context::add_map(ip, &mut self.stat_ip4);
     }
-    pub fn add_ip6(&mut self, ip: &Ipv6Addr){
+    pub fn add_ip6(&mut self, ip: &Ipv6Addr) {
         Context::add_map(ip, &mut self.stat_ip6);
     }
     pub fn stat_ip4(&self) -> String {

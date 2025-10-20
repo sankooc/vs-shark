@@ -72,7 +72,7 @@ fn field_ciper_suite_list(len: u16, reader: &mut Reader, field: &mut Field) -> R
     }
     let count = len / 2;
     let finish = reader.cursor + len as usize;
-    field.summary = format!("Cipher Suites Count: {}", count);
+    field.summary = format!("Cipher Suites Count: {count}");
     for _ in 0..count {
         add_field_format_fn!(field, reader, reader.read16(true).unwrap(), field_ciper_suite_str);
     }
@@ -85,7 +85,7 @@ fn field_compression_list(len: u8, reader: &mut Reader, field: &mut Field) -> Re
         return Ok(());
     }
     let finish = reader.cursor + len as usize;
-    field.summary = format!("Compression Methods: {}", len);
+    field.summary = format!("Compression Methods: {len}");
     for _ in 0..len {
         add_field_format_fn!(field, reader, reader.read8().unwrap(), field_compress_str);
     }
@@ -180,8 +180,7 @@ fn parse_heartbeat(reader: &mut Reader, field: &mut Field) {
                 if reader.left() >= length as usize {
                     reader.forward(length as usize);
                 }
-
-                field.summary = format!("Heartbeat: {}", type_str);
+                field.summary = format!("Heartbeat: {type_str}");
             }
         }
     }
@@ -303,7 +302,7 @@ pub fn parse_certificates(reader: &mut Reader, field: &mut Field) -> Result<()> 
     }
 
     add_field_format!(field, reader, cert_count, "Certificate Count: {}");
-    field.summary = format!("Certificate: {}", cert_count);
+    field.summary = format!("Certificate: {cert_count}");
     Ok(())
 }
 

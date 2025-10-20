@@ -58,7 +58,7 @@ pub fn to_oid(slice: &[u8]) -> String {
             range = Range { start: inx + 1, end: inx + 1 }
         }
     }
-    list.iter().map(|f| format!("{}", f)).collect::<Vec<_>>().join(".")
+    list.iter().map(|f| format!("{f}")).collect::<Vec<_>>().join(".")
 }
 
 pub enum BerType {
@@ -163,7 +163,7 @@ impl ValueMono for RNDItem {
         match ber_type {
             BerType::ObjectIdentifier(data) => {
                 let oid = oid_map_mapper(&data);
-                return Some(format!("Object Id: {} ({})", data, oid));
+                return Some(format!("Object Id: {data} ({oid})"));
             }
             BerType::String(content) => return Some(content.clone()),
             _ => {}
@@ -193,8 +193,8 @@ impl ValueMono for SubjectPublicKey {
         if let BerType::Int(data) = ber_type {
             let content = bytes_to_hex_limit(&data, 20);
             match index {
-                0 => return Some(format!("modules: {}", content)),
-                1 => return Some(format!("public exponent: {}", content)),
+                0 => return Some(format!("modules: {content}")),
+                1 => return Some(format!("public exponent: {content}")),
                 _ => {}
             }
         }
@@ -209,7 +209,7 @@ impl ContructMono for Rdn {
         create_construct_list("item", RDNGroup)
     }
     fn text(&self, text: &str, count: u8) -> String {
-        format!("{} ({})", text, count)
+        format!("{text} ({count})")
     }
 }
 
@@ -220,7 +220,8 @@ impl ContructMono for RDNGroup {
         Some(Rc::new(ValueOnly::create("rdnSequence".into(), RNDItem)))
     }
     fn text(&self, text: &str, count: u8) -> String {
-        format!("{} ({})", text, count)
+        format!("{text} ({count})")
+        
     }
 }
 
@@ -231,7 +232,7 @@ impl ContructMono for Extentions {
         create_value_list("Extension", Extension)
     }
     fn text(&self, _: &str, count: u8) -> String {
-        format!("extensions: {} items", count)
+        format!("extensions: {count} items")
     }
 }
 
@@ -381,7 +382,7 @@ impl ValueMono for SignedCertificateSignature {
         if index == 0 {
             if let BerType::ObjectIdentifier(data) = ber_type {
                 let oid = oid_map_mapper(&data);
-                return Some(format!("Algorithm Id: {} ({})", data, oid));
+                return Some(format!("Algorithm Id: {data} ({oid})"));
             }
         }
         None
@@ -393,8 +394,8 @@ impl ValueMono for Validity {
     fn val(&self, index: usize, ber_type: BerType) -> Option<String> {
         if let BerType::UTCTime(data) = ber_type {
             match index {
-                0 => return Some(format!("notBefore: {}", data)),
-                1 => return Some(format!("notAfter: {}", data)),
+                0 => return Some(format!("notBefore: {data}")),
+                1 => return Some(format!("notAfter: {data}")),
                 _ => {}
             }
         }
