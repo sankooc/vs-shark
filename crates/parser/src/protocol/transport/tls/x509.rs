@@ -241,7 +241,7 @@ impl ValueMono for Extension {
     fn val(&self, _: usize, ber_type: BerType) -> Option<String> {
         if let BerType::ObjectIdentifier(data) = ber_type {
             let oid = oid_map_mapper(&data);
-            return Some(format!("Extension Id: {} ({})", data, oid));
+            return Some(format!("Extension Id: {data} ({oid})"));
         }
         None
     }

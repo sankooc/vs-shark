@@ -61,13 +61,13 @@ fn parse_tags(reader: &mut Reader, field: &mut Field) -> Result<()> {
                         add_field_backstep!(field, reader, tag_length as usize, format!("{}: {}", tag_name, tag_value));
                     } else {
                         let tag_data = reader.slice(tag_length as usize, true)?;
-                        let hex_str = tag_data.iter().map(|b| format!("{:02x}", b)).collect::<Vec<String>>().join(" ");
+                        let hex_str = tag_data.iter().map(|b| format!("{b:02x}")).collect::<Vec<String>>().join(" ");
                         add_field_backstep!(field, reader, tag_length as usize, format!("{}: 0x{}", tag_name, hex_str));
                     }
                 },
                 TAG_HOST_UNIQ | TAG_AC_COOKIE | TAG_RELAY_SESSION_ID => {
                     let tag_data = reader.slice(tag_length as usize, true)?;
-                    let hex_str = tag_data.iter().map(|b| format!("{:02x}", b)).collect::<Vec<String>>().join(" ");
+                    let hex_str = tag_data.iter().map(|b| format!("{b:02x}")).collect::<Vec<String>>().join(" ");
                     add_field_backstep!(field, reader, tag_length as usize, format!("{}: 0x{}", tag_name, hex_str));
                 },
                 TAG_VENDOR_SPECIFIC => {
@@ -77,12 +77,12 @@ fn parse_tags(reader: &mut Reader, field: &mut Field) -> Result<()> {
                         
                         if tag_length > 4 {
                             let vendor_data = reader.slice((tag_length - 4) as usize, true)?;
-                            let hex_str = vendor_data.iter().map(|b| format!("{:02x}", b)).collect::<Vec<String>>().join(" ");
+                            let hex_str = vendor_data.iter().map(|b| format!("{b:02x}")).collect::<Vec<String>>().join(" ");
                             add_field_backstep!(field, reader, (tag_length - 4) as usize, format!("Vendor Data: 0x{}", hex_str));
                         }
                     } else {
                         let tag_data = reader.slice(tag_length as usize, true)?;
-                        let hex_str = tag_data.iter().map(|b| format!("{:02x}", b)).collect::<Vec<String>>().join(" ");
+                        let hex_str = tag_data.iter().map(|b| format!("{b:02x}")).collect::<Vec<String>>().join(" ");
                         add_field_backstep!(field, reader, tag_length as usize, format!("{}: 0x{}", tag_name, hex_str));
                     }
                 },
@@ -91,13 +91,13 @@ fn parse_tags(reader: &mut Reader, field: &mut Field) -> Result<()> {
                         add_field_backstep!(field, reader, tag_length as usize, format!("{}: {}", tag_name, error_msg));
                     } else {
                         let tag_data = reader.slice(tag_length as usize, true)?;
-                        let hex_str = tag_data.iter().map(|b| format!("{:02x}", b)).collect::<Vec<String>>().join(" ");
+                        let hex_str = tag_data.iter().map(|b| format!("{b:02x}")).collect::<Vec<String>>().join(" ");
                         add_field_backstep!(field, reader, tag_length as usize, format!("{}: 0x{}", tag_name, hex_str));
                     }
                 },
                 _ => {
                     let tag_data = reader.slice(tag_length as usize, true)?;
-                    let hex_str = tag_data.iter().map(|b| format!("{:02x}", b)).collect::<Vec<String>>().join(" ");
+                    let hex_str = tag_data.iter().map(|b| format!("{b:02x}")).collect::<Vec<String>>().join(" ");
                     add_field_backstep!(field, reader, tag_length as usize, format!("{} (0x{:04x}): 0x{}", tag_name, tag_type, hex_str));
                 }
             }

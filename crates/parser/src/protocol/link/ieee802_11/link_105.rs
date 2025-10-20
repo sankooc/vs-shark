@@ -315,7 +315,7 @@ fn frame_subtype_to_str(frame_type: u8, subtype: u8) -> String {
         (0b10, 0b1110) => "QoS CF-Poll (no data)".to_string(),
         (0b10, 0b1111) => "QoS CF-Ack + CF-Poll (no data)".to_string(),
         // Extension (11)
-        (0b11, _) => format!("Extension Subtype {}", subtype),
-        _ => format!("Unknown Type/Subtype ({}, {})", frame_type, subtype),
+        (0b11, _) => format!("Extension Subtype {subtype}"),
+        _ => format!("Unknown Type/Subtype ({frame_type}, {subtype})"),
     }
 }

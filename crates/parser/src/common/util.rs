@@ -77,7 +77,7 @@ pub fn bytes_to_hex(bytes: &[u8]) -> String {
     let mut rt = String::with_capacity(2 * bytes.len() + 2);
     rt.push_str("0x");
     for b in bytes {
-        rt.push_str(format!("{:02x}", b).as_str());
+        rt.push_str(format!("{b:02x}").as_str());
     }
     rt
 }

@@ -55,7 +55,7 @@ impl EthernetVisitor {
         } else {
             add_field_backstep!(field, reader, 2, format!("Type: {} ({:#06x})", etype_mapper(ptype), ptype));
         }
-        field.summary = format!("Ethernet II, Src: {}, Dst: {}", source, target);
+        field.summary = format!("Ethernet II, Src: {source}, Dst: {target}");
         Ok(ethernet_protocol_mapper(ptype))
     }
 }

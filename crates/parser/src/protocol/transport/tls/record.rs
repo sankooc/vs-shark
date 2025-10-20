@@ -63,7 +63,7 @@ fn field_compress_str(code: u8) -> String {
         64..=223 => "Non-Standards Track Method",
         224..=255 => "Private Use",
     };
-    format!("Compression Method: {} ({})", method, code)
+    format!("Compression Method: {method} ({code})")
 }
 
 fn field_ciper_suite_list(len: u16, reader: &mut Reader, field: &mut Field) -> Result<()> {
@@ -135,7 +135,7 @@ fn parse_handshake(reader: &mut Reader, field: &mut Field) -> Result<()> {
         }
         // let msg_type = add_field_format_fn!(field, reader, reader.read8()?, handshake_type);
         add_field_backstep!(field, reader, 1, type_desc.to_string());
-        field.summary = format!("Handshake: {}", type_desc);
+        field.summary = format!("Handshake: {type_desc}");
         // Read length (3 bytes)
         let length = read24(reader)?;
         add_field_backstep!(field, reader, 3, format!("Length: {}", length));

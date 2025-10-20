@@ -157,7 +157,7 @@ fn parse_supported_groups(reader: &mut Reader, field: &mut Field) -> Result<()> 
     for _ in 0..count {
         parse_supported_groups_item(reader, field)?;
     }
-    field.summary = format!("Supported Groups List Length: {}", list_len);
+    field.summary = format!("Supported Groups List Length: {list_len}");
 
     Ok(())
 }
@@ -215,7 +215,7 @@ fn named_group_to_string(group_id: u16) -> String {
         0x0102 => "ffdhe4096".to_string(),
         0x0103 => "ffdhe6144".to_string(),
         0x0104 => "ffdhe8192".to_string(),
-        _ => format!("unknown_group_{}", group_id),
+        _ => format!("unknown_group_{group_id}"),
     }
 }
 
@@ -241,7 +241,7 @@ fn parse_ec_point_formats(reader: &mut Reader, field: &mut Field) -> Result<()> 
     for _ in 0..formats_len {
         parse_ec_point_formats_item(reader, field)?;
     }
-    field.summary = format!("Elliptic curves point formats ({})", formats_len);
+    field.summary = format!("Elliptic curves point formats ({formats_len})");
     Ok(())
 }
 
@@ -318,7 +318,7 @@ fn parse_signature_algorithms(reader: &mut Reader, field: &mut Field) -> Result<
 fn parse_alpn_item(reader: &mut Reader, field: &mut Field) -> Result<()> {
     let len = add_field_format!(field, reader, reader.read8()?, "ALPN Protocol Length: {}") as usize;
     let protocol = add_field_format!(field, reader, reader.read_string(len)?, "ALPN Next Protocol: {}");
-    field.summary = format!("ALPN Protocol: {}", protocol);
+    field.summary = format!("ALPN Protocol: {protocol}");
     Ok(())
 }
 fn parse_alpn(reader: &mut Reader, field: &mut Field) -> Result<()> {

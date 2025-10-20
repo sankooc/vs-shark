@@ -107,61 +107,61 @@ fn read_payload(reader: &mut Reader, field: &mut Field) -> Result<u16> {
                                     // IP-Address
                                     if option_length == 6 {
                                         let ip = reader.read_ip4()?;
-                                        options_data.push(format!("IP-Address: {}", ip));
+                                        options_data.push(format!("IP-Address: {ip}"));
                                         remaining -= 4;
                                     } else {
                                         reader.forward(option_length as usize - 2);
                                         remaining -= option_length as usize - 2;
-                                        options_data.push(format!("IP-Address (Invalid Length: {})", option_length));
+                                        options_data.push(format!("IP-Address (Invalid Length: {option_length})"));
                                     }
                                 }
                                 2 => {
                                     // IP-Compression-Protocol
                                     if option_length >= 4 {
                                         let protocol = reader.read16(true)?;
-                                        options_data.push(format!("IP-Compression-Protocol: {:#06x}", protocol));
+                                        options_data.push(format!("IP-Compression-Protocol: {protocol:#06x}"));
                                         reader.forward(option_length as usize - 4);
                                         remaining -= option_length as usize - 2;
                                     } else {
                                         reader.forward(option_length as usize - 2);
                                         remaining -= option_length as usize - 2;
-                                        options_data.push(format!("IP-Compression-Protocol (Invalid Length: {})", option_length));
+                                        options_data.push(format!("IP-Compression-Protocol (Invalid Length: {option_length})"));
                                     }
                                 }
                                 3 => {
                                     // IP-Address (Primary DNS)
                                     if option_length == 6 {
                                         let ip = reader.read_ip4()?;
-                                        options_data.push(format!("Primary DNS: {}", ip));
+                                        options_data.push(format!("Primary DNS: {ip}"));
                                         remaining -= 4;
                                     } else {
                                         reader.forward(option_length as usize - 2);
                                         remaining -= option_length as usize - 2;
-                                        options_data.push(format!("Primary DNS (Invalid Length: {})", option_length));
+                                        options_data.push(format!("Primary DNS (Invalid Length: {option_length})"));
                                     }
                                 }
                                 129 => {
                                     // IP-Address (Secondary DNS)
                                     if option_length == 6 {
                                         let ip = reader.read_ip4()?;
-                                        options_data.push(format!("Secondary DNS: {}", ip));
+                                        options_data.push(format!("Secondary DNS: {ip}"));
                                         remaining -= 4;
                                     } else {
                                         reader.forward(option_length as usize - 2);
                                         remaining -= option_length as usize - 2;
-                                        options_data.push(format!("Secondary DNS (Invalid Length: {})", option_length));
+                                        options_data.push(format!("Secondary DNS (Invalid Length: {option_length})"));
                                     }
                                 }
                                 _ => {
                                     reader.forward(option_length as usize - 2);
                                     remaining -= option_length as usize - 2;
-                                    options_data.push(format!("Option Type: {}, Length: {}", option_type, option_length));
+                                    options_data.push(format!("Option Type: {option_type}, Length: {option_length}"));
                                 }
                             }
                         } else {
                             // Invalid option length
                             reader.forward(remaining);
-                            options_data.push(format!("Invalid Option: Type {}, Length {}", option_type, option_length));
+                            options_data.push(format!("Invalid Option: Type {option_type}, Length {option_length}"));
                             break;
                         }
                     }
@@ -215,24 +215,24 @@ fn read_payload(reader: &mut Reader, field: &mut Field) -> Result<u16> {
                                     if option_length == 10 {
                                         let id_high = reader.read32(true)?;
                                         let id_low = reader.read32(true)?;
-                                        options_data.push(format!("Interface-Identifier: {:#010x}{:08x}", id_high, id_low));
+                                        options_data.push(format!("Interface-Identifier: {id_high:#010x}{id_low:08x}"));
                                         remaining -= 8;
                                     } else {
                                         reader.forward(option_length as usize - 2);
                                         remaining -= option_length as usize - 2;
-                                        options_data.push(format!("Interface-Identifier (Invalid Length: {})", option_length));
+                                        options_data.push(format!("Interface-Identifier (Invalid Length: {option_length})"));
                                     }
                                 }
                                 _ => {
                                     reader.forward(option_length as usize - 2);
                                     remaining -= option_length as usize - 2;
-                                    options_data.push(format!("Option Type: {}, Length: {}", option_type, option_length));
+                                    options_data.push(format!("Option Type: {option_type}, Length: {option_length}"));
                                 }
                             }
                         } else {
                             // Invalid option length
                             reader.forward(remaining);
-                            options_data.push(format!("Invalid Option: Type {}, Length {}", option_type, option_length));
+                            options_data.push(format!("Invalid Option: Type {option_type}, Length {option_length}"));
                             break;
                         }
                     }
@@ -296,13 +296,13 @@ fn read_payload(reader: &mut Reader, field: &mut Field) -> Result<u16> {
                                 26 => "LZS-DCP",
                                 _ => "Unknown",
                             };
-                            options_data.push(format!("Compression Method: {} ({})", compression_type, option_type));
+                            options_data.push(format!("Compression Method: {compression_type} ({option_type})"));
                             reader.forward(option_length as usize - 2);
                             remaining -= option_length as usize - 2;
                         } else {
                             // Invalid option length
                             reader.forward(remaining);
-                            options_data.push(format!("Invalid Option: Type {}, Length {}", option_type, option_length));
+                            options_data.push(format!("Invalid Option: Type {option_type}, Length {option_length}"));
                             break;
                         }
                     }
@@ -357,13 +357,13 @@ fn read_payload(reader: &mut Reader, field: &mut Field) -> Result<u16> {
                                 4 => "AES-CBC",
                                 _ => "Unknown",
                             };
-                            options_data.push(format!("Encryption Method: {} ({})", encryption_type, option_type));
+                            options_data.push(format!("Encryption Method: {encryption_type} ({option_type})"));
                             reader.forward(option_length as usize - 2);
                             remaining -= option_length as usize - 2;
                         } else {
                             // Invalid option length
                             reader.forward(remaining);
-                            options_data.push(format!("Invalid Option: Type {}, Length {}", option_type, option_length));
+                            options_data.push(format!("Invalid Option: Type {option_type}, Length {option_length}"));
                             break;
                         }
                     }
@@ -382,7 +382,7 @@ fn read_payload(reader: &mut Reader, field: &mut Field) -> Result<u16> {
             add_field_rest_format!(field, reader, format!("Payload: {} bytes", reader.left()));
         }
     }
-    field.summary = format!("PPP Protocol: {} ({:#06x})", protocol_name, protocol);
+    field.summary = format!("PPP Protocol: {protocol_name} ({protocol:#06x})");
     Ok(protocol)
 }
 pub struct Visitor;

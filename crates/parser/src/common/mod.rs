@@ -402,7 +402,7 @@ impl Instance {
                                     extra_data = Some(data);
                                 }
                             } else {
-                                f.summary = format!("Parse [{}] failed", _next);
+                                f.summary = format!("Parse [{_next}] failed");
                                 break;
                             }
                         }
