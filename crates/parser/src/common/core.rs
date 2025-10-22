@@ -4,14 +4,16 @@
 // Licensed under the MIT License - see https://opensource.org/licenses/MIT
 
 use std::{
-    collections::HashMap, net::{Ipv4Addr, Ipv6Addr}, ops::{AddAssign, Range}
+    collections::HashMap,
+    net::{Ipv4Addr, Ipv6Addr},
+    ops::{AddAssign, Range},
 };
 
 use anyhow::{bail, Result};
 
 use crate::common::{
-    concept::{ConnectionIndex, Conversation, ConversationKey, CounterItem, FrameIndex, HttpConnectIndex, MessageIndex, Timestamp, VHttpConnection},
-    enum_def::AddressField,
+    concept::{ConnectionIndex, Conversation, ConversationKey, CounterItem, FrameIndex, HttpConnectIndex, LineChartData, MessageIndex, Timestamp, VHttpConnection},
+    enum_def::{AddressField, Protocol},
 };
 
 use super::{
@@ -75,7 +77,7 @@ impl HttpMessage {
         self.content = segment_append(orgin, segment);
     }
     /**
-     * request return method 
+     * request return method
      * response return status code
      */
     pub fn get_method_or_status(&self) -> String {
@@ -83,11 +85,11 @@ impl HttpMessage {
         if self.host.starts_with("HTTP/") {
             if let Some(status_code) = parts.nth(1) {
                 if let Some(h) = status_code.chars().next() {
-                    return format!("{h}XX")
+                    return format!("{h}XX");
                 }
             }
         } else if let Some(method) = parts.next() {
-                return method.to_string();
+            return method.to_string();
         }
         "None".to_string()
     }
@@ -103,7 +105,7 @@ pub struct HttpConntect {
 }
 
 impl HttpConntect {
-    pub fn to_message<'a>(&self, ctx: &'a Context, index: &Option<MessageIndex>) -> Option<&'a HttpMessage>{
+    pub fn to_message<'a>(&self, ctx: &'a Context, index: &Option<MessageIndex>) -> Option<&'a HttpMessage> {
         if let Some(_index) = index {
             ctx.http_messages.get(*_index as usize)
         } else {
@@ -144,7 +146,7 @@ impl HttpConntect {
     }
 
     pub fn info(&self, ctx: &Context) -> (String, String, String) {
-        let method =  if let Some(message) = self.to_message(ctx, &self.request) {
+        let method = if let Some(message) = self.to_message(ctx, &self.request) {
             message.get_method_or_status()
         } else {
             "NONE".to_string()
@@ -487,32 +489,99 @@ impl Context {
     }
 }
 
-
 fn flat(map: &HashMap<String, usize>) -> Vec<CounterItem> {
     map.iter().map(|(k, v)| CounterItem::new(k.to_string(), *v)).collect()
 }
 
+// fn increase(map: &mut FastHashMap<String, usize>, key: &String, mount: usize) {
+//     if let Some(v) = map.get_mut(key) {
+//         *v += mount;
+//     } else {
+//         map.insert(key.clone(), mount);
+//     }
+// }
+// fn flat_fastmap(map: &FastHashMap<String, usize>) -> Vec<CounterItem> {
+//     map.iter().map(|(k, v)| CounterItem::new(k.to_string(), *v)).collect()
+// }
+
 impl Context {
     pub fn stat_http_data(&self) -> String {
-        let mut method_map: HashMap<String, usize> =  HashMap::with_capacity(4);
-        let mut status_map: HashMap<String, usize> =  HashMap::with_capacity(6);
-        let mut type_map: HashMap<String, usize> =  HashMap::new();
+        let mut method_map: HashMap<String, usize> = HashMap::with_capacity(4);
+        let mut status_map: HashMap<String, usize> = HashMap::with_capacity(6);
+        let mut type_map: HashMap<String, usize> = HashMap::new();
         for connect in &self.http_connections {
-            let (method, status, content_type) =  connect.info(self);
+            let (method, status, content_type) = connect.info(self);
             Context::add_map2(&method, &mut method_map);
             Context::add_map2(&status, &mut status_map);
             Context::add_map2(&content_type, &mut type_map);
         }
         serde_json::to_string(&vec![flat(&method_map), flat(&status_map), flat(&type_map)]).unwrap()
     }
-    // pub fn stat_frame(&self) -> String {
-    //     let count = self.list.len();
-    //     if count < 10 {
-    //         return "[]".to_string();
-    //     }
-    //     if count < 1000 {
+    pub fn stat_frame(&self) -> String {
+        if self.list.len() <= 10 {
+            return "{}".to_string();
+        }
+        let first = self.list.first().unwrap();
+        let last = self.list.last().unwrap();
+        let period = last.info.time.saturating_sub(first.info.time);
+        if period < 100 {
+            return "{}".to_string();
+        }
+        let size: usize = 20;
+        let r = period.div_ceil(size as u64);
+        let mut limit = first.info.time + r;
+        let mut series = vec![];
 
-    //     }
-    //     todo!()
-    // }
+        let mut tcp: Vec<u32> = vec![0; size];
+        let mut udp: Vec<u32> = vec![0; size];
+        let mut http: Vec<u32> = vec![0; size];
+        let mut tls: Vec<u32> = vec![0; size];
+        let mut other: Vec<u32> = vec![0; size];
+        let protocols = ["tcp", "udp", "http", "tls", "other"];
+
+        let mut index = 0;
+        let incr = |list: &mut Vec<u32>, index: usize, mount: u32| {
+            if let Some(v) = list.get_mut(index) {
+                *v += mount;
+            } else {
+                list.insert(index, mount);
+            }
+        };
+        series.push(first.info.time);
+        for frame in &self.list {
+            let time = frame.info.time;
+            if time > limit {
+                loop {
+                    series.push(limit);
+                    limit += r;
+                    index += 1;
+                    if limit > time {
+                        break;
+                    }
+                }
+            }
+            let mount = frame.info.len;
+            match frame.tail {
+                Protocol::TCP => {
+                    incr(&mut tcp, index, mount);
+                }
+                Protocol::UDP => {
+                    incr(&mut udp, index, mount);
+                }
+                Protocol::HTTP => {
+                    incr(&mut http, index, mount);
+                }
+                Protocol::TLS => {
+                    incr(&mut tls, index, mount);
+                }
+                _ => {
+                    incr(&mut other, index, mount);
+                }
+            }
+        }
+        
+    
+        let data = LineChartData::new(series, protocols.iter().map(|f| (*f).into()).collect(), vec![tcp, udp, http, tls, other]);
+        serde_json::to_string(&data).unwrap_or("{}".into())
+    }
 }

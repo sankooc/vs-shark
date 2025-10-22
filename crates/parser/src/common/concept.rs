@@ -71,6 +71,34 @@ pub struct InstanceConfig {
 //     content_type: String,
 // }
 
+
+
+// #[derive(Serialize)]
+// pub struct FrameStatData {
+//     pub time: u64,
+//     // pub tcp: [usize; 400],
+//     pub list: Vec<CounterItem>,
+// }
+
+// impl FrameStatData {
+//     pub fn new(time: u64, list: Vec<CounterItem>) -> Self {
+//         Self { time, list }
+//     }
+// }
+
+#[derive(Serialize)]
+pub struct LineChartData {
+    pub x_axis: Vec<u64>,
+    pub y_axis: Vec<String>,
+    pub data: Vec<Vec<u32>>
+}
+
+impl LineChartData {
+    pub fn new(x_axis: Vec<u64>, y_axis: Vec<String>, data: Vec<Vec<u32>>) -> Self {
+        Self { x_axis, y_axis, data }
+    }
+}
+
 #[derive(Serialize)]
 pub struct CounterItem {
     pub key: String,
