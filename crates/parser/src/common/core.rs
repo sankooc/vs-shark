@@ -4,8 +4,7 @@
 // Licensed under the MIT License - see https://opensource.org/licenses/MIT
 
 use std::{
-    net::{Ipv4Addr, Ipv6Addr},
-    ops::{AddAssign, Range},
+    collections::HashMap, net::{Ipv4Addr, Ipv6Addr}, ops::{AddAssign, Range}
 };
 
 use anyhow::{bail, Result};
@@ -75,6 +74,23 @@ impl HttpMessage {
         let orgin = std::mem::take(&mut self.content);
         self.content = segment_append(orgin, segment);
     }
+    /**
+     * request return method 
+     * response return status code
+     */
+    pub fn get_method_or_status(&self) -> String {
+        let mut parts = self.host.split_whitespace();
+        if self.host.starts_with("HTTP/") {
+            if let Some(status_code) = parts.nth(1) {
+                if let Some(h) = status_code.chars().next() {
+                    return format!("{h}XX")
+                }
+            }
+        } else if let Some(method) = parts.next() {
+                return method.to_string();
+        }
+        "None".to_string()
+    }
 }
 
 #[derive(Default)]
@@ -87,6 +103,13 @@ pub struct HttpConntect {
 }
 
 impl HttpConntect {
+    pub fn to_message<'a>(&self, ctx: &'a Context, index: &Option<MessageIndex>) -> Option<&'a HttpMessage>{
+        if let Some(_index) = index {
+            ctx.http_messages.get(*_index as usize)
+        } else {
+            None
+        }
+    }
     pub fn into(&self, ctx: &Context) -> VHttpConnection {
         let mut rs = VHttpConnection::default();
         if let Some(request_index) = &self.request {
@@ -118,6 +141,25 @@ impl HttpConntect {
         }
         rs.rt = if self.rt > 0 { format!("{}µs", self.rt) } else { "N/A".to_string() };
         rs
+    }
+
+    pub fn info(&self, ctx: &Context) -> (String, String, String) {
+        let method =  if let Some(message) = self.to_message(ctx, &self.request) {
+            message.get_method_or_status()
+        } else {
+            "NONE".to_string()
+        };
+        let (status, content_type) = if let Some(message) = self.to_message(ctx, &self.response) {
+            (message.get_method_or_status(), message.content_type.clone().unwrap_or("NONE".to_string()))
+        } else {
+            ("NONE".to_string(), "NONE".to_string())
+        };
+        let ct = if let Some(full) = content_type.split(';').next() {
+            full.trim().to_string()
+        } else {
+            content_type.clone()
+        };
+        (method, status, ct)
     }
 }
 
@@ -400,6 +442,17 @@ impl Context {
             map.insert(key.clone(), T::from(1));
         }
     }
+    fn add_map2<K, T>(key: &K, map: &mut HashMap<K, T>)
+    where
+        K: core::hash::Hash + Eq + Clone,
+        T: AddAssign + Default + Copy + From<u8>,
+    {
+        if let Some(v) = map.get_mut(key) {
+            *v += T::from(1);
+        } else {
+            map.insert(key.clone(), T::from(1));
+        }
+    }
     fn _list_map<K, T>(map: &FastHashMap<K, T>) -> String
     where
         K: core::hash::Hash + Eq + ToString,
@@ -432,4 +485,34 @@ impl Context {
     pub fn stat_ip6(&self) -> String {
         Context::_list_map(&self.stat_ip6)
     }
+}
+
+
+fn flat(map: &HashMap<String, usize>) -> Vec<CounterItem> {
+    map.iter().map(|(k, v)| CounterItem::new(k.to_string(), *v)).collect()
+}
+
+impl Context {
+    pub fn stat_http_data(&self) -> String {
+        let mut method_map: HashMap<String, usize> =  HashMap::with_capacity(4);
+        let mut status_map: HashMap<String, usize> =  HashMap::with_capacity(6);
+        let mut type_map: HashMap<String, usize> =  HashMap::new();
+        for connect in &self.http_connections {
+            let (method, status, content_type) =  connect.info(self);
+            Context::add_map2(&method, &mut method_map);
+            Context::add_map2(&status, &mut status_map);
+            Context::add_map2(&content_type, &mut type_map);
+        }
+        serde_json::to_string(&vec![flat(&method_map), flat(&status_map), flat(&type_map)]).unwrap()
+    }
+    // pub fn stat_frame(&self) -> String {
+    //     let count = self.list.len();
+    //     if count < 10 {
+    //         return "[]".to_string();
+    //     }
+    //     if count < 1000 {
+
+    //     }
+    //     todo!()
+    // }
 }

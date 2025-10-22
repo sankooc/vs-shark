@@ -1,4 +1,4 @@
-use criterion::{black_box, criterion_group, criterion_main, BatchSize, Criterion};
+use criterion::{criterion_group, criterion_main, Criterion};
 use pcap::common::Instance;
 use util::FileBatchReader;
 
@@ -34,4 +34,5 @@ fn bench_batch(c: &mut Criterion) {
 }
 
 criterion_group!(benches, bench_batch);
+
 criterion_main!(benches);

@@ -5,7 +5,7 @@ use std::thread;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use std::{fs::File, io::BufReader};
 
-use pcap::common::concept::{Criteria, Field, FrameIndex, FrameInfo, ListResult, ProgressStatus, VConnection, VConversation, VHttpConnection};
+use pcap::common::concept::{ConversationCriteria, Criteria, Field, FrameIndex, FrameInfo, ListResult, ProgressStatus, VConnection, VConversation, VHttpConnection};
 use pcap::common::io::DataSource;
 use pcap::common::{trim_data, Instance};
 use std::sync::mpsc::Sender;
@@ -153,7 +153,7 @@ impl Service {
                     }
                     PcapUICommand::ConversationList(start, size) => {
                         let cri = Criteria { start, size };
-                        let result_list = ins.conversations(cri);
+                        let result_list = ins.conversations(cri, ConversationCriteria::default());
                         self.sender.send(PcapEvent::ConversationList(result_list)).unwrap();
                     }
                     PcapUICommand::ConnectionList(key, start, size) => {

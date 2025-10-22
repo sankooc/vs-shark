@@ -28,7 +28,17 @@ pub struct Criteria {
 
 pub struct HttpCriteria {
     pub hostname: Option<String>,
-    // pub method: Option<String>,
+}
+
+#[derive(Default)]
+pub struct ConversationCriteria {
+    pub ip: Option<String>,
+}
+
+impl ConversationCriteria {
+    pub fn ip(ip: String) -> Self {
+        Self { ip: Some(ip) }
+    }
 }
 
 impl HttpCriteria {
@@ -52,6 +62,13 @@ pub struct InstanceConfig {
 //     pub fn new(host: String, count: usize) -> Self {
 //         Self { host, count }
 //     }
+// }
+
+// pub struct HttpConnectInfo {
+//     host: String,
+//     method: String,
+//     status: String,
+//     content_type: String,
 // }
 
 #[derive(Serialize)]
@@ -222,6 +239,9 @@ impl Conversation {
             true => &mut self.primary_statistic,
             false => &mut self.second_statistic,
         }
+    }
+    pub fn match_ip(&self, ip: &str) -> bool {
+        self.primary == ip || self.second == ip
     }
 }
 
