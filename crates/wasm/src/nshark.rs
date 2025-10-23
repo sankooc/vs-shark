@@ -96,6 +96,12 @@ impl WContext {
         serde_json::to_string(&rs).unwrap_or("{}".into())
     }
     #[wasm_bindgen]
+    pub fn list_udp(&self, start: usize, size: usize, ip: String) -> String {
+        let filter = if ip.is_empty() { None } else { Some(ip) };
+        let rs = self.ctx.udp_conversations(Criteria { start, size }, filter);
+        serde_json::to_string(&rs).unwrap_or("{}".into())
+    }
+    #[wasm_bindgen]
     pub fn http_message_detail(&self, head: String, headers: Vec<u8>, body: Option<Vec<u8>>) -> String {
         let rs = parse_http_message(&head, headers, body);
         serde_json::to_string(&rs).unwrap_or("{}".into())

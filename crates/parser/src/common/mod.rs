@@ -15,7 +15,7 @@ use std::{
 use crate::{
     add_field_label_no_range,
     common::{
-        concept::{ConversationCriteria, HttpCriteria, VConnection, VConversation, VHttpConnection},
+        concept::{ConversationCriteria, HttpCriteria, UDPConversation, VConnection, VConversation, VHttpConnection},
         connection::TcpFlagField,
         core::HttpConntect,
         util::date_str,
@@ -194,6 +194,18 @@ impl Frame {
         }
         None
     }
+    pub fn addresses(&self, ctx: &Context) -> Option<(String, String)> {
+        match &self.address_field {
+            AddressField::IPv4(s, t) => Some((s.to_string(), t.to_string())),
+            AddressField::IPv6(key) => {
+                if let Some((_, s, t)) = ctx.ipv6map.get(key) {
+                    return Some((s.to_string(), t.to_string()));
+                }
+                None
+            }
+            _ => None,
+        }
+    }
 }
 
 impl Frame {
@@ -206,7 +218,7 @@ impl Frame {
     pub fn has_proto(&self, proto: ProtoMask) -> bool {
         (self.bitmap & proto.bit()) != 0
     }
-    pub fn all_protos(&self) -> Vec<NString>{
+    pub fn all_protos(&self) -> Vec<NString> {
         let mut list = Vec::new();
         for proto in ProtoMask::ALL {
             if self.has_proto(proto) {
@@ -580,12 +592,54 @@ impl Instance {
         let _data = &all_collections[start..end];
         let list = self._http_iter(_data);
         ListResult::new(start, total, list)
-
+    }
+    fn _udp_conversations(&self, ip: Option<String>) -> Vec<UDPConversation> {
+        let mut map = FastHashMap::<String, UDPConversation>::default();
+        for frame in &self.ctx.list {
+            if frame.has_proto(ProtoMask::UDP) {
+                if let Some((source, target)) = frame.addresses(&self.ctx) {
+                    if let Some((source_port, target_port)) = frame.ports {
+                        let index = frame.info.index as usize;
+                        let len = frame.info.len as usize;
+                        let time = frame.info.time;
+                        let mut add = || {
+                            let key = format!("{source}:{source_port}-{target}:{target_port}");
+                            if let Some(item) = map.get_mut(&key) {
+                                item.incr(len);
+                            } else {
+                                let mut item = UDPConversation::new(index, source.clone(), target.clone(), source_port, target_port);
+                                item.incr(len);
+                                map.insert(key, item);
+                            }
+                        };
+                        if let Some(_ip) = &ip {
+                            if *_ip == source || *_ip == target {
+                                add();
+                            }
+                        } else {
+                            add();
+                        }
+                    }
+                }
+            }
+        }
+        map.values().cloned().collect()
+    }
+    pub fn udp_conversations(&self, cri: Criteria, filter: Option<String>) -> ListResult<UDPConversation> {
+        let Criteria { start, size } = cri;
+        let list = self._udp_conversations(filter);
+        let total = list.len();
+        let end = cmp::min(start + size, total);
+        if end <= start {
+            return ListResult::new(start, 0, vec![]);
+        }
+        let data = list[start..end].to_vec();
+        ListResult::new(start, total, data)
     }
     fn _http_iter<T>(&self, list: &[T]) -> Vec<VHttpConnection>
     where
         T: Borrow<HttpConntect>,
-    {   
+    {
         list.iter().map(|item| item.borrow().conv(&self.ctx)).collect()
     }
 }
