@@ -106,7 +106,7 @@ impl Visitor {
         if let ProtocolInfoField::Icmp(_type, _code) = &frame.protocol_field {
             let type_str = icmp_type_mapper(*_type);
             let code_str = icmp_code_mapper(*_type, *_code);
-            Some(format!("{} ({})", type_str, code_str))
+            Some(format!("{type_str} ({code_str})"))
         } else {
             Some("Internet Control Message Protocol".to_string())
         }

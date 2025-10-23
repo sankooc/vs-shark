@@ -3,7 +3,7 @@ resolver = "2"
 members = [
 "crates/wasm",
 "crates/tui",
-"crates/parser"]
+"crates/parser", "crates/util"]
 
 
 [profile.release]
@@ -23,8 +23,8 @@ tui-tree-widget = "0.22.0"
 clap = "4.5.20"
 js-sys = "0.3.69"
 wasm-bindgen = "0.2.93"
-strum = "0.26.3"
-strum_macros = "0.26.3"
+strum = "0.25"
+strum_macros = "0.25"
 serde = "1.0.215"
 serde_json = "1.0.128"
 syn = "2.0"

@@ -54,12 +54,12 @@ impl TcpFlagField {
         let mut content = String::with_capacity(list.len() * 10);
         let mut iter = list.iter();
         if let Some(first) = iter.next() {
-            write!(&mut content, "{}", first).unwrap();
+            write!(&mut content, "{first}").unwrap();
             for item in iter {
-                write!(&mut content, ",{}", item).unwrap();
+                write!(&mut content, ",{item}").unwrap();
             }
         }
-        format!("[{}]", content)
+        format!("[{content}]")
     }
 }
 
@@ -70,9 +70,9 @@ impl Display for TcpFlagField {
         let mut content = String::with_capacity(list.len() * 10);
         let mut iter = list.iter();
         if let Some(first) = iter.next() {
-            write!(&mut content, "{}", first).unwrap();
+            write!(&mut content, "{first}").unwrap();
             for item in iter {
-                write!(&mut content, ",{}", item).unwrap();
+                write!(&mut content, ",{item}").unwrap();
             }
         }
         f.write_fmt(format_args!("Flags: {:#06x} ({})", self.data, content))

@@ -42,7 +42,7 @@ impl Widget for &mut HexView<'_> {
         let range = start..start+size;
         // let data = _data.2.clone();
         let len = data.len();
-        if len <= 0 {
+        if len == 0 {
             return;
         }
         let line_count: usize = (len - 1) / 16 + 1;

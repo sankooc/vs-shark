@@ -364,8 +364,6 @@ impl Reader<'_> {
     }
     pub fn read128(&mut self, endian: bool) -> Result<u128> {
         let len = 16;
-        // let data: &[u8] = self.slice(len, true)?;
-        // IO::_read64(data, endian)
         if !self.forward(len) {
             bail!(DataError::BitSize)
         }

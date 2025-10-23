@@ -1,16 +1,25 @@
 // Copyright (c) 2025 sankooc
-// 
+//
 // This file is part of the pcapview project.
 // Licensed under the MIT License - see https://opensource.org/licenses/MIT
 
 use core::Context;
 use std::{
-    borrow::Borrow, cmp, collections::HashMap, hash::{BuildHasherDefault, Hash, Hasher}, ops::Range
+    borrow::Borrow,
+    cmp,
+    collections::HashMap,
+    hash::{BuildHasherDefault, Hash, Hasher},
+    ops::Range,
 };
 
 use crate::{
     add_field_label_no_range,
-    common::{concept::{HttpCriteria, VConnection, VConversation, VHttpConnection}, connection::TcpFlagField, core::HttpConntect, util::date_str},
+    common::{
+        concept::{ConversationCriteria, HttpCriteria, VConnection, VConversation, VHttpConnection},
+        connection::TcpFlagField,
+        core::HttpConntect,
+        util::date_str,
+    },
     files::{pcap::PCAP, pcapng::PCAPNG},
     protocol::{detail, link_type_map, parse, summary},
 };
@@ -282,6 +291,24 @@ impl Instance {
     }
 }
 
+fn conversation_list<V: AsRef<[T]>, T>(start: usize, size: usize, v: V) -> ListResult<VConversation>
+where
+    T: Borrow<concept::Conversation>,
+{
+    let slice = v.as_ref();
+    let total = slice.len();
+    let end = cmp::min(start + size, total);
+    if end <= start {
+        return ListResult::new(start, 0, vec![]);
+    }
+    let _data = &slice[start..end];
+    let mut list = vec![];
+    for item in _data {
+        list.push(item.borrow().into());
+    }
+    ListResult::new(start, total, list)
+}
+
 impl Instance {
     pub fn get_count(&self, catelog: &str) -> usize {
         match catelog {
@@ -298,8 +325,8 @@ impl Instance {
         let fs: &[Frame] = &self.ctx.list;
 
         // for frame in fs {
-            // frame.
-            //TODO
+        // frame.
+        //TODO
         // }
         let total = fs.len();
         let mut items = Vec::new();
@@ -402,7 +429,7 @@ impl Instance {
                                     extra_data = Some(data);
                                 }
                             } else {
-                                f.summary = format!("Parse [{}] failed", _next);
+                                f.summary = format!("Parse [{_next}] failed");
                                 break;
                             }
                         }
@@ -420,23 +447,18 @@ impl Instance {
         }
         Ok("[]".into())
     }
-    
+
     pub fn conversation_count(&self) -> usize {
         self.ctx.conversation_list.len()
     }
-    pub fn conversations(&self, cri: Criteria) -> ListResult<VConversation> {
+    pub fn conversations(&self, cri: Criteria, filter: ConversationCriteria) -> ListResult<VConversation> {
         let Criteria { start, size } = cri;
-        let total = self.ctx.conversation_list.len();
-        let end = cmp::min(start + size, total);
-        if end <= start {
-            return ListResult::new(start, 0, vec![]);
+        if let Some(ip) = &filter.ip {
+            let c_list: Vec<&concept::Conversation> = self.ctx.conversation_list.iter().filter(|conv| conv.match_ip(ip)).collect();
+            conversation_list(start, size, c_list)
+        } else {
+            conversation_list(start, size, &self.ctx.conversation_list)
         }
-        let _data = &self.ctx.conversation_list[start..end];
-        let mut list = vec![];
-        for item in _data {
-            list.push(item.into());
-        }
-        ListResult::new(start, total, list)
     }
     pub fn connections(&self, conversation_index: usize, cri: Criteria) -> ListResult<VConnection> {
         if let Some(connects) = self.ctx.conversation_list.get(conversation_index) {
@@ -473,7 +495,7 @@ impl Instance {
                 }
             }
             let result = self._http_iter(&list);
-            return ListResult::new(start, total, result)
+            return ListResult::new(start, total, result);
         }
         let all_collections = &self.ctx.http_connections;
         let total = all_collections.len();
@@ -485,7 +507,10 @@ impl Instance {
         let list = self._http_iter(_data);
         ListResult::new(start, total, list)
     }
-    fn _http_iter<T>(&self, list: &[T]) -> Vec<VHttpConnection> where T: Borrow<HttpConntect> {
+    fn _http_iter<T>(&self, list: &[T]) -> Vec<VHttpConnection>
+    where
+        T: Borrow<HttpConntect>,
+    {
         list.iter().map(|item| item.borrow().into(&self.ctx)).collect()
     }
 }

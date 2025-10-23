@@ -17,14 +17,18 @@ log.workspace = true
 thiserror.workspace = true
 anyhow.workspace = true
 enum_dispatch.workspace = true
-strum = "0.25"
-strum_macros = "0.25"
+strum.workspace = true
+strum_macros.workspace = true
 serde = { workspace = true, features = ["derive"]}
 serde_json.workspace = true
-# once_cell.workspace = true
 ahash = { version = "0.8", default-features = false }
 rustc-hash = "1.1"
 memchr = "2.7.4"
 
 [dev-dependencies]
-criterion = "0.4"
+util = { path = "../util" }
+criterion = "0.5"
+
+[[bench]]
+name = "pcap_bench"
+harness = false

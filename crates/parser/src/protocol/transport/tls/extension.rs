@@ -157,7 +157,7 @@ fn parse_supported_groups(reader: &mut Reader, field: &mut Field) -> Result<()> 
     for _ in 0..count {
         parse_supported_groups_item(reader, field)?;
     }
-    field.summary = format!("Supported Groups List Length: {}", list_len);
+    field.summary = format!("Supported Groups List Length: {list_len}");
 
     Ok(())
 }
@@ -215,7 +215,7 @@ fn named_group_to_string(group_id: u16) -> String {
         0x0102 => "ffdhe4096".to_string(),
         0x0103 => "ffdhe6144".to_string(),
         0x0104 => "ffdhe8192".to_string(),
-        _ => format!("unknown_group_{}", group_id),
+        _ => format!("unknown_group_{group_id}"),
     }
 }
 
@@ -241,7 +241,7 @@ fn parse_ec_point_formats(reader: &mut Reader, field: &mut Field) -> Result<()> 
     for _ in 0..formats_len {
         parse_ec_point_formats_item(reader, field)?;
     }
-    field.summary = format!("Elliptic curves point formats ({})", formats_len);
+    field.summary = format!("Elliptic curves point formats ({formats_len})");
     Ok(())
 }
 
@@ -277,8 +277,7 @@ fn parse_signature_algorithms_item(reader: &mut Reader, field: &mut Field) -> Re
         11 => "rsa_pss_rsae_sha512",
         _ => "unknown",
     };
-
-    let alg_str = format!("Algorithm: {}_{}(0x{:04x})", hash_name, sign_name, sig_alg);
+    let alg_str = format!("Algorithm: {hash_name}_{sign_name}(0x{sig_alg:04x})");
     add_field_backstep!(field, reader, 2, alg_str);
     Ok(())
 }
@@ -303,8 +302,7 @@ fn parse_signature_algorithms(reader: &mut Reader, field: &mut Field) -> Result<
     for _ in 0..count {
         parse_signature_algorithms_item(reader, &mut list_field)?;
     }
-
-    field.summary = format!("Signature Hash Algorithms ({} algorithms)", count);
+    field.summary = format!("Signature Hash Algorithms ({count} algorithms)");
     // Add list field to parent
     if let Some(children) = &mut field.children {
         children.push(list_field);
@@ -320,7 +318,7 @@ fn parse_signature_algorithms(reader: &mut Reader, field: &mut Field) -> Result<
 fn parse_alpn_item(reader: &mut Reader, field: &mut Field) -> Result<()> {
     let len = add_field_format!(field, reader, reader.read8()?, "ALPN Protocol Length: {}") as usize;
     let protocol = add_field_format!(field, reader, reader.read_string(len)?, "ALPN Next Protocol: {}");
-    field.summary = format!("ALPN Protocol: {}", protocol);
+    field.summary = format!("ALPN Protocol: {protocol}");
     Ok(())
 }
 fn parse_alpn(reader: &mut Reader, field: &mut Field) -> Result<()> {
@@ -371,7 +369,7 @@ fn parse_supported_versions(reader: &mut Reader, field: &mut Field) -> Result<()
     for _ in 0..count {
         parse_supported_versions_item(reader, field)?;
     }
-    field.summary = format!("Supported Versions: {}", versions_len);
+    field.summary = format!("Supported Versions: {versions_len}");
 
     Ok(())
 }

@@ -177,7 +177,7 @@ impl Visitor {
 
         if let ProtocolInfoField::DHCP(msg_type) = &frame.protocol_field {
             let msg_type_str = if *msg_type > 0 { dhcp_type_mapper(*msg_type) } else { "Unknown" };
-            field.summary = format!("Dynamic Host Configuration Protocol ({})", msg_type_str);
+            field.summary = format!("Dynamic Host Configuration Protocol ({msg_type_str})");
         }
         Ok(Protocol::None)
     }
@@ -212,7 +212,7 @@ fn read_dhcp_option(reader: &mut Reader, field: &mut Field) -> Result<u8> {
         }
         1 if option_len == 4 => {
             let subnet = Ipv4Addr::from([option_data[0], option_data[1], option_data[2], option_data[3]]);
-            format!("Subnet Mask: {}", subnet)
+            format!("Subnet Mask: {subnet}")
         }
         3 => {
             let mut routers = String::new();
@@ -226,7 +226,7 @@ fn read_dhcp_option(reader: &mut Reader, field: &mut Field) -> Result<u8> {
                 }
                 routers.push_str(&router.to_string());
             }
-            format!("Router: {}", routers)
+            format!("Router: {routers}")
         }
         6 if option_len % 4 == 0 => {
             let mut dns_servers = String::new();
@@ -238,20 +238,20 @@ fn read_dhcp_option(reader: &mut Reader, field: &mut Field) -> Result<u8> {
                 }
                 dns_servers.push_str(&dns.to_string());
             }
-            format!("Domain Name Server: {}", dns_servers)
+            format!("Domain Name Server: {dns_servers}")
         }
         51 if option_len == 4 => {
             let lease_time = u32::from_be_bytes([option_data[0], option_data[1], option_data[2], option_data[3]]);
-            format!("IP Address Lease Time: {} seconds", lease_time)
+            format!("IP Address Lease Time: {lease_time} seconds")
         }
         54 if option_len == 4 => {
             let server_id = Ipv4Addr::from([option_data[0], option_data[1], option_data[2], option_data[3]]);
-            format!("DHCP Server Identifier: {}", server_id)
+            format!("DHCP Server Identifier: {server_id}")
         }
         _ => dhcp_option_type_mapper(option_type).to_string(),
     };
 
     add_field_backstep!(field, reader, option_len, option_str.clone());
-    field.summary = format!("Option: ({}) {}", option_type, option_str);
+    field.summary = format!("Option: ({option_type}) {option_str}");
     Ok(option_type)
 }

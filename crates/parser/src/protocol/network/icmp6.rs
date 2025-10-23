@@ -132,22 +132,22 @@ fn parse_icmpv6_options(field: &mut Field, reader: &mut Reader) -> Result<()> {
                     let l_flag = (flags >> 7) & 0x01;
                     let a_flag = (flags >> 6) & 0x01;
                     
-                    children.push(Field::label(format!("Prefix Length: {}", prefix_len), reader.cursor - 2, reader.cursor));
+                    children.push(Field::label(format!("Prefix Length: {prefix_len}"), reader.cursor - 2, reader.cursor));
                     
-                    children.push(Field::label(format!("Flags: {:#04x} (L:{}, A:{})", flags, l_flag, a_flag), reader.cursor - 1, reader.cursor));
+                    children.push(Field::label(format!("Flags: {flags:#04x} (L:{l_flag}, A:{a_flag})"), reader.cursor - 1, reader.cursor));
                     
                     
                     let valid_lifetime = reader.read32(true)?;
-                    children.push(Field::label(format!("Valid Lifetime: {} seconds", valid_lifetime), reader.cursor - 4, reader.cursor));
+                    children.push(Field::label(format!("Valid Lifetime: {valid_lifetime} seconds"), reader.cursor - 4, reader.cursor));
                     
                     
                     let preferred_lifetime = reader.read32(true)?;
-                    children.push(Field::label(format!("Preferred Lifetime: {} seconds", preferred_lifetime), reader.cursor - 4, reader.cursor));
+                    children.push(Field::label(format!("Preferred Lifetime: {preferred_lifetime} seconds"), reader.cursor - 4, reader.cursor));
 
                     reader.forward(4); 
                     
                     let prefix = reader.read_ip6()?;
-                    children.push(Field::label(format!("Prefix: {}", prefix), reader.cursor - 16, reader.cursor));
+                    children.push(Field::label(format!("Prefix: {prefix}"), reader.cursor - 16, reader.cursor));
                 }
             },
             4 => {
@@ -161,7 +161,7 @@ fn parse_icmpv6_options(field: &mut Field, reader: &mut Reader) -> Result<()> {
                 reader.forward(2); 
                 let mtu = reader.read32(true)?;
                 if let Some(children) = &mut option_field.children {
-                    children.push(Field::label(format!("MTU: {}", mtu), reader.cursor - 4, reader.cursor));
+                    children.push(Field::label(format!("MTU: {mtu}"), reader.cursor - 4, reader.cursor));
                 }
             },
             _ => {
@@ -231,7 +231,7 @@ fn format_mac_address(reader: &mut Reader, len: usize) -> Result<String> {
         reader.forward(len - 6);
     }
     
-    Ok(format!("{:02x}:{:02x}:{:02x}:{:02x}:{:02x}:{:02x}", b1, b2, b3, b4, b5, b6))
+    Ok(format!("{b1:02x}:{b2:02x}:{b3:02x}:{b4:02x}:{b5:02x}:{b6:02x}"))
 }
 
 pub struct Visitor;

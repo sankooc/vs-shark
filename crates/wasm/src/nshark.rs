@@ -1,7 +1,6 @@
 use js_sys::Uint8Array;
 use pcap::common::{
-    concept::{Criteria, HttpCriteria},
-    Instance,
+    Instance, concept::{ConversationCriteria, Criteria, HttpCriteria}
 };
 use wasm_bindgen::prelude::*;
 
@@ -80,8 +79,9 @@ impl WContext {
         FrameResult::empty()
     }
     #[wasm_bindgen]
-    pub fn list_conversations(&self, start: usize, size: usize) -> String {
-        let rs = self.ctx.conversations(Criteria { start, size });
+    pub fn list_conversations(&self, start: usize, size: usize, ip: String) -> String {
+        let filter = if ip.is_empty() { ConversationCriteria::default() } else { ConversationCriteria::ip(ip) };
+        let rs = self.ctx.conversations(Criteria { start, size }, filter);
         serde_json::to_string(&rs).unwrap_or("{}".into())
     }
     #[wasm_bindgen]

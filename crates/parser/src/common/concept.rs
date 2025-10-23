@@ -28,7 +28,17 @@ pub struct Criteria {
 
 pub struct HttpCriteria {
     pub hostname: Option<String>,
-    // pub method: Option<String>,
+}
+
+#[derive(Default)]
+pub struct ConversationCriteria {
+    pub ip: Option<String>,
+}
+
+impl ConversationCriteria {
+    pub fn ip(ip: String) -> Self {
+        Self { ip: Some(ip) }
+    }
 }
 
 impl HttpCriteria {
@@ -53,6 +63,41 @@ pub struct InstanceConfig {
 //         Self { host, count }
 //     }
 // }
+
+// pub struct HttpConnectInfo {
+//     host: String,
+//     method: String,
+//     status: String,
+//     content_type: String,
+// }
+
+
+
+// #[derive(Serialize)]
+// pub struct FrameStatData {
+//     pub time: u64,
+//     // pub tcp: [usize; 400],
+//     pub list: Vec<CounterItem>,
+// }
+
+// impl FrameStatData {
+//     pub fn new(time: u64, list: Vec<CounterItem>) -> Self {
+//         Self { time, list }
+//     }
+// }
+
+#[derive(Serialize)]
+pub struct LineChartData {
+    pub x_axis: Vec<u64>,
+    pub y_axis: Vec<String>,
+    pub data: Vec<Vec<u32>>
+}
+
+impl LineChartData {
+    pub fn new(x_axis: Vec<u64>, y_axis: Vec<String>, data: Vec<Vec<u32>>) -> Self {
+        Self { x_axis, y_axis, data }
+    }
+}
 
 #[derive(Serialize)]
 pub struct CounterItem {
@@ -222,6 +267,9 @@ impl Conversation {
             true => &mut self.primary_statistic,
             false => &mut self.second_statistic,
         }
+    }
+    pub fn match_ip(&self, ip: &str) -> bool {
+        self.primary == ip || self.second == ip
     }
 }
 

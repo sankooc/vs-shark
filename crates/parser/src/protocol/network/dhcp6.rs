@@ -201,7 +201,7 @@ impl Visitor {
     pub fn info(_: &Context, frame: &Frame) -> Option<String> {
         if let ProtocolInfoField::DHCPv6(msg_type, transaction_id) = &frame.protocol_field {
             let msg_type_str = dhcpv6_msg_type_mapper(*msg_type);
-            return Some(format!("DHCPv6 {} (Transaction ID: 0x{:06x})", msg_type_str, transaction_id));
+            return Some(format!("DHCPv6 {msg_type_str} (Transaction ID: 0x{transaction_id:06x})"));
         }
         None
     }

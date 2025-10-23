@@ -34,8 +34,7 @@ impl Visitor {
     pub fn info(_: &Context, frame: &Frame) -> Option<String> {
         if let ProtocolInfoField::ARP(_hw_type, operation, sender_mac, sender_ip, target_mac, target_ip) = &frame.protocol_field {
             let op_str = arp_oper_type_mapper(*operation);
-            return Some(format!("Address Resolution Protocol ({} {:#06x}), Sender: {} ({}), Target: {} ({})",
-                op_str, operation, sender_ip, sender_mac, target_ip, target_mac));
+            return Some(format!("Address Resolution Protocol ({op_str} {operation:#06x}), Sender: {sender_ip} ({sender_mac}), Target: {target_ip} ({target_mac})"));
         }
         None
     }
@@ -100,7 +99,7 @@ impl Visitor {
         add_field_backstep!(field, reader, 4, format!("Target IP address: {}", target_ip));
         
         let op_str = arp_oper_type_mapper(operation);
-        field.summary = format!("Address Resolution Protocol ({} {:#06x})", op_str, operation);
+        field.summary = format!("Address Resolution Protocol ({op_str} {operation:#06x})");
         
         Ok(Protocol::None)
     }

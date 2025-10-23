@@ -5,7 +5,7 @@ use std::thread;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use std::{fs::File, io::BufReader};
 
-use pcap::common::concept::{Criteria, Field, FrameIndex, FrameInfo, ListResult, ProgressStatus, VConnection, VConversation, VHttpConnection};
+use pcap::common::concept::{ConversationCriteria, Criteria, Field, FrameIndex, FrameInfo, ListResult, ProgressStatus, VConnection, VConversation, VHttpConnection};
 use pcap::common::io::DataSource;
 use pcap::common::{trim_data, Instance};
 use std::sync::mpsc::Sender;
@@ -78,7 +78,7 @@ pub fn seek2(fname: &str, range: Range<usize>) -> anyhow::Result<Vec<u8>> {
     Ok(buffer)
 }
 pub fn concat_data(file: &mut File, ranges: Vec<(usize, usize)>, len: Option<usize>) -> anyhow::Result<Vec<u8>> {
-    if ranges.len() == 0 {
+    if ranges.is_empty() {
         return Ok(vec![]);
     }
     let max = if let Some(length) = len {
@@ -117,12 +117,11 @@ impl Service {
         Ok(buffer)
     }
     pub fn run(&mut self) -> anyhow::Result<()> {
-        let batch_size = 1024 * 256 * 1;
+        let batch_size = 1024 * 256;
         let mut ins = Instance::new(batch_size);
         let mut reader = BufReader::new(&mut self.file);
         let mut pos = 0;
-        let mut buffer = Vec::with_capacity(batch_size);
-        buffer.resize(batch_size, 0);
+        let mut buffer = vec![0; batch_size];
         'main: loop {
             let start_loop = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis();
             match self.receiver.try_recv() {
@@ -153,7 +152,7 @@ impl Service {
                     }
                     PcapUICommand::ConversationList(start, size) => {
                         let cri = Criteria { start, size };
-                        let result_list = ins.conversations(cri);
+                        let result_list = ins.conversations(cri, ConversationCriteria::default());
                         self.sender.send(PcapEvent::ConversationList(result_list)).unwrap();
                     }
                     PcapUICommand::ConnectionList(key, start, size) => {
@@ -287,7 +286,7 @@ fn parse_header_content(header_raw: Vec<u8>) -> (Vec<String>, Language, HttpEnco
             content_type = parse_content_type(&head[14..]);
         }
         if head.starts_with("Content-Encoding: ") || head.starts_with("content-encoding: ") {
-            let _type = trim_data(head[18..].as_bytes());
+            let _type = trim_data(&head.as_bytes()[18..]);
             match _type {
                 b"gzip" => {
                     encoding = HttpEncoding::Gzip;

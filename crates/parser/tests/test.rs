@@ -1,5 +1,5 @@
 #[cfg(test)]
-mod tc;
+pub mod tc;
 #[cfg(test)]
 mod unit {
     use std::net::Ipv4Addr;

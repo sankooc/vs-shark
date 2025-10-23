@@ -80,7 +80,7 @@ where
 }
 
 fn field_present_flag(head: u32, field: &mut Field) -> Result<u32> {
-    field.summary = format!("Present Flags: 0x{:08x}", head);
+    field.summary = format!("Present Flags: 0x{head:08x}");
     let vs = ("Present", "Absent");
     add_field_label!(field, get_mask(head, 0, "TSFT", &vs));
     add_field_label!(field, get_mask(head, 1, "Flags", &vs));
@@ -124,7 +124,7 @@ fn field_present_flag(head: u32, field: &mut Field) -> Result<u32> {
 }
 
 fn field_flag_flag(head: u8, field: &mut Field) -> Result<u8> {
-    field.summary = format!("Flags: 0x{:04x}", head);
+    field.summary = format!("Flags: 0x{head:04x}");
     let vs = ("True", "False");
     add_field_label!(field, get_mask(head, 0, "CFP", &vs));
     add_field_label!(field, get_mask(head, 1, "Preamble", &vs));
@@ -139,7 +139,7 @@ fn field_flag_flag(head: u8, field: &mut Field) -> Result<u8> {
 }
 
 fn field_channel_flag(head: u16, field: &mut Field) -> Result<u16> {
-    field.summary = format!("Channel Flags: 0x{:04x}", head);
+    field.summary = format!("Channel Flags: 0x{head:04x}");
     let vs = ("True", "False");
     add_field_label!(field, get_mask(head, 0, "700 MHz spectrum", &vs));
     add_field_label!(field, get_mask(head, 1, "800 MHz spectrum", &vs));
@@ -187,7 +187,7 @@ impl Visitor {
         let header_length = add_field_format!(field, _reader, _reader.read16(false)?, "Header Length: {} bytes");
         let mut reader = _reader.slice_as_reader(header_length as usize - 4)?;
         
-        field.summary = format!("Radiotap Header v0, Length {}", header_length);
+        field.summary = format!("Radiotap Header v0, Length {header_length}");
 
         let present_flags = add_sub_field!(field, &mut reader, reader.read32(false)?, field_present_flag);
 

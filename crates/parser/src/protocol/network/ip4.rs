@@ -57,7 +57,7 @@ pub fn t_flags(flags_word: u16, main_field: &mut Field) {
             0, 1
         ));
         
-        let offset_binary = format!("{:013b}", fragment_offset);
+        let offset_binary = format!("{fragment_offset:013b}");
         children.push(Field::label(
             format!("...{} {} {} {} = Fragment offset: {}", 
                 &offset_binary[0..1],
@@ -99,11 +99,11 @@ pub fn t_tos(tos: u8, main_field: &mut Field) {
     };
     
     
-    main_field.summary = format!("Differentiated Services Field: 0x{:02x} (DSCP: 0x{:02x}, ECN: 0x{:02x})", tos, dscp, ecn);
+    main_field.summary = format!("Differentiated Services Field: 0x{tos:02x} (DSCP: 0x{dscp:02x}, ECN: 0x{ecn:02x})");
     
     if let Some(children) = &mut main_field.children {
         children.push(Field::label(
-            format!("{:03b}. .... = Differentiated Services Codepoint: {}", precedence, precedence_str),
+            format!("{precedence:03b}. .... = Differentiated Services Codepoint: {precedence_str}"),
             0, 1
         ));
         
@@ -130,7 +130,7 @@ pub struct Visitor;
 impl Visitor {
     pub fn info(_: &Context, frame: &Frame) -> Option<String> {
         if let AddressField::IPv4(s, t) = &frame.address_field {
-            return Some(format!("Internet Protocol Version 4, Src: {}, Dst: {}", s, t));
+            return Some(format!("Internet Protocol Version 4, Src: {s}, Dst: {t}"));
         }
         None
     }
@@ -199,7 +199,7 @@ impl Visitor {
             bail!(DataError::Ipv4TotalLengthInvalid);
         }
 
-        field.summary = format!("Internet Protocol Version 4, Src: {}, Dst: {}", source, target);
+        field.summary = format!("Internet Protocol Version 4, Src: {source}, Dst: {target}");
         Ok(ip4_mapper(protocol_type))
     }
 }
