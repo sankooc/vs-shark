@@ -605,10 +605,10 @@ impl Instance {
                         let mut add = || {
                             let key = format!("{source}:{source_port}-{target}:{target_port}");
                             if let Some(item) = map.get_mut(&key) {
-                                item.incr(len);
+                                item.incr(len, time);
                             } else {
-                                let mut item = UDPConversation::new(index, source.clone(), target.clone(), source_port, target_port);
-                                item.incr(len);
+                                let mut item = UDPConversation::new(index, source.clone(), target.clone(), source_port, target_port, time);
+                                item.incr(len, time);
                                 map.insert(key, item);
                             }
                         };
