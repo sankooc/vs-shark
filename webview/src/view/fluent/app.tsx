@@ -14,10 +14,11 @@ import ConversationComponent from "./conversation";
 import ConversationDetailComponent from './conversation/detail';
 import HttpComponent from "./http";
 import HttpDetailComponent from "./http/detail";
+import OverviewComponent from "./overview";
 import TLSHostList from './tls/hosts';
 import { useStore } from "../store";
 import LoadingComponent from './loading';
-import { ConversationIcon, FrameIcon, HttpIcon, TLSIcon } from "./common";
+import { ConversationIcon, FrameIcon, HttpIcon, OverviewIcon, TLSIcon } from "./common";
 // import '../colors';
 
 // const FrameIcon = bundleIcon(TextboxRotate9020Filled, TextboxRotate9020Regular);
@@ -39,6 +40,7 @@ const Nav = () => {
   const [isOpen, setIsOpen] = React.useState(true);
   const [select, setSelect] = React.useState<string>('Frames');
 
+  //OverviewIcon
   const components = [{
     name: 'Conversations',
     path: 'conversations',
@@ -72,6 +74,17 @@ const Nav = () => {
         </NavDrawerHeader>
 
     <NavDrawerBody>
+      <NavItem
+        onClick={() => {
+          setSelect('Overview');
+          navigate('/overview');
+        }}
+        icon={<OverviewIcon />}
+        value={'Overview'}
+        key={'Overview'}
+      >
+        Overview
+      </NavItem>
       <NavItem
         onClick={() => {
           setSelect('Frames');
@@ -114,10 +127,11 @@ const Basic = () => {
     <BrowserRouter>
     <div className="flex flex-row h-full w-full">
         <Nav />
-        <div className="flex-1" style={{ width: 'calc(100% - 12em)' }}>
+        <div className="flex-1" style={{ overflow: 'hidden', width: 'calc(100% - 12em)' }}>
           <Routes>
             <Route path="/" index element={<FrameComponent />} />
             {/* <Route path="/frames" element={<FrameComponent />} /> */}
+            <Route path="/overview" element={<OverviewComponent />} />
             <Route path="/conversations" element={<ConversationComponent />} />
             <Route path="/conversation/:conversationIndex" element={<ConversationDetailComponent />} />
             <Route path="/https" element={<HttpComponent />} />

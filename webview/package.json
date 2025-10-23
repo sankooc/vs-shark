@@ -19,6 +19,8 @@
     "@fluentui/react-motion-components-preview": "^0.6.1",
     "@fluentui/react-northstar": "^0.66.5",
     "dayjs": "^1.11.13",
+    "echarts": "^6.0.0",
+    "echarts-for-react": "^3.0.2",
     "immer": "^10.1.1",
     "mitt": "^3.0.1",
     "primeflex": "^4.0.0",

@@ -7,7 +7,7 @@ import Grid from "../table";
 import { conversation_size } from "../../conf";
 
 import { useNavigate } from "react-router";
-import { ConversationIcon } from "../common";
+import { ConversationIcon, IPSelector } from "../common";
 import { BoxRegular, DesktopMacRegular, DocumentTextRegular, FolderListRegular, MoreHorizontalFilled, TextBulletListSquareColor } from "@fluentui/react-icons";
 
 // import { PageFrame } from '../table';
@@ -118,6 +118,9 @@ function Component() {
 
     };
     const gridProps = {
+        filterComponent: (<>
+            <IPSelector />
+        </>),
         size: SIZE,
         columns, pageSize, load, columnSizingOptions, breads
     };

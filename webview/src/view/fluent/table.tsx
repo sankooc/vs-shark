@@ -6,6 +6,7 @@ import { JSX, ReactNode, useEffect, useState } from "react";
 import { BreadItem } from "./common";
 interface GridProps<T> {
     columns: TableColumnDefinition<T>[];
+    header?: JSX.Element;
     filterComponent?: JSX.Element;
     onClick?: (item: T) => void;
     load: (page: number, filter: any) => Promise<IListResult<T>>;
@@ -54,6 +55,9 @@ function Component<T>(props: GridProps<T>) {
     return (<div className="flex flex-column page-card">
         {
             props.breads && props.breads.length > 0 && <BreadItem items={props.breads} ></BreadItem>
+        }
+        {
+            props.header
         }
         {
             props.filterComponent && (<Card className="w-full flex justify-content-between align-items-center page-card-item" style={{margin: '0 0 5px 0'}} orientation="horizontal">
