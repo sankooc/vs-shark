@@ -10,7 +10,7 @@ import { http_size } from "../../conf";
 import { HttpIcon } from "../common";
 import { BorderAllRegular, ClockBillRegular, ClockDismissRegular, ClipboardCodeRegular, DesktopSignalRegular, ImageRegular, TextWordCountRegular, CodeBlockRegular, ContentViewRegular, TextBulletListSquareColor, MoreHorizontalFilled, ClockRegular, WarningRegular, CheckmarkSquareRegular } from "@fluentui/react-icons";
 
-import HTTPChart from '../overview/http';
+// import HTTPChart from '../overview/http';
 
 import { useId, Label } from "@fluentui/react-components";
 
@@ -244,7 +244,7 @@ function Component() {
         setHostSelect(val.value);
     }
     const gridProps = {
-        header: <HTTPChart />,
+        // header: <HTTPChart />,
         filterComponent: (<>
             <Label size={SIZE} htmlFor={selectId} style={{ paddingInlineEnd: "5px" }}>Hostname:</Label>
             <Select size={SIZE} id={selectId} onChange={onChange} value={hostSelect} >

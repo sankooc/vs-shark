@@ -1,82 +1,88 @@
 
 import { Body1, Caption1, Card, CardHeader } from '@fluentui/react-components';
 import ReactECharts from 'echarts-for-react';
+import { useStore } from '../../store';
+import { useEffect, useState } from 'react';
+import { ILineData } from '../../../share/gen';
+import dayjs from 'dayjs';
+
 
 export default function Component() {
-    const hours = [];
-    for(let i = 1;i<=20; i +=1){
-        hours.push(`${i * 5}%`);
+    const stat = useStore((state) => state.stat);
+    const [line, setLineData] = useState<ILineData | null>(null);
+    useEffect(() => {
+        stat({ field: 'frame' }).then((rs) => { setLineData(rs as ILineData) });
+    }, []);
+    if (!line || !line.x_axis) {
+        return <></>
     }
-    // prettier-ignore
-    const days = [
-        'tls', 'icmp', 'dns',
-        'ssdp', 'http', 'tcp', 'udp'
-    ];
-    // prettier-ignore
-    const data = [[0, 0, 1340], [1, 0, 100], [0, 1, 100], [0, 4, 1], [0, 3, 0]];
-    const padding = '10px';
-    //https://echarts.apache.org/examples/zh/editor.html?c=matrix-sparkline&theme=dark
+    const x_axis = line.x_axis.map(t => dayjs(Math.floor(t / 1000)).format('HH:mm:ss'));
+
+    const padding = 70;
+
+    const series = line.data.map((d, inx) => {
+        return {
+            name: line.y_axis[inx],
+            smooth: true,
+            type: "line",
+            areaStyle: null,
+            data: d
+        };
+    });
+
     const option = {
-        // backgroundColor: '#1d2021', 
         title: {
-            text: 'Protocol distribution heatmap',
-            left: 'center'
+            text: 'Network Traffic'
         },
-        padding: 0,
-        tooltip: {
-            position: 'top'
-        },
+
         grid: {
             left: padding,
             right: padding,
-            top: '50px',
-            bottom: padding,
-            height: '200px',
+            top: '50',
+            // bottom: '50px',
+            // height: '200px',
         },
-        xAxis: {
-            type: 'category',
-            data: hours,
-            splitArea: {
-                show: true
-            }
-        },
-        yAxis: {
-            type: 'category',
-            data: days,
-            offset: 1,
-            splitArea: {
-                show: true
-            }
-        },
-        visualMap: {
-            calculable: true,
-            show: false,
-            // inRange: {
-            //     color: ['#fbf1c7', '#fb4934']
-            // },
-            orient: 'horizontal',
-            left: 'center',
-            bottom: '1%'
-        },
-        series: [
-            {
-                // name: 'frame',
-                type: 'heatmap',
-                data: data,
+        tooltip: {
+            trigger: 'axis',
+            axisPointer: {
+                type: 'cross',
                 label: {
-                    show: true
+                    backgroundColor: '#6a7985'
                 }
+            }
+        },
+        // legend: {
+        //     data: line.y_axis
+        // },
+        xAxis: [
+            {
+                type: 'category',
+                boundaryGap: false,
+                data: x_axis
+            }
+        ],
+        yAxis: [
+            {
+                type: 'value'
+            }
+        ],
+        series,
+        dataZoom: [
+            {
+                type: 'slider',
+                xAxisIndex: 'all',
+                left: '2%',
+                right: '2%',
+                throttle: 120
+            },
+            {
+                type: 'inside',
+                xAxisIndex: 'all',
+                throttle: 120
             }
         ]
     };
     return <Card>
-        {/* <CardHeader
-        // image={<ChartPerson28Filled />}
-        header={
-          <Body1 style={{paddingLeft: '10px'}}>
-            Packet heatmap
-          </Body1>
-        }/> */}
-        <ReactECharts option={option} style={{width: '100%'}} theme="dark" className="overview-frames"/>
+        <ReactECharts option={option} style={{ width: '100%' }} theme="dark" className="overview-frames" />
     </Card>
 }

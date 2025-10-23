@@ -2,7 +2,7 @@ import { useStore } from "../../store";
 import { IVConversation } from "../../../share/gen";
 import { createTableColumn, TableCellLayout, TableColumnDefinition, Toolbar, ToolbarButton } from "@fluentui/react-components";
 import { compute, ComRequest, format_bytes_single_unit } from "../../../share/common";
-
+import { useState } from "react";
 import Grid from "../table";
 import { conversation_size } from "../../conf";
 
@@ -17,6 +17,7 @@ const SIZE: "small" | "medium" = 'small';
 function Component() {
     const conversations = useStore((state) => state.conversations);
     const navigate = useNavigate();
+    const [ ip, setIp ] = useState<string>('');
     const columns: TableColumnDefinition<IVConversation>[] = [
         createTableColumn<IVConversation>({
             columnId: "sender",
@@ -93,10 +94,11 @@ function Component() {
     };
     const pageSize = conversation_size;
     const load = async (page: number) => {
+        let _ip = ip === 'ANY' ? '' : ip;
         const data: ComRequest = {
             catelog: "conversation",
             type: "list",
-            param: compute(page, pageSize),
+            param:{ ...compute(page, pageSize), ip: _ip },
         };
         return conversations(data);
     }
@@ -119,7 +121,7 @@ function Component() {
     };
     const gridProps = {
         filterComponent: (<>
-            <IPSelector />
+            <IPSelector onSelect={setIp} />
         </>),
         size: SIZE,
         columns, pageSize, load, columnSizingOptions, breads

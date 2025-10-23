@@ -1,80 +1,66 @@
 import { Card } from "@fluentui/react-components";
 import ReactECharts from 'echarts-for-react';
+import { useStore } from "../../store";
+import { useEffect, useState } from "react";
+import { ICounterItem } from "../../../share/gen";
 
+
+const Meta = {
+    type: 'pie',
+    radius: [20, 100],
+    // roseType: 'area',
+    itemStyle: {
+        borderRadius: 2
+    },
+};
 
 function MethodComponent() {
+    const stat = useStore((state) => state.stat);
+    const [data, setData] = useState<ICounterItem[][]>([]);
+    useEffect(() => {
+        stat({ field: 'http_data' }).then(setData);
+    }, []);
+    const series = [];
+    if (data && data.length > 2) {
+        if (data[0].length) {
+            series.push(
+                {
+                    ...Meta,
+                    name: 'Method',
+                    center: ['16.6%', '55%'],
+                    data: data[0].map(item => ({ value: item.count, name: item.key }))
+                });
+        }
+        if (data[1].length) {
+            series.push(
+                {
+                    ...Meta,
+                    name: 'Status',
+                    center: ['50%', '55%'],
+                    data: data[1].map(item => ({ value: item.count, name: item.key }))
+                });
+        }
+        if (data[2].length) {
+            series.push(
+                {
+                    ...Meta,
+                    name: 'Type',
+                    center: ['83.3%', '55%'],
+                    data: data[2].map(item => ({ value: item.count, name: item.key }))
+                });
+        }
+    }
     const option = {
         title: {
-            text: 'HTTP',
+            text: 'HTTP Analysis',
             left: 'center'
         },
         legend: {
+            show: false,
             left: 'center',
             top: 'bottom',
-            data: [
-                'rose1',
-                'rose2',
-                'rose3',
-                'rose4',
-                'rose5',
-                'rose6',
-                'rose7',
-                'rose8'
-            ]
         },
-        series: [
-            {
-                // name: 'Area Mode',
-                type: 'pie',
-                radius: [20, 100],
-                roseType: 'area',
-                itemStyle: {
-                    borderRadius: 6
-                },
-                center: ['16.6%', '55%'],
-                data: [
-                    { value: 30, name: 'GET' },
-                    { value: 28, name: 'POST' },
-                    { value: 26, name: 'PUT' },
-                    { value: 24, name: 'DELETE' },
-                ]
-            },
-            {
-                name: 'Area Mode3',
-                type: 'pie',
-                radius: [20, 100],
-                roseType: 'area',
-                // itemStyle: {
-                //     borderRadius: 5
-                // },
-                center: ['50%', '55%'],
-                data: [
-                    { value: 30, name: '????' },
-                    { value: 8, name: '1XX' },
-                    { value: 12, name: '2XX' },
-                    { value: 34, name: '3XX' },
-                    { value: 12, name: '4XX' },
-                    { value: 20, name: '5XX' },
-                ]
-            },
-            {
-                name: 'Area Mode2',
-                type: 'pie',
-                radius: [20, 100],
-                center: ['83.3%', '55%'],
-                roseType: 'area',
-                itemStyle: {
-                    borderRadius: 5
-                },
-                data: [
-                    { value: 30, name: 'application/javascript' },
-                    { value: 28, name: 'css' },
-                    { value: 26, name: 'image/png' },
-                    { value: 24, name: 'image/jpeg' },
-                    { value: 22, name: '???' },
-                ]
-            }
-        ]
+        series
     };
     return <ReactECharts option={option} style={{ width: '100%' }} theme="dark" />
 }
@@ -83,9 +69,7 @@ function MethodComponent() {
 
 
 export default function Component() {
-    return <Card className="trim-card" style={{minHeight: '280px'}} orientation="horizontal">
+    return <Card className="trim-card" style={{ minHeight: '280px' }} orientation="horizontal">
         <MethodComponent />
-        {/* <MethodComponent />
-        <MethodComponent /> */}
     </Card>
 }

@@ -117,6 +117,8 @@ impl WContext {
             "tls_sni" => self.ctx.get_context().stat_tls_sni(),
             "ip4" => self.ctx.get_context().stat_ip4(),
             "ip6" => self.ctx.get_context().stat_ip6(),
+            "http_data" => self.ctx.get_context().stat_http_data(),
+            "frame" => self.ctx.get_context().stat_frame(),
             _ => "[]".to_string(),
         }
     }

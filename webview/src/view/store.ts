@@ -38,7 +38,7 @@ interface PcapState {
   httpDetail: (data: IVHttpConnection) => Promise<MessageCompress[]>
   cachehttp: (conn: IVHttpConnection | null) => void;
   getHttpCache: () => IVHttpConnection | null;
-  stat: (request: StatRequest) => Promise<ICounterItem[]> ;
+  stat: (request: StatRequest) => Promise<any> ;
   // frameList: (page: number, size: number) => Promise<IListResult<IFrameInfo>>;
 }
 // const compute = (page: number, size: number): Pagination => {
@@ -165,9 +165,9 @@ export const useStore = create<PcapState>()((set) => {
     getHttpCache: () => {
       return httpCache;
     },
-    stat: (request: StatRequest): Promise<ICounterItem[]> => {
+    stat: (request: StatRequest): Promise<any[]> => {
       const req = new ComMessage(ComType.STAT_REQ, request);
-      return doRequest<ICounterItem[]>(req);
+      return doRequest<any[]>(req);
     },
   };
 });

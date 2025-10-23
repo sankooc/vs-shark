@@ -70,3 +70,9 @@ export interface ICounterItem {
     key: string;
     count: number;
 }
+
+export interface ILineData {
+    x_axis: number[];
+    y_axis: string[];
+    data: number[][];
+}
