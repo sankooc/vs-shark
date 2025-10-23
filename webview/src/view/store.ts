@@ -13,7 +13,7 @@ import {
   StatRequest,
   VRange,
 } from "../share/common";
-import { IFrameInfo, ICounterItem, IListResult, IProgressStatus, IVConnection, IVConversation, IVHttpConnection } from "../share/gen";
+import { IFrameInfo, ICounterItem, IListResult, IProgressStatus, IVConnection, IVConversation, IVHttpConnection, IUDPConversation } from "../share/gen";
 import mitt from "mitt";
 
 
@@ -33,6 +33,7 @@ interface PcapState {
   request: <F>(data: any) => Promise<F>;
   requestData: (data: VRange) => Promise<DataResponse>;
   conversations: (data: any) => Promise<IListResult<IVConversation>>;
+  udps: (data: any) => Promise<IListResult<IUDPConversation>>;
   connections: (data: any) => Promise<IListResult<IVConnection>>;
   httpConnections: (data: any) => Promise<IListResult<IVHttpConnection>>;
   httpDetail: (data: IVHttpConnection) => Promise<MessageCompress[]>
@@ -145,6 +146,10 @@ export const useStore = create<PcapState>()((set) => {
       const req = new ComMessage(ComType.REQUEST, data);
       return doRequest<IListResult<IVConversation>>(req);
       // return Promise.resolve(convMock);
+    },
+    udps: (data: any): Promise<IListResult<IUDPConversation>> => {
+      const req = new ComMessage(ComType.REQUEST, data);
+      return doRequest<IListResult<IUDPConversation>>(req);
     },
     connections: (data: any): Promise<IListResult<IVConnection>> => {
       const req = new ComMessage(ComType.REQUEST, data);

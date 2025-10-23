@@ -4,6 +4,7 @@ import Pagination from './pagination2';
 
 import { JSX, ReactNode, useEffect, useState } from "react";
 import { BreadItem } from "./common";
+import Empty from "./http/content/empty";
 interface GridProps<T> {
     columns: TableColumnDefinition<T>[];
     header?: JSX.Element;
@@ -52,6 +53,9 @@ function Component<T>(props: GridProps<T>) {
     useEffect(mountHook, [page]);
     const columnSizingOptions = { ...props.columnSizingOptions };
 
+    if(!result.items || result.items.length === 0){
+        return <Empty/>
+    }
     return (<div className="flex flex-column page-card">
         {
             props.breads && props.breads.length > 0 && <BreadItem items={props.breads} ></BreadItem>

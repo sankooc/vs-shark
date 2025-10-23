@@ -15,10 +15,11 @@ import ConversationDetailComponent from './conversation/detail';
 import HttpComponent from "./http";
 import HttpDetailComponent from "./http/detail";
 import OverviewComponent from "./overview";
+import UDPComponent from './udp';
 import TLSHostList from './tls/hosts';
 import { useStore } from "../store";
 import LoadingComponent from './loading';
-import { ConversationIcon, FrameIcon, HttpIcon, OverviewIcon, TLSIcon } from "./common";
+import { ConversationIcon, FrameIcon, HttpIcon, OverviewIcon, TLSIcon, UDPTabIcon } from "./common";
 // import '../colors';
 
 // const FrameIcon = bundleIcon(TextboxRotate9020Filled, TextboxRotate9020Regular);
@@ -53,6 +54,10 @@ const Nav = () => {
     name: 'TLS',
     path: 'tls/hosts',
     icon: TLSIcon,
+  }, {
+    name: 'UDP',
+    path: 'udp',
+    icon: UDPTabIcon
   }];
   const styles = useCSS();
   if(!isOpen){
@@ -137,6 +142,7 @@ const Basic = () => {
             <Route path="/https" element={<HttpComponent />} />
             <Route path="/http/detail" element={<HttpDetailComponent />} />
             <Route path="/tls/hosts" element={<TLSHostList/>}/>
+            <Route path="/udp" element={<UDPComponent/>}/>
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </div>

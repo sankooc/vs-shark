@@ -84,6 +84,10 @@ export abstract class PCAPClient {
             rs = this.ctx.list_http(start, size, param.host || '', '');
             this.emitMessage(ComMessage.new(ComType.HTTP_CONNECTIONS, rs, requestId));
             return;
+          case "udp":
+            rs = this.ctx.list_udp(start, size, param.ip || '');
+            this.emitMessage(ComMessage.new(ComType.HTTP_CONNECTIONS, rs, requestId));
+            return;
           default:
             return;
         }

@@ -7,7 +7,7 @@ import {
     Label,
     Select,
 } from "@fluentui/react-components";
-import { bundleIcon, ChartMultiple20Filled, ChartMultiple20Regular, ClipboardBulletListRtlFilled, ClipboardBulletListRtlRegular, FormSparkle20Filled, FormSparkle20Regular, GlobeColor, LockClosedKeyRegular, PlugConnected20Filled, PlugConnected20Regular, QuestionFilled, ShieldLock20Filled, ShieldLock20Regular, TextboxRotate9020Filled, TextboxRotate9020Regular, TriangleLeft20Filled, TriangleLeft20Regular, TriangleRight20Filled, TriangleRight20Regular } from "@fluentui/react-icons";
+import { bundleIcon, ChartMultiple20Filled, ChartMultiple20Regular, ClipboardBulletListRtlFilled, ClipboardBulletListRtlRegular, FormSparkle20Filled, FormSparkle20Regular, GlobeColor, LockClosedKeyRegular, MailTemplate20Filled, MailTemplate20Regular, PlugConnected20Filled, PlugConnected20Regular, QuestionFilled, ShieldLock20Filled, ShieldLock20Regular, TextboxRotate9020Filled, TextboxRotate9020Regular, TriangleLeft20Filled, TriangleLeft20Regular, TriangleRight20Filled, TriangleRight20Regular } from "@fluentui/react-icons";
 import React, { JSX, useEffect, useId, useState } from "react";
 
 import { useNavigate } from "react-router";
@@ -41,6 +41,7 @@ export function BreadItem(props: ConnectProp) {
 
 
 export const ConversationIcon = bundleIcon(FormSparkle20Filled, FormSparkle20Regular);
+export const UDPTabIcon = bundleIcon(MailTemplate20Filled, MailTemplate20Regular);
 export const OverviewIcon = bundleIcon(ChartMultiple20Filled, ChartMultiple20Regular);
 export const FrameIcon = bundleIcon(TextboxRotate9020Filled, TextboxRotate9020Regular);
 export const HttpIcon = bundleIcon(PlugConnected20Filled, PlugConnected20Regular);
@@ -93,7 +94,7 @@ export function IPSelector(props: SelectorProps) {
                     types.push(IPV4Option);
                 }
                 setTypes(types.slice(0));
-                setIp4s(rs.map(r => r.key));
+                setIp4s(rs.map((r: any) => r.key));
             }
         });
         stat({ field: 'ip6' }).then((rs) => {
@@ -102,7 +103,7 @@ export function IPSelector(props: SelectorProps) {
                     types.push(IPV6Option);
                 }
                 setTypes(types.slice(0));
-                setIp6s(rs.map(r => r.key));
+                setIp6s(rs.map((r: any) => r.key));
             }
         });
     }, []);
