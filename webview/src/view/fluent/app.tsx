@@ -72,7 +72,7 @@ const Nav = () => {
     type="inline"
     multiple={false}
     className={styles.nav}
-    style={{ width: '12em', borderRight: '1px solid #ddd' }}
+    style={{ width: '12em'}}
   >
         <NavDrawerHeader>
             <Hamburger onClick={() => setIsOpen(false)} />
@@ -132,7 +132,7 @@ const Basic = () => {
     <BrowserRouter>
     <div className="flex flex-row h-full w-full">
         <Nav />
-        <div className="flex-1" style={{ overflow: 'hidden', width: 'calc(100% - 12em)' }}>
+        <div className="flex-1 main-content">
           <Routes>
             <Route path="/" index element={<FrameComponent />} />
             {/* <Route path="/frames" element={<FrameComponent />} /> */}

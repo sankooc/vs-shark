@@ -13,7 +13,7 @@ import {
   StatRequest,
   VRange,
 } from "../share/common";
-import { IFrameInfo, ICounterItem, IListResult, IProgressStatus, IVConnection, IVConversation, IVHttpConnection, IUDPConversation } from "../share/gen";
+import { IFrameInfo, IListResult, IProgressStatus, IVConnection, IVConversation, IVHttpConnection, IUDPConversation } from "../share/gen";
 import mitt from "mitt";
 
 

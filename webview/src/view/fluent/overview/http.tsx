@@ -14,7 +14,8 @@ const Meta = {
     },
 };
 
-function MethodComponent() {
+
+export default function Component() {
     const stat = useStore((state) => state.stat);
     const [data, setData] = useState<ICounterItem[][]>([]);
     useEffect(() => {
@@ -50,6 +51,9 @@ function MethodComponent() {
                 });
         }
     }
+    if (!series.length) {
+        return <></>
+    }
     const option = {
         title: {
             text: 'HTTP Analysis',
@@ -62,14 +66,7 @@ function MethodComponent() {
         },
         series
     };
-    return <ReactECharts option={option} style={{ width: '100%' }} theme="dark" />
-}
-
-
-
-
-export default function Component() {
     return <Card className="trim-card" style={{ minHeight: '280px' }} orientation="horizontal">
-        <MethodComponent />
+        <ReactECharts option={option} style={{ width: '100%' }} theme="dark" />
     </Card>
 }

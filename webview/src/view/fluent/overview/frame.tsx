@@ -1,5 +1,5 @@
 
-import { Body1, Caption1, Card, CardHeader } from '@fluentui/react-components';
+import { Card } from '@fluentui/react-components';
 import ReactECharts from 'echarts-for-react';
 import { useStore } from '../../store';
 import { useEffect, useState } from 'react';

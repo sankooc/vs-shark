@@ -99,7 +99,7 @@ function Component() {
         return <span>need more space</span>
       }
       const bodyHeight = Math.ceil(height * 0.65);
-      return <div className="flex flex-column" style={{ height: height + "px", width: width + "px" }}>
+      return <div className="flex flex-column frame-content" style={{ height: height + "px", width: width + "px" }}>
         <VirtualizedDataGrid bodyHeight={bodyHeight} items={result.items} onSelect={setSelect} />
         <Paging page={page} total={result.total} pageSize={size} onPageChange={(page: number) => {
           setPage(page);

@@ -527,7 +527,7 @@ impl Context {
         if period < 100 {
             return "{}".to_string();
         }
-        let size: usize = 20;
+        let size: usize = 200;
         let r = period.div_ceil(size as u64);
         let mut limit = first.info.time + r;
         let mut series = vec![];

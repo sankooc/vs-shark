@@ -70,3 +70,21 @@ export interface ICounterItem {
     key: string;
     count: number;
 }
+
+export interface ILineData {
+    x_axis: number[];
+    y_axis: string[];
+    data: number[][];
+}
+
+export interface IUDPConversation {
+    index: number;
+    sender: string;
+    receiver: string;
+    sender_port: number;
+    receiver_port: number;
+    packets: number;
+    bytes: number;
+    first_time: number;
+    last_time: number;
+}

@@ -22,8 +22,15 @@ body {
     background-color: #777 !important;
 }
 
-.page-card {
+.main-content {
     background-color: common.$c-bg-1;
+    overflow: hidden;
+}
+.frame-content {
+    background-color: common.$background;
+}
+.page-card {
+    background-color: unset;
     overflow: hidden;
     padding: 5px;
     margin: 0;

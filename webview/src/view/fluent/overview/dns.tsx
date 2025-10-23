@@ -1,5 +1,5 @@
-import { Skeleton, SkeletonItem } from "@fluentui/react-components";
-import type { SkeletonProps } from "@fluentui/react-components";
+// import { Skeleton, SkeletonItem } from "@fluentui/react-components";
+// import type { SkeletonProps } from "@fluentui/react-components";
 
 export default function Component() {
     return (

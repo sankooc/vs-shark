@@ -1,6 +1,6 @@
 import { useStore } from "../../store";
 import { IUDPConversation } from "../../../share/gen";
-import { createTableColumn, TableCellLayout, TableColumnDefinition, Toolbar, ToolbarButton } from "@fluentui/react-components";
+import { createTableColumn, TableCellLayout, TableColumnDefinition } from "@fluentui/react-components";
 import { compute, ComRequest, format_bytes_single_unit } from "../../../share/common";
 import { useState } from "react";
 import Grid from "../table";
@@ -69,7 +69,7 @@ function Component() {
     // };
     const pageSize = conversation_size;
     const load = async (page: number) => {
-        let _ip = ip === 'ANY' ? '' : ip;
+        const _ip = ip === 'ANY' ? '' : ip;
         const data: ComRequest = {
             catelog: "udp",
             type: "list",

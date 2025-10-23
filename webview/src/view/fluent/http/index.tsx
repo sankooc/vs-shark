@@ -46,7 +46,7 @@ const http_rt_icon = (item: IVHttpConnection) => {
             }
 
         } catch (e) {
-
+            console.error(e);
         }
     }
     return <ClockRegular />;
@@ -54,10 +54,12 @@ const http_rt_icon = (item: IVHttpConnection) => {
 
 const http_connct_status = (status: string) => {
     try {
-        if(parseInt(status) > 0){
+        if (parseInt(status) > 0) {
             return <CheckmarkSquareRegular />
         }
-    }catch(e) {}
+    } catch (e) {
+        console.error(e);
+    }
     return <WarningRegular />
 }
 
@@ -68,13 +70,13 @@ function Component() {
     const [httpHosts, setHttpHosts] = useState<ICounterItem[]>([]);
     const [hostSelect, setHostSelect] = useState<string>(NoneOption);
     useEffect(() => {
-        stat({field: 'http_host'}).then(setHttpHosts);
+        stat({ field: 'http_host' }).then(setHttpHosts);
     }, [])
     const navigate = useNavigate();
     const selectId = useId();
 
-    if(httpHosts.length === 0){
-        return <Empty/>
+    if (httpHosts.length === 0) {
+        return <Empty />
     }
 
     const columns: TableColumnDefinition<IVHttpConnection>[] = [
@@ -145,8 +147,8 @@ function Component() {
             renderHeaderCell: () => <><ImageRegular /> Content-Type</>,
             renderCell: (item) => {
                 const contentType = item.content_type;
-                if(contentType){
-                    return  <TableCellLayout media={docIcon(item)} style={{ textAlign: 'center' }}>
+                if (contentType) {
+                    return <TableCellLayout media={docIcon(item)} style={{ textAlign: 'center' }}>
                         {contentType}
                     </TableCellLayout>
                 }
@@ -181,7 +183,7 @@ function Component() {
     };
     const pageSize = http_size;
     const load = async (page: number, _: any) => {
-        let host = hostSelect === NoneOption ? '' : hostSelect;
+        const host = hostSelect === NoneOption ? '' : hostSelect;
         const data: ComRequest = {
             catelog: "http_connection",
             type: "list",

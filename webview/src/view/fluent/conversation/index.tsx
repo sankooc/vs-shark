@@ -94,7 +94,7 @@ function Component() {
     };
     const pageSize = conversation_size;
     const load = async (page: number) => {
-        let _ip = ip === 'ANY' ? '' : ip;
+        const _ip = ip === 'ANY' ? '' : ip;
         const data: ComRequest = {
             catelog: "conversation",
             type: "list",
