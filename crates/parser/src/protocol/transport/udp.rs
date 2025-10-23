@@ -56,12 +56,10 @@ impl Visitor {
         let target_port = reader.read16(true)?;
         let length = reader.read16(true)?;
         let _checksum = reader.read16(true)?;
-
         frame.ports = Some((source_port, target_port));
         frame.protocol_field = ProtocolInfoField::UDP(length);
-
-        
         let next_protocol = detect_protocol(source_port, target_port);
+        frame.add_proto(crate::common::ProtoMask::UDP);
         Ok(next_protocol)
     }
 

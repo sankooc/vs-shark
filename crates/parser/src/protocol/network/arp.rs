@@ -68,6 +68,7 @@ impl Visitor {
         );
         frame.address_field = AddressField::IPv4(sender_ip, target_ip);
         
+        frame.add_proto(crate::common::ProtoMask::ARP);
         Ok(Protocol::None)
     }
 

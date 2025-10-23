@@ -92,6 +92,58 @@ pub struct Ethernet {
     pub protocol_type: u16,
 }
 
+#[repr(u32)]
+#[derive(Debug, Clone, Copy)]
+pub enum ProtoMask {
+    ETHERNET,
+    PPPOES,
+    IPV4,
+    IPV6,
+    TCP,
+    UDP,
+    ICMP,
+    HTTP,
+    TLS,
+    DNS,
+    ARP,
+}
+impl ProtoMask {
+    pub const ALL: [ProtoMask; 11] = [
+        ProtoMask::ETHERNET,
+        ProtoMask::PPPOES,
+        ProtoMask::IPV4,
+        ProtoMask::IPV6,
+        ProtoMask::TCP,
+        ProtoMask::UDP,
+        ProtoMask::ICMP,
+        ProtoMask::HTTP,
+        ProtoMask::TLS,
+        ProtoMask::DNS,
+        ProtoMask::ARP,
+    ];
+    pub const fn index(self) -> u32 {
+        self as u32
+    }
+    pub const fn bit(self) -> u32 {
+        1u32 << self.index()
+    }
+    pub const fn name(self) -> NString {
+        match self {
+            ProtoMask::ETHERNET => "ethernet",
+            ProtoMask::PPPOES => "pppoes",
+            ProtoMask::IPV4 => "ipv4",
+            ProtoMask::IPV6 => "ipv6",
+            ProtoMask::TCP => "tcp",
+            ProtoMask::UDP => "udp",
+            ProtoMask::ICMP => "icmp",
+            ProtoMask::HTTP => "http",
+            ProtoMask::TLS => "tls",
+            ProtoMask::DNS => "dns",
+            ProtoMask::ARP => "arp",
+        }
+    }
+}
+
 #[derive(Default)]
 pub struct Frame {
     pub range: Option<Range<usize>>,
@@ -105,6 +157,7 @@ pub struct Frame {
 
     pub address_field: AddressField,
     pub protocol_field: ProtocolInfoField,
+    pub bitmap: u32,
 }
 
 impl Frame {
@@ -140,6 +193,27 @@ impl Frame {
             return Some(format!("{} -> {} {} Seq={} Len={} ", source_port, target_port, state.list_str(), stat.seq, stat.len));
         }
         None
+    }
+}
+
+impl Frame {
+    pub fn add_proto(&mut self, proto: ProtoMask) {
+        self.bitmap |= proto.bit();
+    }
+    pub fn rm_proto(&mut self, proto: ProtoMask) {
+        self.bitmap &= !proto.bit();
+    }
+    pub fn has_proto(&self, proto: ProtoMask) -> bool {
+        (self.bitmap & proto.bit()) != 0
+    }
+    pub fn all_protos(&self) -> Vec<NString>{
+        let mut list = Vec::new();
+        for proto in ProtoMask::ALL {
+            if self.has_proto(proto) {
+                list.push(proto.name());
+            }
+        }
+        list
     }
 }
 
@@ -506,12 +580,13 @@ impl Instance {
         let _data = &all_collections[start..end];
         let list = self._http_iter(_data);
         ListResult::new(start, total, list)
+
     }
     fn _http_iter<T>(&self, list: &[T]) -> Vec<VHttpConnection>
     where
         T: Borrow<HttpConntect>,
-    {
-        list.iter().map(|item| item.borrow().into(&self.ctx)).collect()
+    {   
+        list.iter().map(|item| item.borrow().conv(&self.ctx)).collect()
     }
 }
 pub mod concept;

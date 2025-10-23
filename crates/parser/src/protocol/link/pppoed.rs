@@ -143,6 +143,7 @@ impl Visitor {
         
         frame.protocol_field = ProtocolInfoField::PPPoES(Some(code));
         
+        frame.add_proto(crate::common::ProtoMask::PPPOES);
         Ok(Protocol::None)
     }
 

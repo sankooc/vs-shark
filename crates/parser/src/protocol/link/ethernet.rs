@@ -31,6 +31,7 @@ impl EthernetVisitor {
         let key = quick_hash(data);
         frame.address_field = AddressField::Mac(key);
         frame.protocol_field = ProtocolInfoField::Ethernet(key);
+        frame.add_proto(crate::common::ProtoMask::ETHERNET);
         if let Some(cache) = ctx.ethermap.get(&key) {
             Ok(ethernet_protocol_mapper(cache.ptype))
         } else {

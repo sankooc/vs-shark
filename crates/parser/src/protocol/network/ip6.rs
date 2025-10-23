@@ -67,7 +67,7 @@ impl Visitor {
         let data = reader.refer()?;
         let key: u64 = quick_hash(data);
         frame.address_field = AddressField::IPv6(key);
-
+        frame.add_proto(crate::common::ProtoMask::IPV6);
         if let Some(enty) = ctx.ipv6map.get(&key) {
             Ok(ip4_mapper(enty.0))
         } else {

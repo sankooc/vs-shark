@@ -112,7 +112,7 @@ impl HttpConntect {
             None
         }
     }
-    pub fn into(&self, ctx: &Context) -> VHttpConnection {
+    pub fn conv(&self, ctx: &Context) -> VHttpConnection {
         let mut rs = VHttpConnection::default();
         if let Some(request_index) = &self.request {
             if let Some(message) = ctx.http_messages.get(*request_index as usize) {

@@ -171,6 +171,7 @@ impl Visitor {
         } else {
             frame.protocol_field = ProtocolInfoField::DnsQUERY(transaction_id);
         }
+        frame.add_proto(crate::common::ProtoMask::DNS);
         Ok(Protocol::None)
     }
 

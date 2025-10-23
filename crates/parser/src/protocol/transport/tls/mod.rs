@@ -66,6 +66,7 @@ impl Visitor {
         }
     }
     pub fn parse(ctx: &mut Context, frame: &mut Frame, _reader: &mut Reader) -> Result<Protocol> {
+        frame.add_proto(crate::common::ProtoMask::TLS);
         let mut left = _reader.left();
         if left == 0 {
             return Ok(Protocol::None);

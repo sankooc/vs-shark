@@ -414,6 +414,7 @@ impl Visitor {
             }
         }
 
+        frame.add_proto(crate::common::ProtoMask::PPPOES);
         // Determine next layer protocol based on PPP protocol type
         match protocol {
             0x0021 => Ok(Protocol::IP4), // IPv4

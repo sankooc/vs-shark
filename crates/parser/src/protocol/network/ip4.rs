@@ -154,6 +154,8 @@ impl Visitor {
         if head_len < 5 {
             bail!(DataError::Ipv4HeadLengthInvalid)
         }
+
+        frame.add_proto(crate::common::ProtoMask::IPV4);
         let ext = head_len - 5;
         if ext > 0 {
             reader.slice((ext * 4) as usize, true)?;
