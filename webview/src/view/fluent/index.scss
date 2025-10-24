@@ -1,5 +1,10 @@
 @use "../../scss/common";
+// @use "../../scss/fonts";
 
+// :root {
+//   --fontFamilyBase: '0xProto Nerd Font', 'Segoe UI', 'Segoe UI Web (West European)', -apple-system, BlinkMacSystemFont, Roboto, 'Helvetica Neue', sans-serif !important;
+//   --vscode-font-family: '0xProto Nerd Font', 'Segoe UI', 'Segoe UI Web (West European)', -apple-system, BlinkMacSystemFont, Roboto, 'Helvetica Neue', sans-serif;
+// }
 html {
     margin: 0;
     padding: 0;
@@ -15,26 +20,44 @@ body {
     #app {
         height: 100%;
         overflow-x: hidden;
+        * {
+            font-family: '0xProto Nerd Font', 'Segoe UI', 'Segoe UI Web (West European)', -apple-system, BlinkMacSystemFont, Roboto, 'Helvetica Neue', sans-serif !important;
+        }
     }
     overflow-x: hidden;
 }
+
 .fui-DataGridRow:hover {
     background-color: #777 !important;
 }
 
+$page-space: 5px;
+
 .main-content {
     background-color: common.$c-bg-1;
     overflow: hidden;
+    padding: $page-space;
+    margin: 0;
+    gap: $page-space;
+    height: calc(100% - $page-space - $page-space);
+
+    .page-card-item {
+        background-color: common.$background;
+    }
 }
+
 .frame-content {
     background-color: common.$background;
+    margin: -$page-space;
 }
+
 .page-card {
     background-color: unset;
     overflow: hidden;
     padding: 5px;
     margin: 0;
     height: calc(100% - 10px);
+
     .page-card-item {
         background-color: common.$background;
     }
@@ -57,7 +80,8 @@ div[role=tablist] {
 .overview-page {
     padding: 10px;
     gap: 10px;
-    > div {
+
+    >div {
         background-color: unset;
         padding: 0;
     }

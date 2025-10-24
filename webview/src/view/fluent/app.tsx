@@ -2,10 +2,14 @@ import * as React from "react";
 import {
   Hamburger,
   makeStyles,
+  NavCategory,
+  NavCategoryItem,
   NavDrawer,
   NavDrawerBody,
   NavDrawerHeader,
-  NavItem
+  NavItem,
+  NavSubItem,
+  NavSubItemGroup,
 } from "@fluentui/react-components";
 import { BrowserRouter, useNavigate, Route, Routes, Navigate } from "react-router";
 
@@ -19,7 +23,8 @@ import UDPComponent from './udp';
 import TLSHostList from './tls/hosts';
 import { useStore } from "../store";
 import LoadingComponent from './loading';
-import { ConversationIcon, FrameIcon, HttpIcon, OverviewIcon, TLSIcon, UDPTabIcon } from "./common";
+import { ConversationIcon, FrameIcon, HttpIcon, OverviewIcon, StatisticTabIcon, TLSIcon, UDPTabIcon } from "./common";
+// import { DocumentBulletListRegular } from "@fluentui/react-icons";
 // import '../colors';
 
 // const FrameIcon = bundleIcon(TextboxRotate9020Filled, TextboxRotate9020Regular);
@@ -43,9 +48,13 @@ const Nav = () => {
 
   //OverviewIcon
   const components = [{
-    name: 'Conversations',
+    name: 'TCP',
     path: 'conversations',
     icon: ConversationIcon,
+  }, {
+    name: 'UDP',
+    path: 'udp',
+    icon: UDPTabIcon
   }, {
     name: 'HTTP',
     path: 'https',
@@ -54,16 +63,12 @@ const Nav = () => {
     name: 'TLS',
     path: 'tls/hosts',
     icon: TLSIcon,
-  }, {
-    name: 'UDP',
-    path: 'udp',
-    icon: UDPTabIcon
   }];
   const styles = useCSS();
-  if(!isOpen){
+  if (!isOpen) {
     return (<div style={{ borderRight: '1px solid #ddd', padding: '4px' }}>
-            <Hamburger onClick={() => setIsOpen(true)} />
-            </div>)
+      <Hamburger onClick={() => setIsOpen(true)} />
+    </div>)
   }
   return <NavDrawer
     defaultSelectedValue={select}
@@ -72,11 +77,11 @@ const Nav = () => {
     type="inline"
     multiple={false}
     className={styles.nav}
-    style={{ width: '12em'}}
+    style={{ width: '12em' }}
   >
-        <NavDrawerHeader>
-            <Hamburger onClick={() => setIsOpen(false)} />
-        </NavDrawerHeader>
+    <NavDrawerHeader>
+      <Hamburger onClick={() => setIsOpen(false)} />
+    </NavDrawerHeader>
 
     <NavDrawerBody>
       <NavItem
@@ -90,6 +95,7 @@ const Nav = () => {
       >
         Overview
       </NavItem>
+      {/* <NavSectionHeader>Statistic</NavSectionHeader> */}
       <NavItem
         onClick={() => {
           setSelect('Frames');
@@ -101,8 +107,29 @@ const Nav = () => {
       >
         Frames
       </NavItem>
-      {/* <NavSectionHeader>Stat</NavSectionHeader> */}
-      {
+
+      <NavCategory value="static">
+        <NavCategoryItem icon={<StatisticTabIcon />}>
+          Stat
+        </NavCategoryItem>
+        <NavSubItemGroup>
+          {
+            components.map((item) => (
+              <NavSubItem
+                onClick={() => {
+                  setSelect(item.name);
+                  navigate('/' + item.path)
+                }}
+                value={item.name}
+                key={item.name}
+              >
+                {<item.icon />} {item.name}
+              </NavSubItem>
+            ))
+          }
+        </NavSubItemGroup>
+      </NavCategory>
+      {/* {
         components.map((item) => (
           <NavItem
             onClick={() => {
@@ -116,7 +143,7 @@ const Nav = () => {
             {item.name}
           </NavItem>
         ))
-      }
+      } */}
     </NavDrawerBody>
   </NavDrawer>
 }
@@ -130,9 +157,9 @@ const Basic = () => {
   }
   return (
     <BrowserRouter>
-    <div className="flex flex-row h-full w-full">
+      <div className="flex flex-row h-full w-full">
         <Nav />
-        <div className="flex-1 main-content">
+        <div className="flex-1 flex flex-column main-content">
           <Routes>
             <Route path="/" index element={<FrameComponent />} />
             {/* <Route path="/frames" element={<FrameComponent />} /> */}
@@ -141,12 +168,12 @@ const Basic = () => {
             <Route path="/conversation/:conversationIndex" element={<ConversationDetailComponent />} />
             <Route path="/https" element={<HttpComponent />} />
             <Route path="/http/detail" element={<HttpDetailComponent />} />
-            <Route path="/tls/hosts" element={<TLSHostList/>}/>
-            <Route path="/udp" element={<UDPComponent/>}/>
+            <Route path="/tls/hosts" element={<TLSHostList />} />
+            <Route path="/udp" element={<UDPComponent />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </div>
-    </div>
+      </div>
     </BrowserRouter>
   );
 };

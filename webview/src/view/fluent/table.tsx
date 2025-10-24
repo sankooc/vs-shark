@@ -21,14 +21,14 @@ interface PageProps {
     breads?: { icon?: Slot<'span'>, name: string, path?: string }[],
 }
 export function PageFrame(props: PageProps) {
-    return (<div className="flex flex-column page-card flex-grow-0">
+    return (<>
         {
             props.breads && props.breads.length > 0 && <BreadItem items={props.breads} ></BreadItem>
         }
         <Card className="flex flex-1 justify-content-between align-items-stretch page-card-item" style={{ margin: '0', padding: '5px', overflow: 'auto' }} orientation="vertical">
             {props.children}
         </Card>
-    </div>)
+    </>)
 }
 
 function Component<T>(props: GridProps<T>) {
@@ -56,7 +56,7 @@ function Component<T>(props: GridProps<T>) {
     if(!result.items || result.items.length === 0){
         return <Empty/>
     }
-    return (<div className="flex flex-column page-card">
+    return (<>
         {
             props.breads && props.breads.length > 0 && <BreadItem items={props.breads} ></BreadItem>
         }
@@ -99,7 +99,7 @@ function Component<T>(props: GridProps<T>) {
             </DataGrid>
             <Pagination page={page} total={result.total} pageSize={props.pageSize} onPageChange={setPage} />
         </Card>
-    </div>)
+    </>)
 }
 
 export default Component;

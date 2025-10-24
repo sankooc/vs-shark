@@ -8,7 +8,7 @@ import { useNavigate } from "react-router";
 import Grid from "../table";
 import { http_size } from "../../conf";
 import { HttpIcon } from "../common";
-import { BorderAllRegular, ClockBillRegular, ClockDismissRegular, ClipboardCodeRegular, DesktopSignalRegular, ImageRegular, TextWordCountRegular, CodeBlockRegular, ContentViewRegular, TextBulletListSquareColor, MoreHorizontalFilled, ClockRegular, WarningRegular, CheckmarkSquareRegular } from "@fluentui/react-icons";
+import { BorderAllRegular, ClipboardCodeRegular, DesktopSignalRegular, ImageRegular, TextWordCountRegular, CodeBlockRegular, ContentViewRegular, TextBulletListSquareColor, MoreHorizontalFilled, WarningRegular, CheckmarkSquareRegular } from "@fluentui/react-icons";
 
 // import HTTPChart from '../overview/http';
 
@@ -31,26 +31,26 @@ const docIcon = (item: IVHttpConnection) => {
     return <ContentViewRegular />
 }
 
-const http_rt_icon = (item: IVHttpConnection) => {
-    const timeStr = item.rt;
-    if (timeStr) {
-        try {
-            if ('N/A' === timeStr) {
-                return <ClockDismissRegular />
-            }
-            if (timeStr.indexOf('µs') >= 0) {
-                const time: number = parseInt(timeStr.substring(0, timeStr.length - 2));
-                if (time > 10000) {
-                    return <ClockBillRegular />
-                }
-            }
+// const http_rt_icon = (item: IVHttpConnection) => {
+//     const timeStr = item.rt;
+//     if (timeStr) {
+//         try {
+//             if ('N/A' === timeStr) {
+//                 return <ClockDismissRegular />
+//             }
+//             if (timeStr.indexOf('µs') >= 0) {
+//                 const time: number = parseInt(timeStr.substring(0, timeStr.length - 2));
+//                 if (time > 10000) {
+//                     return <ClockBillRegular />
+//                 }
+//             }
 
-        } catch (e) {
-            console.error(e);
-        }
-    }
-    return <ClockRegular />;
-}
+//         } catch (e) {
+//             console.error(e);
+//         }
+//     }
+//     return <ClockRegular />;
+// }
 
 const http_connct_status = (status: string) => {
     try {
@@ -119,7 +119,14 @@ function Component() {
         }),
         createTableColumn<IVHttpConnection>({
             columnId: "host",
-            renderHeaderCell: () => <><DesktopSignalRegular /> Host</>,
+            renderHeaderCell: () => <><DesktopSignalRegular /> host</>,
+            renderCell: (item) => (<TableCellLayout className={indexCss.cell}>
+                        {item.hostname}
+                    </TableCellLayout>),
+        }),
+        createTableColumn<IVHttpConnection>({
+            columnId: "path",
+            renderHeaderCell: () => <><DesktopSignalRegular /> path</>,
             renderCell: (item) => {
                 let host = 'N/A';
                 if (item?.request) {
@@ -146,8 +153,12 @@ function Component() {
             columnId: "content_type",
             renderHeaderCell: () => <><ImageRegular /> Content-Type</>,
             renderCell: (item) => {
-                const contentType = item.content_type;
+                let contentType = item.content_type;
                 if (contentType) {
+                    const inx = contentType.indexOf(';');
+                    if(inx >= 0 ){
+                        contentType = contentType.substring(0, inx).trim();
+                    }
                     return <TableCellLayout media={docIcon(item)} style={{ textAlign: 'center' }}>
                         {contentType}
                     </TableCellLayout>
@@ -155,16 +166,16 @@ function Component() {
                 return '';
             },
         }),
-        createTableColumn<IVHttpConnection>({
-            columnId: "time",
-            renderHeaderCell: () => <><ClockRegular /> Time</>,
-            renderCell: (item) => {
-                const timeStr = item.rt;
-                return <TableCellLayout media={http_rt_icon(item)}>
-                    {timeStr}
-                </TableCellLayout>
-            },
-        }),
+        // createTableColumn<IVHttpConnection>({
+        //     columnId: "time",
+        //     renderHeaderCell: () => <><ClockRegular /> Time</>,
+        //     renderCell: (item) => {
+        //         const timeStr = item.rt;
+        //         return <TableCellLayout media={http_rt_icon(item)}>
+        //             {timeStr}
+        //         </TableCellLayout>
+        //     },
+        // }),
         createTableColumn<IVHttpConnection>({
             columnId: "ops",
             renderHeaderCell: () => "ext",

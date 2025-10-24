@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import { useStore } from "../../store";
 import { SelectTabData, SelectTabEvent, Tab, TabList, TabValue, Tree, TreeItem, TreeItemLayout } from "@fluentui/react-components";
-import { format_bytes_single_unit, HttpMessageWrap, MessageCompress } from "../../../share/common";
+import {  HttpMessageWrap, MessageCompress } from "../../../share/common";
 import indexCss from './index.module.scss';
 import { HttpIcon } from "../common";
-import { DocumentGlobeRegular, PanelTopContractRegular, PanelTopExpandRegular } from "@fluentui/react-icons";
+import { AirplaneLandingRegular, AirplaneTakeOffRegular, DocumentGlobeRegular, DocumentOnePageRegular, PanelTopContractRegular, PanelTopExpandRegular } from "@fluentui/react-icons";
 import ContentComponent from './content';
 import Empty from "./content/empty";
 
@@ -60,24 +60,27 @@ export default function ConnectionList() {
         for (let i = 1; i < it.length; i += 1) {
             const text = it[i];
             items.push(<TreeItem itemType="leaf" key={text}>
-                <TreeItemLayout onClick={() => {
+                <TreeItemLayout iconBefore={<DocumentOnePageRegular />} onClick={() => {
                     setSelect(text);
                     // setHmw(undefined);
                 }} className={select === text ? indexCss.treeitem_select : indexCss.treeitem} >{text}</TreeItemLayout>
             </TreeItem>);
         }
-        if (hmw.raw && hmw.raw.length > 0) {
-            const len = hmw.raw.length;
-            const key = `content-${hmw.headers[0]}`;
-            items.push(<TreeItem itemType="leaf" key={key}>
-                <TreeItemLayout onClick={() => {
-                    setSelect(key);
-                }} className={select === key ? indexCss.treeitem_select : indexCss.treeitem} >Entity({format_bytes_single_unit(len)})</TreeItemLayout>
-            </TreeItem>);
+        // if (hmw.raw && hmw.raw.length > 0) {
+            // const len = hmw.raw.length;
+            // const key = `content-${hmw.headers[0]}`;
+            // items.push(<TreeItem itemType="leaf" key={key}>
+            //     <TreeItemLayout onClick={() => {
+            //         setSelect(key);
+            //     }} className={select === key ? indexCss.treeitem_select : indexCss.treeitem} >Entity({format_bytes_single_unit(len)})</TreeItemLayout>
+            // </TreeItem>);
+        // }
+        let icon = <AirplaneTakeOffRegular />;
+        if (head && head.startsWith('HTTP/')){
+            icon = <AirplaneLandingRegular />
         }
-
         return <TreeItem itemType="branch" key={head}>
-            <TreeItemLayout onClick={() => {
+            <TreeItemLayout iconBefore={icon} onClick={() => {
                 setSelect(head);
             }} className={select === head ? indexCss.treeitem_select : indexCss.treeitem} >{head}</TreeItemLayout>
             <Tree size="small">

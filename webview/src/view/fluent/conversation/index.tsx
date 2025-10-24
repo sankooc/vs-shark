@@ -8,11 +8,18 @@ import { conversation_size } from "../../conf";
 
 import { useNavigate } from "react-router";
 import { ConversationIcon, IPSelector } from "../common";
-import { BoxRegular, DesktopMacRegular, DocumentTextRegular, FolderListRegular, MoreHorizontalFilled, TextBulletListSquareColor } from "@fluentui/react-icons";
+import { BoxRegular, DesktopMacRegular, DocumentMultipleRegular, DocumentRegular, DocumentTextRegular, FolderListRegular, MoreHorizontalFilled, TextBulletListSquareColor } from "@fluentui/react-icons";
 
 // import { PageFrame } from '../table';
 
 const SIZE: "small" | "medium" = 'small';
+
+const headIcon = (item: IVConversation) => {
+    if(item && item.connects > 1){
+        return <DocumentMultipleRegular/>
+    }
+    return <DocumentRegular />
+}
 
 function Component() {
     const conversations = useStore((state) => state.conversations);
@@ -24,7 +31,7 @@ function Component() {
             renderHeaderCell: () => <><DesktopMacRegular /> Sender</>,
             renderCell: (item) => {
                 return (
-                    <TableCellLayout>
+                    <TableCellLayout media={headIcon(item)}>
                         {item.sender}
                     </TableCellLayout>
                 );
@@ -44,46 +51,36 @@ function Component() {
         createTableColumn<IVConversation>({
             columnId: "connects",
             renderHeaderCell: () => <><DocumentTextRegular /> Connections</>,
-            renderCell: (item) => {
-                return item.connects;
-            },
+            renderCell: (item) => <TableCellLayout>{item.connects}</TableCellLayout>,
         }),
         createTableColumn<IVConversation>({
             columnId: "sender_packets",
             renderHeaderCell: () => <><FolderListRegular /> RX Packets</>,
-            renderCell: (item) => {
-                return item.sender_packets;
-            },
+            renderCell: (item) => <TableCellLayout>{item.sender_packets}</TableCellLayout>,
         }),
         createTableColumn<IVConversation>({
             columnId: "receiver_packets",
             renderHeaderCell: () => <><FolderListRegular /> TX Packets</>,
-            renderCell: (item) => {
-                return item.receiver_packets;
-            },
+            renderCell: (item) => <TableCellLayout>{item.receiver_packets}</TableCellLayout>,
         }),
         createTableColumn<IVConversation>({
             columnId: "sender_bytes",
             renderHeaderCell: () => <><BoxRegular /> RX Bytes</>,
-            renderCell: (item) => {
-                return format_bytes_single_unit(item.sender_bytes);
-            },
+            renderCell: (item) => <TableCellLayout>{format_bytes_single_unit(item.sender_bytes)}</TableCellLayout>,
         }),
         createTableColumn<IVConversation>({
             columnId: "receiver_bytes",
             renderHeaderCell: () => <><BoxRegular /> TX Bytes</>,
-            renderCell: (item) => {
-                return format_bytes_single_unit(item.receiver_bytes);
-            },
+            renderCell: (item) => <TableCellLayout>{format_bytes_single_unit(item.receiver_bytes)}</TableCellLayout>,
         }),
         createTableColumn<IVConversation>({
             columnId: "ops",
             renderHeaderCell: () => "ext",
             renderCell: (item) => {
-                return <Toolbar aria-label="Default" size="small">
+                return <TableCellLayout><Toolbar aria-label="Default" size="small">
                     <ToolbarButton icon={<TextBulletListSquareColor />} onClick={() => { onClick(item) }} />
                     <ToolbarButton icon={<MoreHorizontalFilled />} />
-                </Toolbar>
+                </Toolbar></TableCellLayout>
                 // return <TableCellLayout media={<TextBulletListSquareColor />} style={{cursor: 'pointer'}}></TableCellLayout>
             },
         }),

@@ -3,9 +3,9 @@ import DNSChart from './dns';
 import HTTPChart from './http';
 
 export default function Component() {
-    return <div className="flex flex-column overview-page"> 
+    return <> 
         <FrameChart />
         <HTTPChart />
         <DNSChart />
-    </div>
+    </>
 }

@@ -7,7 +7,7 @@ import {
     Label,
     Select,
 } from "@fluentui/react-components";
-import { bundleIcon, ChartMultiple20Filled, ChartMultiple20Regular, ClipboardBulletListRtlFilled, ClipboardBulletListRtlRegular, FormSparkle20Filled, FormSparkle20Regular, GlobeColor, LockClosedKeyRegular, MailTemplate20Filled, MailTemplate20Regular, PlugConnected20Filled, PlugConnected20Regular, QuestionFilled, ShieldLock20Filled, ShieldLock20Regular, TextboxRotate9020Filled, TextboxRotate9020Regular, TriangleLeft20Filled, TriangleLeft20Regular, TriangleRight20Filled, TriangleRight20Regular } from "@fluentui/react-icons";
+import { bundleIcon, ChartMultiple20Filled, ChartMultiple20Regular, ClipboardBulletListRtlFilled, ClipboardBulletListRtlRegular, DocumentBulletList20Filled, DocumentBulletList20Regular, FormSparkle20Filled, FormSparkle20Regular, GlobeColor, LockClosedKeyRegular, MailTemplate20Filled, MailTemplate20Regular, PlugConnected20Filled, PlugConnected20Regular, QuestionFilled, ShieldLock20Filled, ShieldLock20Regular, TextboxRotate9020Filled, TextboxRotate9020Regular, TriangleLeft20Filled, TriangleLeft20Regular, TriangleRight20Filled, TriangleRight20Regular } from "@fluentui/react-icons";
 import React, { JSX, useEffect, useId, useState } from "react";
 
 import { useNavigate } from "react-router";
@@ -40,6 +40,7 @@ export function BreadItem(props: ConnectProp) {
 }
 
 
+export const StatisticTabIcon = bundleIcon(DocumentBulletList20Filled, DocumentBulletList20Regular)
 export const ConversationIcon = bundleIcon(FormSparkle20Filled, FormSparkle20Regular);
 export const UDPTabIcon = bundleIcon(MailTemplate20Filled, MailTemplate20Regular);
 export const OverviewIcon = bundleIcon(ChartMultiple20Filled, ChartMultiple20Regular);

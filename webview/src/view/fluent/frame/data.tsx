@@ -20,14 +20,11 @@ import { IFrameInfo } from '../../../share/gen';
 import indexCss from './index.module.scss';
 import React from 'react';
 import { frameColor } from '../../colors';
-import { BoxRegular, CalendarInfoRegular, CalendarWeekNumbersRegular, DesktopMacFilled, DesktopMacRegular, TextBulletListSquareRegular } from '@fluentui/react-icons';
-
-
 
 const columns: TableColumnDefinition<IFrameInfo>[] = [
     createTableColumn<IFrameInfo>({
         columnId: 'index',
-        renderHeaderCell: () => <><CalendarWeekNumbersRegular />Index</>,
+        renderHeaderCell: () => 'Index',
         renderCell: (item: IFrameInfo) => {
             // let cn = indexCss.cell;
             // const protocol = item.protocol;
@@ -43,7 +40,7 @@ const columns: TableColumnDefinition<IFrameInfo>[] = [
     }),
     createTableColumn<IFrameInfo>({
         columnId: 'source',
-        renderHeaderCell: () => <><DesktopMacRegular /> Source</>,
+        renderHeaderCell: () => 'Source',
         renderCell: (item: IFrameInfo) => {
             return (
                 <TableCellLayout className={indexCss.cell}>
@@ -54,7 +51,7 @@ const columns: TableColumnDefinition<IFrameInfo>[] = [
     }),
     createTableColumn<IFrameInfo>({
         columnId: 'target',
-        renderHeaderCell: () => <><DesktopMacFilled />Target</>,
+        renderHeaderCell: () => <>Target</>,
         renderCell: (item: IFrameInfo) => {
             return (
                 <TableCellLayout className={indexCss.cell}>
@@ -65,7 +62,7 @@ const columns: TableColumnDefinition<IFrameInfo>[] = [
     }),
     createTableColumn<IFrameInfo>({
         columnId: 'protocol',
-        renderHeaderCell: () => <><TextBulletListSquareRegular />Protocol</>,
+        renderHeaderCell: () => 'Protocol',
         renderCell: (item: IFrameInfo) => {
             return (
                 <TableCellLayout className={indexCss.cell} >
@@ -76,7 +73,7 @@ const columns: TableColumnDefinition<IFrameInfo>[] = [
     }),
     createTableColumn<IFrameInfo>({
         columnId: 'length',
-        renderHeaderCell: () => <><BoxRegular />Size</>,
+        renderHeaderCell: () => 'Size',
         renderCell: (item: IFrameInfo) => {
             return (
                 <TableCellLayout className={indexCss.cell}>
@@ -87,7 +84,7 @@ const columns: TableColumnDefinition<IFrameInfo>[] = [
     }),
     createTableColumn<IFrameInfo>({
         columnId: 'info',
-        renderHeaderCell: () => <><CalendarInfoRegular />Info</>,
+        renderHeaderCell: () => 'Info',
         renderCell: (item: IFrameInfo) => {
             return (
                 <TableCellLayout className={indexCss.cell} >

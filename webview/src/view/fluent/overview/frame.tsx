@@ -5,6 +5,7 @@ import { useStore } from '../../store';
 import { useEffect, useState } from 'react';
 import { ILineData } from '../../../share/gen';
 import dayjs from 'dayjs';
+import { format_bytes_single_unit } from '../../../share/common';
 
 
 export default function Component() {
@@ -41,9 +42,11 @@ export default function Component() {
             top: '50',
             // bottom: '50px',
             // height: '200px',
+            containLabel: true,
         },
         tooltip: {
             trigger: 'axis',
+            valueFormatter: (value: any) => format_bytes_single_unit(value),
             axisPointer: {
                 type: 'cross',
                 label: {
@@ -82,7 +85,7 @@ export default function Component() {
             }
         ]
     };
-    return <Card>
+    return <Card style={{padding: 0}}>
         <ReactECharts option={option} style={{ width: '100%' }} theme="dark" className="overview-frames" />
     </Card>
 }

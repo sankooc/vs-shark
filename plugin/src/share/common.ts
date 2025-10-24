@@ -156,7 +156,7 @@ export interface HttpMessageWrap {
   raw?: Uint8Array
 }
 
-export interface MessageCompress{
+export interface MessageCompress {
   json: string,
   data: Uint8Array
 }
@@ -188,4 +188,44 @@ export const format_bytes_single_unit = (bytes: number): string => {
   }
 
   return `${size}.${low} ${UNITS[unit_index]}`;
+}
+
+
+const timeunits = [
+    { name: 'h', value: 60 * 60 * 1000 * 1000 * 1000 },
+    { name: 'm', value: 60 * 1000 * 1000 * 1000 },
+    { name: 's', value: 1000 * 1000 * 1000 },
+    { name: 'ms', value: 1000 * 1000 },
+    { name: 'μs', value: 1000 },
+    { name: 'ns', value: 1 }
+];
+export const formatMicroseconds = (sample: number, _time: number): string => {
+    let time = _time
+    if (typeof time !== 'number' || time < 0 || !isFinite(time)) {
+        return '0';
+    }
+    if (time <= 0) {
+        return '0';
+    }
+    const len = (sample + '').length;
+    let lft = 19 - len;
+    if (lft >= 0 ){
+        time = time * Math.pow(10, lft);
+    }
+
+    for (const unit of timeunits) {
+        if (time >= unit.value) {
+            let value = time / unit.value;
+            if (value >= 1000 && unit.name !== 'μs') {
+                continue;
+            }
+            value = Math.round(value * 10) / 10;
+            if (value % 1 === 0) {
+                value = Math.floor(value);
+            }
+            return `${value}${unit.name}`;
+        }
+    }
+
+    return `${time}μs`;
 }

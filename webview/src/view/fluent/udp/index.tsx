@@ -1,30 +1,37 @@
 import { useStore } from "../../store";
 import { IUDPConversation } from "../../../share/gen";
 import { createTableColumn, TableCellLayout, TableColumnDefinition } from "@fluentui/react-components";
-import { compute, ComRequest, format_bytes_single_unit } from "../../../share/common";
+import { compute, ComRequest, format_bytes_single_unit, formatMicroseconds } from "../../../share/common";
 import { useState } from "react";
 import Grid from "../table";
 import { conversation_size } from "../../conf";
 
 // import { useNavigate } from "react-router";
-import { ConversationIcon, IPSelector } from "../common";
-import { BoxRegular, DesktopMacRegular, DocumentTextRegular} from "@fluentui/react-icons";
+import { IPSelector, UDPTabIcon } from "../common";
+import { BoxRegular, DesktopMacRegular, DocumentMultipleRegular, DocumentRegular, DocumentTextRegular } from "@fluentui/react-icons";
 
 // import { PageFrame } from '../table';
 
 const SIZE: "small" | "medium" = 'small';
 
+const headIcon = (item: IUDPConversation) => {
+    if(item && item.packets > 1){
+        return <DocumentMultipleRegular/>
+    }
+    return <DocumentRegular />
+}
+
 function Component() {
     const conversations = useStore((state) => state.udps);
     // const navigate = useNavigate();
-    const [ ip, setIp ] = useState<string>('');
+    const [ip, setIp] = useState<string>('');
     const columns: TableColumnDefinition<IUDPConversation>[] = [
         createTableColumn<IUDPConversation>({
             columnId: "sender",
             renderHeaderCell: () => <><DesktopMacRegular /> Address A</>,
             renderCell: (item) => {
                 return (
-                    <TableCellLayout>
+                    <TableCellLayout media={headIcon(item)}>
                         {item.sender + ':' + item.sender_port}
                     </TableCellLayout>
                 );
@@ -59,7 +66,7 @@ function Component() {
             columnId: "last",
             renderHeaderCell: () => <><BoxRegular /> Last Time</>,
             renderCell: (item) => {
-                return Math.floor((item.last_time - item.first_time) / 1000) + 'ms';
+                return formatMicroseconds(item.last_time, item.last_time - item.first_time);
             },
         }),
     ];
@@ -73,13 +80,13 @@ function Component() {
         const data: ComRequest = {
             catelog: "udp",
             type: "list",
-            param:{ ...compute(page, pageSize), ip: _ip },
+            param: { ...compute(page, pageSize), ip: _ip },
         };
         return conversations(data);;
     }
 
     const breads = [
-        { name: "UDP", icon: <ConversationIcon />, path: "/udp" }
+        { name: "UDP", icon: <UDPTabIcon />, path: "/udp" }
     ]
     const columnSizingOptions = {
         sender: {

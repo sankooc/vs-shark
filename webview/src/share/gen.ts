@@ -59,6 +59,7 @@ export interface IVHttpConnection {
     response?: string;
     rt: string;
     content_type: string;
+    hostname: string,
     length: number;
     request_headers: [number, number][];
     response_headers: [number, number][];
