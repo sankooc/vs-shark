@@ -9,14 +9,15 @@ import { conversation_size } from "../../conf";
 // import { useNavigate } from "react-router";
 import { IPSelector, UDPTabIcon } from "../common";
 import { BoxRegular, DesktopMacRegular, DocumentMultipleRegular, DocumentRegular, DocumentTextRegular } from "@fluentui/react-icons";
+import Spark from "../overview/spark";
 
 // import { PageFrame } from '../table';
 
 const SIZE: "small" | "medium" = 'small';
 
 const headIcon = (item: IUDPConversation) => {
-    if(item && item.packets > 1){
-        return <DocumentMultipleRegular/>
+    if (item && item.packets > 1) {
+        return <DocumentMultipleRegular />
     }
     return <DocumentRegular />
 }
@@ -51,29 +52,47 @@ function Component() {
         createTableColumn<IUDPConversation>({
             columnId: "count",
             renderHeaderCell: () => <><DocumentTextRegular /> Packets</>,
-            renderCell: (item) => {
-                return item.packets;
-            },
+            renderCell: (item) => <TableCellLayout>{item.packets}</TableCellLayout>,
         }),
         createTableColumn<IUDPConversation>({
             columnId: "bytes",
             renderHeaderCell: () => <><BoxRegular /> Bytes</>,
-            renderCell: (item) => {
-                return format_bytes_single_unit(item.bytes);
-            },
+            renderCell: (item) => <TableCellLayout>{format_bytes_single_unit(item.bytes)}</TableCellLayout>,
         }),
         createTableColumn<IUDPConversation>({
             columnId: "last",
             renderHeaderCell: () => <><BoxRegular /> Last Time</>,
             renderCell: (item) => {
-                return formatMicroseconds(item.last_time, item.last_time - item.first_time);
+                try {
+                    const records = item.records;
+                    if (records && records.length > 1) {
+                        const end = records[records.length - 1][0];
+                        const start = records[0][0];
+                        return <TableCellLayout>{formatMicroseconds(start, end - start)}</TableCellLayout>
+                    }
+                } catch (e) {
+                    console.error(e);
+                }
+                return <TableCellLayout>N/A</TableCellLayout>;
+            },
+        }),
+        createTableColumn<IUDPConversation>({
+            columnId: "grap",
+            renderHeaderCell: () => <></>,
+            renderCell: (item) => {
+                try {
+                    const records = item.records;
+                    if (records && records.length > 2) {
+                        return <Spark data={records} />
+                    }
+                } catch (e) {
+                    console.error(e);
+                }
+                return <TableCellLayout>N/A</TableCellLayout>;
+                
             },
         }),
     ];
-    // const onClick = (item: IUDPConversation) => {
-    //     const title = `${item.sender} / ${item.receiver}`;
-    //     navigate('/conversation/' + item.key, { state: { title } });
-    // };
     const pageSize = conversation_size;
     const load = async (page: number) => {
         const _ip = ip === 'ANY' ? '' : ip;

@@ -109,6 +109,7 @@ export const useStore = create<PcapState>()((set) => {
       case ComType.CONVERSATIONS:
       case ComType.CONNECTIONS:
       case ComType.HTTP_CONNECTIONS:
+      case ComType.UDP_CONNECTIONS:
         emitter.emit(id, deserialize(body));
         break;
       case ComType.FRAME_SCOPE_RES:

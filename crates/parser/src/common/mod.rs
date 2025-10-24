@@ -607,7 +607,7 @@ impl Instance {
                             if let Some(item) = map.get_mut(&key) {
                                 item.incr(len, time);
                             } else {
-                                let mut item = UDPConversation::new(index, source.clone(), target.clone(), source_port, target_port, time);
+                                let mut item = UDPConversation::new(index, source.clone(), target.clone(), source_port, target_port);
                                 item.incr(len, time);
                                 map.insert(key, item);
                             }

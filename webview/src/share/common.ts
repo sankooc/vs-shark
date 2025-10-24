@@ -22,6 +22,7 @@ export enum ComType {
   CONVERSATIONS = "conversations",
   CONNECTIONS = "connections",
   HTTP_CONNECTIONS = "http_connections",
+  UDP_CONNECTIONS= "UDP_CONNECTIONS",
   HTTP_DETAIL_REQ = "http_detail_req",
   HTTP_DETAIL_RES = "http_detail_res",
   STAT_REQ = "STAT_REQ",

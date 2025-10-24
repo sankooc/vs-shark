@@ -59,6 +59,7 @@ export interface IVHttpConnection {
     response?: string;
     rt: string;
     content_type: string;
+    hostname: string,
     length: number;
     request_headers: [number, number][];
     response_headers: [number, number][];
@@ -85,6 +86,5 @@ export interface IUDPConversation {
     receiver_port: number;
     packets: number;
     bytes: number;
-    first_time: number;
-    last_time: number;
+    records: number[][];
 }

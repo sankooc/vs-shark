@@ -327,11 +327,12 @@ pub struct UDPConversation {
     pub receiver_port: u16,
     pub packets: u32,
     pub bytes: usize,
-    pub first_time: u64,
-    pub last_time: u64,
+    pub records: Vec<(u64, usize)>,
+    // pub first_time: u64,
+    // pub last_time: u64,
 }
 impl UDPConversation {
-    pub fn new(index: usize, sender: String, receiver: String, sender_port: u16, receiver_port: u16, time: u64) -> Self {
+    pub fn new(index: usize, sender: String, receiver: String, sender_port: u16, receiver_port: u16) -> Self {
         Self {
             index,
             sender,
@@ -340,14 +341,13 @@ impl UDPConversation {
             receiver_port,
             packets: 0,
             bytes: 0,
-            first_time: time,
-            last_time: time,
+            records: vec![],
         }
     }
     pub fn incr(&mut self, mount: usize, time: u64) {
         self.packets += 1;
         self.bytes += mount;
-        self.last_time = time;
+        self.records.push((time, mount ));
     }
 }
 

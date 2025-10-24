@@ -86,6 +86,5 @@ export interface IUDPConversation {
     receiver_port: number;
     packets: number;
     bytes: number;
-    first_time: number;
-    last_time: number;
+    records: number[][];
 }
