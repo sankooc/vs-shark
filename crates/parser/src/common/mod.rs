@@ -1,16 +1,25 @@
 // Copyright (c) 2025 sankooc
-// 
+//
 // This file is part of the pcapview project.
 // Licensed under the MIT License - see https://opensource.org/licenses/MIT
 
 use core::Context;
 use std::{
-    borrow::Borrow, cmp, collections::HashMap, hash::{BuildHasherDefault, Hash, Hasher}, ops::Range
+    borrow::Borrow,
+    cmp,
+    collections::HashMap,
+    hash::{BuildHasherDefault, Hash, Hasher},
+    ops::Range,
 };
 
 use crate::{
     add_field_label_no_range,
-    common::{concept::{HttpCriteria, VConnection, VConversation, VHttpConnection}, connection::TcpFlagField, core::HttpConntect, util::date_str},
+    common::{
+        concept::{ConversationCriteria, HttpCriteria, UDPConversation, VConnection, VConversation, VHttpConnection},
+        connection::TcpFlagField,
+        core::HttpConntect,
+        util::date_str,
+    },
     files::{pcap::PCAP, pcapng::PCAPNG},
     protocol::{detail, link_type_map, parse, summary},
 };
@@ -83,6 +92,58 @@ pub struct Ethernet {
     pub protocol_type: u16,
 }
 
+#[repr(u32)]
+#[derive(Debug, Clone, Copy)]
+pub enum ProtoMask {
+    ETHERNET,
+    PPPOES,
+    IPV4,
+    IPV6,
+    TCP,
+    UDP,
+    ICMP,
+    HTTP,
+    TLS,
+    DNS,
+    ARP,
+}
+impl ProtoMask {
+    pub const ALL: [ProtoMask; 11] = [
+        ProtoMask::ETHERNET,
+        ProtoMask::PPPOES,
+        ProtoMask::IPV4,
+        ProtoMask::IPV6,
+        ProtoMask::TCP,
+        ProtoMask::UDP,
+        ProtoMask::ICMP,
+        ProtoMask::HTTP,
+        ProtoMask::TLS,
+        ProtoMask::DNS,
+        ProtoMask::ARP,
+    ];
+    pub const fn index(self) -> u32 {
+        self as u32
+    }
+    pub const fn bit(self) -> u32 {
+        1u32 << self.index()
+    }
+    pub const fn name(self) -> NString {
+        match self {
+            ProtoMask::ETHERNET => "ethernet",
+            ProtoMask::PPPOES => "pppoes",
+            ProtoMask::IPV4 => "ipv4",
+            ProtoMask::IPV6 => "ipv6",
+            ProtoMask::TCP => "tcp",
+            ProtoMask::UDP => "udp",
+            ProtoMask::ICMP => "icmp",
+            ProtoMask::HTTP => "http",
+            ProtoMask::TLS => "tls",
+            ProtoMask::DNS => "dns",
+            ProtoMask::ARP => "arp",
+        }
+    }
+}
+
 #[derive(Default)]
 pub struct Frame {
     pub range: Option<Range<usize>>,
@@ -96,6 +157,7 @@ pub struct Frame {
 
     pub address_field: AddressField,
     pub protocol_field: ProtocolInfoField,
+    pub bitmap: u32,
 }
 
 impl Frame {
@@ -131,6 +193,39 @@ impl Frame {
             return Some(format!("{} -> {} {} Seq={} Len={} ", source_port, target_port, state.list_str(), stat.seq, stat.len));
         }
         None
+    }
+    pub fn addresses(&self, ctx: &Context) -> Option<(String, String)> {
+        match &self.address_field {
+            AddressField::IPv4(s, t) => Some((s.to_string(), t.to_string())),
+            AddressField::IPv6(key) => {
+                if let Some((_, s, t)) = ctx.ipv6map.get(key) {
+                    return Some((s.to_string(), t.to_string()));
+                }
+                None
+            }
+            _ => None,
+        }
+    }
+}
+
+impl Frame {
+    pub fn add_proto(&mut self, proto: ProtoMask) {
+        self.bitmap |= proto.bit();
+    }
+    pub fn rm_proto(&mut self, proto: ProtoMask) {
+        self.bitmap &= !proto.bit();
+    }
+    pub fn has_proto(&self, proto: ProtoMask) -> bool {
+        (self.bitmap & proto.bit()) != 0
+    }
+    pub fn all_protos(&self) -> Vec<NString> {
+        let mut list = Vec::new();
+        for proto in ProtoMask::ALL {
+            if self.has_proto(proto) {
+                list.push(proto.name());
+            }
+        }
+        list
     }
 }
 
@@ -282,6 +377,24 @@ impl Instance {
     }
 }
 
+fn conversation_list<V: AsRef<[T]>, T>(start: usize, size: usize, v: V) -> ListResult<VConversation>
+where
+    T: Borrow<concept::Conversation>,
+{
+    let slice = v.as_ref();
+    let total = slice.len();
+    let end = cmp::min(start + size, total);
+    if end <= start {
+        return ListResult::new(start, 0, vec![]);
+    }
+    let _data = &slice[start..end];
+    let mut list = vec![];
+    for item in _data {
+        list.push(item.borrow().into());
+    }
+    ListResult::new(start, total, list)
+}
+
 impl Instance {
     pub fn get_count(&self, catelog: &str) -> usize {
         match catelog {
@@ -298,8 +411,8 @@ impl Instance {
         let fs: &[Frame] = &self.ctx.list;
 
         // for frame in fs {
-            // frame.
-            //TODO
+        // frame.
+        //TODO
         // }
         let total = fs.len();
         let mut items = Vec::new();
@@ -402,7 +515,7 @@ impl Instance {
                                     extra_data = Some(data);
                                 }
                             } else {
-                                f.summary = format!("Parse [{}] failed", _next);
+                                f.summary = format!("Parse [{_next}] failed");
                                 break;
                             }
                         }
@@ -420,23 +533,18 @@ impl Instance {
         }
         Ok("[]".into())
     }
-    
+
     pub fn conversation_count(&self) -> usize {
         self.ctx.conversation_list.len()
     }
-    pub fn conversations(&self, cri: Criteria) -> ListResult<VConversation> {
+    pub fn conversations(&self, cri: Criteria, filter: ConversationCriteria) -> ListResult<VConversation> {
         let Criteria { start, size } = cri;
-        let total = self.ctx.conversation_list.len();
-        let end = cmp::min(start + size, total);
-        if end <= start {
-            return ListResult::new(start, 0, vec![]);
+        if let Some(ip) = &filter.ip {
+            let c_list: Vec<&concept::Conversation> = self.ctx.conversation_list.iter().filter(|conv| conv.match_ip(ip)).collect();
+            conversation_list(start, size, c_list)
+        } else {
+            conversation_list(start, size, &self.ctx.conversation_list)
         }
-        let _data = &self.ctx.conversation_list[start..end];
-        let mut list = vec![];
-        for item in _data {
-            list.push(item.into());
-        }
-        ListResult::new(start, total, list)
     }
     pub fn connections(&self, conversation_index: usize, cri: Criteria) -> ListResult<VConnection> {
         if let Some(connects) = self.ctx.conversation_list.get(conversation_index) {
@@ -473,7 +581,7 @@ impl Instance {
                 }
             }
             let result = self._http_iter(&list);
-            return ListResult::new(start, total, result)
+            return ListResult::new(start, total, result);
         }
         let all_collections = &self.ctx.http_connections;
         let total = all_collections.len();
@@ -485,8 +593,54 @@ impl Instance {
         let list = self._http_iter(_data);
         ListResult::new(start, total, list)
     }
-    fn _http_iter<T>(&self, list: &[T]) -> Vec<VHttpConnection> where T: Borrow<HttpConntect> {
-        list.iter().map(|item| item.borrow().into(&self.ctx)).collect()
+    fn _udp_conversations(&self, ip: Option<String>) -> Vec<UDPConversation> {
+        let mut map = FastHashMap::<String, UDPConversation>::default();
+        for frame in &self.ctx.list {
+            if frame.has_proto(ProtoMask::UDP) {
+                if let Some((source, target)) = frame.addresses(&self.ctx) {
+                    if let Some((source_port, target_port)) = frame.ports {
+                        let index = frame.info.index as usize;
+                        let len = frame.info.len as usize;
+                        let time = frame.info.time;
+                        let mut add = || {
+                            let key = format!("{source}:{source_port}-{target}:{target_port}");
+                            if let Some(item) = map.get_mut(&key) {
+                                item.incr(len, time);
+                            } else {
+                                let mut item = UDPConversation::new(index, source.clone(), target.clone(), source_port, target_port);
+                                item.incr(len, time);
+                                map.insert(key, item);
+                            }
+                        };
+                        if let Some(_ip) = &ip {
+                            if *_ip == source || *_ip == target {
+                                add();
+                            }
+                        } else {
+                            add();
+                        }
+                    }
+                }
+            }
+        }
+        map.values().cloned().collect()
+    }
+    pub fn udp_conversations(&self, cri: Criteria, filter: Option<String>) -> ListResult<UDPConversation> {
+        let Criteria { start, size } = cri;
+        let list = self._udp_conversations(filter);
+        let total = list.len();
+        let end = cmp::min(start + size, total);
+        if end <= start {
+            return ListResult::new(start, 0, vec![]);
+        }
+        let data = list[start..end].to_vec();
+        ListResult::new(start, total, data)
+    }
+    fn _http_iter<T>(&self, list: &[T]) -> Vec<VHttpConnection>
+    where
+        T: Borrow<HttpConntect>,
+    {
+        list.iter().map(|item| item.borrow().conv(&self.ctx)).collect()
     }
 }
 pub mod concept;

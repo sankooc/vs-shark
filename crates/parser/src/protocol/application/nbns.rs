@@ -81,7 +81,7 @@ fn format_nbns_flags(flags: u16) -> Vec<String> {
         8 => "Refresh",
         _ => "Unknown",
     };
-    result.push(format!(".... {:04b} .... .... .... = Opcode: {} ({})", opcode, opcode_str, opcode));
+    result.push(format!(".... {opcode:04b} .... .... .... = Opcode: {opcode_str} ({opcode})"));
 
     // Authoritative Answer
     let aa = (flags & 0x0400) != 0;
@@ -136,7 +136,7 @@ fn format_nbns_flags(flags: u16) -> Vec<String> {
         7 => "Conflict",
         _ => "Unknown",
     };
-    result.push(format!(".... .... .... .... {:04b} = Reply code: {} ({})", rcode, rcode_str, rcode));
+    result.push(format!(".... .... .... .... {rcode:04b} = Reply code: {rcode_str} ({rcode})"));
 
     result
 }
@@ -147,7 +147,7 @@ impl Visitor {
     pub fn info(_: &Context, frame: &Frame) -> Option<String> {
         if let ProtocolInfoField::NBNS(transaction_id, is_response, name) = &frame.protocol_field {
             let type_str = if *is_response { "response" } else { "query" };
-            return Some(format!("NetBIOS Name Service ({}) ID: 0x{:04x}, Name: {}", type_str, transaction_id, name));
+            return Some(format!("NetBIOS Name Service ({type_str}) ID: 0x{transaction_id:04x}, Name: {name}"));
         }
         None
     }
@@ -206,7 +206,7 @@ impl Visitor {
 
         // Set summary
         let type_str = if is_response { "response" } else { "query" };
-        field.summary = format!("NetBIOS Name Service ({}) ID: 0x{:04x}", type_str, transaction_id);
+        field.summary = format!("NetBIOS Name Service ({type_str}) ID: 0x{transaction_id:04x}");
         Ok(Protocol::None)
     }
 }
@@ -221,7 +221,7 @@ fn read_query_record(reader: &mut Reader, field: &mut Field) -> Result<()> {
     let name = add_field_format!(field, reader, parse_nbns_name(reader)?, "Name: {}");
     add_field_format_fn!(field, reader, reader.read16(true)?, rr_type);
     add_field_format_fn!(field, reader, reader.read16(true)?, rr_class);
-    field.summary = format!("Query: {}", name);
+    field.summary = format!("Query: {name}");
     Ok(())
 }
 
@@ -237,7 +237,7 @@ fn read_resource_record(reader: &mut Reader, field: &mut Field) -> Result<()> {
     } else {
         reader.forward(data_len as usize);
     }
-    field.summary = format!("Resource Record: {} type {} class {}", name, record_type, record_class);
+    field.summary = format!("Resource Record: {name} type {record_type} class {record_class}");
     Ok(())
 }
 
@@ -245,5 +245,5 @@ fn read_flag(bit: u16, field: &mut Field) {
     for flag_str in format_nbns_flags(bit) {
         add_field_label!(field, flag_str);
     }
-    field.summary = format!("Flags: 0x{:04x}", bit);
+    field.summary = format!("Flags: 0x{bit:04x}");
 }

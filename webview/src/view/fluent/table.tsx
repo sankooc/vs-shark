@@ -4,8 +4,10 @@ import Pagination from './pagination2';
 
 import { JSX, ReactNode, useEffect, useState } from "react";
 import { BreadItem } from "./common";
+import Empty from "./http/content/empty";
 interface GridProps<T> {
     columns: TableColumnDefinition<T>[];
+    header?: JSX.Element;
     filterComponent?: JSX.Element;
     onClick?: (item: T) => void;
     load: (page: number, filter: any) => Promise<IListResult<T>>;
@@ -19,14 +21,14 @@ interface PageProps {
     breads?: { icon?: Slot<'span'>, name: string, path?: string }[],
 }
 export function PageFrame(props: PageProps) {
-    return (<div className="flex flex-column page-card flex-grow-0">
+    return (<>
         {
             props.breads && props.breads.length > 0 && <BreadItem items={props.breads} ></BreadItem>
         }
         <Card className="flex flex-1 justify-content-between align-items-stretch page-card-item" style={{ margin: '0', padding: '5px', overflow: 'auto' }} orientation="vertical">
             {props.children}
         </Card>
-    </div>)
+    </>)
 }
 
 function Component<T>(props: GridProps<T>) {
@@ -51,9 +53,44 @@ function Component<T>(props: GridProps<T>) {
     useEffect(mountHook, [page]);
     const columnSizingOptions = { ...props.columnSizingOptions };
 
-    return (<div className="flex flex-column page-card">
+    let main = <Empty/>;
+    if(result.items && result.items.length > 0){
+        main = <>
+        <DataGrid items={result.items}
+            size={props.size}
+            resizableColumns
+            columnSizingOptions={columnSizingOptions}
+            columns={props.columns} style={{ minWidth: "auto", overflow: 'hidden auto' }} className="h-full w-full" >
+            <DataGridHeader style={{ paddingRight: scrollbarWidth, backgroundColor: '#458588' }}>
+                <DataGridRow>
+                    {({ renderHeaderCell }) => (
+                        <DataGridHeaderCell>{renderHeaderCell()}</DataGridHeaderCell>
+                    )}
+                </DataGridRow>
+            </DataGridHeader>
+            <DataGridBody<T>>
+                {({ item, rowId }) => (
+                    <DataGridRow key={rowId} onClick={() => {
+                        // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+                        props.onClick && props.onClick(item);
+                    }} >
+                        {({ renderCell }) => (
+                            <DataGridCell>{renderCell(item)}</DataGridCell>
+                        )}
+                    </DataGridRow>
+                )}
+            </DataGridBody>
+        </DataGrid>
+        <Pagination page={page} total={result.total} pageSize={props.pageSize} onPageChange={setPage} />
+    </>;
+    }
+
+    return (<>
         {
             props.breads && props.breads.length > 0 && <BreadItem items={props.breads} ></BreadItem>
+        }
+        {
+            props.header
         }
         {
             props.filterComponent && (<Card className="w-full flex justify-content-between align-items-center page-card-item" style={{margin: '0 0 5px 0'}} orientation="horizontal">
@@ -64,34 +101,9 @@ function Component<T>(props: GridProps<T>) {
             </Card>)
         }
         <Card className="flex flex-grow-1 justify-content-between align-items-center page-card-item" style={{ margin: '0px', padding: 0 }} orientation="vertical">
-            <DataGrid items={result.items}
-                size={props.size}
-                resizableColumns
-                columnSizingOptions={columnSizingOptions}
-                columns={props.columns} style={{ minWidth: "auto", overflow: 'hidden auto' }} className="h-full w-full" >
-                <DataGridHeader style={{ paddingRight: scrollbarWidth, backgroundColor: '#458588' }}>
-                    <DataGridRow>
-                        {({ renderHeaderCell }) => (
-                            <DataGridHeaderCell>{renderHeaderCell()}</DataGridHeaderCell>
-                        )}
-                    </DataGridRow>
-                </DataGridHeader>
-                <DataGridBody<T>>
-                    {({ item, rowId }) => (
-                        <DataGridRow key={rowId} onClick={() => {
-                            // eslint-disable-next-line @typescript-eslint/no-unused-expressions
-                            props.onClick && props.onClick(item);
-                        }} >
-                            {({ renderCell }) => (
-                                <DataGridCell>{renderCell(item)}</DataGridCell>
-                            )}
-                        </DataGridRow>
-                    )}
-                </DataGridBody>
-            </DataGrid>
-            <Pagination page={page} total={result.total} pageSize={props.pageSize} onPageChange={setPage} />
+            {main}
         </Card>
-    </div>)
+    </>)
 }
 
 export default Component;

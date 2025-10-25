@@ -1,16 +1,13 @@
 // Copyright (c) 2025 sankooc
-// 
+//
 // This file is part of the pcapview project.
 // Licensed under the MIT License - see https://opensource.org/licenses/MIT
 
-
 use serde::Serialize;
 
-use crate::common::{connection::{Connection}, enum_def::Protocol};
+use crate::common::{connection::Connection, enum_def::Protocol};
 
 use super::enum_def::PacketStatus;
-
-
 
 pub type FrameIndex = u32;
 pub type MessageIndex = u64;
@@ -28,7 +25,17 @@ pub struct Criteria {
 
 pub struct HttpCriteria {
     pub hostname: Option<String>,
-    // pub method: Option<String>,
+}
+
+#[derive(Default)]
+pub struct ConversationCriteria {
+    pub ip: Option<String>,
+}
+
+impl ConversationCriteria {
+    pub fn ip(ip: String) -> Self {
+        Self { ip: Some(ip) }
+    }
 }
 
 impl HttpCriteria {
@@ -54,6 +61,39 @@ pub struct InstanceConfig {
 //     }
 // }
 
+// pub struct HttpConnectInfo {
+//     host: String,
+//     method: String,
+//     status: String,
+//     content_type: String,
+// }
+
+// #[derive(Serialize)]
+// pub struct FrameStatData {
+//     pub time: u64,
+//     // pub tcp: [usize; 400],
+//     pub list: Vec<CounterItem>,
+// }
+
+// impl FrameStatData {
+//     pub fn new(time: u64, list: Vec<CounterItem>) -> Self {
+//         Self { time, list }
+//     }
+// }
+
+#[derive(Serialize)]
+pub struct LineChartData {
+    pub x_axis: Vec<u64>,
+    pub y_axis: Vec<String>,
+    pub data: Vec<Vec<u32>>,
+}
+
+impl LineChartData {
+    pub fn new(x_axis: Vec<u64>, y_axis: Vec<String>, data: Vec<Vec<u32>>) -> Self {
+        Self { x_axis, y_axis, data }
+    }
+}
+
 #[derive(Serialize)]
 pub struct CounterItem {
     pub key: String,
@@ -65,7 +105,6 @@ impl CounterItem {
         Self { key, count }
     }
 }
-
 
 #[derive(Serialize)]
 pub struct ProgressStatus {
@@ -93,7 +132,11 @@ impl<T> ListResult<T> {
         Self { start, total, items }
     }
     pub fn empty() -> Self {
-        Self { start: 0, total: 0, items: vec![] }
+        Self {
+            start: 0,
+            total: 0,
+            items: vec![],
+        }
     }
 }
 
@@ -121,7 +164,14 @@ pub struct FrameInfo {
 
 impl From<&FrameInternInfo> for FrameInfo {
     fn from(value: &FrameInternInfo) -> Self {
-        Self{ index: value.index, time: value.time, len: value.len, irtt: value.irtt, status: value.status, ..Default::default() }
+        Self {
+            index: value.index,
+            time: value.time,
+            len: value.len,
+            irtt: value.irtt,
+            status: value.status,
+            ..Default::default()
+        }
     }
 }
 
@@ -136,10 +186,15 @@ pub struct HttpHeadContinue {
 
 impl HttpHeadContinue {
     pub fn new(length: usize, chunked: bool, extra: Vec<u8>) -> HttpHeadContinue {
-        HttpHeadContinue { message_index: 0, frame_index: 0, length, chunked, extra }
+        HttpHeadContinue {
+            message_index: 0,
+            frame_index: 0,
+            length,
+            chunked,
+            extra,
+        }
     }
 }
-
 
 #[derive(Default, Clone, Serialize)]
 pub struct Field {
@@ -180,14 +235,16 @@ impl Field {
             children: Some(Vec::new()),
         }
     }
-    pub fn children() -> Self{
-        Self{children: Some(vec![]), ..Default::default()}
+    pub fn children() -> Self {
+        Self {
+            children: Some(vec![]),
+            ..Default::default()
+        }
     }
     pub fn with_children_reader(reader: &super::io::Reader) -> Field {
         Field::with_children(String::from(""), reader.cursor, 0)
     }
 }
-
 
 pub struct Conversation {
     pub key: usize,
@@ -222,6 +279,9 @@ impl Conversation {
             true => &mut self.primary_statistic,
             false => &mut self.second_statistic,
         }
+    }
+    pub fn match_ip(&self, ip: &str) -> bool {
+        self.primary == ip || self.second == ip
     }
 }
 
@@ -258,7 +318,38 @@ pub struct VConversation {
     pub connects: usize,
 }
 
-
+#[derive(Serialize, Clone)]
+pub struct UDPConversation {
+    pub index: usize,
+    pub sender: String,
+    pub receiver: String,
+    pub sender_port: u16,
+    pub receiver_port: u16,
+    pub packets: u32,
+    pub bytes: usize,
+    pub records: Vec<(u64, usize)>,
+    // pub first_time: u64,
+    // pub last_time: u64,
+}
+impl UDPConversation {
+    pub fn new(index: usize, sender: String, receiver: String, sender_port: u16, receiver_port: u16) -> Self {
+        Self {
+            index,
+            sender,
+            receiver,
+            sender_port,
+            receiver_port,
+            packets: 0,
+            bytes: 0,
+            records: vec![],
+        }
+    }
+    pub fn incr(&mut self, mount: usize, time: u64) {
+        self.packets += 1;
+        self.bytes += mount;
+        self.records.push((time, mount ));
+    }
+}
 
 #[derive(Serialize, Default, Clone)]
 pub struct TCPStatistic {
@@ -268,7 +359,6 @@ pub struct TCPStatistic {
     pub retransmission: u32,
     pub invalid: u32,
 }
-
 
 impl TCPStatistic {
     pub fn append(&mut self, other: &TCPStatistic) {
@@ -292,7 +382,7 @@ impl From<&Connection> for VConnection {
         let protocol = match value.protocol {
             Protocol::HTTP => "http".into(),
             Protocol::TLS => "tls".into(),
-            _ => "".into()
+            _ => "".into(),
         };
         Self {
             primary: value.primary().into(),
@@ -301,7 +391,6 @@ impl From<&Connection> for VConnection {
         }
     }
 }
-
 
 #[derive(Serialize, Default, Clone)]
 pub struct VEndpoint {

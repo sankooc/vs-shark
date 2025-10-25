@@ -25,7 +25,7 @@ export const useStore = create<PcapState>()((set, get) => {
   onMessage("message", (e: MessageEvent) => {
     const data = e.data;
     if (data.type) {
-      _log("server accept", data.type);
+      // _log("server accept", data.type);
       worker.postMessage(data);
     }
   });

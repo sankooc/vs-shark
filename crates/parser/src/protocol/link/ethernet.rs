@@ -31,6 +31,7 @@ impl EthernetVisitor {
         let key = quick_hash(data);
         frame.address_field = AddressField::Mac(key);
         frame.protocol_field = ProtocolInfoField::Ethernet(key);
+        frame.add_proto(crate::common::ProtoMask::ETHERNET);
         if let Some(cache) = ctx.ethermap.get(&key) {
             Ok(ethernet_protocol_mapper(cache.ptype))
         } else {
@@ -55,7 +56,7 @@ impl EthernetVisitor {
         } else {
             add_field_backstep!(field, reader, 2, format!("Type: {} ({:#06x})", etype_mapper(ptype), ptype));
         }
-        field.summary = format!("Ethernet II, Src: {}, Dst: {}", source, target);
+        field.summary = format!("Ethernet II, Src: {source}, Dst: {target}");
         Ok(ethernet_protocol_mapper(ptype))
     }
 }

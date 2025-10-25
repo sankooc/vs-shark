@@ -13,7 +13,7 @@ pub enum BpfExpr {
 }
 
 pub fn compile_expression(expr: &str) -> Result<BpfExpr> {
-    let tokens: Vec<&str> = expr.trim().split_whitespace().collect();
+    let tokens: Vec<&str> = expr.split_whitespace().collect();
     if tokens.is_empty() {
         bail!("Expression cannot be empty");
     }

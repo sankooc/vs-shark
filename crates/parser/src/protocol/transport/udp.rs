@@ -46,7 +46,7 @@ impl Visitor {
                 }
                 _ => 0,
             };
-            return Some(format!("{} → {} Len={}", source_port, target_port, payload_len));
+            return Some(format!("{source_port} → {target_port} Len={payload_len}"));
         }
         None
     }
@@ -56,12 +56,10 @@ impl Visitor {
         let target_port = reader.read16(true)?;
         let length = reader.read16(true)?;
         let _checksum = reader.read16(true)?;
-
         frame.ports = Some((source_port, target_port));
         frame.protocol_field = ProtocolInfoField::UDP(length);
-
-        
         let next_protocol = detect_protocol(source_port, target_port);
+        frame.add_proto(crate::common::ProtoMask::UDP);
         Ok(next_protocol)
     }
 
@@ -71,7 +69,7 @@ impl Visitor {
         add_field_format!(field, reader, reader.read16(true)?, "Length: {}");
         add_field_format!(field, reader, reader.read16(true)?, "Checksum: {:#06x} [unverified]");
         let next_protocol = detect_protocol(source_port, target_port);
-        field.summary = format!("User Datagram Protocol, Src Port: {}, Dst Port: {}", source_port, target_port);
+        field.summary = format!("User Datagram Protocol, Src Port: {source_port}, Dst Port: {target_port}");
         Ok(next_protocol)
     }
 }

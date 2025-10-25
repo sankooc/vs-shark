@@ -88,7 +88,7 @@ fn format_dns_flags(flags: u16) -> Vec<String> {
         5 => "Update",
         _ => "Unknown",
     };
-    result.push(format!(".... {:04b} .... .... .... = Opcode: {} ({})", opcode, opcode_str, opcode));
+    result.push(format!(".... {opcode:04b} .... .... .... = Opcode: {opcode_str} ({opcode})"));
 
     // Authoritative Answer
     let aa = (flags & 0x0400) != 0;
@@ -128,7 +128,7 @@ fn format_dns_flags(flags: u16) -> Vec<String> {
 
     // Z (Reserved)
     let z = (flags & 0x0070) >> 4;
-    result.push(format!(".... .... .... .{:03b} .... = Reserved: {}", z, z));
+    result.push(format!(".... .... .... .{z:03b} .... = Reserved: {z}"));
 
     // Response code
     let rcode = flags & 0x000F;
@@ -141,7 +141,7 @@ fn format_dns_flags(flags: u16) -> Vec<String> {
         5 => "Refused",
         _ => "Unknown",
     };
-    result.push(format!(".... .... .... .... {:04b} = Reply code: {} ({})", rcode, rcode_str, rcode));
+    result.push(format!(".... .... .... .... {rcode:04b} = Reply code: {rcode_str} ({rcode})"));
 
     result
 }
@@ -152,10 +152,10 @@ impl Visitor {
     pub fn info(_: &Context, frame: &Frame) -> Option<String> {
         match &frame.protocol_field {
             ProtocolInfoField::DnsRESPONSE(transaction_id) => {
-                Some(format!("Domain Name System (response) ID: 0x{:04x}", transaction_id))
+                Some(format!("Domain Name System (response) ID: 0x{transaction_id:04x}"))
             }
             ProtocolInfoField::DnsQUERY(transaction_id) => {
-                Some(format!("Domain Name System (query) ID: 0x{:04x}", transaction_id))
+                Some(format!("Domain Name System (query) ID: 0x{transaction_id:04x}"))
             }
             _ => None,
         }
@@ -171,6 +171,7 @@ impl Visitor {
         } else {
             frame.protocol_field = ProtocolInfoField::DnsQUERY(transaction_id);
         }
+        frame.add_proto(crate::common::ProtoMask::DNS);
         Ok(Protocol::None)
     }
 
@@ -182,7 +183,7 @@ impl Visitor {
         let flags = reader.read16(true)?;
         let is_response = (flags & 0x8000) != 0;
 
-        let mut flags_field = Field::with_children(format!("Flags: 0x{:04x}", flags), reader.cursor - 2, 2);
+        let mut flags_field = Field::with_children(format!("Flags: 0x{flags:04x}"), reader.cursor - 2, 2);
 
         for flag_str in format_dns_flags(flags) {
             add_field_backstep!(flags_field, reader,2, flag_str);
@@ -232,7 +233,7 @@ impl Visitor {
 
         // Set summary
         let type_str = if is_response { "response" } else { "query" };
-        field.summary = format!("Domain Name System ({}) ID: 0x{:04x}", type_str, transaction_id);
+        field.summary = format!("Domain Name System ({type_str}) ID: 0x{transaction_id:04x}");
         Ok(Protocol::None)
     }
 }
@@ -243,7 +244,7 @@ fn rr_class(t: u16) -> String {
     format!("Class: {} ({})", dns_class_mapper(t), t)
 }
 fn rr_ttl(t: u32) -> String {
-    format!("Time to live: {} seconds", t)
+    format!("Time to live: {t} seconds")
 }
 
 fn parse_query_field(reader: &mut Reader, field: &mut Field, start_offset: usize) -> Result<()> {
@@ -286,9 +287,9 @@ fn parese_resource_record_field(reader: &mut Reader, field: &mut Field, start_of
                     if data_len == 4 {
                         let _cotent = reader.slice(data_len, true)?;
                         let ip = Ipv4Addr::from(<[u8; 4]>::try_from(_cotent).unwrap());
-                        format!("IPv4 address: {}", ip)
+                        format!("IPv4 address: {ip}")
                     } else {
-                        format!("Data (length: {})", data_len)
+                        format!("Data (length: {data_len})")
                     }
                 }
                 28 => {
@@ -296,25 +297,25 @@ fn parese_resource_record_field(reader: &mut Reader, field: &mut Field, start_of
                     if data_len == 16 {
                         let _cotent = reader.slice(data_len, true)?;
                         let ip_data = Ipv6Addr::from(<[u8; 16]>::try_from(_cotent).unwrap());
-                        format!("IPv6 address: {}", ip_data)
+                        format!("IPv6 address: {ip_data}")
                     } else {
-                        format!("Data (length: {})", data_len)
+                        format!("Data (length: {data_len})")
                     }
                 }
                 5 => {
                     // CNAME record
                     if let Ok(cname) = parse_dns_name(reader, start_offset) {
-                        format!("CNAME: {}", cname)
+                        format!("CNAME: {cname}")
                     } else {
-                        format!("Data (length: {})", data_len)
+                        format!("Data (length: {data_len})")
                     }
                 }
                 2 => {
                     // NS record
                     if let Ok(ns) = parse_dns_name(reader, start_offset) {
-                        format!("Name Server: {}", ns)
+                        format!("Name Server: {ns}")
                     } else {
-                        format!("Data (length: {})", data_len)
+                        format!("Data (length: {data_len})")
                     }
                 }
                 6 => {
@@ -337,9 +338,9 @@ fn parese_resource_record_field(reader: &mut Reader, field: &mut Field, start_of
                 12 => {
                     // PTR record
                     if let Ok(ptr) = parse_dns_name(reader, start_offset) {
-                        format!("Domain name pointer: {}", ptr)
+                        format!("Domain name pointer: {ptr}")
                     } else {
-                        format!("Data (length: {})", data_len)
+                        format!("Data (length: {data_len})")
                     }
                 }
                 15 => {
@@ -347,12 +348,12 @@ fn parese_resource_record_field(reader: &mut Reader, field: &mut Field, start_of
                     if reader.left() >= 2 {
                         let preference = reader.read16(true)?;
                         if let Ok(exchange) = parse_dns_name(reader, start_offset) {
-                            format!("Mail exchange: {} (preference: {})", exchange, preference)
+                            format!("Mail exchange: {exchange} (preference: {preference})")
                         } else {
                             format!("Preference: {}, Data (length: {})", preference, data_len - 2)
                         }
                     } else {
-                        format!("Data (length: {})", data_len)
+                        format!("Data (length: {data_len})")
                     }
                 }
                 16 => {
@@ -376,16 +377,16 @@ fn parese_resource_record_field(reader: &mut Reader, field: &mut Field, start_of
                             if !txt_data.is_empty() {
                                 txt_data.push_str(", ");
                             }
-                            txt_data.push_str(&format!("\"{}\"", txt));
+                            txt_data.push_str(&format!("\"{txt}\""));
                         }
 
                         remaining -= str_len + 1; // +1 for length byte
                     }
 
                     if !txt_data.is_empty() {
-                        format!("Text: {}", txt_data)
+                        format!("Text: {txt_data}")
                     } else {
-                        format!("Data (length: {})", data_len)
+                        format!("Data (length: {data_len})")
                     }
                 }
                 33 => {
@@ -396,16 +397,16 @@ fn parese_resource_record_field(reader: &mut Reader, field: &mut Field, start_of
                         let weight = reader.read16(true)?;
                         let port = reader.read16(true)?;
                         if let Ok(target) = parse_dns_name(reader, start_offset) {
-                            format!("Service: {}:{} (priority: {}, weight: {})", target, port, priority, weight)
+                            format!("Service: {target}:{port} (priority: {priority}, weight: {weight})")
                         } else {
                             format!("Priority: {}, Weight: {}, Port: {}, Data (length: {})", priority, weight, port, data_len - 6)
                         }
                     } else {
-                        format!("Data (length: {})", data_len)
+                        format!("Data (length: {data_len})")
                     }
                 }
                 _ => {
-                    format!("Data (length: {})", data_len)
+                    format!("Data (length: {data_len})")
                 }
             };
             reader.set(finish);

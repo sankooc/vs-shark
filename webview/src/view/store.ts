@@ -13,7 +13,7 @@ import {
   StatRequest,
   VRange,
 } from "../share/common";
-import { IFrameInfo, ICounterItem, IListResult, IProgressStatus, IVConnection, IVConversation, IVHttpConnection } from "../share/gen";
+import { IFrameInfo, IListResult, IProgressStatus, IVConnection, IVConversation, IVHttpConnection, IUDPConversation } from "../share/gen";
 import mitt from "mitt";
 
 
@@ -33,12 +33,13 @@ interface PcapState {
   request: <F>(data: any) => Promise<F>;
   requestData: (data: VRange) => Promise<DataResponse>;
   conversations: (data: any) => Promise<IListResult<IVConversation>>;
+  udps: (data: any) => Promise<IListResult<IUDPConversation>>;
   connections: (data: any) => Promise<IListResult<IVConnection>>;
   httpConnections: (data: any) => Promise<IListResult<IVHttpConnection>>;
   httpDetail: (data: IVHttpConnection) => Promise<MessageCompress[]>
   cachehttp: (conn: IVHttpConnection | null) => void;
   getHttpCache: () => IVHttpConnection | null;
-  stat: (request: StatRequest) => Promise<ICounterItem[]> ;
+  stat: (request: StatRequest) => Promise<any> ;
   // frameList: (page: number, size: number) => Promise<IListResult<IFrameInfo>>;
 }
 // const compute = (page: number, size: number): Pagination => {
@@ -108,6 +109,7 @@ export const useStore = create<PcapState>()((set) => {
       case ComType.CONVERSATIONS:
       case ComType.CONNECTIONS:
       case ComType.HTTP_CONNECTIONS:
+      case ComType.UDP_CONNECTIONS:
         emitter.emit(id, deserialize(body));
         break;
       case ComType.FRAME_SCOPE_RES:
@@ -146,6 +148,10 @@ export const useStore = create<PcapState>()((set) => {
       return doRequest<IListResult<IVConversation>>(req);
       // return Promise.resolve(convMock);
     },
+    udps: (data: any): Promise<IListResult<IUDPConversation>> => {
+      const req = new ComMessage(ComType.REQUEST, data);
+      return doRequest<IListResult<IUDPConversation>>(req);
+    },
     connections: (data: any): Promise<IListResult<IVConnection>> => {
       const req = new ComMessage(ComType.REQUEST, data);
       return doRequest<IListResult<IVConnection>>(req);
@@ -165,9 +171,9 @@ export const useStore = create<PcapState>()((set) => {
     getHttpCache: () => {
       return httpCache;
     },
-    stat: (request: StatRequest): Promise<ICounterItem[]> => {
+    stat: (request: StatRequest): Promise<any[]> => {
       const req = new ComMessage(ComType.STAT_REQ, request);
-      return doRequest<ICounterItem[]>(req);
+      return doRequest<any[]>(req);
     },
   };
 });

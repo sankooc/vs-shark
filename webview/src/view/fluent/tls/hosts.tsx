@@ -38,7 +38,7 @@ export default function Component() {
   }
   return (
     <PageFrame breads={breads}>
-      <Table arial-label="Default table" style={{ minWidth: "510px" }}>
+      <Table size="small" style={{ minWidth: "510px" }}>
         <TableHeader>
           <TableRow>
             <TableHeaderCell>

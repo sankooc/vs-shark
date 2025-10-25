@@ -73,7 +73,7 @@ export abstract class PCAPClient {
             this.emitMessage(ComMessage.new(ComType.FRAMES, rs, requestId));
             return;
           case "conversation":
-            rs = this.ctx.list_conversations(start, size);
+            rs = this.ctx.list_conversations(start, size, param.ip || '');
             this.emitMessage(ComMessage.new(ComType.CONVERSATIONS, rs, requestId));
             return;
           case "connection":
@@ -83,6 +83,10 @@ export abstract class PCAPClient {
           case "http_connection":
             rs = this.ctx.list_http(start, size, param.host || '', '');
             this.emitMessage(ComMessage.new(ComType.HTTP_CONNECTIONS, rs, requestId));
+            return;
+          case "udp":
+            rs = this.ctx.list_udp(start, size, param.ip || '');
+            this.emitMessage(ComMessage.new(ComType.UDP_CONNECTIONS, rs, requestId));
             return;
           default:
             return;

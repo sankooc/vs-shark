@@ -73,7 +73,7 @@ pub fn detail(protocol: Protocol, field: &mut Field, ctx: &Context, frame: &Fram
         Protocol::IEEE802_11 => link::ieee802_11::link_105::Visitor::detail(field, ctx, frame, reader),
         
         _ => {
-            field.summary = format!("Unimplement Protocol: {}", protocol);
+            field.summary = format!("Unimplement Protocol: {protocol}");
             return Ok((Protocol::None, None));
         },
     };

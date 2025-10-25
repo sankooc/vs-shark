@@ -14,20 +14,19 @@ pub fn t_protocol(protocol_type: u8) -> String {
 }
 
 pub fn t_traffic_class(header_field: u32, main_field: &mut Field) {
-    main_field.summary = format!("Metadata: 0x{:08x}", header_field);
+    main_field.summary = format!("Metadata: 0x{header_field:08x}");
     if let Some(children) = &mut main_field.children {
         let version = (header_field >> 28) & 0x0F;
         let traffic_class = ((header_field >> 20) & 0xFF) as u8;
         let flow_label = header_field & 0xFFFFF;
         
         children.push(Field::label(
-            format!("0110 .... .... .... .... .... .... .... = Version: {}", version),
+            format!("0110 .... .... .... .... .... .... .... = Version: {version}"),
             0, 1
         ));
         
         let mut tc_field = Field::label(
-            format!(".... {:08b} .... .... .... .... .... = Traffic Class: 0x{:02x}", 
-                   traffic_class, traffic_class),
+            format!(".... {traffic_class:08b} .... .... .... .... .... = Traffic Class: 0x{traffic_class:02x}"),
             0, 1
         );
         
@@ -36,13 +35,11 @@ pub fn t_traffic_class(header_field: u32, main_field: &mut Field) {
         
         let tc_children = vec![
             Field::label(
-                format!(".... {:06b}.. .... .... .... .... .... = Differentiated Services Codepoint: {} (0x{:02x})", 
-                      dscp, dscp, dscp),
+                format!(".... {dscp:06b}.. .... .... .... .... .... = Differentiated Services Codepoint: {dscp} (0x{dscp:02x})"),
                 0, 1
             ),
             Field::label(
-                format!(".... ......{:02b} .... .... .... .... .... = Explicit Congestion Notification: {} (0x{:01x})", 
-                      ecn, ecn, ecn),
+                format!(".... ......{ecn:02b} .... .... .... .... .... = Explicit Congestion Notification: {ecn} (0x{ecn:01x})"),
                 0, 1
             )
         ];
@@ -51,8 +48,7 @@ pub fn t_traffic_class(header_field: u32, main_field: &mut Field) {
         children.push(tc_field);
         
         children.push(Field::label(
-            format!(".... .... .... .... {:020b} = Flow Label: 0x{:05x}", 
-                   flow_label, flow_label),
+            format!(".... .... .... .... {flow_label:020b} = Flow Label: 0x{flow_label:05x}"),
             0, 1
         ));
     }
@@ -61,7 +57,7 @@ impl Visitor {
     pub fn info(ctx: &Context, frame: &Frame) -> Option<String> {
         if let AddressField::IPv6(key) = &frame.address_field {
             if let Some((_, source, target)) = ctx.ipv6map.get(key) {
-                return Some(format!("Internet Protocol Version 6, Src: {}, Dst: {}", source, target));
+                return Some(format!("Internet Protocol Version 6, Src: {source}, Dst: {target}"));
             }
         }
         None
@@ -71,7 +67,7 @@ impl Visitor {
         let data = reader.refer()?;
         let key: u64 = quick_hash(data);
         frame.address_field = AddressField::IPv6(key);
-
+        frame.add_proto(crate::common::ProtoMask::IPV6);
         if let Some(enty) = ctx.ipv6map.get(&key) {
             Ok(ip4_mapper(enty.0))
         } else {
@@ -95,7 +91,7 @@ impl Visitor {
         add_field_format!(field, reader, reader.read8()?, "Hop Limit: {}");
         let source = add_field_format!(field, reader, reader.read_ip6()?, "Source Address: {}");
         let target = add_field_format!(field, reader, reader.read_ip6()?, "Destination Address: {}");
-        field.summary = format!("Internet Protocol Version 6, Src: {}, Dst: {}", source, target);
+        field.summary = format!("Internet Protocol Version 6, Src: {source}, Dst: {target}");
         Ok(ip4_mapper(protocol_type))
     }
 }

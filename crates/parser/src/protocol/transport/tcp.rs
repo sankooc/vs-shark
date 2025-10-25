@@ -22,7 +22,7 @@ fn read_tcp_flag(reader: &mut Reader, field: &mut Field) -> Result<TcpFlagField>
     let flag_bit = reader.read16(true)?;
     let result = TcpFlagField::from(flag_bit);
     // let len = flag_bit >> 12;;
-    add_field_label_no_range!(field, read_bits(flag_bit, 0..4, |v| format!("Header Length: {}", v)));
+    add_field_label_no_range!(field, read_bits(flag_bit, 0..4, |v| format!("Header Length: {v}")));
     add_field_label_no_range!(field, read_bits(flag_bit, 4..7, |_v| "Reserved".into()));
     add_field_label_no_range!(field, read_bit(flag_bit, 7, "Accurate ECN", ("SET", "NOT SET")));
     add_field_label_no_range!(field, read_bit(flag_bit, 8, "Congestion Window Reduced", ("SET", "NOT SET")));
@@ -51,7 +51,7 @@ fn read_tcp_options(reader: &mut Reader, field: &mut Field) -> Result<bool> {
             break;
         }
     }
-    field.summary = format!("TCP Options ({})", count);
+    field.summary = format!("TCP Options ({count})");
     Ok(true)
 }
 
@@ -61,16 +61,16 @@ fn read_tcp_option(reader: &mut Reader, field: &mut Field) -> Result<u8> {
     add_field_backstep!(field, reader, 1, format!("Kind: {} ({})", sim, kind));
     match kind {
         0 => {
-            field.summary = format!("TCP Option - {} ({})", sim, kind);
+            field.summary = format!("TCP Option - {sim} ({kind})");
         }
         1 => {
-            field.summary = format!("TCP Option - {} ({})", sim, kind);
+            field.summary = format!("TCP Option - {sim} ({kind})");
         }
         2 => {
             let len = add_field_format!(field, reader, reader.read8()?, "Length {}");
             if len == 4 {
                 let mss = add_field_format!(field, reader, reader.read16(true)?, "MSS Value: {}");
-                field.summary = format!("TCP Option - Maximum segment size: {} bytes", mss);
+                field.summary = format!("TCP Option - Maximum segment size: {mss} bytes");
             } else if len > 2 {
                 reader.forward(2);
             }
@@ -79,7 +79,7 @@ fn read_tcp_option(reader: &mut Reader, field: &mut Field) -> Result<u8> {
             let len = add_field_format!(field, reader, reader.read8()?, "Length {}");
             if len == 3 {
                 let sup = add_field_format!(field, reader, reader.read8()?, "Shift: {}");
-                field.summary = format!("TCP Option - window scale: {}", sup);
+                field.summary = format!("TCP Option - window scale: {sup}");
             } else if len > 3 {
                 reader.forward((len - 2) as usize);
             }
@@ -117,11 +117,11 @@ fn read_tcp_option(reader: &mut Reader, field: &mut Field) -> Result<u8> {
                 let g = bit >> 15;
                 let v = bit & 0x7fff;
                 let unit = match g {
-                    1 => format!("{} minus", v),
-                    _ => format!("{} second", v),
+                    1 => format!("{v} minus"),
+                    _ => format!("{v} second"),
                 };
                 add_field_backstep!(field, reader, 2, unit.clone());
-                field.summary = format!("TCP Option - {}", unit);
+                field.summary = format!("TCP Option - {unit}");
             } else if len > 2 {
                 reader.forward((len - 2) as usize);
             }
@@ -172,6 +172,7 @@ impl Visitor {
         let range = reader.cursor..reader.cursor + left_size;
         let tcp_state = TCPStat::new(index, sequence, ack, crc, state, left_size as u16);
 
+        frame.add_proto(crate::common::ProtoMask::TCP);
         if let Ok(mut tcp_info) = ctx.get_connect(frame, source_port, target_port, tcp_state, ds, range) {
             tcp_info.flag_bit = flag_bit;
             frame.info.status = match &tcp_info.status {
