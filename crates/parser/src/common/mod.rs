@@ -15,7 +15,7 @@ use std::{
 use crate::{
     add_field_label_no_range,
     common::{
-        concept::{ConversationCriteria, HttpCriteria, UDPConversation, VConnection, VConversation, VHttpConnection},
+        concept::{ConversationCriteria, HttpCriteria, HttpMessageDetail, UDPConversation, VConnection, VConversation, VHttpConnection},
         connection::TcpFlagField,
         core::HttpConntect,
         util::date_str,
@@ -607,12 +607,12 @@ impl<T> Instance<T> where T: ResourceLoader {
         ListResult::new(start, total, list)
     }
     
-    pub fn http_detail(&self, index: usize) {
+    pub fn http_detail(&self, index: usize) -> Option<Vec<HttpMessageDetail>> {
         let loader = &self.loader;
         if let Some(http_connect) = self.ctx.http_connections.get(index) {
-            http_connect.convert_to_detail(loader);
+            http_connect.convert_to_detail(&self.ctx, loader).ok()
         } else {
-
+            None
         }
     }
 

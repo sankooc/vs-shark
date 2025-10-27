@@ -152,28 +152,29 @@ impl HttpConntect {
         rs
     }
 
-    fn to_detail(&self, loader: &dyn ResourceLoader, index: &Option<MessageIndex>, is_request: bool) -> Option<HttpMessageDetail> {
-        // if let Some(_index) = index {
-        //     ctx.http_messages.get(*_index as usize)
-        // } else {
-        //     None
-        // }
-    }
-    pub fn convert_to_detail(&self, ctx: &Context, loader: &dyn ResourceLoader) -> Result<()> {
-        let mut list = vec![];
-
-        if let Some(request_index) = &self.request {
+    fn to_detail(&self, ctx: &Context, loader: &dyn ResourceLoader, index: &Option<MessageIndex>, is_request: bool) -> Result<HttpMessageDetail> {
+        if let Some(request_index) = index {
             if let Some(message) = ctx.http_messages.get(*request_index as usize) {
                 let header_range = message.headers.to_range();
                 let header_data = loader.loads(&header_range)?;
                 let text = String::from_utf8_lossy(&header_data);
-                let headers: Vec<&str> = text.split("\r\n").collect();
-                
+                let headers = text.split("\r\n").map(|f|f.into()).collect();
+                let body_range = message.content.to_range();
+                let content = loader.loads(&body_range)?;
+                return Ok(HttpMessageDetail::new(is_request, headers, content));
             }
         }
-
-        Ok(())
-        // HttpMessageDetail
+        bail!("")
+    }
+    pub fn convert_to_detail(&self, ctx: &Context, loader: &dyn ResourceLoader) -> Result<Vec<HttpMessageDetail>> {
+        let mut list = vec![];
+        if let Ok(message) = self.to_detail(ctx, loader, &self.request, true) {
+            list.push(message);   
+        }
+        if let Ok(message) = self.to_detail(ctx, loader, &self.response, false) {
+            list.push(message);   
+        }
+        Ok(list)
     }
 
     pub fn info(&self, ctx: &Context) -> (String, String, String) {

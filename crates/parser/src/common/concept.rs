@@ -450,5 +450,11 @@ impl VHttpConnection {
 pub struct HttpMessageDetail {
     pub is_request: bool,
     pub headers: Vec<String>,
-    pub content: Option<Vec<u8>>
+    pub content: Vec<u8>,
+}
+
+impl HttpMessageDetail {
+    pub fn new(is_request: bool,headers: Vec<String>, content: Vec<u8>) -> Self {
+        Self { is_request, headers, content }
+    }
 }

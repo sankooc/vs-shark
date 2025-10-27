@@ -16,6 +16,9 @@ impl ResourceLoader for WASMLoader {
         wasm_log("load data");
         return Ok(vec![])
     }
+    fn loads(&self, _: &[std::ops::Range<usize>]) -> anyhow::Result<Vec<u8>> {
+        todo!("unimplement")
+    }
 }
 #[wasm_bindgen]
 pub struct WContext {
