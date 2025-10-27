@@ -239,6 +239,17 @@ export class PcapViewerProvider
   }
 }
 
+const self_ = global as any;
+
+self_.load_data = () => {
+  return new Uint8Array();
+};
+
+self_.wasm_log = (str: string) => {
+  console.log('[wasm]: ', str);
+};
+
+
 class WebviewCollection {
   private readonly _webviews = new Set<{
     readonly resource: string;

@@ -9,6 +9,7 @@ log.workspace = true
 crossterm.workspace = true
 ratatui.workspace = true
 pcap = { path = "../parser" }
+util = { path = "../util" }
 anyhow.workspace = true
 tui-tree-widget.workspace = true
 enum_dispatch.workspace = true

@@ -7,8 +7,9 @@ use std::{fs::File, io::BufReader};
 
 use pcap::common::concept::{ConversationCriteria, Criteria, Field, FrameIndex, FrameInfo, ListResult, ProgressStatus, VConnection, VConversation, VHttpConnection};
 use pcap::common::io::DataSource;
-use pcap::common::{trim_data, Instance};
+use pcap::common::{trim_data, Instance, ResourceLoader};
 use std::sync::mpsc::Sender;
+use util::{file_seek, file_seeks};
 
 use crate::MAX_CONTENT_SIZE;
 
@@ -36,6 +37,26 @@ pub enum PcapUICommand {
     HttpContent(VHttpConnection),
 }
 
+pub struct LocalResource {
+    filepath: String,
+    block_size: usize,
+}
+
+impl ResourceLoader for LocalResource {
+    fn load(&self, range: &Range<usize>) -> anyhow::Result<Vec<u8>> {
+        file_seek(&self.filepath, range)
+    }
+
+    fn loads(&self, ranges: &[Range<usize>]) -> anyhow::Result<Vec<u8>> {
+        file_seeks(&self.filepath, ranges)
+    }
+}
+
+impl LocalResource {
+    fn new(filepath: String, block_size: usize) -> Self {
+        LocalResource { filepath, block_size }
+    }
+}
 
 pub struct HttpMessageWrap {
     pub headers: Vec<String>,
@@ -118,7 +139,8 @@ impl Service {
     }
     pub fn run(&mut self) -> anyhow::Result<()> {
         let batch_size = 1024 * 256;
-        let mut ins = Instance::new(batch_size);
+        let loader = LocalResource::new(self.fname.clone(), batch_size);
+        let mut ins = Instance::new(batch_size, loader);
         let mut reader = BufReader::new(&mut self.file);
         let mut pos = 0;
         let mut buffer = vec![0; batch_size];
@@ -134,9 +156,8 @@ impl Service {
                     }
                     PcapUICommand::FrameData(index) => {
                         if let Some(frame) = ins.frame(index as usize) {
-                            if let Some(range) = frame.range() {
-                                let data = seek2(&self.fname, range)?;
-                                if let Some((rs, source, extra)) = ins.select_frame(index as usize, data) {
+                            if let Some(_range) = frame.range() {
+                                if let Some((rs, source, extra)) = ins.select_frame(index as usize) {
                                     let ds = if let Some(_source) = source {
                                         let range = frame.frame_range().unwrap();
                                         let data_source = DataSource::create(_source, range);
@@ -147,7 +168,6 @@ impl Service {
                                     self.sender.send(PcapEvent::FrameData(rs, ds, extra)).unwrap();
                                 }
                             }
-                            // self.sender.send(PcapEvent::FrameData(frame)).unwrap();
                         }
                     }
                     PcapUICommand::ConversationList(start, size) => {
@@ -228,7 +248,6 @@ impl Service {
 }
 
 fn parse_content_type(content_type_str: &str) -> Language {
-
     let main_type = content_type_str.to_lowercase();
 
     if main_type.is_empty() {
@@ -265,7 +284,7 @@ fn parse_http_message(head: &str, header: Vec<u8>, entity: Vec<u8>) -> HttpMessa
     let (mut headers, mime, encoding) = parse_header_content(header);
     headers.insert(0, head.to_string());
     let body = parse_body_with_mime(entity, &mime, encoding);
-    HttpMessageWrap::new(headers, mime,body)
+    HttpMessageWrap::new(headers, mime, body)
 }
 
 fn parse_header_content(header_raw: Vec<u8>) -> (Vec<String>, Language, HttpEncoding) {
@@ -317,7 +336,9 @@ enum HttpEncoding {
 }
 
 fn parse_body_with_mime(body_raw: Vec<u8>, mime: &Language, encoding: HttpEncoding) -> Option<String> {
-    if let Language::Binary = &mime { return None }
+    if let Language::Binary = &mime {
+        return None;
+    }
     let decoded_data = match encoding {
         HttpEncoding::None => body_raw,
         HttpEncoding::Gzip => {

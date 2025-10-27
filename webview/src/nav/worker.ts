@@ -3,6 +3,17 @@ import { ComLog, ComMessage, ComType, VRange } from "../share/common";
 import init from "rshark";
 import { _log } from "../view/util";
 const ready = init();
+
+
+const self_ = self as any;
+
+self_.load_data = () => {
+  return new Uint8Array();
+};
+
+self_.wasm_log = (str: string) => {
+  console.log('[wasm]: ', str);
+};
 ready.then((rs) => {
   _log("wasm loaded", rs);
 

@@ -10,20 +10,6 @@ import Empty from "./content/empty";
 
 import {PageFrame} from '../table';
 
-
-// const useStyles = makeStyles({
-//     customTree: {
-//         '--spacingHorizontalXXL': '12px',
-//         '--fontWeightRegular': 'bold',
-//         'padding': '5px',
-//     },
-//     tab: {
-//         button: {
-//             color: 'red'
-//         }
-//     }
-// });
-
 export default function ConnectionList() {
 
     const httpDetail = useStore((state) => state.httpDetail);

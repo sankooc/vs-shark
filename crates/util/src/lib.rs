@@ -1,6 +1,7 @@
 use std::{
     fs::File,
-    io::{ErrorKind, Read},
+    io::{ErrorKind, Read, Seek, SeekFrom},
+    ops::Range,
 };
 
 pub struct FileBatchReader {
@@ -38,6 +39,42 @@ impl FileBatchReader {
         let extra = self.file_size.saturating_sub(n as u64);
         Ok((extra, data))
     }
+}
+
+pub fn file_seek(fname: &str, range: &Range<usize>) -> anyhow::Result<Vec<u8>> {
+    let offset = range.start as u64;
+    let size = range.end - range.start;
+    let mut file = File::open(fname)?;
+    file.seek(SeekFrom::Start(offset))?;
+    let mut buffer = vec![0; size];
+    file.read_exact(&mut buffer)?;
+    Ok(buffer)
+}
+
+pub fn file_seeks(fname: &str, ranges: &[Range<usize>]) -> anyhow::Result<Vec<u8>> {
+    if ranges.is_empty() {
+        return Ok(vec![]);
+    }
+    let mut file = File::open(fname)?;
+    let max = ranges.iter().map(|r| r.end - r.start).sum();
+
+    let mut rs = Vec::with_capacity(max);
+    for r in ranges {
+        let start = r.start;
+        let end: usize = r.end;
+        file.seek(SeekFrom::Start(start as u64))?;
+        let left = max - rs.len();
+        let _size = end - start;
+        let size = std::cmp::min(left, _size);
+        let mut buffer = vec![0; size];
+        file.read_exact(&mut buffer)?;
+        rs.extend_from_slice(&buffer);
+        if rs.len() >= max {
+            break;
+        }
+    }
+
+    Ok(rs)
 }
 
 // #[cfg(test)]

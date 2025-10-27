@@ -19,6 +19,7 @@ pcap = { path = "../parser" }
 instant= {workspace = true, features = ["wasm-bindgen"]}
 serde = { workspace = true, features = ["derive"]}
 serde_json.workspace = true
+anyhow.workspace = true
 flate2 = "1.0"
 brotli = "3.3"
 zstd = "0.12"

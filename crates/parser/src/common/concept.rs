@@ -401,9 +401,6 @@ pub struct VEndpoint {
 
 #[derive(Serialize, Default, Clone)]
 pub struct VHttpConnection {
-    // pub status: String,
-    // pub method: String,
-    // pub url: String,
     pub request: Option<String>,
     pub response: Option<String>,
     pub rt: String,
@@ -446,4 +443,12 @@ impl VHttpConnection {
         }
         NA
     }
+}
+
+
+
+pub struct HttpMessageDetail {
+    pub is_request: bool,
+    pub headers: Vec<String>,
+    pub content: Option<Vec<u8>>
 }

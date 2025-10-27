@@ -144,6 +144,12 @@ impl ProtoMask {
     }
 }
 
+
+pub trait ResourceLoader {
+    fn load(&self, range: &Range<usize>) -> anyhow::Result<Vec<u8>>;
+    fn loads(&self, ranges: &[Range<usize>])-> anyhow::Result<Vec<u8>>;
+}
+
 #[derive(Default)]
 pub struct Frame {
     pub range: Option<Range<usize>>,
@@ -164,6 +170,9 @@ impl Frame {
     pub fn new() -> Self {
         Self { ..Default::default() }
     }
+    /**
+     * frame range with segments
+     */
     pub fn range(&self) -> Option<Range<usize>> {
         if let ProtocolInfoField::TLS(tls_list) = &self.protocol_field {
             if !tls_list.list.is_empty() {
@@ -242,18 +251,21 @@ impl EthernetCache {
     }
 }
 
-pub struct Instance {
+
+pub struct Instance<T> where T: ResourceLoader {
+    loader: T,
     ds: DataSource,
     file_type: FileType,
     ctx: Context,
     last: usize,
 }
 
-impl Instance {
-    pub fn new(batch_size: usize) -> Instance {
+impl<T> Instance<T> where T: ResourceLoader {
+    pub fn new(batch_size: usize, loader: T) -> Self {
         let size = cmp::max(batch_size, 1024 * 128);
         let ds = DataSource::new(size, 0);
         Self {
+            loader,
             ds,
             file_type: FileType::NONE,
             ctx: Context::new(),
@@ -302,7 +314,7 @@ impl Instance {
             match rs {
                 Ok((next, _frame)) => {
                     if let Some(frame) = _frame {
-                        Instance::parse_packet(cxt, frame, ds);
+                        Instance::<T>::parse_packet(cxt, frame, ds);
                     }
                     reader.cursor = next;
                 }
@@ -395,7 +407,7 @@ where
     ListResult::new(start, total, list)
 }
 
-impl Instance {
+impl<T> Instance<T> where T: ResourceLoader {
     pub fn get_count(&self, catelog: &str) -> usize {
         match catelog {
             "frame" => self.ctx.list.len(),
@@ -487,11 +499,12 @@ impl Instance {
         add_field_label_no_range!(f, format!("Capture length: {}", size));
         f
     }
-    pub fn select_frame(&self, index: usize, data: Vec<u8>) -> Option<(Vec<Field>, Option<Vec<u8>>, Option<Vec<u8>>)> {
+    pub fn select_frame(&self, index: usize) -> Option<(Vec<Field>, Option<Vec<u8>>, Option<Vec<u8>>)> {
         let mut extra_data = None;
 
         if let Some(frame) = self.frame(index) {
             if let Some(range) = frame.range() {
+                let data = self.loader.load(&range).unwrap();// TODO
                 let ds: DataSource = DataSource::create(data, range);
                 let rg = frame.frame_range().unwrap();
                 let mut reader = Reader::new_sub(&ds, rg).unwrap();
@@ -527,8 +540,8 @@ impl Instance {
         None
     }
 
-    pub fn select_frame_json(&self, index: usize, data: Vec<u8>) -> Result<String, Error> {
-        if let Some((list, _, _)) = self.select_frame(index, data) {
+    pub fn select_frame_json(&self, index: usize) -> Result<String, Error> {
+        if let Some((list, _, _)) = self.select_frame(index) {
             return serde_json::to_string(&list);
         }
         Ok("[]".into())
@@ -570,7 +583,7 @@ impl Instance {
             let _hostname = fil.hostname.unwrap();
             let mut total = 0;
             let mut list = vec![];
-            for item in &self.ctx.http_connections {
+            for (index, item) in self.ctx.http_connections.iter().enumerate() {
                 if let Some(hn) = item.hostname.clone() {
                     if hn.contains(&_hostname) {
                         total += 1;
@@ -593,6 +606,16 @@ impl Instance {
         let list = self._http_iter(_data);
         ListResult::new(start, total, list)
     }
+    
+    pub fn http_detail(&self, index: usize) {
+        let loader = &self.loader;
+        if let Some(http_connect) = self.ctx.http_connections.get(index) {
+            http_connect.convert_to_detail(loader);
+        } else {
+
+        }
+    }
+
     fn _udp_conversations(&self, ip: Option<String>) -> Vec<UDPConversation> {
         let mut map = FastHashMap::<String, UDPConversation>::default();
         for frame in &self.ctx.list {
@@ -636,9 +659,9 @@ impl Instance {
         let data = list[start..end].to_vec();
         ListResult::new(start, total, data)
     }
-    fn _http_iter<T>(&self, list: &[T]) -> Vec<VHttpConnection>
+    fn _http_iter<K>(&self, list: &[K]) -> Vec<VHttpConnection>
     where
-        T: Borrow<HttpConntect>,
+        K: Borrow<HttpConntect>,
     {
         list.iter().map(|item| item.borrow().conv(&self.ctx)).collect()
     }

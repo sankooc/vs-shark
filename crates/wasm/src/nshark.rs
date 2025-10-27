@@ -1,22 +1,34 @@
 use js_sys::Uint8Array;
 use pcap::common::{
-    Instance, concept::{ConversationCriteria, Criteria, HttpCriteria}
+    concept::{ConversationCriteria, Criteria, HttpCriteria}, Instance, ResourceLoader
 };
 use wasm_bindgen::prelude::*;
 
-use crate::entity::{parse_http_message, Conf, FrameRange, FrameResult};
+use crate::entity::{parse_http_message, Conf, FrameRange, FrameResult, Range};
 
+
+pub struct WASMLoader {
+
+}
+
+impl ResourceLoader for WASMLoader {
+    fn load(&self, _range: &std::ops::Range<usize>) -> anyhow::Result<Vec<u8>> {
+        wasm_log("load data");
+        return Ok(vec![])
+    }
+}
 #[wasm_bindgen]
 pub struct WContext {
-    ctx: Box<Instance>,
+    ctx: Instance<WASMLoader>,
 }
 
 #[wasm_bindgen]
 impl WContext {
     #[wasm_bindgen(constructor)]
     pub fn new(conf: Conf) -> WContext {
-        let ins = Instance::new(conf.batch_size());
-        WContext { ctx: Box::new(ins) }
+        let loader= WASMLoader{};
+        let ins = Instance::new(conf.batch_size(), loader);
+        WContext { ctx: ins }
     }
 
     #[wasm_bindgen]
@@ -58,20 +70,20 @@ impl WContext {
     }
 
     #[wasm_bindgen]
-    pub fn select(&self, catelog: String, index: usize, s: &Uint8Array) -> String {
+    pub fn select(&self, catelog: String, index: usize) -> String {
         match catelog.as_str() {
             "frame" => {
-                let slice = s.to_vec();
-                self.ctx.select_frame_json(index, slice).unwrap()
+                // let slice = s.to_vec();
+                self.ctx.select_frame_json(index).unwrap()
             }
             _ => "{}".into(),
         }
     }
 
     #[wasm_bindgen]
-    pub fn select_frame(&self, index: usize, s: &Uint8Array) -> FrameResult {
-        let slice = s.to_vec();
-        if let Some((list, _, extra)) = self.ctx.select_frame(index, slice) {
+    pub fn select_frame(&self, index: usize) -> FrameResult {
+        // let slice = s.to_vec();
+        if let Some((list, _, extra)) = self.ctx.select_frame(index) {
             let data = serde_json::to_string(&list).unwrap();
             let rs = FrameResult::new(data, extra);
             return rs;
@@ -132,5 +144,12 @@ impl WContext {
 
 #[wasm_bindgen]
 pub fn load(conf: Conf) -> WContext {
+    wasm_log("start load wasm");
     WContext::new(conf)
+}
+
+#[wasm_bindgen]
+extern "C" {
+    fn load_data(r: Range) -> Uint8Array;
+    fn wasm_log(str: &str);
 }

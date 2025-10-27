@@ -12,8 +12,11 @@ use std::{
 use anyhow::{bail, Result};
 
 use crate::common::{
-    concept::{ConnectionIndex, Conversation, ConversationKey, CounterItem, FrameIndex, HttpConnectIndex, LineChartData, MessageIndex, Timestamp, VHttpConnection},
+    concept::{
+        ConnectionIndex, Conversation, ConversationKey, CounterItem, FrameIndex, HttpConnectIndex, HttpMessageDetail, LineChartData, MessageIndex, Timestamp, VHttpConnection,
+    },
     enum_def::{AddressField, Protocol},
+    ResourceLoader,
 };
 
 use super::{
@@ -43,6 +46,10 @@ impl SegmentData {
             SegmentData::Single(segment) => vec![(segment.range.start, segment.range.end)],
             SegmentData::Multiple(segments) => segments.iter().map(|segment| (segment.range.start, segment.range.end)).collect(),
         }
+    }
+    pub fn to_range(&self) -> Vec<Range<usize>> {
+        let ranges = self.to_vec();
+        ranges.iter().map(|(start, end)| *start..*end).collect::<Vec<Range<usize>>>()
     }
 }
 
@@ -143,6 +150,30 @@ impl HttpConntect {
         }
         rs.rt = if self.rt > 0 { format!("{}µs", self.rt) } else { "N/A".to_string() };
         rs
+    }
+
+    fn to_detail(&self, loader: &dyn ResourceLoader, index: &Option<MessageIndex>, is_request: bool) -> Option<HttpMessageDetail> {
+        // if let Some(_index) = index {
+        //     ctx.http_messages.get(*_index as usize)
+        // } else {
+        //     None
+        // }
+    }
+    pub fn convert_to_detail(&self, ctx: &Context, loader: &dyn ResourceLoader) -> Result<()> {
+        let mut list = vec![];
+
+        if let Some(request_index) = &self.request {
+            if let Some(message) = ctx.http_messages.get(*request_index as usize) {
+                let header_range = message.headers.to_range();
+                let header_data = loader.loads(&header_range)?;
+                let text = String::from_utf8_lossy(&header_data);
+                let headers: Vec<&str> = text.split("\r\n").collect();
+                
+            }
+        }
+
+        Ok(())
+        // HttpMessageDetail
     }
 
     pub fn info(&self, ctx: &Context) -> (String, String, String) {
@@ -579,8 +610,7 @@ impl Context {
                 }
             }
         }
-        
-    
+
         let data = LineChartData::new(series, protocols.iter().map(|f| (*f).into()).collect(), vec![tcp, udp, http, tls, other]);
         serde_json::to_string(&data).unwrap_or("{}".into())
     }
