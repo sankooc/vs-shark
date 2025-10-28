@@ -498,7 +498,7 @@ impl HttpMessageDetail {
     }
     pub fn get_text_content(&self) -> Option<String> {
         let len = self.content.len();
-        if len <= 0 {
+        if len == 0 {
             return None;
         }
         match self.text_type() {
@@ -575,7 +575,7 @@ fn decode_bytes(body_raw: &[u8], encoding: HttpEncoding) -> String {
         HttpEncoding::Deflate => {
             use flate2::read::DeflateDecoder;
             use std::io::Read;
-            let mut decoder = DeflateDecoder::new(&body_raw[..]);
+            let mut decoder = DeflateDecoder::new(body_raw);
             let mut decoded = Vec::new();
             match decoder.read_to_end(&mut decoded) {
                 Ok(_) => decoded,
@@ -586,7 +586,7 @@ fn decode_bytes(body_raw: &[u8], encoding: HttpEncoding) -> String {
             use brotli::Decompressor;
             use std::io::Read;
             let mut decoded = Vec::new();
-            match Decompressor::new(&body_raw[..], 4096).read_to_end(&mut decoded) {
+            match Decompressor::new(body_raw, 4096).read_to_end(&mut decoded) {
                 Ok(_) => decoded,
                 Err(_) => body_raw.to_vec(),
             }
@@ -594,8 +594,8 @@ fn decode_bytes(body_raw: &[u8], encoding: HttpEncoding) -> String {
         HttpEncoding::Zstd => {
             use std::io::Read;
             use zstd::stream::read::Decoder;
-            let Ok(mut decoder) = Decoder::new(&body_raw[..]) else {
-                return String::from_utf8_lossy(&body_raw).to_string();
+            let Ok(mut decoder) = Decoder::new(body_raw) else {
+                return String::from_utf8_lossy(body_raw).to_string();
             };
             let mut decoded = Vec::new();
             match decoder.read_to_end(&mut decoded) {

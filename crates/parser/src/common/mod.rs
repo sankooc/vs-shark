@@ -595,34 +595,7 @@ where
                 total += 1;
             }
         }
-        return ListResult::new(start, total, list);
-        // let Criteria { start, size } = cri;
-        // if let Some(fil) = filter {
-        //     let _hostname = fil.hostname.unwrap();
-        //     let mut total = 0;
-        //     let mut list = vec![];
-        //     for (index, item) in self.ctx.http_connections.iter().enumerate() {
-        //         if let Some(hn) = item.hostname.clone() {
-        //             if hn.contains(&_hostname) {
-        //                 total += 1;
-        //                 if list.len() < size {
-        //                     list.push(item);
-        //                 }
-        //             }
-        //         }
-        //     }
-        //     let result = self._http_iter(&list);
-        //     return ListResult::new(start, total, result);
-        // }
-        // let all_collections = &self.ctx.http_connections;
-        // let total = all_collections.len();
-        // let end = cmp::min(start + size, total);
-        // if end <= start {
-        //     return ListResult::new(start, 0, vec![]);
-        // }
-        // let _data = &all_collections[start..end];
-        // let list = self._http_iter(_data);
-        // ListResult::new(start, total, list)
+        ListResult::new(start, total, list)
     }
 
     pub fn http_detail(&self, index: usize) -> Option<Vec<HttpMessageDetail>> {
