@@ -1,5 +1,6 @@
 use std::sync::LazyLock;
 
+use pcap::common::concept::Language;
 use ratatui::{
     buffer::Buffer,
     layout::Rect,
@@ -14,7 +15,6 @@ use syntect::{
     util::LinesWithEndings,
 };
 
-use crate::engine::Language;
 
 static THEMES: LazyLock<ThemeSet> = LazyLock::new(|| {
     ThemeSet::load_defaults()

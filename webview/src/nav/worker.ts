@@ -1,15 +1,43 @@
 import { BATCH_SIZE, PCAPClient } from "../share/client";
 import { ComLog, ComMessage, ComType, VRange } from "../share/common";
-import init from "rshark";
+import init, { Range } from "rshark";
 import { _log } from "../view/util";
 const ready = init();
 
 
 const self_ = self as any;
+const g_map: any = {
 
-self_.load_data = () => {
+};
+self_.load_data = (_id: string, range: Range) => {
+  if (g_map.current?.data) {
+    return g_map.current.data.slice(range.start, range.end);
+  }
   return new Uint8Array();
 };
+
+self_.loads_data = (id: string, ranges: Range[]) => {
+  if (ranges.length === 0) {
+    return new Uint8Array(0);
+  }
+  const list = [];
+  for (const segment of ranges) {
+    list.push(self_.load_data(id, segment));
+  }
+  return concatLargeUint8Arrays(list);
+};
+
+function concatLargeUint8Arrays(arrays: Uint8Array[]): Uint8Array {
+  const totalLength = arrays.reduce((acc, arr) => acc + arr.length, 0);
+  const buffer = new ArrayBuffer(totalLength);
+  const result = new Uint8Array(buffer);
+  let offset = 0;
+  for (const arr of arrays) {
+    result.set(arr, offset);
+    offset += arr.length;
+  }
+  return result;
+}
 
 self_.wasm_log = (str: string) => {
   console.log('[wasm]: ', str);
@@ -40,11 +68,11 @@ ready.then((rs) => {
       newData.set(this.data, 0);
       newData.set(data, this.data.length);
       this.data = newData;
-      // this.data = Uint8Array.from([...this.data, ...data]);
     }
   }
 
   const client = new Client();
+  g_map.current = client;
   ctx.addEventListener("message", (event: MessageEvent<any>) => {
     const id = event.data?.id;
     const type = event.data?.type;

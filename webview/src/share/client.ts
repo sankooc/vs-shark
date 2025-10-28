@@ -18,7 +18,6 @@ function concatLargeUint8Arrays(arrays: Uint8Array[]): Uint8Array {
 }
 
 export abstract class PCAPClient {
-
   private emitter: Emitter<any> = mitt();
   private highPirityQueue: ComMessage<any>[] = [];
   private lowPirityQueue: ComMessage<any>[] = [];
@@ -29,7 +28,7 @@ export abstract class PCAPClient {
   info?: PcapFile;
   init(): void {
     if (!this.ctx) {
-      this.ctx = load(Conf.new(false, BATCH_SIZE));
+      this.ctx = load(Conf.new(Date.now() + '', false, BATCH_SIZE));
     }
   }
   private async update(data: Uint8Array): Promise<string> {
@@ -108,7 +107,8 @@ export abstract class PCAPClient {
           case "frame": {
             const range = this.ctx!.frame_range(index);
             const data = await this.pickData(range.data.start, range.data.end);
-            const frameResult = this.ctx.select_frame(index, data);
+            // const frameResult = this.ctx.select_frame(index, data);
+            const frameResult = this.ctx.select_frame(index);
             const rs: any = {};
             if (range.compact()) {
               rs.data = data;

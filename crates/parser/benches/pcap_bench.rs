@@ -4,7 +4,7 @@ use criterion::{criterion_group, criterion_main, Criterion};
 
 fn bench_batch(c: &mut Criterion) {
     
-    c.bench_function("parse_perform", |b: &mut criterion::Bencher<'_>| {
+    c.bench_function("parse_perform", |_b: &mut criterion::Bencher<'_>| {
         // let fname = "../../../pcaps/11.pcapng";
 
         // let batch_size = 1024 * 1024 * 4;

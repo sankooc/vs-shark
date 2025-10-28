@@ -40,7 +40,6 @@ impl Widget for &mut HexView<'_> {
         let start = self.state.start;
         let size = self.state.size;
         let range = start..start+size;
-        // let data = _data.2.clone();
         let len = data.len();
         if len == 0 {
             return;

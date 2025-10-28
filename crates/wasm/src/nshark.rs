@@ -8,16 +8,26 @@ use crate::entity::{parse_http_message, Conf, FrameRange, FrameResult, Range};
 
 
 pub struct WASMLoader {
-
+    id: String
+}
+impl WASMLoader {
+    pub fn new(id: String) -> Self {
+        Self{id}
+    }
+    pub fn id(&self) -> String {
+        self.id.clone()
+    }
 }
 
 impl ResourceLoader for WASMLoader {
-    fn load(&self, _range: &std::ops::Range<usize>) -> anyhow::Result<Vec<u8>> {
+    fn load(&self, r: &std::ops::Range<usize>) -> anyhow::Result<Vec<u8>> {
         wasm_log("load data");
-        return Ok(vec![])
+        let data = load_data(&self.id, r.into());
+        Ok(data.to_vec())
     }
-    fn loads(&self, _: &[std::ops::Range<usize>]) -> anyhow::Result<Vec<u8>> {
-        todo!("unimplement")
+    fn loads(&self, ranges: &[std::ops::Range<usize>]) -> anyhow::Result<Vec<u8>> {
+        let rs = ranges.iter().map(|f| f.into()).collect();
+        Ok(loads_data(&self.id, rs).to_vec())
     }
 }
 #[wasm_bindgen]
@@ -29,7 +39,7 @@ pub struct WContext {
 impl WContext {
     #[wasm_bindgen(constructor)]
     pub fn new(conf: Conf) -> WContext {
-        let loader= WASMLoader{};
+        let loader= WASMLoader::new(conf.id());
         let ins = Instance::new(conf.batch_size(), loader);
         WContext { ctx: ins }
     }
@@ -86,9 +96,9 @@ impl WContext {
     #[wasm_bindgen]
     pub fn select_frame(&self, index: usize) -> FrameResult {
         // let slice = s.to_vec();
-        if let Some((list, _, extra)) = self.ctx.select_frame(index) {
+        if let Some((list, source, extra)) = self.ctx.select_frame(index) {
             let data = serde_json::to_string(&list).unwrap();
-            let rs = FrameResult::new(data, extra);
+            let rs = FrameResult::new(data, source, extra);
             return rs;
         }
         FrameResult::empty()
@@ -153,6 +163,7 @@ pub fn load(conf: Conf) -> WContext {
 
 #[wasm_bindgen]
 extern "C" {
-    fn load_data(r: Range) -> Uint8Array;
+    fn load_data(id: &str, r: Range) -> Uint8Array;
+    fn loads_data(id: &str, r: Vec<Range>) -> Uint8Array;
     fn wasm_log(str: &str);
 }

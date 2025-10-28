@@ -116,7 +116,9 @@ impl ControlState for Page {
         match event.code {
             KeyCode::Enter => {
                 if let Some(item) = self.state.list.items.get(self.state.select) {
-                    return PcapUICommand::HttpContent(item.clone());
+                    // let index = item.index;
+                    return PcapUICommand::HttpDetail(item.index);
+                    // return PcapUICommand::HttpContent(item.clone());
                 }
             }
             KeyCode::Down => {

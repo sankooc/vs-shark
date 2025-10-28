@@ -12,11 +12,9 @@ use std::{
 use anyhow::{bail, Result};
 
 use crate::common::{
-    concept::{
-        ConnectionIndex, Conversation, ConversationKey, CounterItem, FrameIndex, HttpConnectIndex, HttpMessageDetail, LineChartData, MessageIndex, Timestamp, VHttpConnection,
-    },
-    enum_def::{AddressField, Protocol},
-    ResourceLoader,
+    ResourceLoader, concept::{
+        ConnectionIndex, Conversation, ConversationKey, CounterItem, FrameIndex, HttpConnectIndex, HttpCriteria, HttpMessageDetail, LineChartData, MessageIndex, Timestamp, VHttpConnection
+    }, enum_def::{AddressField, Protocol}
 };
 
 use super::{
@@ -111,6 +109,7 @@ pub struct HttpConntect {
     pub rt: Timestamp,
 }
 
+
 impl HttpConntect {
     pub fn to_message<'a>(&self, ctx: &'a Context, index: &Option<MessageIndex>) -> Option<&'a HttpMessage> {
         if let Some(_index) = index {
@@ -119,12 +118,12 @@ impl HttpConntect {
             None
         }
     }
-    pub fn conv(&self, ctx: &Context) -> VHttpConnection {
+    pub fn conv(&self, ctx: &Context, index: usize) -> VHttpConnection {
         let mut rs = VHttpConnection::default();
         if let Some(request_index) = &self.request {
             if let Some(message) = ctx.http_messages.get(*request_index as usize) {
-                rs.request_headers = message.headers.to_vec();
-                rs.request_body = message.content.to_vec();
+                // rs.request_headers = message.headers.to_vec();
+                // rs.request_body = message.content.to_vec();
                 rs.hostname = message.hostname.clone().unwrap_or("".to_string());
                 if let Some(ll) = &message.length {
                     rs.length = *ll;
@@ -137,8 +136,8 @@ impl HttpConntect {
         }
         if let Some(response_index) = &self.response {
             if let Some(message) = ctx.http_messages.get(*response_index as usize) {
-                rs.response_headers = message.headers.to_vec();
-                rs.response_body = message.content.to_vec();
+                // rs.response_headers = message.headers.to_vec();
+                // rs.response_body = message.content.to_vec();
                 if let Some(ll) = message.length {
                     rs.length = ll;
                 }
@@ -149,6 +148,7 @@ impl HttpConntect {
             }
         }
         rs.rt = if self.rt > 0 { format!("{}µs", self.rt) } else { "N/A".to_string() };
+        rs.index = index;
         rs
     }
 
@@ -158,7 +158,8 @@ impl HttpConntect {
                 let header_range = message.headers.to_range();
                 let header_data = loader.loads(&header_range)?;
                 let text = String::from_utf8_lossy(&header_data);
-                let headers = text.split("\r\n").map(|f|f.into()).collect();
+                let mut headers: Vec<String> = text.split("\r\n").map(|f| f.to_string()).filter(|f| !f.is_empty()).collect();
+                headers.insert(0, message.host.clone());
                 let body_range = message.content.to_range();
                 let content = loader.loads(&body_range)?;
                 return Ok(HttpMessageDetail::new(is_request, headers, content));
@@ -194,6 +195,17 @@ impl HttpConntect {
             content_type.clone()
         };
         (method, status, ct)
+    }
+
+    pub fn do_match(&self, filter: &Option<HttpCriteria>) -> bool{
+        if let Some(fil) = filter {
+            if let Some(_host) = &fil.hostname {
+                if let Some(hn) = &self.hostname {
+                    return hn.contains(_host);
+                }
+            }
+        }
+        true
     }
 }
 

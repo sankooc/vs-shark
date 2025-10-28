@@ -55,6 +55,7 @@ export interface IVEndpoint {
     statistic: ITCPStatistic;
 }
 export interface IVHttpConnection {
+    index: number,
     request?: string;
     response?: string;
     rt: string;

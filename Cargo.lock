@@ -923,9 +923,11 @@ version = "0.1.0"
 dependencies = [
  "ahash",
  "anyhow",
+ "brotli",
  "chrono",
  "criterion",
  "enum_dispatch",
+ "flate2",
  "log",
  "memchr",
  "rustc-hash",
@@ -935,6 +937,7 @@ dependencies = [
  "strum_macros 0.25.3",
  "thiserror",
  "util",
+ "zstd",
 ]
 
 [[package]]
@@ -942,18 +945,15 @@ name = "pcaps"
 version = "0.0.1"
 dependencies = [
  "anyhow",
- "brotli",
  "clap",
  "crossterm",
  "enum_dispatch",
- "flate2",
  "log",
  "pcap",
  "ratatui",
  "syntect",
  "tui-tree-widget",
  "util",
- "zstd",
 ]
 
 [[package]]

@@ -17,7 +17,6 @@ use crate::{
     common::{
         concept::{ConversationCriteria, HttpCriteria, HttpMessageDetail, UDPConversation, VConnection, VConversation, VHttpConnection},
         connection::TcpFlagField,
-        core::HttpConntect,
         util::date_str,
     },
     files::{pcap::PCAP, pcapng::PCAPNG},
@@ -144,10 +143,9 @@ impl ProtoMask {
     }
 }
 
-
 pub trait ResourceLoader {
     fn load(&self, range: &Range<usize>) -> anyhow::Result<Vec<u8>>;
-    fn loads(&self, ranges: &[Range<usize>])-> anyhow::Result<Vec<u8>>;
+    fn loads(&self, ranges: &[Range<usize>]) -> anyhow::Result<Vec<u8>>;
 }
 
 #[derive(Default)]
@@ -251,8 +249,10 @@ impl EthernetCache {
     }
 }
 
-
-pub struct Instance<T> where T: ResourceLoader {
+pub struct Instance<T>
+where
+    T: ResourceLoader,
+{
     loader: T,
     ds: DataSource,
     file_type: FileType,
@@ -260,7 +260,10 @@ pub struct Instance<T> where T: ResourceLoader {
     last: usize,
 }
 
-impl<T> Instance<T> where T: ResourceLoader {
+impl<T> Instance<T>
+where
+    T: ResourceLoader,
+{
     pub fn new(batch_size: usize, loader: T) -> Self {
         let size = cmp::max(batch_size, 1024 * 128);
         let ds = DataSource::new(size, 0);
@@ -407,7 +410,10 @@ where
     ListResult::new(start, total, list)
 }
 
-impl<T> Instance<T> where T: ResourceLoader {
+impl<T> Instance<T>
+where
+    T: ResourceLoader,
+{
     pub fn get_count(&self, catelog: &str) -> usize {
         match catelog {
             "frame" => self.ctx.list.len(),
@@ -501,10 +507,9 @@ impl<T> Instance<T> where T: ResourceLoader {
     }
     pub fn select_frame(&self, index: usize) -> Option<(Vec<Field>, Option<Vec<u8>>, Option<Vec<u8>>)> {
         let mut extra_data = None;
-
         if let Some(frame) = self.frame(index) {
             if let Some(range) = frame.range() {
-                let data = self.loader.load(&range).unwrap();// TODO
+                let data = self.loader.load(&range).unwrap(); // TODO
                 let ds: DataSource = DataSource::create(data, range);
                 let rg = frame.frame_range().unwrap();
                 let mut reader = Reader::new_sub(&ds, rg).unwrap();
@@ -579,34 +584,47 @@ impl<T> Instance<T> where T: ResourceLoader {
     }
     pub fn http_connections(&self, cri: Criteria, filter: Option<HttpCriteria>) -> ListResult<VHttpConnection> {
         let Criteria { start, size } = cri;
-        if let Some(fil) = filter {
-            let _hostname = fil.hostname.unwrap();
-            let mut total = 0;
-            let mut list = vec![];
-            for (index, item) in self.ctx.http_connections.iter().enumerate() {
-                if let Some(hn) = item.hostname.clone() {
-                    if hn.contains(&_hostname) {
-                        total += 1;
-                        if list.len() < size {
-                            list.push(item);
-                        }
-                    }
+        let mut total = 0;
+        let mut list = vec![];
+        for (index, item) in self.ctx.http_connections.iter().enumerate() {
+            let count = list.len();
+            if item.do_match(&filter) {
+                if total >= start && count < size {
+                    list.push(item.conv(&self.ctx, index));
                 }
+                total += 1;
             }
-            let result = self._http_iter(&list);
-            return ListResult::new(start, total, result);
         }
-        let all_collections = &self.ctx.http_connections;
-        let total = all_collections.len();
-        let end = cmp::min(start + size, total);
-        if end <= start {
-            return ListResult::new(start, 0, vec![]);
-        }
-        let _data = &all_collections[start..end];
-        let list = self._http_iter(_data);
-        ListResult::new(start, total, list)
+        return ListResult::new(start, total, list);
+        // let Criteria { start, size } = cri;
+        // if let Some(fil) = filter {
+        //     let _hostname = fil.hostname.unwrap();
+        //     let mut total = 0;
+        //     let mut list = vec![];
+        //     for (index, item) in self.ctx.http_connections.iter().enumerate() {
+        //         if let Some(hn) = item.hostname.clone() {
+        //             if hn.contains(&_hostname) {
+        //                 total += 1;
+        //                 if list.len() < size {
+        //                     list.push(item);
+        //                 }
+        //             }
+        //         }
+        //     }
+        //     let result = self._http_iter(&list);
+        //     return ListResult::new(start, total, result);
+        // }
+        // let all_collections = &self.ctx.http_connections;
+        // let total = all_collections.len();
+        // let end = cmp::min(start + size, total);
+        // if end <= start {
+        //     return ListResult::new(start, 0, vec![]);
+        // }
+        // let _data = &all_collections[start..end];
+        // let list = self._http_iter(_data);
+        // ListResult::new(start, total, list)
     }
-    
+
     pub fn http_detail(&self, index: usize) -> Option<Vec<HttpMessageDetail>> {
         let loader = &self.loader;
         if let Some(http_connect) = self.ctx.http_connections.get(index) {
@@ -659,12 +677,7 @@ impl<T> Instance<T> where T: ResourceLoader {
         let data = list[start..end].to_vec();
         ListResult::new(start, total, data)
     }
-    fn _http_iter<K>(&self, list: &[K]) -> Vec<VHttpConnection>
-    where
-        K: Borrow<HttpConntect>,
-    {
-        list.iter().map(|item| item.borrow().conv(&self.ctx)).collect()
-    }
+
 }
 pub mod concept;
 pub mod connection;

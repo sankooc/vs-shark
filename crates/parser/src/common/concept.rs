@@ -3,6 +3,7 @@
 // This file is part of the pcapview project.
 // Licensed under the MIT License - see https://opensource.org/licenses/MIT
 
+
 use serde::Serialize;
 
 use crate::common::{connection::Connection, enum_def::Protocol};
@@ -347,7 +348,7 @@ impl UDPConversation {
     pub fn incr(&mut self, mount: usize, time: u64) {
         self.packets += 1;
         self.bytes += mount;
-        self.records.push((time, mount ));
+        self.records.push((time, mount));
     }
 }
 
@@ -401,16 +402,17 @@ pub struct VEndpoint {
 
 #[derive(Serialize, Default, Clone)]
 pub struct VHttpConnection {
+    pub index: usize,
     pub request: Option<String>,
     pub response: Option<String>,
     pub rt: String,
     pub hostname: String,
     pub content_type: String,
     pub length: usize,
-    pub request_headers: Vec<(usize, usize)>,
-    pub request_body: Vec<(usize, usize)>,
-    pub response_headers: Vec<(usize, usize)>,
-    pub response_body: Vec<(usize, usize)>,
+    // pub request_headers: Vec<(usize, usize)>,
+    // pub request_body: Vec<(usize, usize)>,
+    // pub response_headers: Vec<(usize, usize)>,
+    // pub response_body: Vec<(usize, usize)>,
 }
 
 const NA: &str = "N/A";
@@ -445,7 +447,25 @@ impl VHttpConnection {
     }
 }
 
-
+#[derive(Clone, Copy)]
+pub enum Language {
+    Text,
+    Json,
+    JavaScript,
+    Css,
+    Html,
+    Xml,
+    Csv,
+    Yaml,
+    Binary,
+}
+pub enum HttpEncoding {
+    None,
+    Gzip,
+    Deflate,
+    Brotli,
+    Zstd,
+}
 
 pub struct HttpMessageDetail {
     pub is_request: bool,
@@ -454,7 +474,135 @@ pub struct HttpMessageDetail {
 }
 
 impl HttpMessageDetail {
-    pub fn new(is_request: bool,headers: Vec<String>, content: Vec<u8>) -> Self {
+    pub fn new(is_request: bool, headers: Vec<String>, content: Vec<u8>) -> Self {
         Self { is_request, headers, content }
     }
+    fn header(&self, head: &str) -> Option<String> {
+        let _head = head.to_lowercase();
+        for header in &self.headers {
+            let _header = header.to_lowercase();
+            if _header.starts_with(&_head) {
+                let lcount = _head.len() + 1;
+                let mut val = &_header[lcount..];
+                if let Some(inx) = val.find(";") {
+                    val = &val[..inx];
+                }
+                let value = val.trim().to_string();
+                return Some(value);
+            }
+        }
+        None
+    }
+    pub fn raw_content(&self) -> &[u8] {
+        &self.content
+    }
+    pub fn get_text_content(&self) -> Option<String> {
+        let len = self.content.len();
+        if len <= 0 {
+            return None;
+        }
+        match self.text_type() {
+            Language::Binary => None,
+            _ => {
+                Some(decode_bytes(self.raw_content(), self.text_encoding()))
+            }
+        }
+    }
+    pub fn content_type(&self) -> Option<String> {
+        self.header("content-type")
+    }
+    pub fn text_type(&self) -> Language {
+        if let Some(main_type) = self.content_type() {
+            if main_type.is_empty() {
+                return Language::Binary;
+            }
+            if main_type.contains("/json") {
+                return Language::Json;
+            }
+            if main_type.contains("/javascript") {
+                return Language::JavaScript;
+            }
+            if main_type.contains("/css") {
+                return Language::Css;
+            }
+            if main_type.contains("/html") {
+                return Language::Html;
+            }
+            if main_type.contains("/xml") {
+                return Language::Xml;
+            }
+            if main_type.contains("/csv") {
+                return Language::Csv;
+            }
+            if main_type.contains("/yaml") {
+                return Language::Yaml;
+            }
+            if main_type.contains("text/") {
+                return Language::Text;
+            }
+        }
+        Language::Binary
+    }
+    pub fn text_encoding(&self) -> HttpEncoding {
+        if let Some(encoding) = self.header("content-encoding") {
+            match encoding.as_str() {
+                "gzip" => HttpEncoding::Gzip,
+                "deflate" => HttpEncoding::Deflate,
+                "br" => HttpEncoding::Brotli,
+                "zstd" => HttpEncoding::Zstd,
+                _ => HttpEncoding::None,
+            }
+        } else {
+            HttpEncoding::None
+        }
+    }
+}
+
+
+fn decode_bytes(body_raw: &[u8], encoding: HttpEncoding) -> String {
+    let decoded_data = match encoding {
+        HttpEncoding::None => body_raw.to_vec(),
+        HttpEncoding::Gzip => {
+            use flate2::read::GzDecoder;
+            use std::io::Read;
+            let mut decoder = GzDecoder::new(body_raw);
+            let mut decoded = Vec::new();
+            match decoder.read_to_end(&mut decoded) {
+                Ok(_) => decoded,
+                Err(_) => body_raw.to_vec(),
+            }
+        }
+        HttpEncoding::Deflate => {
+            use flate2::read::DeflateDecoder;
+            use std::io::Read;
+            let mut decoder = DeflateDecoder::new(&body_raw[..]);
+            let mut decoded = Vec::new();
+            match decoder.read_to_end(&mut decoded) {
+                Ok(_) => decoded,
+                Err(_) => body_raw.to_vec(),
+            }
+        }
+        HttpEncoding::Brotli => {
+            use brotli::Decompressor;
+            use std::io::Read;
+            let mut decoded = Vec::new();
+            match Decompressor::new(&body_raw[..], 4096).read_to_end(&mut decoded) {
+                Ok(_) => decoded,
+                Err(_) => body_raw.to_vec(),
+            }
+        }
+        HttpEncoding::Zstd => {
+            use std::io::Read;
+            use zstd::stream::read::Decoder;
+            let Ok(mut decoder) = Decoder::new(&body_raw[..]) else {
+                return String::from_utf8_lossy(&body_raw).to_string();
+            };
+            let mut decoded = Vec::new();
+            match decoder.read_to_end(&mut decoded) {
+                Ok(_) => decoded,
+                Err(_) => body_raw.to_vec(),
+            }
+        }
+    };
+    String::from_utf8(decoded_data).unwrap_or_default()
 }

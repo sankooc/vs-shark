@@ -5,14 +5,15 @@ use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
 
 #[wasm_bindgen]
 pub struct Conf {
+    id: String,
     resolve_all: bool,
     batch_size: usize,
 }
 #[wasm_bindgen]
 impl Conf {
     #[wasm_bindgen]
-    pub fn new(resolve_all: bool, batch_size: usize) -> Self {
-        Self { resolve_all, batch_size }
+    pub fn new(id: String, resolve_all: bool, batch_size: usize) -> Self {
+        Self { id, resolve_all, batch_size }
     }
     #[wasm_bindgen]
     pub fn resolve_all(&self) -> bool {
@@ -22,30 +23,10 @@ impl Conf {
     pub fn batch_size(&self) -> usize {
         self.batch_size
     }
+    pub fn id(&self) -> String {
+        self.id.clone()
+    }
 }
-
-// #[wasm_bindgen]
-// #[derive(Serialize)]
-// pub struct HttpHostRecord {
-//     pub host: String,
-//     pub count: usize,
-// }
-
-// #[wasm_bindgen]
-// impl HttpHostRecord {
-//     pub fn new(host: String, count: usize) -> Self {
-//         Self { host, count }
-//     }
-//     #[wasm_bindgen]
-//     pub fn host(&self) -> String {
-//         self.host.clone()
-//     }
-//     #[wasm_bindgen]
-//     pub fn count(&self) -> usize {
-//         self.count
-//     }
-// }
-
 
 
 #[wasm_bindgen]
@@ -66,20 +47,27 @@ impl Range {
     }
 }
 
+impl From<&std::ops::Range<usize>> for Range {
+    fn from(value: &std::ops::Range<usize>) -> Self {
+        Self{start: value.start, end: value.end}
+    }
+}
+
 #[wasm_bindgen]
 pub struct FrameResult{
     list: String,
     extra: Option<Vec<u8>>,
+    source: Option<Vec<u8>>,
 }
 
 #[wasm_bindgen]
 impl FrameResult {
-    pub fn new(list: String, extra: Option<Vec<u8>>) -> Self {
-        Self { list, extra }
+    pub fn new(list: String, source: Option<Vec<u8>>, extra: Option<Vec<u8>>) -> Self {
+        Self { list, source, extra }
     }
 
     pub fn empty() -> Self {
-        Self { list: "{}".into(), extra: None }
+        Self { list: "{}".into(), source:None, extra: None }
     }
     #[wasm_bindgen]
     pub fn list(&self) -> String {
