@@ -21,7 +21,6 @@ impl WASMLoader {
 
 impl ResourceLoader for WASMLoader {
     fn load(&self, r: &std::ops::Range<usize>) -> anyhow::Result<Vec<u8>> {
-        wasm_log("load data");
         let data = load_data(&self.id, r.into());
         Ok(data.to_vec())
     }
@@ -86,7 +85,6 @@ impl WContext {
     pub fn select(&self, catelog: String, index: usize) -> String {
         match catelog.as_str() {
             "frame" => {
-                // let slice = s.to_vec();
                 self.ctx.select_frame_json(index).unwrap()
             }
             _ => "{}".into(),
@@ -95,10 +93,9 @@ impl WContext {
 
     #[wasm_bindgen]
     pub fn select_frame(&self, index: usize) -> FrameResult {
-        // let slice = s.to_vec();
-        if let Some((list, source, extra)) = self.ctx.select_frame(index) {
+        if let Some((list, source, extra, range)) = self.ctx.select_frame(index) {
             let data = serde_json::to_string(&list).unwrap();
-            let rs = FrameResult::new(data, source, extra);
+            let rs = FrameResult::new(data, source, extra, range);
             return rs;
         }
         FrameResult::empty()

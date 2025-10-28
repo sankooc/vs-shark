@@ -105,18 +105,19 @@ export abstract class PCAPClient {
         // let rs;
         switch (catelog) {
           case "frame": {
-            const range = this.ctx!.frame_range(index);
-            const data = await this.pickData(range.data.start, range.data.end);
+            // const range = this.ctx!.frame_range(index);
+            // const data = await this.pickData(range.data.start, range.data.end);
             // const frameResult = this.ctx.select_frame(index, data);
             const frameResult = this.ctx.select_frame(index);
             const rs: any = {};
-            if (range.compact()) {
-              rs.data = data;
-            } else {
-              const _start = range.frame.start - range.data.start;
-              const _end = range.frame.end - range.data.start;
-              rs.data = data.slice(_start, _end);
-            }
+            rs.data = frameResult.source()
+            // if (range.compact()) {
+            //   rs.data = data;
+            // } else {
+            //   const _start = range.frame.start - range.data.start;
+            //   const _end = range.frame.end - range.data.start;
+            //   rs.data = data.slice(_start, _end);
+            // }
             rs.start = range.frame.start;
             rs.end = range.frame.end;
             rs.liststr = frameResult.list();

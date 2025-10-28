@@ -28,7 +28,6 @@ impl Conf {
     }
 }
 
-
 #[wasm_bindgen]
 #[derive(Clone, Copy)]
 pub struct Range {
@@ -49,51 +48,76 @@ impl Range {
 
 impl From<&std::ops::Range<usize>> for Range {
     fn from(value: &std::ops::Range<usize>) -> Self {
-        Self{start: value.start, end: value.end}
+        Self {
+            start: value.start,
+            end: value.end,
+        }
     }
 }
 
 #[wasm_bindgen]
-pub struct FrameResult{
+pub struct FrameResult {
     list: String,
     extra: Option<Vec<u8>>,
     source: Option<Vec<u8>>,
+    range: Option<std::ops::Range<usize>>
+}
+
+impl FrameResult {
+    pub fn new(list: String, source: Option<Vec<u8>>, extra: Option<Vec<u8>>, range: Option<std::ops::Range<usize>>) -> Self {
+        Self { list, source, extra, range }
+    }
 }
 
 #[wasm_bindgen]
 impl FrameResult {
-    pub fn new(list: String, source: Option<Vec<u8>>, extra: Option<Vec<u8>>) -> Self {
-        Self { list, source, extra }
-    }
 
     pub fn empty() -> Self {
-        Self { list: "{}".into(), source:None, extra: None }
+        Self {
+            list: "{}".into(),
+            source: None,
+            extra: None,
+            range: None,
+        }
+    }
+    fn to_uint8(data: &Option<Vec<u8>>) -> Uint8Array {
+        if let Some(v) = data {
+            Uint8Array::from(v.as_slice())
+        } else {
+            Uint8Array::from(JsValue::null())
+        }
     }
     #[wasm_bindgen]
     pub fn list(&self) -> String {
         self.list.clone()
     }
     #[wasm_bindgen]
+    pub fn source(&self) -> Uint8Array {
+        FrameResult::to_uint8(&self.source)
+    }
+    #[wasm_bindgen]
     pub fn extra(&self) -> Uint8Array {
-        if let Some(v) = &self.extra {
-            Uint8Array::from(v.as_slice())
-        } else {
-            Uint8Array::from(JsValue::null())
-        }
+        FrameResult::to_uint8(&self.extra)
+    }
+
+    pub fn range(&self) -> Option<Range> {
+        self.range.as_ref().map(|f|f.into())
     }
 }
 
-
 #[wasm_bindgen]
-pub struct FrameRange{
+pub struct FrameRange {
     pub frame: Range,
     pub data: Range,
 }
 
 #[wasm_bindgen]
 impl FrameRange {
-    pub fn new() -> Self{
-        Self{frame: Range::empty(), data: Range::empty()}
+    pub fn new() -> Self {
+        Self {
+            frame: Range::empty(),
+            data: Range::empty(),
+        }
     }
     #[wasm_bindgen]
     pub fn compact(&self) -> bool {
@@ -101,14 +125,14 @@ impl FrameRange {
     }
 }
 
-
-
 impl From<std::ops::Range<usize>> for Range {
     fn from(value: std::ops::Range<usize>) -> Self {
-        Self{start: value.start, end: value.end}
+        Self {
+            start: value.start,
+            end: value.end,
+        }
     }
 }
-
 
 #[derive(Serialize, Clone)]
 // #[wasm_bindgen]
@@ -148,7 +172,6 @@ impl HttpMessageWrap {
 }
 
 fn parse_content_type(content_type_str: &str) -> Language {
-
     let main_type = content_type_str.to_lowercase();
 
     if main_type.is_empty() {
@@ -186,8 +209,10 @@ pub fn parse_http_message(head: &str, header: Vec<u8>, entity: Option<Vec<u8>>) 
     headers.insert(0, head.to_string());
     let body = if let Some(content) = entity {
         parse_body_with_mime(content, &mime, encoding)
-    } else {None};
-    HttpMessageWrap::new(headers, mime,body)
+    } else {
+        None
+    };
+    HttpMessageWrap::new(headers, mime, body)
 }
 
 pub fn parse_header_content(header_raw: Vec<u8>) -> (Vec<String>, Language, HttpEncoding) {

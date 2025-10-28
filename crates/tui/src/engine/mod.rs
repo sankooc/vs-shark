@@ -154,9 +154,9 @@ impl Service {
                     PcapUICommand::FrameData(index) => {
                         if let Some(frame) = ins.frame(index as usize) {
                             if let Some(_range) = frame.range() {
-                                if let Some((rs, source, extra)) = ins.select_frame(index as usize) {
+                                if let Some((rs, source, extra, _range2)) = ins.select_frame(index as usize) {
                                     let ds = if let Some(_source) = source {
-                                        let range = frame.frame_range().unwrap();
+                                        let range = _range2.unwrap();
                                         let data_source = DataSource::create(_source, range);
                                         Some(data_source)
                                     } else {

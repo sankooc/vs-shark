@@ -505,7 +505,7 @@ where
         add_field_label_no_range!(f, format!("Capture length: {}", size));
         f
     }
-    pub fn select_frame(&self, index: usize) -> Option<(Vec<Field>, Option<Vec<u8>>, Option<Vec<u8>>)> {
+    pub fn select_frame(&self, index: usize) -> Option<(Vec<Field>, Option<Vec<u8>>, Option<Vec<u8>>, Option<Range<usize>>)> {
         let mut extra_data = None;
         if let Some(frame) = self.frame(index) {
             if let Some(range) = frame.range() {
@@ -539,14 +539,15 @@ where
                         }
                     }
                 }
-                return Some((list, source, extra_data));
+                let range = frame.frame_range();
+                return Some((list, source, extra_data, range));
             }
         }
         None
     }
 
     pub fn select_frame_json(&self, index: usize) -> Result<String, Error> {
-        if let Some((list, _, _)) = self.select_frame(index) {
+        if let Some((list, _, _, _)) = self.select_frame(index) {
             return serde_json::to_string(&list);
         }
         Ok("[]".into())
