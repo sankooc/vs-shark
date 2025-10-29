@@ -1549,9 +1549,7 @@ name = "wasm-pcps"
 version = "0.3.6"
 dependencies = [
  "anyhow",
- "brotli",
  "env_logger",
- "flate2",
  "instant",
  "js-sys",
  "log",
@@ -1559,7 +1557,6 @@ dependencies = [
  "serde",
  "serde_json",
  "wasm-bindgen",
- "zstd",
 ]
 
 [[package]]

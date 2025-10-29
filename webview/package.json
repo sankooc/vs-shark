@@ -10,6 +10,7 @@
     "lint": "eslint .",
     "gen": "npx rs2ts -i ../crates/pcap/src/common/concept.rs  -o src/share/gen.ts",
     "format": "prettier -w ./src",
+    "ins": "rm -fr ./node_modules && pnpm install",
     "preview": "vite preview"
   },
   "dependencies": {

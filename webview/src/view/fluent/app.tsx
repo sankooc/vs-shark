@@ -167,7 +167,7 @@ const Basic = () => {
             <Route path="/conversations" element={<ConversationComponent />} />
             <Route path="/conversation/:conversationIndex" element={<ConversationDetailComponent />} />
             <Route path="/https" element={<HttpComponent />} />
-            <Route path="/http/detail" element={<HttpDetailComponent />} />
+            <Route path="/http/detail/:httpIndex" element={<HttpDetailComponent />} />
             <Route path="/tls/hosts" element={<TLSHostList />} />
             <Route path="/udp" element={<UDPComponent />} />
             <Route path="*" element={<Navigate to="/" replace />} />

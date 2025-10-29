@@ -185,6 +185,14 @@ impl Frame {
         }
         self.range.clone()
     }
+    pub fn compact(&self) -> bool {
+        if let ProtocolInfoField::TLS(tls_list) = &self.protocol_field {
+            if tls_list.list.len() > 0 {
+                return false;
+            }
+        }
+        true
+    }
     pub fn frame_range(&self) -> Option<Range<usize>> {
         self.range.clone()
     }
@@ -276,8 +284,12 @@ where
         }
     }
 
-    pub fn get_context(&self) -> &Context {
+    pub fn context(&self) -> &Context {
         &self.ctx
+    }
+
+    pub fn loader(&self) -> &dyn ResourceLoader{   
+        &self.loader
     }
 
     pub fn parse(&mut self) -> Result<ProgressStatus> {
@@ -505,15 +517,13 @@ where
         add_field_label_no_range!(f, format!("Capture length: {}", size));
         f
     }
-    pub fn select_frame(&self, index: usize) -> Option<(Vec<Field>, Option<Vec<u8>>, Option<Vec<u8>>, Option<Range<usize>>)> {
-        let mut extra_data = None;
+    pub fn select_frame(&self, index: usize) -> Option<(Vec<Field>, Vec<DataSource>)> {
         if let Some(frame) = self.frame(index) {
-            if let Some(range) = frame.range() {
-                let data = self.loader.load(&range).unwrap(); // TODO
-                let ds: DataSource = DataSource::create(data, range);
-                let rg = frame.frame_range().unwrap();
-                let mut reader = Reader::new_sub(&ds, rg).unwrap();
-                let source = reader.dump_as_vec().ok();
+            if let Some(range) = frame.frame_range() {
+                let data = self.loader.load(&range).unwrap();
+                let ds= DataSource::create(data, range);
+                let mut datasources = vec!();
+                let mut reader = Reader::new(&ds);
                 let mut list = vec![];
                 let mut _next = frame.head;
                 list.push(self.frame_field(frame));
@@ -525,13 +535,10 @@ where
                         _ => {
                             let mut f = Field::children();
                             f.start = reader.cursor;
-                            if let Ok((next, _extra_data)) = detail(_next, &mut f, &self.ctx, frame, &mut reader) {
+                            if let Ok((next, _extra_data)) = detail(_next, &mut f, self, frame, &mut reader, &mut datasources) {
                                 f.size = reader.cursor - f.start;
                                 list.push(f);
                                 _next = next;
-                                if let Some(data) = _extra_data {
-                                    extra_data = Some(data);
-                                }
                             } else {
                                 f.summary = format!("Parse [{_next}] failed");
                                 break;
@@ -539,15 +546,16 @@ where
                         }
                     }
                 }
-                let range = frame.frame_range();
-                return Some((list, source, extra_data, range));
+                datasources.insert(0, ds);
+                return Some((list, datasources));
+                // return Some((list, source, extra_data, range));
             }
         }
         None
     }
 
     pub fn select_frame_json(&self, index: usize) -> Result<String, Error> {
-        if let Some((list, _, _, _)) = self.select_frame(index) {
+        if let Some((list, _)) = self.select_frame(index) {
             return serde_json::to_string(&list);
         }
         Ok("[]".into())
@@ -652,6 +660,17 @@ where
         ListResult::new(start, total, data)
     }
 
+    fn _tls_infos(&self) {
+        for frame in &self.ctx.list {
+            if let ProtocolInfoField::TLS(tls_list) = &frame.protocol_field {
+                for block in &tls_list.list{
+                    if block.content_type == 22 {
+                        // TODO 
+                    }
+                }
+            }
+        }
+    }
 }
 pub mod concept;
 pub mod connection;

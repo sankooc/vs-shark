@@ -3,6 +3,7 @@
 // This file is part of the pcapview project.
 // Licensed under the MIT License - see https://opensource.org/licenses/MIT
 
+use crate::common::ResourceLoader;
 use crate::common::concept::{Field, FrameIndex};
 use crate::common::connection::{TCPSegment, TLSSegment, TlsData};
 use crate::common::core::Context;
@@ -87,7 +88,7 @@ impl Visitor {
             let mut sni: Option<String> = None;
             let mut _status = std::mem::replace(&mut endpoint.segment_status, SegmentStatus::Init);
             match _status {
-                SegmentStatus::Init => endpoint.segment_status = recycle(&mut sni, index, &mut reader, &mut list)?,
+                SegmentStatus::Init => endpoint.segment_status = parse_current_frame(&mut sni, index, &mut reader, &mut list)?,
                 SegmentStatus::TlsHead(segment, data) => {
                     let _len = data.len();
                     if _len < 5 {
@@ -106,7 +107,7 @@ impl Visitor {
                             tlsdata.append(current);
                             check_sni(&mut sni, &mut reader, &tlsdata);
                             list.push(tlsdata);
-                            endpoint.segment_status = recycle(&mut sni, index, &mut reader, &mut list)?;
+                            endpoint.segment_status = parse_current_frame(&mut sni, index, &mut reader, &mut list)?;
                         } else {
                             reader.forward(reader.left());
                             let mut _seg = TLSSegment::new(content_type, len + 5, sub_type);
@@ -140,7 +141,7 @@ impl Visitor {
                             return Ok(Protocol::None);
                         }
                         reader = reader.slice_as_reader(_left)?;
-                        endpoint.segment_status = recycle(&mut sni, index, &mut reader, &mut list)?;
+                        endpoint.segment_status = parse_current_frame(&mut sni, index, &mut reader, &mut list)?;
                     }
                 }
                 _ => {
@@ -160,10 +161,9 @@ impl Visitor {
         }
         Ok(Protocol::None)
     }
-    pub fn detail(field: &mut Field, _: &Context, frame: &Frame, _reader: &mut Reader) -> Result<(Protocol, Option<Vec<u8>>)> {
-        // let index = frame.info.index;
+    pub fn detail(field: &mut Field, _: &Context, loader: &dyn ResourceLoader, frame: &Frame, _reader: &mut Reader, datasources: &mut Vec<DataSource>) -> Result<Protocol> {
         field.children = Some(vec![]);
-        let mut extra_data = None;
+        // let mut extra_data = None;
         let list = field.children.as_mut().unwrap();
         if let ProtocolInfoField::TLS(tls_list) = &frame.protocol_field {
             for item in &tls_list.list {
@@ -173,17 +173,27 @@ impl Visitor {
                     let reader = Reader::new_sub(ds, range)?;
                     list.push(parse_segment(reader, 0)?);
                 } else {
-                    let data = item.combind(_reader.ds());
-                    let mut ds = DataSource::create(data, 0..0);
-                    let reader = Reader::new(&ds);
-                    list.push(parse_segment(reader, 1)?);
-                    let _data = std::mem::take(&mut ds.data);
-                    extra_data = Some(_data);
+                    if let Some(data) = item.concat_segment_data(loader) {
+                        let ds = DataSource::create(data, 0..0);
+                        let reader = Reader::new(&ds);
+                        let counter = (datasources.len() + 1) as u8;
+                        list.push(parse_segment(reader, counter)?);
+                        datasources.push(ds);
+                        // let _data = std::mem::take(&mut ds.data);
+                        // extra_data = Some(_data);
+                    }
+                    // let data = item.combind(_reader.ds());
+                    // let mut ds = DataSource::create(data, 0..0);
+                    // let reader = Reader::new(&ds);
+                    // list.push(parse_segment(reader, 1)?);
+                    // let _data = std::mem::take(&mut ds.data);
+                    // extra_data = Some(_data);
                 }
             }
         }
         field.summary = "Transport Layer Security".to_string();
-        Ok((Protocol::None, extra_data))
+        // Ok((Protocol::None, extra_data))
+        Ok(Protocol::None)
     }
 }
 
@@ -205,7 +215,7 @@ fn tls_version(val: u16) -> String {
     }
 }
 
-fn parse_nsi(reader: &mut Reader) -> Result<String> {
+fn parse_sni(reader: &mut Reader) -> Result<String> {
     // let start = reader.cursor;
     reader.forward(3); // length
     let _len = reader.read16(true)?;
@@ -248,11 +258,10 @@ fn parse_segment(mut reader: Reader, source: u8) -> Result<Field> {
 
     // let _reader_record = |reader: &mut Reader, field: &mut Field| parse_record(content_type, version, reader, field);
     let mut record_reader = reader.slice_as_reader(_len as usize)?;
-    let mut record_field = Field::with_children("".to_string(), reader.cursor, _len as usize);
+    let mut record_field = Field::with_children("".to_string(), record_reader.cursor, _len as usize);
     record_field.source = field.source;
     parse_record_detail(content_type, version, &mut record_reader, &mut record_field)?;
     field.children.as_mut().unwrap().push(record_field);
-
     field.summary = format!("{} Record Layer: {}", tls_version(version), tls_type(content_type));
     Ok(field)
 }
@@ -285,18 +294,16 @@ fn get_sni_info(_reader: &mut Reader, item: &TlsData) -> Result<String> {
     if item.segments.len() == 1 {
         let range = item.segments.first().unwrap().range.clone();
         let ds = _reader.ds();
-        parse_nsi(&mut Reader::new_sub(ds, range)?)
+        parse_sni(&mut Reader::new_sub(ds, range)?)
     } else {
         let data = item.combind(_reader.ds());
         let ds = DataSource::create(data, 0..0);
         // Reader::new(&ds)
-        parse_nsi(&mut Reader::new(&ds))
+        parse_sni(&mut Reader::new(&ds))
     }
-                // parse_nsi(&mut reader);
-    // Ok("".to_string())
 }
 
-fn recycle(sni_option: &mut Option<String>, index: FrameIndex, _reader: &mut Reader, list: &mut TLSList) -> Result<SegmentStatus> {
+fn parse_current_frame(sni_option: &mut Option<String>, index: FrameIndex, _reader: &mut Reader, list: &mut TLSList) -> Result<SegmentStatus> {
     let _left = _reader.left();
     if _left == 0 {
         return Ok(SegmentStatus::Init);

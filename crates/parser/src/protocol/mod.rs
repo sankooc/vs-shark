@@ -6,7 +6,7 @@
 use anyhow::{bail, Result};
 
 use crate::common::{
-        concept::Field, core::Context, enum_def::{DataError, FileType, Protocol}, io::Reader, Frame
+        Frame, Instance, ResourceLoader, concept::Field, core::Context, enum_def::{DataError, FileType, Protocol}, io::{DataSource, Reader}
     };
 
 pub mod application;
@@ -44,7 +44,9 @@ pub fn parse(protocol: Protocol, ctx: &mut Context, frame: &mut Frame, reader: &
         _ => bail!(DataError::Unimplemented)
     }
 }
-pub fn detail(protocol: Protocol, field: &mut Field, ctx: &Context, frame: &Frame, reader: &mut crate::common::io::Reader) -> Result<(Protocol, Option<Vec<u8>>)> {
+pub fn detail<T>(protocol: Protocol, field: &mut Field, ins: &Instance<T>, frame: &Frame, reader: &mut crate::common::io::Reader, _datasources: &mut Vec<DataSource>) -> Result<(Protocol, Option<Vec<u8>>)> where T: ResourceLoader{
+    let ctx = ins.context();
+    let loader = ins.loader();
     let protocol = match &protocol {
         Protocol::ETHERNET => link::ethernet::EthernetVisitor::detail(field, ctx, frame, reader),
         Protocol::SSL => link::ssl::Visitor::detail(field, ctx, frame, reader),
@@ -66,9 +68,7 @@ pub fn detail(protocol: Protocol, field: &mut Field, ctx: &Context, frame: &Fram
         Protocol::DNS => application::dns::Visitor::detail(field, ctx, frame, reader),
         Protocol::MDNS => application::mdns::Visitor::detail(field, ctx, frame, reader),
         Protocol::NBNS => application::nbns::Visitor::detail(field, ctx, frame, reader),
-        Protocol::TLS => {
-            return transport::tls::Visitor::detail(field, ctx, frame, reader);
-        },
+        Protocol::TLS => transport::tls::Visitor::detail(field, ctx, loader, frame, reader, _datasources),
         Protocol::RADIOTAP => link::ieee802_11::link_127::Visitor::detail(field, ctx, frame, reader),
         Protocol::IEEE802_11 => link::ieee802_11::link_105::Visitor::detail(field, ctx, frame, reader),
         

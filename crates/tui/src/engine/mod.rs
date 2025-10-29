@@ -1,9 +1,10 @@
-use std::io::{Read, Seek, SeekFrom};
+use std::fs::File;
+use std::io::Read;
 use std::ops::Range;
 use std::sync::mpsc::Receiver;
 use std::thread;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
-use std::{fs::File, io::BufReader};
+use std::{io::BufReader};
 
 use pcap::common::concept::{ConversationCriteria, Criteria, Field, FrameIndex, FrameInfo, HttpMessageDetail, Language, ListResult, ProgressStatus, VConnection, VConversation, VHttpConnection};
 use pcap::common::io::DataSource;
@@ -18,7 +19,7 @@ pub enum PcapEvent {
     ProgressStatus(ProgressStatus),
     Init,
     FrameList(ListResult<FrameInfo>),
-    FrameData(Vec<Field>, Option<DataSource>, Option<Vec<u8>>),
+    FrameData(Vec<Field>, Vec<DataSource>),
     ConversationList(ListResult<VConversation>),
     ConnectionList(ListResult<VConnection>),
     HttpConnectionList(ListResult<VHttpConnection>),
@@ -95,31 +96,31 @@ pub struct Service {
 //     file.read_exact(&mut buffer)?;
 //     Ok(buffer)
 // }
-pub fn concat_data(file: &mut File, ranges: Vec<(usize, usize)>, len: Option<usize>) -> anyhow::Result<Vec<u8>> {
-    if ranges.is_empty() {
-        return Ok(vec![]);
-    }
-    let max = if let Some(length) = len {
-        length
-    } else {
-        ranges.iter().map(|(start, end)| end - start).sum()
-    };
-    let mut rs = Vec::with_capacity(max);
-    for (start, end) in ranges {
-        file.seek(SeekFrom::Start(start as u64))?;
-        let left = max - rs.len();
-        let _size = end - start;
-        let size = std::cmp::min(left, _size);
-        let mut buffer = vec![0; size];
-        file.read_exact(&mut buffer)?;
-        rs.extend_from_slice(&buffer);
-        if rs.len() >= max {
-            break;
-        }
-    }
+// pub fn concat_data(file: &mut File, ranges: Vec<(usize, usize)>, len: Option<usize>) -> anyhow::Result<Vec<u8>> {
+//     if ranges.is_empty() {
+//         return Ok(vec![]);
+//     }
+//     let max = if let Some(length) = len {
+//         length
+//     } else {
+//         ranges.iter().map(|(start, end)| end - start).sum()
+//     };
+//     let mut rs = Vec::with_capacity(max);
+//     for (start, end) in ranges {
+//         file.seek(SeekFrom::Start(start as u64))?;
+//         let left = max - rs.len();
+//         let _size = end - start;
+//         let size = std::cmp::min(left, _size);
+//         let mut buffer = vec![0; size];
+//         file.read_exact(&mut buffer)?;
+//         rs.extend_from_slice(&buffer);
+//         if rs.len() >= max {
+//             break;
+//         }
+//     }
 
-    Ok(rs)
-}
+//     Ok(rs)
+// }
 
 impl Service {
     pub fn new(fname: String, sender: Sender<PcapEvent>, receiver: Receiver<PcapUICommand>) -> Self {
@@ -154,15 +155,15 @@ impl Service {
                     PcapUICommand::FrameData(index) => {
                         if let Some(frame) = ins.frame(index as usize) {
                             if let Some(_range) = frame.range() {
-                                if let Some((rs, source, extra, _range2)) = ins.select_frame(index as usize) {
-                                    let ds = if let Some(_source) = source {
-                                        let range = _range2.unwrap();
-                                        let data_source = DataSource::create(_source, range);
-                                        Some(data_source)
-                                    } else {
-                                        None
-                                    };
-                                    self.sender.send(PcapEvent::FrameData(rs, ds, extra)).unwrap();
+                                if let Some((rs, datasources)) = ins.select_frame(index as usize) {
+                                    // let ds = if let Some(_source) = source {
+                                    //     let range = _range2.unwrap();
+                                    //     let data_source = DataSource::create(_source, range);
+                                    //     Some(data_source)
+                                    // } else {
+                                    //     None
+                                    // };
+                                    self.sender.send(PcapEvent::FrameData(rs, datasources)).unwrap();
                                 }
                             }
                         }

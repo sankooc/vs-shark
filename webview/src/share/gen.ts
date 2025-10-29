@@ -62,10 +62,10 @@ export interface IVHttpConnection {
     content_type: string;
     hostname: string,
     length: number;
-    request_headers: [number, number][];
-    response_headers: [number, number][];
-    request_body: [number, number][];
-    response_body: [number, number][];
+    // request_headers: [number, number][];
+    // response_headers: [number, number][];
+    // request_body: [number, number][];
+    // response_body: [number, number][];
 }
 
 export interface ICounterItem {

@@ -65,7 +65,7 @@ const http_connct_status = (status: string) => {
 
 function Component() {
     const httpConnections = useStore((state) => state.httpConnections);
-    const cachehttp = useStore((state) => state.cachehttp);
+    // const cachehttp = useStore((state) => state.cachehttp);
     const stat = useStore((state) => state.stat);
     const [httpHosts, setHttpHosts] = useState<ICounterItem[]>([]);
     const [hostSelect, setHostSelect] = useState<string>(NoneOption);
@@ -189,8 +189,12 @@ function Component() {
         }),
     ];
     const onClick = (item: IVHttpConnection) => {
-        cachehttp(item);
-        navigate('/http/detail', { state: { title: '' } });
+        // cachehttp(item);
+        const index = item.index;
+        const title = item.hostname || 'detail';
+        if (index >=0 ){
+            navigate('/http/detail/' + index, { state: { title } });
+        }
     };
     const pageSize = http_size;
     const load = async (page: number, _: any) => {

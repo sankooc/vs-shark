@@ -22,7 +22,6 @@ impl <'a>HexState<'a> {
 
 pub struct HexView<'a> {
     state: &'a HexState<'a>,
-    // data: Option<(usize, usize, Rc<Vec<u8>>)>
 }
 
 impl<'a> From<&'a HexState<'a>> for HexView<'a> {

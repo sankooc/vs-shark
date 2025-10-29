@@ -141,13 +141,14 @@ export interface IResult<T> {
   size: number;
 }
 
+export interface IDataSource {
+  data: Uint8Array,
+  range: VRange,
+}
 
 export interface IFrameSelect {
-  data: Uint8Array;
-  start: number;
-  end: number;
   fields: IField[];
-  extra?: Uint8Array;
+  datasource: IDataSource[]
 }
 
 export interface HttpMessageWrap {
@@ -162,6 +163,12 @@ export interface MessageCompress {
   data: Uint8Array
 }
 
+export interface IHttpDetail {
+  headers: string[],
+  raw?: Uint8Array,
+  plaintext?: string,
+  content_type?: string,
+}
 
 export const compute = (page: number, size: number): Pagination => {
   if (page < 1) {

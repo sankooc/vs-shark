@@ -20,8 +20,9 @@ type Indendity = (usize, usize, usize, u8);
 
 #[derive(Default)]
 pub struct StackView {
-    data_source: Option<DataSource>,
-    extra: Option<Vec<u8>>,
+    // data_source: Option<DataSource>,
+    // extra: Option<Vec<u8>>,
+    datasources: Vec<DataSource>,
     items: Vec<Field>,
     tree_state: TreeState<Indendity>,
 }
@@ -30,10 +31,8 @@ impl StackView {
     pub fn items(&self) -> Vec<TreeItem<'static, Indendity>> {
         convert_fields(&self.items)
     }
-    pub fn reset(&mut self, items: Vec<Field>, data_source: Option<DataSource>, extra: Option<Vec<u8>>) {
+    pub fn reset(&mut self, items: Vec<Field>) {
         self.items = items;
-        self.data_source = data_source;
-        self.extra = extra;
     }
 }
 
@@ -60,20 +59,26 @@ impl Widget for &mut StackView {
         let selected = self.tree_state.selected();
         if selected.len() > 0 {
             let (_, start, size, source) = selected.last().unwrap().clone();
-            if source == 0 {
-                if let Some(ds) = &self.data_source {
-                    let _start = start - std::cmp::min(start, ds.range().start);
-                    let state = HexState::new(_start, size, &ds.data);
-                    let mut _hex = HexView::from(&state);
-                    _hex.render(ch[1], buf);
-                }
-            } else {
-                if let Some(extra) = &self.extra {
-                    let state = HexState::new(start, size, extra);
-                    let mut _hex = HexView::from(&state);
-                    _hex.render(ch[1], buf);
-                }
+            if let Some(datasource) = self.datasources.get(source as usize) {
+                let offset = start.saturating_sub(datasource.range().start);
+                let state = HexState::new(offset, size, &datasource.data);
+                let mut _hex = HexView::from(&state);
+                _hex.render(ch[1], buf);
             }
+            // if source == 0 {
+            //     if let Some(ds) = &self.data_source {
+            //         let _start = start - std::cmp::min(start, ds.range().start);
+            //         let state = HexState::new(_start, size, &ds.data);
+            //         let mut _hex = HexView::from(&state);
+            //         _hex.render(ch[1], buf);
+            //     }
+            // } else {
+            //     if let Some(extra) = &self.extra {
+            //         let state = HexState::new(start, size, extra);
+            //         let mut _hex = HexView::from(&state);
+            //         _hex.render(ch[1], buf);
+            //     }
+            // }
         } else {
             content_border_right().render(ch[1], buf);
         }
@@ -110,10 +115,11 @@ impl ControlState for StackView {
 
     fn update(&mut self, event: PcapEvent) -> PcapUICommand {
         match event {
-            PcapEvent::FrameData(fields, ds,  extra) => {
+            PcapEvent::FrameData(fields, datasources) => {
                 self.items = fields;
-                self.data_source = ds;
-                self.extra = extra;
+                self.datasources = datasources;
+                // self.data_source = ds;
+                // self.extra = extra;
                 self.tree_state.close_all();
                 PcapUICommand::Refresh
             },

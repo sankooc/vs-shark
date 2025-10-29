@@ -8,7 +8,7 @@ import {
   DataResponse,
   deserialize,
   IFrameSelect,
-  MessageCompress,
+  IHttpDetail,
   PcapFile,
   StatRequest,
   VRange,
@@ -36,7 +36,7 @@ interface PcapState {
   udps: (data: any) => Promise<IListResult<IUDPConversation>>;
   connections: (data: any) => Promise<IListResult<IVConnection>>;
   httpConnections: (data: any) => Promise<IListResult<IVHttpConnection>>;
-  httpDetail: (data: IVHttpConnection) => Promise<MessageCompress[]>
+  httpDetail: (index: number) => Promise<IHttpDetail[]>
   cachehttp: (conn: IVHttpConnection | null) => void;
   getHttpCache: () => IVHttpConnection | null;
   stat: (request: StatRequest) => Promise<any> ;
@@ -101,7 +101,8 @@ export const useStore = create<PcapState>()((set) => {
       }
       case ComType.FRAMES_SELECT:
         {
-          const fr: IFrameSelect = { start: body.start, end: body.end, data: body.data, fields: deserialize(body.liststr), extra: body.extra };
+          const {str, datasource} = body;
+          const fr: IFrameSelect = { fields: deserialize(str), datasource };
           emitter.emit(id, fr);
           break;
         }
@@ -161,9 +162,9 @@ export const useStore = create<PcapState>()((set) => {
       const req = new ComMessage(ComType.REQUEST, data);
       return doRequest<IListResult<IVHttpConnection>>(req);
     },
-    httpDetail: (data: IVHttpConnection): Promise<MessageCompress[]> => {
-      const req = new ComMessage(ComType.HTTP_DETAIL_REQ, data);
-      return doRequest<MessageCompress[]>(req);
+    httpDetail: (index: number): Promise<IHttpDetail[]> => {
+      const req = new ComMessage(ComType.HTTP_DETAIL_REQ, {index});
+      return doRequest<IHttpDetail[]>(req);
     },
     cachehttp: (conn: IVHttpConnection | null) => {
       httpCache = conn;

@@ -4,7 +4,7 @@ use pcap::common::{
 };
 use wasm_bindgen::prelude::*;
 
-use crate::entity::{parse_http_message, Conf, FrameRange, FrameResult, Range};
+use crate::entity::{Conf, FrameResult, HttpDetail, Range};
 
 
 pub struct WASMLoader {
@@ -67,19 +67,19 @@ impl WContext {
         }
     }
 
-    #[wasm_bindgen]
-    pub fn frame_range(&self, index: usize) -> FrameRange {
-        let mut rs = FrameRange::new();
-        if let Some(f) = self.ctx.frame(index) {
-            if let Some(range) = f.frame_range() {
-                rs.frame = range.into();
-            }
-            if let Some(range) = f.range() {
-                rs.data = range.into();
-            }
-        }
-        rs
-    }
+    // #[wasm_bindgen]
+    // pub fn frame_range(&self, index: usize) -> FrameRange {
+    //     let mut rs = FrameRange::new();
+    //     if let Some(f) = self.ctx.frame(index) {
+    //         if let Some(range) = f.frame_range() {
+    //             rs.frame = range.into();
+    //         }
+    //         if let Some(range) = f.range() {
+    //             rs.data = range.into();
+    //         }
+    //     }
+    //     rs
+    // }
 
     #[wasm_bindgen]
     pub fn select(&self, catelog: String, index: usize) -> String {
@@ -93,9 +93,9 @@ impl WContext {
 
     #[wasm_bindgen]
     pub fn select_frame(&self, index: usize) -> FrameResult {
-        if let Some((list, source, extra, range)) = self.ctx.select_frame(index) {
+        if let Some((list, datsources)) = self.ctx.select_frame(index) {
             let data = serde_json::to_string(&list).unwrap();
-            let rs = FrameResult::new(data, source, extra, range);
+            let rs = FrameResult::new(data, datsources);
             return rs;
         }
         FrameResult::empty()
@@ -123,30 +123,39 @@ impl WContext {
         let rs = self.ctx.udp_conversations(Criteria { start, size }, filter);
         serde_json::to_string(&rs).unwrap_or("{}".into())
     }
+    // #[wasm_bindgen]
+    // pub fn http_message_detail(&self, head: String, headers: Vec<u8>, body: Option<Vec<u8>>) -> String {
+    //     let rs = parse_http_message(&head, headers, body);
+    //     serde_json::to_string(&rs).unwrap_or("{}".into())
+    // }
+    // #[wasm_bindgen]
+    // pub fn http_header_parse(&self, head: String, header: &Uint8Array, body: &Uint8Array) -> String {
+    //     let slice = header.to_vec();
+    //     let mut content = None;
+    //     if body.length() > 0 {
+    //         content = Some(body.to_vec());
+    //     }
+    //     let rs = parse_http_message(&head, slice, content);
+    //     serde_json::to_string(&rs).unwrap_or("{}".into())
+    // }
     #[wasm_bindgen]
-    pub fn http_message_detail(&self, head: String, headers: Vec<u8>, body: Option<Vec<u8>>) -> String {
-        let rs = parse_http_message(&head, headers, body);
-        serde_json::to_string(&rs).unwrap_or("{}".into())
-    }
-    #[wasm_bindgen]
-    pub fn http_header_parse(&self, head: String, header: &Uint8Array, body: &Uint8Array) -> String {
-        let slice = header.to_vec();
-        let mut content = None;
-        if body.length() > 0 {
-            content = Some(body.to_vec());
+    pub fn http_detail(&self, index: usize) -> Option<Vec<HttpDetail>>{
+        if let Some(data) = self.ctx.http_detail(index) {
+            Some(data.into_iter().map(HttpDetail::from).collect())
+        } else {
+            None
         }
-        let rs = parse_http_message(&head, slice, content);
-        serde_json::to_string(&rs).unwrap_or("{}".into())
     }
     #[wasm_bindgen]
     pub fn stat(&self, field: String) -> String {
+        let ctx = self.ctx.context();
         match field.as_str() {
-            "http_host" => self.ctx.get_context().stat_http_host(),
-            "tls_sni" => self.ctx.get_context().stat_tls_sni(),
-            "ip4" => self.ctx.get_context().stat_ip4(),
-            "ip6" => self.ctx.get_context().stat_ip6(),
-            "http_data" => self.ctx.get_context().stat_http_data(),
-            "frame" => self.ctx.get_context().stat_frame(),
+            "http_host" => ctx.stat_http_host(),
+            "tls_sni" => ctx.stat_tls_sni(),
+            "ip4" => ctx.stat_ip4(),
+            "ip6" => ctx.stat_ip6(),
+            "http_data" => ctx.stat_http_data(),
+            "frame" => ctx.stat_frame(),
             _ => "[]".to_string(),
         }
     }
