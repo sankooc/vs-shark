@@ -123,22 +123,7 @@ impl WContext {
         let rs = self.ctx.udp_conversations(Criteria { start, size }, filter);
         serde_json::to_string(&rs).unwrap_or("{}".into())
     }
-    // #[wasm_bindgen]
-    // pub fn http_message_detail(&self, head: String, headers: Vec<u8>, body: Option<Vec<u8>>) -> String {
-    //     let rs = parse_http_message(&head, headers, body);
-    //     serde_json::to_string(&rs).unwrap_or("{}".into())
-    // }
-    // #[wasm_bindgen]
-    // pub fn http_header_parse(&self, head: String, header: &Uint8Array, body: &Uint8Array) -> String {
-    //     let slice = header.to_vec();
-    //     let mut content = None;
-    //     if body.length() > 0 {
-    //         content = Some(body.to_vec());
-    //     }
-    //     let rs = parse_http_message(&head, slice, content);
-    //     serde_json::to_string(&rs).unwrap_or("{}".into())
-    // }
-    #[wasm_bindgen]
+     #[wasm_bindgen]
     pub fn http_detail(&self, index: usize) -> Option<Vec<HttpDetail>>{
         if let Some(data) = self.ctx.http_detail(index) {
             Some(data.into_iter().map(HttpDetail::from).collect())

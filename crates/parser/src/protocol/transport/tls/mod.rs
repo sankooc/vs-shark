@@ -6,7 +6,7 @@
 use crate::common::ResourceLoader;
 use crate::common::concept::{Field, FrameIndex};
 use crate::common::connection::{TCPSegment, TLSSegment, TlsData};
-use crate::common::core::Context;
+use crate::common::core::{Context, TLSFlag};
 use crate::common::enum_def::{ProtocolInfoField, SegmentStatus};
 use crate::common::io::DataSource;
 use crate::common::{enum_def::Protocol, io::Reader, Frame};
@@ -85,10 +85,11 @@ impl Visitor {
         let mut reader = _reader.slice_as_reader(left)?;
         let mut list = TLSList::default();
         if let Some((_, endpoint)) = ctx.connection(frame) {
-            let mut sni: Option<String> = None;
+            // let mut sni: Option<String> = None;
+            let mut tls_flag = TLSFlag::None;
             let mut _status = std::mem::replace(&mut endpoint.segment_status, SegmentStatus::Init);
             match _status {
-                SegmentStatus::Init => endpoint.segment_status = parse_current_frame(&mut sni, index, &mut reader, &mut list)?,
+                SegmentStatus::Init => endpoint.segment_status = parse_current_frame(&mut tls_flag, index, &mut reader, &mut list)?,
                 SegmentStatus::TlsHead(segment, data) => {
                     let _len = data.len();
                     if _len < 5 {
@@ -105,9 +106,9 @@ impl Visitor {
                             let mut tlsdata = TlsData::new(content_type, sub_type);
                             tlsdata.append(segment);
                             tlsdata.append(current);
-                            check_sni(&mut sni, &mut reader, &tlsdata);
+                            check_sni(&mut tls_flag, &tlsdata);
                             list.push(tlsdata);
-                            endpoint.segment_status = parse_current_frame(&mut sni, index, &mut reader, &mut list)?;
+                            endpoint.segment_status = parse_current_frame(&mut tls_flag, index, &mut reader, &mut list)?;
                         } else {
                             reader.forward(reader.left());
                             let mut _seg = TLSSegment::new(content_type, len + 5, sub_type);
@@ -132,7 +133,7 @@ impl Visitor {
                         let current = make_tls_segment(index, &reader);
                         _seg.append(current)?;
                         let seg: TlsData = _seg.into();
-                        check_sni(&mut sni, &mut reader, &seg);
+                        check_sni(&mut tls_flag, &seg);
                         list.push(seg);
 
                         let _left = reader.left();
@@ -141,17 +142,27 @@ impl Visitor {
                             return Ok(Protocol::None);
                         }
                         reader = reader.slice_as_reader(_left)?;
-                        endpoint.segment_status = parse_current_frame(&mut sni, index, &mut reader, &mut list)?;
+                        endpoint.segment_status = parse_current_frame(&mut tls_flag, index, &mut reader, &mut list)?;
                     }
                 }
                 _ => {
                     endpoint.segment_status = SegmentStatus::Init;
                 }
             }
+            ctx.tls_flag_update(frame, tls_flag);
 
-            if let Some(sni_name) = sni {
-                ctx.add_tls_sni(sni_name);
-            }   
+            // match tls_flag {
+            //     TLSFlag::ClientHello => {
+            //         println!("index {index} is client")
+            //     },
+            //     TLSFlag::ServerHello => {
+            //         println!("index {index} is server")
+            //     },
+            //     _ => {}
+            // }
+            // if let Some(sni_name) = sni {
+            //     ctx.add_tls_sni(sni_name);
+            // }   
         }
 
         if list.len() > 0 {
@@ -279,14 +290,24 @@ pub fn detect(reader: &Reader) -> bool {
     }
 }
 
-fn check_sni(sni_option: &mut Option<String>, _reader: &mut Reader, segment: &TlsData) {
+fn check_sni(sni_option: &mut TLSFlag, segment: &TlsData) {
     if segment.content_type == 22 {
         if let Some(sub_type) = segment.sub_type {
-            if sub_type == 1 {
-                if let Ok(sni) = get_sni_info(_reader, segment) {
-                    *sni_option = Some(sni);
+            match sub_type {
+                1 => {
+                    *sni_option = TLSFlag::ClientHello;
                 }
+                2 => {
+                    *sni_option = TLSFlag::ServerHello;
+                }
+                _ => {}
             }
+            // if sub_type == 1 {
+            //     *sni_option = TLSFlag::ClientHello;
+                // if let Ok(sni) = get_sni_info(_reader, segment) {
+                //     *sni_option = TLSFlag::ClientHello;
+                // }
+            // }
         }
     }
 }
@@ -303,7 +324,7 @@ fn get_sni_info(_reader: &mut Reader, item: &TlsData) -> Result<String> {
     }
 }
 
-fn parse_current_frame(sni_option: &mut Option<String>, index: FrameIndex, _reader: &mut Reader, list: &mut TLSList) -> Result<SegmentStatus> {
+fn parse_current_frame(sni_option: &mut TLSFlag, index: FrameIndex, _reader: &mut Reader, list: &mut TLSList) -> Result<SegmentStatus> {
     let _left = _reader.left();
     if _left == 0 {
         return Ok(SegmentStatus::Init);
@@ -335,7 +356,7 @@ fn parse_current_frame(sni_option: &mut Option<String>, index: FrameIndex, _read
                 reader.forward(len);
                 let mut segment = TlsData::single(content_type, make_tls_segment(index, &reader));
                 segment.sub_type = sub_type;
-                check_sni(sni_option, &mut reader, &segment);
+                check_sni(sni_option, &segment);
                 list.push(segment);
                 let _left = reader.left();
                 if _left == 0 {

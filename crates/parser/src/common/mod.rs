@@ -16,7 +16,7 @@ use crate::{
     add_field_label_no_range,
     common::{
         concept::{ConversationCriteria, HttpCriteria, HttpMessageDetail, UDPConversation, VConnection, VConversation, VHttpConnection},
-        connection::TcpFlagField,
+        connection::{TcpFlagField, TlsData},
         util::date_str,
     },
     files::{pcap::PCAP, pcapng::PCAPNG},
@@ -38,6 +38,15 @@ pub type NString = &'static str;
 
 pub fn range64(range: Range<usize>) -> Range<u64> {
     range.start as u64..range.end as u64
+}
+
+fn field_session_id_str(data: &[u8]) -> String {
+    let len = std::cmp::min(32, data.len());
+    let mut rs = String::with_capacity(len * 2);
+    for (_, item) in data.iter().enumerate().take(len) {
+        rs.push_str(&format!("{:02x}", *item));
+    }
+    rs
 }
 
 pub fn quick_hash<T>(data: T) -> u64
@@ -288,7 +297,7 @@ where
         &self.ctx
     }
 
-    pub fn loader(&self) -> &dyn ResourceLoader{   
+    pub fn loader(&self) -> &dyn ResourceLoader {
         &self.loader
     }
 
@@ -521,8 +530,8 @@ where
         if let Some(frame) = self.frame(index) {
             if let Some(range) = frame.frame_range() {
                 let data = self.loader.load(&range).unwrap();
-                let ds= DataSource::create(data, range);
-                let mut datasources = vec!();
+                let ds = DataSource::create(data, range);
+                let mut datasources = vec![];
                 let mut reader = Reader::new(&ds);
                 let mut list = vec![];
                 let mut _next = frame.head;
@@ -660,18 +669,120 @@ where
         ListResult::new(start, total, data)
     }
 
-    fn _tls_infos(&self) {
-        for frame in &self.ctx.list {
-            if let ProtocolInfoField::TLS(tls_list) = &frame.protocol_field {
-                for block in &tls_list.list{
-                    if block.content_type == 22 {
-                        // TODO 
+    fn parse_handshake(&self, tls_data: &TlsData) -> Result<()> {
+        let ranges: Vec<Range<usize>> = tls_data.segments.iter().map(|f| f.range.clone()).collect();
+        let data = self.loader.loads(&ranges)?;
+        let ds = DataSource::create(data, 0..0);
+        let mut reader = Reader::new(&ds);
+        let ct = reader.read8()?;
+        reader.forward(2);
+        let len1 = reader.read16(true)?;
+        let mt = reader.read8()?;
+        let len2 = reader.read24()?;
+        let diff = len1.saturating_sub(len2 as u16);
+        if diff == 4 {
+            match mt {
+                1 => {
+                    reader.forward(34);
+                    let session_id_len = reader.read8()? as usize;
+                    let session = reader.slice(session_id_len, true)?;
+                    let session_str = field_session_id_str(session);
+                    let cipher_suite_len = reader.read16(true)?;
+                    reader.forward(cipher_suite_len as usize);
+                    let compression_len = reader.read8()?;
+                    reader.forward(compression_len as usize);
+                    let extention_len = reader.read16(true)?;
+                    if extention_len > 0 {
+                        let mut extention_reader = reader.slice_as_reader(extention_len as usize)?;
+                        while extention_reader.left() >= 4 {
+                            let extention_type = extention_reader.read16(true)?;
+                            let extention_len = extention_reader.read16(true)?;
+                            if extention_type == 0 {
+                                let mut ext_reader = extention_reader.slice_as_reader(extention_len as usize)?;
+                                ext_reader.forward(5);
+                                let sni = ext_reader.read_string((extention_len - 5) as usize)?;
+                                // println!("hello client session_id: {session_str} sni:{sni}");
+                                break;
+                            } else {
+                                extention_reader.forward(extention_len as usize);
+                            }
+                        }
+                    }
+                },
+                2 => {
+                    reader.forward(34);
+                    // println!("hello server session_id:");
+                    let session_id_len = reader.read8()? as usize;
+                    if session_id_len > 0 {
+
+                    }
+                    
+                },
+                _ => {}
+            }
+            //     // println!("contenttype: {ct}, message type: {mt}")
+        }
+
+        Ok(())
+    }
+
+    pub fn _tls_infos(&self) {
+        // let map: FastHashMap<String, usize> = FastHashMap::default();
+        for conver in &self.ctx.conversation_list {
+            for connection in &conver.connections {
+                let (client_index, server_index) = &connection.tls_meta;
+                if let Some(index) = client_index {
+                    if let Some(frame) = self.ctx.list.get(*index as usize) {
+                        if let ProtocolInfoField::TLS(tls_list) = &frame.protocol_field {
+                            for block in &tls_list.list {
+                                if block.content_type == 22 {
+                                    // let message = block.sub_type.unwrap();
+                                    // println!("client {message}");
+                                    if let Ok(_) = self.parse_handshake(&block) {
+
+                                    }
+                                }
+                            }
+                            // println!("errrrorr2");
+                        } else {
+                            // println!("errrrorr");
+                        }
                     }
                 }
             }
         }
+        // for frame in &self.ctx.list {
+        //     let index = frame.info.index;
+        //     if let ProtocolInfoField::TLS(tls_list) = &frame.protocol_field {
+        //         for block in &tls_list.list {
+        //             if block.content_type == 22 {
+        //                 if let Ok(_) = self.parse_handshake(&block) {}
+        //                 // let ranges: Vec<Range<usize>> = block.segments.iter().map(|f|f.range.clone()).collect();
+        //                 // let data = self.loader.loads(&ranges).unwrap();
+        //                 // let ds = DataSource::create(data, 0..0);
+        //                 // let mut reader = Reader::new(&ds);
+        //                 // let ct = reader.read8().unwrap();
+        //                 // reader.forward(2);
+        //                 // let len1 = reader.read16(true).unwrap();
+        //                 // let mt = reader.read8().unwrap();
+        //                 // let len2 = reader.read24().unwrap();
+        //                 // let diff = len1.saturating_sub(len2 as u16);
+        //                 // if diff == 4 {
+        //                 //     println!("index:{index} contenttype: {ct}, message type: {mt}")
+        //                 // }
+        //                 // println!("index:{index} contenttype: {ct}, message type: {mt}, offset: {diff}")
+
+        //                 // TODO
+        //             }
+        //         }
+        //     }
+        // }
     }
 }
+
+
+
+
 pub mod concept;
 pub mod connection;
 pub mod core;

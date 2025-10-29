@@ -12,9 +12,12 @@ use std::{
 use anyhow::{bail, Result};
 
 use crate::common::{
-    ResourceLoader, concept::{
-        ConnectionIndex, Conversation, ConversationKey, CounterItem, FrameIndex, HttpConnectIndex, HttpCriteria, HttpMessageDetail, LineChartData, MessageIndex, Timestamp, VHttpConnection
-    }, enum_def::{AddressField, Protocol}
+    concept::{
+        ConnectionIndex, Conversation, ConversationKey, CounterItem, FrameIndex, HttpConnectIndex, HttpCriteria, HttpMessageDetail, LineChartData, MessageIndex, Timestamp,
+        VHttpConnection,
+    },
+    enum_def::{AddressField, Protocol},
+    ResourceLoader,
 };
 
 use super::{
@@ -109,7 +112,6 @@ pub struct HttpConntect {
     pub rt: Timestamp,
 }
 
-
 impl HttpConntect {
     pub fn to_message<'a>(&self, ctx: &'a Context, index: &Option<MessageIndex>) -> Option<&'a HttpMessage> {
         if let Some(_index) = index {
@@ -170,10 +172,10 @@ impl HttpConntect {
     pub fn convert_to_detail(&self, ctx: &Context, loader: &dyn ResourceLoader) -> Result<Vec<HttpMessageDetail>> {
         let mut list = vec![];
         if let Ok(message) = self.to_detail(ctx, loader, &self.request, true) {
-            list.push(message);   
+            list.push(message);
         }
         if let Ok(message) = self.to_detail(ctx, loader, &self.response, false) {
-            list.push(message);   
+            list.push(message);
         }
         Ok(list)
     }
@@ -197,7 +199,7 @@ impl HttpConntect {
         (method, status, ct)
     }
 
-    pub fn do_match(&self, filter: &Option<HttpCriteria>) -> bool{
+    pub fn do_match(&self, filter: &Option<HttpCriteria>) -> bool {
         if let Some(fil) = filter {
             if let Some(_host) = &fil.hostname {
                 if let Some(hn) = &self.hostname {
@@ -379,6 +381,12 @@ impl PartialOrd for IPV6Point {
     }
 }
 
+pub enum TLSFlag {
+    None,
+    ClientHello,
+    ServerHello,
+}
+
 impl Context {
     pub fn new() -> Self {
         Self::default()
@@ -448,7 +456,7 @@ impl Context {
         }
     }
 
-    pub fn connection(&mut self, frame: &mut Frame) -> Option<(ConnectionIndex, &mut Endpoint)> {
+    pub fn connection(&mut self, frame: &Frame) -> Option<(ConnectionIndex, &mut Endpoint)> {
         if let Some(tcp_info) = &frame.tcp_info {
             if let Some(((conversation_index, connect_index), reverse)) = tcp_info.connection {
                 if let Some(conversation) = self.conversation_list.get_mut(conversation_index) {
@@ -462,6 +470,32 @@ impl Context {
             }
         }
         None
+    }
+    pub fn _connection(&mut self, frame: &Frame) -> Option<&mut Connection> {
+        if let Some(tcp_info) = &frame.tcp_info {
+            if let Some(((conversation_index, connect_index), reverse)) = tcp_info.connection {
+                if let Some(conversation) = self.conversation_list.get_mut(conversation_index) {
+                    return conversation.connection(connect_index);
+                }
+            }
+        }
+        None
+    }
+    pub fn tls_flag_update(&mut self, frame: &Frame, flag: TLSFlag) {
+        let index = frame.info.index;
+        match &flag {
+            TLSFlag::ClientHello => {
+                if let Some(connection) = self._connection(frame) {
+                    connection.tls_meta = (Some(index), connection.tls_meta.1);
+                }
+            }
+            TLSFlag::ServerHello => {
+                if let Some(connection) = self._connection(frame) {
+                    connection.tls_meta = (connection.tls_meta.0, Some(index));
+                }
+            }
+            _ => {}
+        }
     }
     pub fn add_http_hostname(&mut self, message_index: MessageIndex, hostname: &str) {
         if let Some(message) = self.http_messages.get(message_index as usize) {

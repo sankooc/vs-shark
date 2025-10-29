@@ -385,6 +385,7 @@ pub struct Connection {
     pub primary: Endpoint,
     pub second: Endpoint,
     pub protocol: Protocol,
+    pub tls_meta: (Option<FrameIndex>, Option<FrameIndex>)
 }
 impl Connection {
     pub fn new(primary: Endpoint, second: Endpoint) -> Self {
@@ -392,6 +393,7 @@ impl Connection {
             primary,
             second,
             protocol: Protocol::None,
+            tls_meta: (None, None)
         }
     }
     pub fn primary(&self) -> &Endpoint {
