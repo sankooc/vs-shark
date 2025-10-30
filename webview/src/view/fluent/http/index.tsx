@@ -92,8 +92,15 @@ function Component() {
                     }
                 }
                 const media = http_connct_status(status);
+                let color = '#fabd2f';
+                const code = parseInt(status, 10);
+                if(code < 400){
+                    color = '#b8bb26';
+                } else if (code >= 400){
+                    color = '#fb4934'; 
+                }
                 return (
-                    <TableCellLayout media={media} style={{ textAlign: 'center' }}>
+                    <TableCellLayout media={media} style={{ textAlign: 'center', color }}>
                         {status}
                     </TableCellLayout>
                 );
