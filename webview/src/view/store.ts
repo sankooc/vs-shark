@@ -9,6 +9,7 @@ import {
   deserialize,
   IFrameSelect,
   IHttpDetail,
+  ITLSInfo,
   PcapFile,
   StatRequest,
   VRange,
@@ -40,7 +41,7 @@ interface PcapState {
   cachehttp: (conn: IVHttpConnection | null) => void;
   getHttpCache: () => IVHttpConnection | null;
   stat: (request: StatRequest) => Promise<any> ;
-  // frameList: (page: number, size: number) => Promise<IListResult<IFrameInfo>>;
+  tlsList: () => Promise<ITLSInfo[]>;
 }
 // const compute = (page: number, size: number): Pagination => {
 //   if (page < 1) {
@@ -95,6 +96,7 @@ export const useStore = create<PcapState>()((set) => {
         break;
       }
       case ComType.STAT_RES:
+      case ComType.TLS_RES:
       {
         emitter.emit(id, deserialize(body));
         break;
@@ -171,6 +173,11 @@ export const useStore = create<PcapState>()((set) => {
     },
     getHttpCache: () => {
       return httpCache;
+    },
+    tlsList: () => {
+      const req = new ComMessage(ComType.TLS_REQ, {});
+      return doRequest<ITLSInfo[]>(req);
+
     },
     stat: (request: StatRequest): Promise<any[]> => {
       const req = new ComMessage(ComType.STAT_REQ, request);

@@ -249,7 +249,7 @@ pub struct Context {
     pub http_messages: Vec<HttpMessage>,
     pub http_hostnames: FastHashMap<String, u16>,
 
-    pub tls_sni: FastHashMap<String, u16>,
+    // pub tls_sni: FastHashMap<String, u16>,
     // ethernet
     pub ethermap: FastHashMap<u64, EthernetCache>,
     pub ipv6map: FastHashMap<u64, (u8, Ipv6Addr, Ipv6Addr)>,
@@ -473,7 +473,7 @@ impl Context {
     }
     pub fn _connection(&mut self, frame: &Frame) -> Option<&mut Connection> {
         if let Some(tcp_info) = &frame.tcp_info {
-            if let Some(((conversation_index, connect_index), reverse)) = tcp_info.connection {
+            if let Some(((conversation_index, connect_index), _)) = tcp_info.connection {
                 if let Some(conversation) = self.conversation_list.get_mut(conversation_index) {
                     return conversation.connection(connect_index);
                 }
@@ -547,12 +547,12 @@ impl Context {
     pub fn stat_http_host(&self) -> String {
         Context::_list_map(&self.http_hostnames)
     }
-    pub fn add_tls_sni(&mut self, sni: String) {
-        Context::add_map(&sni, &mut self.tls_sni);
-    }
-    pub fn stat_tls_sni(&self) -> String {
-        Context::_list_map(&self.tls_sni)
-    }
+    // pub fn add_tls_sni(&mut self, sni: String) {
+    //     Context::add_map(&sni, &mut self.tls_sni);
+    // }
+    // pub fn stat_tls_sni(&self) -> String {
+    //     Context::_list_map(&self.tls_sni)
+    // }
     pub fn add_ip4(&mut self, ip: &Ipv4Addr) {
         Context::add_map(ip, &mut self.stat_ip4);
     }

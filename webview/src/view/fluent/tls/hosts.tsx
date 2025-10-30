@@ -13,20 +13,21 @@ import {
   TableHeaderCell,
   TableCellLayout,
 } from "@fluentui/react-components";
-import { ICounterItem } from "../../../share/gen";
 
 import { PageFrame } from '../table';
 import { TLSIcon } from "../common";
 import Empty from "../http/content/empty";
+import { ITLSInfo } from "../../../share/common";
 
 
 export default function Component() {
 
-  const [list, setList] = useState<ICounterItem[]>([]);
+  const [list, setList] = useState<ITLSInfo[]>([]);
 
-  const stat = useStore((state) => state.stat);
+  const tlsList = useStore((state) => state.tlsList);
   useEffect(() => {
-    stat({field: 'tls_sni'}).then(setList);
+    tlsList().then(setList);
+    // stat({field: 'tls_sni'}).then(setList);
   }, [])
 
 
@@ -36,11 +37,24 @@ export default function Component() {
   if (list.length == 0){
     return <Empty/>
   }
+  const headCell = (item: ITLSInfo) => {
+    if(item.alpn && item.alpn.length){
+      return <TableCellLayout media={<LockClosedColor />}>
+                  {item.alpn.join(',')}
+    </TableCellLayout>
+    }
+    return <TableCellLayout media={<LockClosedColor />} style={{color: '#999', fontStyle: 'italic'}}>
+                  none
+    </TableCellLayout>
+  }
   return (
     <PageFrame breads={breads}>
       <Table size="small" style={{ minWidth: "510px" }}>
         <TableHeader>
           <TableRow>
+            <TableHeaderCell style={{width: "100px"}}>
+              Protocol
+            </TableHeaderCell>
             <TableHeaderCell>
               Host
             </TableHeaderCell>
@@ -51,10 +65,13 @@ export default function Component() {
         </TableHeader>
         <TableBody>
           {list.map((item) => (
-            <TableRow key={item.key}>
+            <TableRow key={item.hostname}>
               <TableCell>
-                <TableCellLayout media={<LockClosedColor />}>
-                  {item.key}
+                {headCell(item)}
+              </TableCell>
+              <TableCell>
+                <TableCellLayout>
+                  {item.hostname}
                 </TableCellLayout>
               </TableCell>
               <TableCell>

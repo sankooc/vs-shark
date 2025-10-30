@@ -55,16 +55,17 @@ export interface IVEndpoint {
     statistic: ITCPStatistic;
 }
 export interface IVHttpConnection {
+    index: number,
     request?: string;
     response?: string;
     rt: string;
     content_type: string;
     hostname: string,
     length: number;
-    request_headers: [number, number][];
-    response_headers: [number, number][];
-    request_body: [number, number][];
-    response_body: [number, number][];
+    // request_headers: [number, number][];
+    // response_headers: [number, number][];
+    // request_body: [number, number][];
+    // response_body: [number, number][];
 }
 
 export interface ICounterItem {

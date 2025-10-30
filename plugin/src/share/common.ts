@@ -27,6 +27,8 @@ export enum ComType {
   HTTP_DETAIL_RES = "http_detail_res",
   STAT_REQ = "STAT_REQ",
   STAT_RES = "STAT_RES",
+  TLS_REQ = "TLS_REQ",
+  TLS_RES = "TLS_RES"
   // HTTP_STATISTICS_REQ = "http_statistics_req",
   // HTTP_STATISTICS_RES = "http_statistics_res",
   // TLS_STATISTICS_REQ = "tls_statistics_req",
@@ -141,13 +143,14 @@ export interface IResult<T> {
   size: number;
 }
 
+export interface IDataSource {
+  data: Uint8Array,
+  range: VRange,
+}
 
 export interface IFrameSelect {
-  data: Uint8Array;
-  start: number;
-  end: number;
   fields: IField[];
-  extra?: Uint8Array;
+  datasource: IDataSource[]
 }
 
 export interface HttpMessageWrap {
@@ -162,6 +165,17 @@ export interface MessageCompress {
   data: Uint8Array
 }
 
+export interface ITLSInfo {
+  hostname: string,
+  alpn: string[],
+  count: number,
+}
+export interface IHttpDetail {
+  headers: string[],
+  raw?: Uint8Array,
+  plaintext?: string,
+  content_type?: string,
+}
 
 export const compute = (page: number, size: number): Pagination => {
   if (page < 1) {

@@ -49,10 +49,10 @@ ready.then((rs) => {
     doReady(): void {
       this.init();
     }
-    async pickData(start: number, end: number): Promise<Uint8Array> {
-      const _data = client.data!.slice(start, end);
-      return _data;
-    }
+    // async pickData(start: number, end: number): Promise<Uint8Array> {
+    //   const _data = client.data!.slice(start, end);
+    //   return _data;
+    // }
     emitMessage(msg: ComMessage<any>): void {
       ctx.postMessage(msg);
     }

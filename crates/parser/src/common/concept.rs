@@ -559,6 +559,26 @@ impl HttpMessageDetail {
 }
 
 
+
+#[derive(Serialize, Clone)]
+pub struct TLSItem {
+    pub hostname: String,
+    pub alpn: Vec<String>,
+    pub count: usize,
+}
+
+impl TLSItem {
+    pub fn new(hostname: String) -> Self{
+        Self {hostname, count: 0, alpn: vec!()}
+    }
+    pub fn update(&mut self){
+        self.count += 1;
+    }
+    pub fn add_alpn(&mut self, alpn: Vec<String>){
+        self.alpn = alpn;
+    }
+}
+
 fn decode_bytes(body_raw: &[u8], encoding: HttpEncoding) -> String {
     let decoded_data = match encoding {
         HttpEncoding::None => body_raw.to_vec(),

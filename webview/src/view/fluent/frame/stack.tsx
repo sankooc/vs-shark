@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Cursor, IField, IFrameSelect, VRange } from "../../../share/common";
+import { Cursor, IField, IFrameSelect } from "../../../share/common";
 import { useStore } from "../../store";
 import { makeStyles, Tree, TreeItem, TreeItemLayout } from "@fluentui/react-components";
 import AutoSizer from "react-virtualized-auto-sizer";

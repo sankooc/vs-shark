@@ -4,18 +4,6 @@ import mitt, { Emitter } from "mitt";
 
 export const BATCH_SIZE = 1024 * 1024 * 1;
 
-// function concatLargeUint8Arrays(arrays: Uint8Array[]): Uint8Array {
-//   const totalLength = arrays.reduce((acc, arr) => acc + arr.length, 0);
-//   const buffer = new ArrayBuffer(totalLength);
-//   const result = new Uint8Array(buffer);
-//   let offset = 0;
-//   for (const arr of arrays) {
-//     result.set(arr, offset);
-//     offset += arr.length;
-//   }
-//   return result;
-// }
-
 function frameSelectConvert(frameSelect: FrameResult): any {
   // const rs = {};
   const str = frameSelect.list();
@@ -44,9 +32,11 @@ export abstract class PCAPClient {
   ready: boolean = false;
   ctx?: WContext;
   info?: PcapFile;
+  resourceId?: string;
   init(): void {
     if (!this.ctx) {
-      this.ctx = load(Conf.new(Date.now() + '', false, BATCH_SIZE));
+      this.resourceId = Date.now() + '';
+      this.ctx = load(Conf.new(this.resourceId, false, BATCH_SIZE));
     }
   }
   private async update(data: Uint8Array): Promise<string> {
@@ -66,10 +56,10 @@ export abstract class PCAPClient {
     return "";
   }
   abstract doReady(): void;
-  abstract appendData(data: Uint8Array): void;
+  // abstract appendData(data: Uint8Array): void;
   abstract printLog(log: ComLog): void;
   abstract emitMessage(msg: ComMessage<any>): void;
-  abstract pickData(start: number, end: number): Promise<Uint8Array>;
+  // abstract pickData(start: number, end: number): Promise<Uint8Array>;
 
   private touchFile(fileInfo: PcapFile): void {
     this.info = fileInfo;
@@ -172,45 +162,17 @@ export abstract class PCAPClient {
     }
     return [];
   }
-  // private async http_detail(http_connection: IVHttpConnection): Promise<MessageCompress[]> {
-  //   const { request, response } = http_connection;
-  //   const list = [];
-  //   if (request) {
-  //     const { request_headers: headers, request_body: body } = http_connection;
-  //     const header_data = await this.pickMultiData(headers);
-  //     const body_data = await this.pickMultiData(body);
-  //     list.push({
-  //       json: this.ctx!.http_header_parse(request, header_data, body_data),
-  //       data: body_data
-  //     });
-  //   }
-  //   if (response) {
-  //     const { response_headers: headers, response_body: body } = http_connection;
-  //     const header_data = await this.pickMultiData(headers);
-  //     const body_data = await this.pickMultiData(body);
-  //     list.push({
-  //       json: this.ctx!.http_header_parse(response, header_data, body_data),
-  //       data: body_data
-  //     });
-  //   }
-  //   return list;
-  // }
-  // private async pickMultiData(segments: [number, number][]): Promise<Uint8Array> {
-  //   if (segments.length === 0) {
-  //     return new Uint8Array(0);
-  //   }
-  //   const list = [];
-  //   for (const segment of segments) {
-  //     list.push(await this.pickData(segment[0], segment[1]));
-  //   }
-  //   return concatLargeUint8Arrays(list);
-  // }
   private async stat(field: string): Promise<string> {
     if (this.ctx) {
       return this.ctx.stat(field)
     }
     return "[]";
   }
+
+  private tls_list(): string | undefined {
+    return this.ctx?.list_tls()
+  }
+
   private async process(): Promise<void> {
     if (this.isPendding) {
       return;
@@ -292,6 +254,13 @@ export abstract class PCAPClient {
               ComMessage.new(ComType.HTTP_DETAIL_RES, rs, id),
             );
           }
+          break;
+        }
+        case ComType.TLS_REQ: {
+          const result = this.tls_list() || '[]';
+          this.emitMessage(
+            ComMessage.new(ComType.TLS_RES, result, id),
+          );
           break;
         }
         case ComType.STAT_REQ: {

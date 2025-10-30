@@ -1,24 +1,29 @@
-import { load, WContext, Conf } from "rshark";
-import { ComLog, ComMessage, ComRequest, ComType, MessageCompress, PcapFile, StatRequest } from "./common";
+import { load, WContext, Conf, FrameResult, HttpDetail } from "rshark";
+import { ComLog, ComMessage, ComRequest, ComType, IHttpDetail, PcapFile, StatRequest, VRange } from "./common";
 import mitt, { Emitter } from "mitt";
-import { IVHttpConnection } from "./gen";
 
 export const BATCH_SIZE = 1024 * 1024 * 1;
 
-function concatLargeUint8Arrays(arrays: Uint8Array[]): Uint8Array {
-  const totalLength = arrays.reduce((acc, arr) => acc + arr.length, 0);
-  const buffer = new ArrayBuffer(totalLength);
-  const result = new Uint8Array(buffer);
-  let offset = 0;
-  for (const arr of arrays) {
-    result.set(arr, offset);
-    offset += arr.length;
+function frameSelectConvert(frameSelect: FrameResult): any {
+  // const rs = {};
+  const str = frameSelect.list();
+  const datasource = [];
+  const len = frameSelect.data_count();
+  for (let i = 0; i < len; i += 1) {
+    let data = frameSelect.data(i);
+    if (data) {
+      const _range = frameSelect.range(i);
+      let range = null;
+      if (_range) {
+        range = new VRange(_range.start, _range.end);
+      }
+      datasource.push({ data, range })
+    }
   }
-  return result;
+  return { str, datasource };
 }
 
 export abstract class PCAPClient {
-
   private emitter: Emitter<any> = mitt();
   private highPirityQueue: ComMessage<any>[] = [];
   private lowPirityQueue: ComMessage<any>[] = [];
@@ -27,9 +32,11 @@ export abstract class PCAPClient {
   ready: boolean = false;
   ctx?: WContext;
   info?: PcapFile;
+  resourceId?: string;
   init(): void {
     if (!this.ctx) {
-      this.ctx = load(Conf.new(false, BATCH_SIZE));
+      this.resourceId = Date.now() + '';
+      this.ctx = load(Conf.new(this.resourceId, false, BATCH_SIZE));
     }
   }
   private async update(data: Uint8Array): Promise<string> {
@@ -49,10 +56,10 @@ export abstract class PCAPClient {
     return "";
   }
   abstract doReady(): void;
-  abstract appendData(data: Uint8Array): void;
+  // abstract appendData(data: Uint8Array): void;
   abstract printLog(log: ComLog): void;
   abstract emitMessage(msg: ComMessage<any>): void;
-  abstract pickData(start: number, end: number): Promise<Uint8Array>;
+  // abstract pickData(start: number, end: number): Promise<Uint8Array>;
 
   private touchFile(fileInfo: PcapFile): void {
     this.info = fileInfo;
@@ -106,23 +113,25 @@ export abstract class PCAPClient {
         // let rs;
         switch (catelog) {
           case "frame": {
-            const range = this.ctx!.frame_range(index);
-            const data = await this.pickData(range.data.start, range.data.end);
-            const frameResult = this.ctx.select_frame(index, data);
-            const rs: any = {};
-            if (range.compact()) {
-              rs.data = data;
-            } else {
-              const _start = range.frame.start - range.data.start;
-              const _end = range.frame.end - range.data.start;
-              rs.data = data.slice(_start, _end);
-            }
-            rs.start = range.frame.start;
-            rs.end = range.frame.end;
-            rs.liststr = frameResult.list();
-            if (frameResult.extra()?.length > 0) {
-              rs.extra = frameResult.extra();
-            }
+            // const range = this.ctx!.frame_range(index);
+            // const data = await this.pickData(range.data.start, range.data.end);
+            // const frameResult = this.ctx.select_frame(index, data);
+            const frameResult = this.ctx.select_frame(index);
+            const rs = frameSelectConvert(frameResult);
+            // rs.data = frameResult.source()
+            // if (range.compact()) {
+            //   rs.data = data;
+            // } else {
+            //   const _start = range.frame.start - range.data.start;
+            //   const _end = range.frame.end - range.data.start;
+            //   rs.data = data.slice(_start, _end);
+            // }
+            // rs.start = range.frame.start;
+            // rs.end = range.frame.end;
+            // rs.liststr = frameResult.list();
+            // if (frameResult.extra()?.length > 0) {
+            //   rs.extra = frameResult.extra();
+            // }
             this.emitMessage(
               ComMessage.new(ComType.FRAMES_SELECT, rs, requestId),
             );
@@ -139,38 +148,19 @@ export abstract class PCAPClient {
       ComMessage.new(ComType.error, "failed", requestId),
     );
   }
-  private async http_detail(http_connection: IVHttpConnection): Promise<MessageCompress[]> {
-    const { request, response } = http_connection;
-    const list = [];
-    if (request) {
-      const { request_headers: headers, request_body: body } = http_connection;
-      const header_data = await this.pickMultiData(headers);
-      const body_data = await this.pickMultiData(body);
-      list.push({
-        json: this.ctx!.http_header_parse(request, header_data, body_data),
-        data: body_data
-      });
+  private async http_detail2(index: number): Promise<IHttpDetail[]> {
+    let rs = this.ctx?.http_detail(index);
+    const convert = (data: HttpDetail): IHttpDetail => {
+      const headers = data.headers();
+      const raw = data.raw_content();
+      const plaintext = data.get_text_content();
+      const content_type = data.content_type();
+      return { headers, raw, plaintext, content_type }
     }
-    if (response) {
-      const { response_headers: headers, response_body: body } = http_connection;
-      const header_data = await this.pickMultiData(headers);
-      const body_data = await this.pickMultiData(body);
-      list.push({
-        json: this.ctx!.http_header_parse(response, header_data, body_data),
-        data: body_data
-      });
+    if (rs) {
+      return rs.map(convert)
     }
-    return list;
-  }
-  private async pickMultiData(segments: [number, number][]): Promise<Uint8Array> {
-    if (segments.length === 0) {
-      return new Uint8Array(0);
-    }
-    const list = [];
-    for (const segment of segments) {
-      list.push(await this.pickData(segment[0], segment[1]));
-    }
-    return concatLargeUint8Arrays(list);
+    return [];
   }
   private async stat(field: string): Promise<string> {
     if (this.ctx) {
@@ -178,6 +168,11 @@ export abstract class PCAPClient {
     }
     return "[]";
   }
+
+  private tls_list(): string | undefined {
+    return this.ctx?.list_tls()
+  }
+
   private async process(): Promise<void> {
     if (this.isPendding) {
       return;
@@ -232,7 +227,7 @@ export abstract class PCAPClient {
         case ComType.log:
           this.printLog(body as ComLog);
           break;
-        case ComType.REQUEST:{
+        case ComType.REQUEST: {
           const req: ComRequest = body;
           const { catelog, type, param } = req;
           switch (type) {
@@ -252,9 +247,19 @@ export abstract class PCAPClient {
           break;
         }
         case ComType.HTTP_DETAIL_REQ: {
-          const rs = await this.http_detail(body as IVHttpConnection);
+          const index = body.index;
+          if (index >= 0) {
+            const rs = await this.http_detail2(index);
+            this.emitMessage(
+              ComMessage.new(ComType.HTTP_DETAIL_RES, rs, id),
+            );
+          }
+          break;
+        }
+        case ComType.TLS_REQ: {
+          const result = this.tls_list() || '[]';
           this.emitMessage(
-            ComMessage.new(ComType.HTTP_DETAIL_RES, rs, id),
+            ComMessage.new(ComType.TLS_RES, result, id),
           );
           break;
         }

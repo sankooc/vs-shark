@@ -27,6 +27,8 @@ export enum ComType {
   HTTP_DETAIL_RES = "http_detail_res",
   STAT_REQ = "STAT_REQ",
   STAT_RES = "STAT_RES",
+  TLS_REQ = "TLS_REQ",
+  TLS_RES = "TLS_RES"
   // HTTP_STATISTICS_REQ = "http_statistics_req",
   // HTTP_STATISTICS_RES = "http_statistics_res",
   // TLS_STATISTICS_REQ = "tls_statistics_req",
@@ -163,6 +165,11 @@ export interface MessageCompress {
   data: Uint8Array
 }
 
+export interface ITLSInfo {
+  hostname: string,
+  alpn: string[],
+  count: number,
+}
 export interface IHttpDetail {
   headers: string[],
   raw?: Uint8Array,

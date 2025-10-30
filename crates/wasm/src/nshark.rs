@@ -123,7 +123,12 @@ impl WContext {
         let rs = self.ctx.udp_conversations(Criteria { start, size }, filter);
         serde_json::to_string(&rs).unwrap_or("{}".into())
     }
-     #[wasm_bindgen]
+    #[wasm_bindgen]
+    pub fn list_tls(&self) -> Option<String> {
+        let list =self.ctx.tls_infos();
+        serde_json::to_string(&list).ok()
+    }
+    #[wasm_bindgen]
     pub fn http_detail(&self, index: usize) -> Option<Vec<HttpDetail>>{
         if let Some(data) = self.ctx.http_detail(index) {
             Some(data.into_iter().map(HttpDetail::from).collect())
@@ -136,7 +141,7 @@ impl WContext {
         let ctx = self.ctx.context();
         match field.as_str() {
             "http_host" => ctx.stat_http_host(),
-            "tls_sni" => ctx.stat_tls_sni(),
+            // "tls_sni" => ctx.stat_tls_sni(),
             "ip4" => ctx.stat_ip4(),
             "ip6" => ctx.stat_ip6(),
             "http_data" => ctx.stat_http_data(),

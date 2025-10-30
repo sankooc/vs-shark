@@ -3,6 +3,7 @@ import { Disposable, disposeAll } from "./dispose";
 import { ComLog, ComMessage, ComType, PcapFile } from "./share/common";
 import { FileTailWatcher } from "./fswatcher";
 import { BATCH_SIZE, PCAPClient } from "./share/client";
+import { Range } from "rshark";
 
 function getNonce() {
   let text = "";
@@ -85,6 +86,9 @@ class PcapDocument extends Disposable implements vscode.CustomDocument {
 export class Client extends PCAPClient {
   doReady(): void {
     this.init();
+    if(this.resourceId){
+      resoruceMap[this.resourceId] = this.watcher;
+    }
     const info: PcapFile = { name: this.watcher.filePath, size: 0, start: 0 };
     this.handle(ComMessage.new(ComType.TOUCH_FILE, info));
     this.watcher.start((buffer: Buffer) => {
@@ -112,7 +116,11 @@ export class Client extends PCAPClient {
   emitMessage(msg: ComMessage<any>): void {
     this.view.postMessage(msg);
   }
-  dispose(): void{
+  dispose(): void {
+    const resourceId = this.resourceId;
+    if(resourceId){
+      delete resoruceMap[resourceId];
+    }
     this.watcher.stop();
     this.ctx?.free();
   }
@@ -123,8 +131,9 @@ export class Client extends PCAPClient {
 
 const bufferToUint8Array = (buffer: Buffer): Uint8Array => {
   return new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength);
-  // return buffer;
 };
+
+const resoruceMap: Record<string, FileTailWatcher> = {};
 
 export class PcapViewerProvider
   implements vscode.CustomReadonlyEditorProvider<PcapDocument> {
@@ -199,7 +208,7 @@ export class PcapViewerProvider
 
     // const info: PcapFile = { name: document.uri.fsPath, size: 0, start: 0 };
     if (!document.client) {
-      // document.watcher;
+      
       const client = new Client(webviewPanel.webview, PcapViewerProvider.output, document.watcher);
       // client.handle(ComMessage.new(ComType.TOUCH_FILE, info));
       document.client = client;
@@ -241,14 +250,32 @@ export class PcapViewerProvider
 
 const self_ = global as any;
 
-self_.load_data = () => {
-  return new Uint8Array();
-};
-
 self_.wasm_log = (str: string) => {
   console.log('[wasm]: ', str);
 };
 
+self_.load_data = (id: string, range: Range) => {
+  const watcher = resoruceMap[id];
+  if(watcher){
+    const buffer = watcher.load(range);
+    if (buffer){
+      return bufferToUint8Array(buffer);
+    }
+  }
+  return new Uint8Array();
+};
+
+self_.loads_data = (id: string, ranges: Range[]) => {
+  const watcher = resoruceMap[id];
+  if(watcher){
+    const buffer = watcher.loads(ranges);
+    if (buffer){
+      return bufferToUint8Array(buffer);
+    }
+
+  }
+  return new Uint8Array();
+};
 
 class WebviewCollection {
   private readonly _webviews = new Set<{

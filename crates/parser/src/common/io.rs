@@ -269,6 +269,9 @@ impl Reader<'_> {
         self.cursor..self.range.end
     }
     pub fn forward(&mut self, len: usize) -> bool {
+        if len == 0 {
+            return true;
+        }
         self.set(self.cursor + len)
     }
     pub fn back(&mut self, len: usize) -> bool {

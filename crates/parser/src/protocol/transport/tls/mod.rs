@@ -11,7 +11,7 @@ use crate::common::enum_def::{ProtocolInfoField, SegmentStatus};
 use crate::common::io::DataSource;
 use crate::common::{enum_def::Protocol, io::Reader, Frame};
 use crate::{add_field_format, add_field_format_fn};
-use anyhow::{bail, Result};
+use anyhow::Result;
 use record::parse_record_detail;
 mod extension;
 pub mod record;
@@ -150,19 +150,6 @@ impl Visitor {
                 }
             }
             ctx.tls_flag_update(frame, tls_flag);
-
-            // match tls_flag {
-            //     TLSFlag::ClientHello => {
-            //         println!("index {index} is client")
-            //     },
-            //     TLSFlag::ServerHello => {
-            //         println!("index {index} is server")
-            //     },
-            //     _ => {}
-            // }
-            // if let Some(sni_name) = sni {
-            //     ctx.add_tls_sni(sni_name);
-            // }   
         }
 
         if list.len() > 0 {
@@ -226,38 +213,38 @@ fn tls_version(val: u16) -> String {
     }
 }
 
-fn parse_sni(reader: &mut Reader) -> Result<String> {
-    // let start = reader.cursor;
-    reader.forward(3); // length
-    let _len = reader.read16(true)?;
-    let mut record_reader = reader.slice_as_reader(_len as usize)?;
-    let _sub_type = record_reader.read8()?;
-    let _ = record_reader.read24()?;
-    record_reader.forward(34);
-    let session_id_len = record_reader.read8()?;
-    record_reader.forward(session_id_len as usize);
-    let cipher_suite_len = record_reader.read16(true)?;
-    record_reader.forward(cipher_suite_len as usize);
-    let compression_len = record_reader.read8()?;
-    record_reader.forward(compression_len as usize);
-    let extention_len = record_reader.read16(true)?;
-    if extention_len > 0 {
-        let mut extention_reader = record_reader.slice_as_reader(extention_len as usize)?;
-        while extention_reader.left() >= 4 {
-            let extention_type = extention_reader.read16(true)?;
-            let extention_len = extention_reader.read16(true)?;
-            if extention_type == 0 {
-                let mut ext_reader = extention_reader.slice_as_reader(extention_len as usize)?;
-                ext_reader.forward(5);
-                let sni = ext_reader.read_string((extention_len - 5) as usize)?;
-                return Ok(sni);
-            } else {
-                extention_reader.forward(extention_len as usize);
-            }
-        }
-    }
-    bail!("")
-}
+// fn parse_sni(reader: &mut Reader) -> Result<String> {
+//     // let start = reader.cursor;
+//     reader.forward(3); // length
+//     let _len = reader.read16(true)?;
+//     let mut record_reader = reader.slice_as_reader(_len as usize)?;
+//     let _sub_type = record_reader.read8()?;
+//     let _ = record_reader.read24()?;
+//     record_reader.forward(34);
+//     let session_id_len = record_reader.read8()?;
+//     record_reader.forward(session_id_len as usize);
+//     let cipher_suite_len = record_reader.read16(true)?;
+//     record_reader.forward(cipher_suite_len as usize);
+//     let compression_len = record_reader.read8()?;
+//     record_reader.forward(compression_len as usize);
+//     let extention_len = record_reader.read16(true)?;
+//     if extention_len > 0 {
+//         let mut extention_reader = record_reader.slice_as_reader(extention_len as usize)?;
+//         while extention_reader.left() >= 4 {
+//             let extention_type = extention_reader.read16(true)?;
+//             let extention_len = extention_reader.read16(true)?;
+//             if extention_type == 0 {
+//                 let mut ext_reader = extention_reader.slice_as_reader(extention_len as usize)?;
+//                 ext_reader.forward(5);
+//                 let sni = ext_reader.read_string((extention_len - 5) as usize)?;
+//                 return Ok(sni);
+//             } else {
+//                 extention_reader.forward(extention_len as usize);
+//             }
+//         }
+//     }
+//     bail!("")
+// }
 fn parse_segment(mut reader: Reader, source: u8) -> Result<Field> {
     let start = reader.cursor;
     let mut field = Field::with_children("".to_string(), start, 0);
@@ -311,18 +298,18 @@ fn check_sni(sni_option: &mut TLSFlag, segment: &TlsData) {
         }
     }
 }
-fn get_sni_info(_reader: &mut Reader, item: &TlsData) -> Result<String> {
-    if item.segments.len() == 1 {
-        let range = item.segments.first().unwrap().range.clone();
-        let ds = _reader.ds();
-        parse_sni(&mut Reader::new_sub(ds, range)?)
-    } else {
-        let data = item.combind(_reader.ds());
-        let ds = DataSource::create(data, 0..0);
-        // Reader::new(&ds)
-        parse_sni(&mut Reader::new(&ds))
-    }
-}
+// fn get_sni_info(_reader: &mut Reader, item: &TlsData) -> Result<String> {
+//     if item.segments.len() == 1 {
+//         let range = item.segments.first().unwrap().range.clone();
+//         let ds = _reader.ds();
+//         parse_sni(&mut Reader::new_sub(ds, range)?)
+//     } else {
+//         let data = item.combind(_reader.ds());
+//         let ds = DataSource::create(data, 0..0);
+//         // Reader::new(&ds)
+//         parse_sni(&mut Reader::new(&ds))
+//     }
+// }
 
 fn parse_current_frame(sni_option: &mut TLSFlag, index: FrameIndex, _reader: &mut Reader, list: &mut TLSList) -> Result<SegmentStatus> {
     let _left = _reader.left();
