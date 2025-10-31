@@ -146,6 +146,7 @@ impl WContext {
             "ip6" => ctx.stat_ip6(),
             "http_data" => ctx.stat_http_data(),
             "frame" => ctx.stat_frame(),
+            "ip_address" => self.ctx.ipaddress_distribute(),
             _ => "[]".to_string(),
         }
     }

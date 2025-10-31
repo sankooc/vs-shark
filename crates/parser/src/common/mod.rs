@@ -9,6 +9,7 @@ use std::{
     cmp,
     collections::HashMap,
     hash::{BuildHasherDefault, Hash, Hasher},
+    net::{Ipv4Addr, Ipv6Addr},
     ops::Range,
 };
 
@@ -752,6 +753,77 @@ where
             }
         }
         map.into_values().collect()
+    }
+
+    pub fn ipaddress_distribute(&self) -> String {
+        let get_ip4_type = |addr: &Ipv4Addr| {
+            if addr.is_loopback() {
+                "loopback"
+            } else if addr.is_broadcast() {
+                "broadcast"
+            } else if addr.is_multicast() {
+                "multicast"
+            } else if addr.is_private() {
+                "private"
+            } else if addr.is_link_local() {
+                "link_local"
+            } else if addr.is_documentation() {
+                "documentation"
+            } else {
+                "public"
+            }
+        };
+        let get_ip6_type = |addr: &Ipv6Addr| {
+            if addr.is_loopback() {
+                "loopback"
+            } else if addr.is_multicast() {
+                "multicast"
+            } else if addr.is_unique_local() {
+                "unique_local"
+            } else if addr.is_unicast_link_local() {
+                "unicast_link_local"
+            } else {
+                "public"
+            }
+        };
+
+        let mut map: FastHashMap<String, usize> = FastHashMap::default();
+        let ipv4 = String::from("IPv4");
+        let ipv6 = String::from("IPv6");
+        for frame in &self.ctx.list {
+            match &frame.address_field {
+                AddressField::IPv4(source, target) => {
+                    Context::add_map(&ipv4, &mut map);
+                    {
+                        let _type = get_ip4_type(source);
+                        let str = _type.to_string();
+                        Context::add_map(&str, &mut map);
+                    }
+                    {
+                        let _type = get_ip4_type(target);
+                        let str = _type.to_string();
+                        Context::add_map(&str, &mut map);
+                    }
+                }
+                AddressField::IPv6(key) => {
+                    Context::add_map(&ipv6, &mut map);
+                    if let Some((_, source, target)) = self.ctx.ipv6map.get(key) {
+                        {
+                            let _type = get_ip6_type(source);
+                            let str = _type.to_string();
+                            Context::add_map(&str, &mut map);
+                        }
+                        {
+                            let _type = get_ip6_type(target);
+                            let str = _type.to_string();
+                            Context::add_map(&str, &mut map);
+                        }
+                    }
+                }
+                _ => {}
+            }
+        }
+        Context::_list_map(&map)
     }
 }
 

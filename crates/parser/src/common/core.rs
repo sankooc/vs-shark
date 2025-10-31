@@ -511,7 +511,7 @@ impl Context {
 }
 
 impl Context {
-    fn add_map<K, T>(key: &K, map: &mut FastHashMap<K, T>)
+    pub fn add_map<K, T>(key: &K, map: &mut FastHashMap<K, T>)
     where
         K: core::hash::Hash + Eq + Clone,
         T: AddAssign + Default + Copy + From<u8>,
@@ -533,7 +533,7 @@ impl Context {
             map.insert(key.clone(), T::from(1));
         }
     }
-    fn _list_map<K, T>(map: &FastHashMap<K, T>) -> String
+    pub fn _list_map<K, T>(map: &FastHashMap<K, T>) -> String
     where
         K: core::hash::Hash + Eq + ToString,
         T: Copy + Into<usize>,
