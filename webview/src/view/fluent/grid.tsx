@@ -37,7 +37,7 @@ function Component<T>(props: GridProps<T>) {
             props.breads && props.breads.length > 0 && <BreadItem items={props.breads} ></BreadItem>
         }
         <DataGrid items={result.items}
-            size="small"
+            size="extra-small"
             resizableColumns
             columnSizingOptions={columnSizingOptions}
             columns={props.columns} style={{ minWidth: "auto", overflow: 'hidden auto' }} className="h-full" >

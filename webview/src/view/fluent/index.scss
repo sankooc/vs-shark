@@ -75,7 +75,9 @@ div[role=tablist] {
         }
     }
 }
-
+div[role=gridcell] {
+    min-height: unset !important;
+}
 
 .overview-page {
     padding: 10px;

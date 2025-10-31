@@ -3,8 +3,8 @@ import { useStore } from "../../store";
 import { SelectTabData, SelectTabEvent, Tab, TabList, TabValue, Tree, TreeItem, TreeItemLayout } from "@fluentui/react-components";
 import { IHttpDetail } from "../../../share/common";
 import indexCss from './index.module.scss';
-import { HttpIcon } from "../common";
-import { AirplaneLandingRegular, AirplaneTakeOffRegular, DocumentGlobeRegular, DocumentOnePageRegular, PanelTopContractRegular, PanelTopExpandRegular } from "@fluentui/react-icons";
+import { HttpHeaderIcon, HttpIcon, TabHttpHead, TabHttpReq, TabHttpRequest, TabHttpRes, TabHttpResponse } from "../common";
+// import { AirplaneLandingRegular, AirplaneTakeOffRegular, DocumentGlobeRegular, DocumentOnePageRegular, PanelTopContractRegular, PanelTopExpandRegular } from "@fluentui/react-icons";
 import ContentComponent from './content';
 import Empty from "./content/empty";
 
@@ -42,14 +42,14 @@ export default function ConnectionList() {
         for (let i = 1; i < it.length; i += 1) {
             const text = it[i];
             items.push(<TreeItem itemType="leaf" key={text}>
-                <TreeItemLayout iconBefore={<DocumentOnePageRegular />} onClick={() => {
+                <TreeItemLayout iconBefore={HttpHeaderIcon()} onClick={() => {
                     setSelect(text);
                 }} className={select === text ? indexCss.treeitem_select : indexCss.treeitem} >{text}</TreeItemLayout>
             </TreeItem>);
         }
-        let icon = <AirplaneTakeOffRegular />;
+        let icon = TabHttpRequest();
         if (head && head.startsWith('HTTP/')) {
-            icon = <AirplaneLandingRegular />
+            icon = TabHttpResponse();
         }
         return <TreeItem itemType="branch" key={head}>
             <TreeItemLayout iconBefore={icon} onClick={() => {
@@ -92,13 +92,13 @@ export default function ConnectionList() {
     return (<PageFrame breads={breads}>
         <>
             <TabList selectedValue={selectedValue} onTabSelect={onTabSelect} >
-                <Tab id="Header" icon={<DocumentGlobeRegular />} value="Header">
+                <Tab id="Header" icon={TabHttpHead()} value="Header">
                     Header
                 </Tab>
-                <Tab id="Payload" icon={<PanelTopContractRegular />} value="Payload">
+                <Tab id="Payload" icon={TabHttpReq()} value="Payload">
                     Payload
                 </Tab>
-                <Tab id="Response" icon={<PanelTopExpandRegular />} value="Response">
+                <Tab id="Response" icon={TabHttpRes()} value="Response">
                     Response
                 </Tab>
             </TabList>

@@ -7,10 +7,9 @@ import indexCss from './index.module.scss';
 import { useNavigate } from "react-router";
 import Grid from "../table";
 import { http_size } from "../../conf";
-import { HttpIcon } from "../common";
-import { BorderAllRegular, ClipboardCodeRegular, DesktopSignalRegular, ImageRegular, TextWordCountRegular, CodeBlockRegular, ContentViewRegular, TextBulletListSquareColor, MoreHorizontalFilled, WarningRegular, CheckmarkSquareRegular } from "@fluentui/react-icons";
+import { ActionInfoIcon, ActionMoreIcon, HttpIcon } from "../common";
+import { BorderAllRegular, ClipboardCodeRegular, DesktopSignalRegular, ImageRegular, TextWordCountRegular, CodeBlockRegular, ContentViewRegular, WarningRegular, CheckmarkSquareRegular } from "@fluentui/react-icons";
 
-// import HTTPChart from '../overview/http';
 
 import { useId, Label } from "@fluentui/react-components";
 
@@ -185,11 +184,11 @@ function Component() {
         // }),
         createTableColumn<IVHttpConnection>({
             columnId: "ops",
-            renderHeaderCell: () => "ext",
+            renderHeaderCell: () => "action",
             renderCell: (item) => {
                 return <Toolbar aria-label="Default" size="small">
-                    <ToolbarButton icon={<TextBulletListSquareColor />} onClick={() => { onClick(item) }} />
-                    <ToolbarButton icon={<MoreHorizontalFilled />} />
+                    <ToolbarButton icon={ActionInfoIcon()} onClick={() => { onClick(item) }} />
+                    <ToolbarButton icon={ActionMoreIcon()} />
                 </Toolbar>
                 // return <TableCellLayout media={<TextBulletListSquareColor />} style={{cursor: 'pointer'}}></TableCellLayout>
             },

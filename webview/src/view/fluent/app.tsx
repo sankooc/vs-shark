@@ -24,12 +24,6 @@ import TLSHostList from './tls/hosts';
 import { useStore } from "../store";
 import LoadingComponent from './loading';
 import { ConversationIcon, FrameIcon, HttpIcon, OverviewIcon, StatisticTabIcon, TLSIcon, UDPTabIcon } from "./common";
-// import { DocumentBulletListRegular } from "@fluentui/react-icons";
-// import '../colors';
-
-// const FrameIcon = bundleIcon(TextboxRotate9020Filled, TextboxRotate9020Regular);
-// const ConversationIcon = bundleIcon(FormSparkle20Filled, FormSparkle20Regular);
-// const HttpIcon = bundleIcon(PlugConnected20Filled, PlugConnected20Regular);
 
 const useCSS = makeStyles({
   nav: {
