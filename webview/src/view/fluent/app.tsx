@@ -20,10 +20,11 @@ import HttpComponent from "./http";
 import HttpDetailComponent from "./http/detail";
 import OverviewComponent from "./overview";
 import UDPComponent from './udp';
+import DNSComponent from './dns';
 import TLSHostList from './tls/hosts';
 import { useStore } from "../store";
 import LoadingComponent from './loading';
-import { ConversationIcon, FrameIcon, HttpIcon, OverviewIcon, StatisticTabIcon, TLSIcon, UDPTabIcon } from "./common";
+import { ConversationIcon, DNSIcon, FrameIcon, HttpIcon, OverviewIcon, StatisticTabIcon, TLSIcon, UDPTabIcon } from "./common";
 
 const useCSS = makeStyles({
   nav: {
@@ -57,6 +58,10 @@ const Nav = () => {
     name: 'TLS',
     path: 'tls/hosts',
     icon: TLSIcon,
+  }, {
+    name: 'DNS',
+    path: 'dns',
+    icon: DNSIcon,
   }];
   const styles = useCSS();
   if (!isOpen) {
@@ -164,6 +169,7 @@ const Basic = () => {
             <Route path="/http/detail/:httpIndex" element={<HttpDetailComponent />} />
             <Route path="/tls/hosts" element={<TLSHostList />} />
             <Route path="/udp" element={<UDPComponent />} />
+            <Route path="/dns" element={<DNSComponent />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </div>

@@ -109,7 +109,7 @@ pub struct HttpConntect {
     pub request: Option<MessageIndex>,
     pub response: Option<MessageIndex>,
     pub hostname: Option<String>,
-    pub rt: Timestamp,
+    pub latency: (f64, NString),
 }
 
 impl HttpConntect {
@@ -124,8 +124,6 @@ impl HttpConntect {
         let mut rs = VHttpConnection::default();
         if let Some(request_index) = &self.request {
             if let Some(message) = ctx.http_messages.get(*request_index as usize) {
-                // rs.request_headers = message.headers.to_vec();
-                // rs.request_body = message.content.to_vec();
                 rs.hostname = message.hostname.clone().unwrap_or("".to_string());
                 if let Some(ll) = &message.length {
                     rs.length = *ll;
@@ -138,8 +136,6 @@ impl HttpConntect {
         }
         if let Some(response_index) = &self.response {
             if let Some(message) = ctx.http_messages.get(*response_index as usize) {
-                // rs.response_headers = message.headers.to_vec();
-                // rs.response_body = message.content.to_vec();
                 if let Some(ll) = message.length {
                     rs.length = ll;
                 }
@@ -149,7 +145,8 @@ impl HttpConntect {
                 rs.response = Some(message.host.clone());
             }
         }
-        rs.rt = if self.rt > 0 { format!("{}µs", self.rt) } else { "N/A".to_string() };
+        
+        rs.latency = format!("{} {}", self.latency.0, self.latency.1);
         rs.index = index;
         rs
     }
@@ -226,9 +223,9 @@ impl HttpConntect {
             ..Default::default()
         }
     }
-    fn add_response(&mut self, message_index: MessageIndex, ts: Timestamp) {
+    fn add_response(&mut self, message_index: MessageIndex, ts: (f64, NString)) {
         self.response = Some(message_index);
-        self.rt = ts;
+        self.latency = ts;
     }
 }
 
@@ -287,7 +284,8 @@ impl Context {
         } else if let Some((http_connect_index, ts)) = self.http_connections_map.get(&connect_index) {
             if let Some(connect) = self.http_connections.get_mut(*http_connect_index as usize) {
                 let fd = timestamp.saturating_sub(*ts);
-                connect.add_response(message_index, fd);
+                let latency = super::concept::period(timestamp, fd);
+                connect.add_response(message_index, latency);
                 self.http_connections_map.remove(&connect_index);
             }
         } else {

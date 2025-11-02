@@ -22,7 +22,8 @@ export enum ComType {
   CONVERSATIONS = "conversations",
   CONNECTIONS = "connections",
   HTTP_CONNECTIONS = "http_connections",
-  UDP_CONNECTIONS= "UDP_CONNECTIONS",
+  UDP_CONNECTIONS = "UDP_CONNECTIONS",
+  DNS_CONNECTIONS = "DNS_CONNECTIONS",
   HTTP_DETAIL_REQ = "http_detail_req",
   HTTP_DETAIL_RES = "http_detail_res",
   STAT_REQ = "STAT_REQ",
@@ -124,7 +125,7 @@ export class VRange {
   constructor(public start: number, public end: number) { }
   public size(): number {
     if (this.end > this.start) {
-      this.end - this.start;
+      return this.end - this.start;
     }
     return 0;
   }
@@ -207,40 +208,40 @@ export const format_bytes_single_unit = (bytes: number): string => {
 
 
 const timeunits = [
-    { name: 'h', value: 60 * 60 * 1000 * 1000 * 1000 },
-    { name: 'm', value: 60 * 1000 * 1000 * 1000 },
-    { name: 's', value: 1000 * 1000 * 1000 },
-    { name: 'ms', value: 1000 * 1000 },
-    { name: 'μs', value: 1000 },
-    { name: 'ns', value: 1 }
+  { name: 'h', value: 60 * 60 * 1000 * 1000 * 1000 },
+  { name: 'm', value: 60 * 1000 * 1000 * 1000 },
+  { name: 's', value: 1000 * 1000 * 1000 },
+  { name: 'ms', value: 1000 * 1000 },
+  { name: 'μs', value: 1000 },
+  { name: 'ns', value: 1 }
 ];
 export const formatMicroseconds = (sample: number, _time: number): string => {
-    let time = _time
-    if (typeof time !== 'number' || time < 0 || !isFinite(time)) {
-        return '0';
-    }
-    if (time == 0) {
-        return '0';
-    }
-    const len = (sample + '').length;
-    const lft = 19 - len;
-    if (lft >= 0 ){
-        time = time * Math.pow(10, lft);
-    }
+  let time = _time
+  if (typeof time !== 'number' || time < 0 || !isFinite(time)) {
+    return '0';
+  }
+  if (time == 0) {
+    return '0';
+  }
+  const len = (sample + '').length;
+  const lft = 19 - len;
+  if (lft >= 0) {
+    time = time * Math.pow(10, lft);
+  }
 
-    for (const unit of timeunits) {
-        if (time >= unit.value) {
-            let value = time / unit.value;
-            if (value >= 1000 && unit.name !== 'μs') {
-                continue;
-            }
-            value = Math.round(value * 10) / 10;
-            if (value % 1 === 0) {
-                value = Math.floor(value);
-            }
-            return `${value}${unit.name}`;
-        }
+  for (const unit of timeunits) {
+    if (time >= unit.value) {
+      let value = time / unit.value;
+      if (value >= 1000 && unit.name !== 'μs') {
+        continue;
+      }
+      value = Math.round(value * 10) / 10;
+      if (value % 1 === 0) {
+        value = Math.floor(value);
+      }
+      return `${value}${unit.name}`;
     }
+  }
 
-    return `${time}μs`;
+  return `${time}μs`;
 }

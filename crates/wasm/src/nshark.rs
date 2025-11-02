@@ -1,18 +1,19 @@
 use js_sys::Uint8Array;
 use pcap::common::{
-    concept::{ConversationCriteria, Criteria, HttpCriteria}, Instance, ResourceLoader
+    concept::{ConversationCriteria, Criteria, HttpCriteria},
+    Instance, ResourceLoader,
 };
+use serde::Serialize;
 use wasm_bindgen::prelude::*;
 
 use crate::entity::{Conf, FrameResult, HttpDetail, Range};
 
-
 pub struct WASMLoader {
-    id: String
+    id: String,
 }
 impl WASMLoader {
     pub fn new(id: String) -> Self {
-        Self{id}
+        Self { id }
     }
     pub fn id(&self) -> String {
         self.id.clone()
@@ -38,7 +39,7 @@ pub struct WContext {
 impl WContext {
     #[wasm_bindgen(constructor)]
     pub fn new(conf: Conf) -> WContext {
-        let loader= WASMLoader::new(conf.id());
+        let loader = WASMLoader::new(conf.id());
         let ins = Instance::new(conf.batch_size(), loader);
         WContext { ctx: ins }
     }
@@ -84,9 +85,7 @@ impl WContext {
     #[wasm_bindgen]
     pub fn select(&self, catelog: String, index: usize) -> String {
         match catelog.as_str() {
-            "frame" => {
-                self.ctx.select_frame_json(index).unwrap()
-            }
+            "frame" => self.ctx.select_frame_json(index).unwrap(),
             _ => "{}".into(),
         }
     }
@@ -101,35 +100,40 @@ impl WContext {
         FrameResult::empty()
     }
     #[wasm_bindgen]
-    pub fn list_conversations(&self, start: usize, size: usize, ip: String) -> String {
+    pub fn list_conversations(&self, start: usize, size: usize, ip: String) -> Option<String> {
         let filter = if ip.is_empty() { ConversationCriteria::default() } else { ConversationCriteria::ip(ip) };
         let rs = self.ctx.conversations(Criteria { start, size }, filter);
-        serde_json::to_string(&rs).unwrap_or("{}".into())
+        jsonlize(&rs)
     }
     #[wasm_bindgen]
-    pub fn list_connections(&self, index: usize, start: usize, size: usize) -> String {
+    pub fn list_connections(&self, index: usize, start: usize, size: usize) -> Option<String> {
         let rs = self.ctx.connections(index, Criteria { start, size });
-        serde_json::to_string(&rs).unwrap_or("{}".into())
+        jsonlize(&rs)
     }
     #[wasm_bindgen]
-    pub fn list_http(&self, start: usize, size: usize, hostname: String, _method: String) -> String {
+    pub fn list_http(&self, start: usize, size: usize, hostname: String, _method: String) -> Option<String> {
         let filter = if hostname.is_empty() { None } else { Some(HttpCriteria::hostname(hostname)) };
         let rs = self.ctx.http_connections(Criteria { start, size }, filter);
-        serde_json::to_string(&rs).unwrap_or("{}".into())
+        jsonlize(&rs)
     }
     #[wasm_bindgen]
-    pub fn list_udp(&self, start: usize, size: usize, ip: String) -> String {
+    pub fn list_udp(&self, start: usize, size: usize, ip: String) -> Option<String> {
         let filter = if ip.is_empty() { None } else { Some(ip) };
         let rs = self.ctx.udp_conversations(Criteria { start, size }, filter);
-        serde_json::to_string(&rs).unwrap_or("{}".into())
+        jsonlize(&rs)
     }
     #[wasm_bindgen]
     pub fn list_tls(&self) -> Option<String> {
-        let list =self.ctx.tls_infos();
-        serde_json::to_string(&list).ok()
+        let list = self.ctx.tls_infos();
+        jsonlize(&list)
     }
     #[wasm_bindgen]
-    pub fn http_detail(&self, index: usize) -> Option<Vec<HttpDetail>>{
+    pub fn list_dns(&self, start: usize, size: usize) -> Option<String> {
+        let list = self.ctx.dns_records(Criteria { start, size });
+        jsonlize(&list)
+    }
+    #[wasm_bindgen]
+    pub fn http_detail(&self, index: usize) -> Option<Vec<HttpDetail>> {
         if let Some(data) = self.ctx.http_detail(index) {
             Some(data.into_iter().map(HttpDetail::from).collect())
         } else {
@@ -150,6 +154,13 @@ impl WContext {
             _ => "[]".to_string(),
         }
     }
+}
+
+fn jsonlize<T>(data: &T) -> Option<String>
+where
+    T: ?Sized + Serialize,
+{
+    serde_json::to_string(&data).ok()
 }
 
 #[wasm_bindgen]

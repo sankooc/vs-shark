@@ -14,7 +14,7 @@ import {
   StatRequest,
   VRange,
 } from "../share/common";
-import { IFrameInfo, IListResult, IProgressStatus, IVConnection, IVConversation, IVHttpConnection, IUDPConversation } from "../share/gen";
+import { IFrameInfo, IListResult, IProgressStatus, IVConnection, IVConversation, IVHttpConnection, IUDPConversation, IDNSRecord } from "../share/gen";
 import mitt from "mitt";
 
 
@@ -33,15 +33,16 @@ interface PcapState {
   sendReady: () => void;
   request: <F>(data: any) => Promise<F>;
   requestData: (data: VRange) => Promise<DataResponse>;
-  conversations: (data: any) => Promise<IListResult<IVConversation>>;
-  udps: (data: any) => Promise<IListResult<IUDPConversation>>;
-  connections: (data: any) => Promise<IListResult<IVConnection>>;
-  httpConnections: (data: any) => Promise<IListResult<IVHttpConnection>>;
+  conversationList: (data: any) => Promise<IListResult<IVConversation>>;
+  udpList: (data: any) => Promise<IListResult<IUDPConversation>>;
+  dnsList: (data: any) => Promise<IListResult<IDNSRecord>>;
+  tlsList: () => Promise<ITLSInfo[]>;
+  connectionList: (data: any) => Promise<IListResult<IVConnection>>;
+  httpList: (data: any) => Promise<IListResult<IVHttpConnection>>;
   httpDetail: (index: number) => Promise<IHttpDetail[]>
   cachehttp: (conn: IVHttpConnection | null) => void;
   getHttpCache: () => IVHttpConnection | null;
   stat: (request: StatRequest) => Promise<any> ;
-  tlsList: () => Promise<ITLSInfo[]>;
 }
 // const compute = (page: number, size: number): Pagination => {
 //   if (page < 1) {
@@ -113,6 +114,7 @@ export const useStore = create<PcapState>()((set) => {
       case ComType.CONNECTIONS:
       case ComType.HTTP_CONNECTIONS:
       case ComType.UDP_CONNECTIONS:
+      case ComType.DNS_CONNECTIONS:
         emitter.emit(id, deserialize(body));
         break;
       case ComType.FRAME_SCOPE_RES:
@@ -146,21 +148,28 @@ export const useStore = create<PcapState>()((set) => {
       const req = new ComMessage(ComType.DATA, data);
       return doRequest<DataResponse>(req);
     },
-    conversations: (data: any): Promise<IListResult<IVConversation>> => {
+    conversationList: (data: any): Promise<IListResult<IVConversation>> => {
       const req = new ComMessage(ComType.REQUEST, data);
       return doRequest<IListResult<IVConversation>>(req);
-      // return Promise.resolve(convMock);
     },
-    udps: (data: any): Promise<IListResult<IUDPConversation>> => {
+    udpList: (data: any): Promise<IListResult<IUDPConversation>> => {
       const req = new ComMessage(ComType.REQUEST, data);
       return doRequest<IListResult<IUDPConversation>>(req);
     },
-    connections: (data: any): Promise<IListResult<IVConnection>> => {
+    dnsList: (data: any): Promise<IListResult<IDNSRecord>> => {
+      const req = new ComMessage(ComType.REQUEST, data);
+      return doRequest<IListResult<IDNSRecord>>(req);
+    },
+    tlsList: () => {
+      const req = new ComMessage(ComType.TLS_REQ, {});
+      return doRequest<ITLSInfo[]>(req);
+    },
+    connectionList: (data: any): Promise<IListResult<IVConnection>> => {
       const req = new ComMessage(ComType.REQUEST, data);
       return doRequest<IListResult<IVConnection>>(req);
       // return Promise.resolve(connMock);
     },
-    httpConnections: (data: any): Promise<IListResult<IVHttpConnection>> => {
+    httpList: (data: any): Promise<IListResult<IVHttpConnection>> => {
       const req = new ComMessage(ComType.REQUEST, data);
       return doRequest<IListResult<IVHttpConnection>>(req);
     },
@@ -173,11 +182,6 @@ export const useStore = create<PcapState>()((set) => {
     },
     getHttpCache: () => {
       return httpCache;
-    },
-    tlsList: () => {
-      const req = new ComMessage(ComType.TLS_REQ, {});
-      return doRequest<ITLSInfo[]>(req);
-
     },
     stat: (request: StatRequest): Promise<any[]> => {
       const req = new ComMessage(ComType.STAT_REQ, request);

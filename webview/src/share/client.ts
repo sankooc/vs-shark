@@ -10,7 +10,7 @@ function frameSelectConvert(frameSelect: FrameResult): any {
   const datasource = [];
   const len = frameSelect.data_count();
   for (let i = 0; i < len; i += 1) {
-    let data = frameSelect.data(i);
+    const data = frameSelect.data(i);
     if (data) {
       const _range = frameSelect.range(i);
       let range = null;
@@ -83,18 +83,27 @@ export abstract class PCAPClient {
             rs = this.ctx.list_conversations(start, size, param.ip || '');
             this.emitMessage(ComMessage.new(ComType.CONVERSATIONS, rs, requestId));
             return;
-          case "connection":
-            rs = this.ctx.list_connections(param.conversionIndex, start, size);
-            this.emitMessage(ComMessage.new(ComType.CONNECTIONS, rs, requestId));
-            return;
-          case "http_connection":
-            rs = this.ctx.list_http(start, size, param.host || '', '');
-            this.emitMessage(ComMessage.new(ComType.HTTP_CONNECTIONS, rs, requestId));
-            return;
-          case "udp":
-            rs = this.ctx.list_udp(start, size, param.ip || '');
-            this.emitMessage(ComMessage.new(ComType.UDP_CONNECTIONS, rs, requestId));
-            return;
+          case "connection": {
+              rs = this.ctx.list_connections(param.conversionIndex, start, size);
+              this.emitMessage(ComMessage.new(ComType.CONNECTIONS, rs, requestId));
+              return;
+            }
+          case "http_connection": {
+              rs = this.ctx.list_http(start, size, param.host || '', '');
+              this.emitMessage(ComMessage.new(ComType.HTTP_CONNECTIONS, rs, requestId));
+              return;
+            }
+          case "udp": {
+              rs = this.ctx.list_udp(start, size, param.ip || '');
+              this.emitMessage(ComMessage.new(ComType.UDP_CONNECTIONS, rs, requestId));
+              return;
+            }
+          case "dns": {
+              rs = this.ctx.list_dns(start, size);
+              this.emitMessage(ComMessage.new(ComType.DNS_CONNECTIONS, rs, requestId));
+              return;
+
+            }
           default:
             return;
         }
@@ -140,7 +149,8 @@ export abstract class PCAPClient {
           default:
             return;
         }
-      } catch (_) {
+      } catch (e) {
+        console.error(e);
         this.emitMessage(new ComMessage(ComType.error, "failed"));
       }
     }
@@ -149,7 +159,7 @@ export abstract class PCAPClient {
     );
   }
   private async http_detail2(index: number): Promise<IHttpDetail[]> {
-    let rs = this.ctx?.http_detail(index);
+    const rs = this.ctx?.http_detail(index) || [];
     const convert = (data: HttpDetail): IHttpDetail => {
       const headers = data.headers();
       const raw = data.raw_content();

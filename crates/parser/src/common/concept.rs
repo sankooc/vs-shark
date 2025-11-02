@@ -3,12 +3,11 @@
 // This file is part of the pcapview project.
 // Licensed under the MIT License - see https://opensource.org/licenses/MIT
 
-
 use std::hash::Hash;
 
 use serde::Serialize;
 
-use crate::common::{FastHashMap, Instance, NString, connection::Connection, enum_def::Protocol};
+use crate::common::{connection::Connection, enum_def::Protocol, FastHashMap, Instance, NString};
 
 use super::enum_def::PacketStatus;
 
@@ -331,8 +330,6 @@ pub struct UDPConversation {
     pub packets: u32,
     pub bytes: usize,
     pub records: Vec<(u64, usize)>,
-    // pub first_time: u64,
-    // pub last_time: u64,
 }
 impl UDPConversation {
     pub fn new(index: usize, sender: String, receiver: String, sender_port: u16, receiver_port: u16) -> Self {
@@ -407,14 +404,10 @@ pub struct VHttpConnection {
     pub index: usize,
     pub request: Option<String>,
     pub response: Option<String>,
-    pub rt: String,
+    pub latency: String,
     pub hostname: String,
     pub content_type: String,
     pub length: usize,
-    // pub request_headers: Vec<(usize, usize)>,
-    // pub request_body: Vec<(usize, usize)>,
-    // pub response_headers: Vec<(usize, usize)>,
-    // pub response_body: Vec<(usize, usize)>,
 }
 
 const NA: &str = "N/A";
@@ -449,8 +442,6 @@ impl VHttpConnection {
     }
 }
 
-
-
 pub fn period(sample: u64, time: u64) -> (f64, NString) {
     let digits = sample.checked_ilog10().unwrap_or(0) + 1;
     let base_per_sec = match digits {
@@ -471,8 +462,6 @@ pub fn period(sample: u64, time: u64) -> (f64, NString) {
     } else {
         (seconds * 1_000_000_000.0, "ns")
     };
-
-    // 保留5位有效数字
     let val = (val * 10_000.0).round() / 10_000.0;
     (val, unit)
 }
@@ -500,7 +489,7 @@ impl DNSRecord {
                 // rs.source = frame.info.
             }
         }
-        
+
         if let Some(index) = item.2 {
             if let Some(frame) = instance.frame(index as usize) {
                 if let Some((ip, _)) = frame.addresses(instance.context()) {
@@ -578,9 +567,7 @@ impl HttpMessageDetail {
         }
         match self.text_type() {
             Language::Binary => None,
-            _ => {
-                Some(decode_bytes(self.raw_content(), self.text_encoding()))
-            }
+            _ => Some(decode_bytes(self.raw_content(), self.text_encoding())),
         }
     }
     pub fn content_type(&self) -> Option<String> {
@@ -633,8 +620,6 @@ impl HttpMessageDetail {
     }
 }
 
-
-
 #[derive(Serialize, Clone)]
 pub struct TLSItem {
     pub hostname: String,
@@ -643,13 +628,13 @@ pub struct TLSItem {
 }
 
 impl TLSItem {
-    pub fn new(hostname: String) -> Self{
-        Self {hostname, count: 0, alpn: vec!()}
+    pub fn new(hostname: String) -> Self {
+        Self { hostname, count: 0, alpn: vec![] }
     }
-    pub fn update(&mut self){
+    pub fn update(&mut self) {
         self.count += 1;
     }
-    pub fn add_alpn(&mut self, alpn: Vec<String>){
+    pub fn add_alpn(&mut self, alpn: Vec<String>) {
         self.alpn = alpn;
     }
 }
@@ -703,14 +688,17 @@ fn decode_bytes(body_raw: &[u8], encoding: HttpEncoding) -> String {
 }
 
 #[derive(Default)]
-pub struct IndexHashMap<K,V> {
+pub struct IndexHashMap<K, V> {
     map: FastHashMap<K, usize>,
     list: Vec<V>,
 }
 
-impl <K,V>IndexHashMap<K,V> where K: Hash + std::cmp::Eq + Clone, V: Default {
+impl<K, V> IndexHashMap<K, V>
+where
+    K: Hash + std::cmp::Eq + Clone,
+    V: Default,
+{
     pub fn get_or_add(&mut self, key: &K) -> (usize, &mut V) {
-        
         if let Some(val) = self.map.get(key) {
             return (*val, self.list.get_mut(*val).unwrap());
         } else {
@@ -721,7 +709,7 @@ impl <K,V>IndexHashMap<K,V> where K: Hash + std::cmp::Eq + Clone, V: Default {
         }
     }
 
-    pub fn get(&mut self, key: &K) -> Option<(usize, &mut V)>{
+    pub fn get(&mut self, key: &K) -> Option<(usize, &mut V)> {
         if let Some(val) = self.map.get(key) {
             Some((*val, self.list.get_mut(*val).unwrap()))
         } else {

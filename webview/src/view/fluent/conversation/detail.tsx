@@ -16,7 +16,7 @@ export default function Component() {
     const location = useLocation();
     const title = location.state?.title || "detail";
     const pageSize = connect_size;
-    const connections = useStore((state) => state.connections);
+    const connections = useStore((state) => state.connectionList);
     const columns: TableColumnDefinition<IVConnection>[] = [
         createTableColumn<IVConnection>({
             columnId: "protocol",

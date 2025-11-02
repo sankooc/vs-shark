@@ -8,7 +8,7 @@ import { useNavigate } from "react-router";
 import Grid from "../table";
 import { http_size } from "../../conf";
 import { ActionInfoIcon, ActionMoreIcon, HttpIcon } from "../common";
-import { BorderAllRegular, ClipboardCodeRegular, DesktopSignalRegular, ImageRegular, TextWordCountRegular, CodeBlockRegular, ContentViewRegular, WarningRegular, CheckmarkSquareRegular } from "@fluentui/react-icons";
+import { BorderAllRegular, ClipboardCodeRegular, DesktopSignalRegular, ImageRegular, TextWordCountRegular, CodeBlockRegular, ContentViewRegular, WarningRegular, CheckmarkSquareRegular, ClockRegular } from "@fluentui/react-icons";
 
 
 import { useId, Label } from "@fluentui/react-components";
@@ -63,8 +63,7 @@ const http_connct_status = (status: string) => {
 }
 
 function Component() {
-    const httpConnections = useStore((state) => state.httpConnections);
-    // const cachehttp = useStore((state) => state.cachehttp);
+    const httpConnections = useStore((state) => state.httpList);
     const stat = useStore((state) => state.stat);
     const [httpHosts, setHttpHosts] = useState<ICounterItem[]>([]);
     const [hostSelect, setHostSelect] = useState<string>(NoneOption);
@@ -172,16 +171,16 @@ function Component() {
                 return '';
             },
         }),
-        // createTableColumn<IVHttpConnection>({
-        //     columnId: "time",
-        //     renderHeaderCell: () => <><ClockRegular /> Time</>,
-        //     renderCell: (item) => {
-        //         const timeStr = item.rt;
-        //         return <TableCellLayout media={http_rt_icon(item)}>
-        //             {timeStr}
-        //         </TableCellLayout>
-        //     },
-        // }),
+        createTableColumn<IVHttpConnection>({
+            columnId: "time",
+            renderHeaderCell: () => <><ClockRegular /> Time</>,
+            renderCell: (item) => {
+                const timeStr = item.latency;
+                return <TableCellLayout >
+                    {timeStr}
+                </TableCellLayout>
+            },
+        }),
         createTableColumn<IVHttpConnection>({
             columnId: "ops",
             renderHeaderCell: () => "action",

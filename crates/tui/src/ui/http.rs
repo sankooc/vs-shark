@@ -50,7 +50,7 @@ impl TableStyle<VHttpConnection> for ConversationStyle {
             data.url().to_string(),
             format_bytes_single_unit_int(data.length),
             data.content_type.clone(),
-            data.rt.clone(),
+            data.latency.clone(),
         ]
     }
 

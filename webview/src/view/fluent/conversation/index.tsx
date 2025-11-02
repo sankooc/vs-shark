@@ -14,7 +14,7 @@ const SIZE: "small" | "medium" = 'small';
 
 
 function Component() {
-    const conversations = useStore((state) => state.conversations);
+    const conversations = useStore((state) => state.conversationList);
     const navigate = useNavigate();
     const [ip, setIp] = useState<string>('');
     const columns: TableColumnDefinition<IVConversation>[] = [

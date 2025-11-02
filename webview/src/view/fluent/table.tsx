@@ -14,7 +14,8 @@ interface GridProps<T> {
     pageSize: number;
     columnSizingOptions?: TableColumnSizingOptions,
     breads?: { icon?: Slot<'span'>, name: string, path?: string }[],
-    size?: "small" | "medium" | "extra-small",
+    // size?: "small" | "medium" | "extra-small",
+    size?: string,
 }
 interface PageProps {
     children: React.ReactElement<ReactNode>;
@@ -57,7 +58,7 @@ function Component<T>(props: GridProps<T>) {
     if(result.items && result.items.length > 0){
         main = <>
         <DataGrid items={result.items}
-            size={props.size}
+            size='small'
             resizableColumns
             columnSizingOptions={columnSizingOptions}
             columns={props.columns} style={{ minWidth: "auto", overflow: 'hidden auto' }} className="h-full w-full" >

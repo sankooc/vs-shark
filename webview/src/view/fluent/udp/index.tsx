@@ -23,7 +23,7 @@ const headIcon = (item: IUDPConversation) => {
 }
 
 function Component() {
-    const conversations = useStore((state) => state.udps);
+    const conversations = useStore((state) => state.udpList);
     // const navigate = useNavigate();
     const [ip, setIp] = useState<string>('');
     const columns: TableColumnDefinition<IUDPConversation>[] = [
