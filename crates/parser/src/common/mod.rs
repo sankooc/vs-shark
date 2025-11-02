@@ -16,7 +16,7 @@ use std::{
 use crate::{
     add_field_label_no_range,
     common::{
-        concept::{ConversationCriteria, FrameIndex, HttpCriteria, HttpMessageDetail, TLSItem, UDPConversation, VConnection, VConversation, VHttpConnection},
+        concept::{ConversationCriteria, DNSRecord, FrameIndex, HttpCriteria, HttpMessageDetail, IndexHashMap, NameService, TLSItem, UDPConversation, VConnection, VConversation, VHttpConnection},
         connection::{TcpFlagField, TlsData},
         util::date_str,
     },
@@ -268,14 +268,23 @@ impl EthernetCache {
 }
 
 pub struct Instance<T>
-where
-    T: ResourceLoader,
 {
     loader: T,
     ds: DataSource,
     file_type: FileType,
     ctx: Context,
     last: usize,
+}
+
+impl <T> Instance<T> {
+    pub fn context(&self) -> &Context {
+        &self.ctx
+    }
+    
+
+    pub fn frame(&self, index: usize) -> Option<&Frame> {
+        self.ctx.list.get(index)
+    }
 }
 
 impl<T> Instance<T>
@@ -292,10 +301,6 @@ where
             ctx: Context::new(),
             last: 0,
         }
-    }
-
-    pub fn context(&self) -> &Context {
-        &self.ctx
     }
 
     pub fn loader(&self) -> &dyn ResourceLoader {
@@ -443,17 +448,9 @@ where
         }
     }
     pub fn frames_by(&self, cri: Criteria) -> ListResult<FrameInfo> {
-        // let Criteria { start, size } = cri;
-        // let info = self.context().get_info();
-        // let start_ts = info.start_time;
         let start = cri.start;
         let size = cri.size;
         let fs: &[Frame] = &self.ctx.list;
-
-        // for frame in fs {
-        // frame.
-        //TODO
-        // }
         let total = fs.len();
         let mut items = Vec::new();
         if total <= start {
@@ -499,9 +496,6 @@ where
         serde_json::to_string(&item)
     }
 
-    pub fn frame(&self, index: usize) -> Option<&Frame> {
-        self.ctx.list.get(index)
-    }
     fn frame_field(&self, frame: &Frame) -> Field {
         let mut f = Field::children();
         if let Some(range) = frame.range.as_ref() {
@@ -825,6 +819,51 @@ where
         }
         Context::_list_map(&map)
     }
+
+    fn dns_list(&self) -> Vec<(u16, Option<FrameIndex>, Option<FrameIndex>)> {
+        let mut map: IndexHashMap<u16, (u16, Option<FrameIndex>, Option<FrameIndex>)> = IndexHashMap::default();
+        for frame in &self.context().list {
+            let index = frame.info.index;
+            match &frame.protocol_field {
+                ProtocolInfoField::DNSQUERY(ns_type,transaction_id) => {
+                    if let NameService::DNS = ns_type {
+                        if *transaction_id != 0 {
+                            let (_, rs) = map.get_or_add(transaction_id);
+                            rs.0 = *transaction_id;
+                            rs.1 = Some(index);
+                        }
+                    }
+                }
+                ProtocolInfoField::DNSRESPONSE(ns_type,transaction_id) => {
+                    if let NameService::DNS = ns_type {
+                        if *transaction_id != 0 {
+                            if let Some((_, rs)) = map.get(transaction_id) {
+                                rs.2 = Some(index);
+                            }
+                        }
+                    }
+                }
+                _ => {}
+            }
+        }
+        map.list()
+    }
+
+    pub fn dns_records(&self, cri: Criteria) -> ListResult<DNSRecord> {
+        let Criteria { start, size } = cri;
+        let list = self.dns_list();
+        let total = list.len();
+        let end = cmp::min(start + size, total);
+        if end <= start {
+            ListResult::new(start, 0, vec![])
+        } else {
+            let _list = &list[start..end];
+            let items = _list.iter().map(|f| DNSRecord::convert(self, f)).collect();
+            ListResult::new(start, total, items)
+        }
+    }
+
+
 }
 
 fn resolve_sni(reader: &mut Reader) -> Result<String> {

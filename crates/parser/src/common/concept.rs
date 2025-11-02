@@ -4,9 +4,11 @@
 // Licensed under the MIT License - see https://opensource.org/licenses/MIT
 
 
+use std::hash::Hash;
+
 use serde::Serialize;
 
-use crate::common::{connection::Connection, enum_def::Protocol};
+use crate::common::{FastHashMap, Instance, NString, connection::Connection, enum_def::Protocol};
 
 use super::enum_def::PacketStatus;
 
@@ -447,6 +449,79 @@ impl VHttpConnection {
     }
 }
 
+
+
+pub fn period(sample: u64, time: u64) -> (f64, NString) {
+    let digits = sample.checked_ilog10().unwrap_or(0) + 1;
+    let base_per_sec = match digits {
+        0..=11 => 1.0,
+        12..=14 => 1_000.0,
+        15..=17 => 1_000_000.0,
+        _ => 1_000_000_000.0,
+    };
+
+    let seconds = time as f64 / base_per_sec;
+
+    let (val, unit) = if seconds >= 1.0 {
+        (seconds, "s")
+    } else if seconds * 1_000.0 >= 1.0 {
+        (seconds * 1_000.0, "ms")
+    } else if seconds * 1_000_000.0 >= 1.0 {
+        (seconds * 1_000_000.0, "µs")
+    } else {
+        (seconds * 1_000_000_000.0, "ns")
+    };
+
+    // 保留5位有效数字
+    let val = (val * 10_000.0).round() / 10_000.0;
+    (val, unit)
+}
+
+#[derive(Serialize, Default, Debug)]
+pub struct DNSRecord {
+    transaction_id: u16,
+    source: String,
+    target: String,
+    latency: (f64, NString),
+    // content: String,
+}
+
+impl DNSRecord {
+    pub fn convert<T>(instance: &Instance<T>, item: &(u16, Option<FrameIndex>, Option<FrameIndex>)) -> Self {
+        let mut rs = DNSRecord::default();
+        rs.transaction_id = item.0;
+        let mut start = 0;
+        if let Some(index) = item.1 {
+            if let Some(frame) = instance.frame(index as usize) {
+                start = frame.info.time;
+                if let Some((ip, _)) = frame.addresses(instance.context()) {
+                    rs.source = ip;
+                }
+                // rs.source = frame.info.
+            }
+        }
+        
+        if let Some(index) = item.2 {
+            if let Some(frame) = instance.frame(index as usize) {
+                if let Some((ip, _)) = frame.addresses(instance.context()) {
+                    rs.target = ip;
+                }
+                if start > 0 {
+                    rs.latency = period(frame.info.time, frame.info.time.saturating_sub(start));
+                }
+            }
+        }
+        rs
+    }
+}
+
+#[derive(Clone, Copy)]
+pub enum NameService {
+    DNS,
+    MDNS,
+    NBNS,
+}
+
 #[derive(Clone, Copy)]
 pub enum Language {
     Text,
@@ -625,4 +700,37 @@ fn decode_bytes(body_raw: &[u8], encoding: HttpEncoding) -> String {
         }
     };
     String::from_utf8(decoded_data).unwrap_or_default()
+}
+
+#[derive(Default)]
+pub struct IndexHashMap<K,V> {
+    map: FastHashMap<K, usize>,
+    list: Vec<V>,
+}
+
+impl <K,V>IndexHashMap<K,V> where K: Hash + std::cmp::Eq + Clone, V: Default {
+    pub fn get_or_add(&mut self, key: &K) -> (usize, &mut V) {
+        
+        if let Some(val) = self.map.get(key) {
+            return (*val, self.list.get_mut(*val).unwrap());
+        } else {
+            let index = self.list.len();
+            self.map.insert(key.clone(), index);
+            self.list.push(V::default());
+            return (index, self.list.get_mut(index).unwrap());
+        }
+    }
+
+    pub fn get(&mut self, key: &K) -> Option<(usize, &mut V)>{
+        if let Some(val) = self.map.get(key) {
+            Some((*val, self.list.get_mut(*val).unwrap()))
+        } else {
+            None
+        }
+    }
+    pub fn list(&mut self) -> Vec<V> {
+        let rs = std::mem::take(&mut self.list);
+        self.map.clear();
+        rs
+    }
 }

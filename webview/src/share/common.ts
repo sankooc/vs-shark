@@ -219,11 +219,11 @@ export const formatMicroseconds = (sample: number, _time: number): string => {
     if (typeof time !== 'number' || time < 0 || !isFinite(time)) {
         return '0';
     }
-    if (time <= 0) {
+    if (time == 0) {
         return '0';
     }
     const len = (sample + '').length;
-    let lft = 19 - len;
+    const lft = 19 - len;
     if (lft >= 0 ){
         time = time * Math.pow(10, lft);
     }

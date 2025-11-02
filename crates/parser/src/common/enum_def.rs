@@ -9,7 +9,7 @@ use std::net::Ipv4Addr;
 use strum_macros::{Display, EnumString};
 use thiserror::Error;
 
-use crate::{common::concept::MessageIndex, protocol::transport::tls::TLSList};
+use crate::{common::concept::{MessageIndex, NameService}, protocol::transport::tls::TLSList};
 
 use super::{connection::{TCPSegment, TLSSegment}, io::MacAddress};
 
@@ -177,16 +177,14 @@ pub enum ProtocolInfoField {
     HttpSegment(usize),
     Icmp(u8, u8),
     Icmp6(u8, u8),
-    // HttpSegment,
     PPPoES(Option<u8>),
     UDP(u16),
     ARP(u16, u16, MacAddress, Ipv4Addr, MacAddress, Ipv4Addr),
     RARP(u16, u16, MacAddress, Ipv4Addr, MacAddress, Ipv4Addr),
     DHCP(u8),
     DHCPv6(u8, u32),
-    DnsQUERY(u16),
-    DnsRESPONSE(u16),
-    NBNS(u16, bool, String),
+    DNSQUERY(NameService, u16),
+    DNSRESPONSE(NameService, u16),
     TLS(TLSList),
     TLSSegment,
     Ieee80211(u16),
