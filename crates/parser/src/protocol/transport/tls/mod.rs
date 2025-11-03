@@ -3,13 +3,13 @@
 // This file is part of the pcapview project.
 // Licensed under the MIT License - see https://opensource.org/licenses/MIT
 
-use crate::common::ResourceLoader;
 use crate::common::concept::{Field, FrameIndex};
 use crate::common::connection::{TCPSegment, TLSSegment, TlsData};
 use crate::common::core::{Context, TLSFlag};
 use crate::common::enum_def::{ProtocolInfoField, SegmentStatus};
 use crate::common::io::DataSource;
 use crate::common::{enum_def::Protocol, io::Reader, Frame};
+use crate::common::{NString, ResourceLoader};
 use crate::{add_field_format, add_field_format_fn};
 use anyhow::Result;
 use record::parse_record_detail;
@@ -202,15 +202,24 @@ fn field_tls_type(content_type: u8) -> String {
 pub fn field_tls_version(val: u16) -> String {
     format!("Version: {} ({:#06x})", tls_version(val), val)
 }
+
+pub fn tls_version_map(val: u16) -> Option<NString> {
+    let v = match val & 0x00ff {
+        0x00 => "SSLv3",
+        0x01 => "TLSv1.0",
+        0x02 => "TLSv1.1",
+        0x03 => "TLSv1.2",
+        0x04 => "TLSv1.3",
+        _ => return None,
+    };
+    return Some(v);
+}
+
 fn tls_version(val: u16) -> String {
-    match val & 0x00ff {
-        0x00 => "SSLv3".to_string(),
-        0x01 => "TLSv1.0".to_string(),
-        0x02 => "TLSv1.1".to_string(),
-        0x03 => "TLSv1.2".to_string(),
-        0x04 => "TLSv1.3".to_string(),
-        _ => "".to_string(),
+    if let Some(v) = tls_version_map(val) {
+        return v.to_string();
     }
+    return "".to_string();
 }
 
 // fn parse_sni(reader: &mut Reader) -> Result<String> {
@@ -291,9 +300,9 @@ fn check_sni(sni_option: &mut TLSFlag, segment: &TlsData) {
             }
             // if sub_type == 1 {
             //     *sni_option = TLSFlag::ClientHello;
-                // if let Ok(sni) = get_sni_info(_reader, segment) {
-                //     *sni_option = TLSFlag::ClientHello;
-                // }
+            // if let Ok(sni) = get_sni_info(_reader, segment) {
+            //     *sni_option = TLSFlag::ClientHello;
+            // }
             // }
         }
     }

@@ -115,8 +115,8 @@ impl WContext {
         jsonlize(&rs)
     }
     #[wasm_bindgen]
-    pub fn list_tls(&self) -> Option<String> {
-        let list = self.ctx.tls_infos();
+    pub fn list_tls(&self, start: usize, size: usize) -> Option<String> {
+        let list = self.ctx.tls_connections(Criteria { start, size });
         jsonlize(&list)
     }
     #[wasm_bindgen]

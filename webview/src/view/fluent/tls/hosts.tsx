@@ -1,88 +1,158 @@
-
 import { useStore } from "../../store";
-import { useState, useEffect } from 'react';
-import {
-  LockClosedColor,
-} from "@fluentui/react-icons";
-import {
-  TableBody,
-  TableCell,
-  TableRow,
-  Table,
-  TableHeader,
-  TableHeaderCell,
-  TableCellLayout,
-} from "@fluentui/react-components";
+import { createTableColumn, TableCellLayout, TableColumnDefinition } from "@fluentui/react-components";
+import { compute, ComRequest, ITLSConnect } from "../../../share/common";
+import Grid from "../table";
 
-import { PageFrame } from '../table';
 import { TLSIcon } from "../common";
-import Empty from "../http/content/empty";
-import { ITLSInfo } from "../../../share/common";
-
-
-export default function Component() {
-
-  const [list, setList] = useState<ITLSInfo[]>([]);
-
+function Component() {
   const tlsList = useStore((state) => state.tlsList);
-  useEffect(() => {
-    tlsList().then(setList);
-    // stat({field: 'tls_sni'}).then(setList);
-  }, [])
+  const columns: TableColumnDefinition<ITLSConnect>[] = [
+    createTableColumn<ITLSConnect>({
+      columnId: "index",
+      renderHeaderCell: () => 'Index',
+      renderCell: (item) => <TableCellLayout> {item.index} </TableCellLayout>,
+    }),
+    createTableColumn<ITLSConnect>({
+      columnId: "version",
+      renderHeaderCell: () => 'Ver',
+      renderCell: (item) => {
+        let str = '';
+        if (item.list && item.list.length) {
+          for (const it of item.list) {
+            if (it.version) {
+              str = it.version;
+              break;
+            }
+          }
+        }
+        return <TableCellLayout>{str}</TableCellLayout>
+      },
+    }),
+    createTableColumn<ITLSConnect>({
+      columnId: "cs",
+      renderHeaderCell: () => 'CipherSuite',
+      renderCell: (item) => {
+        let str = '';
+        if (item.list && item.list.length) {
+          for (const it of item.list) {
+            if (it.cipher_suite) {
+              str = it.cipher_suite;
+              break;
+            }
+          }
+        }
+        return <TableCellLayout>{str}</TableCellLayout>
+      },
+    }),
+    createTableColumn<ITLSConnect>({
+      columnId: "primary",
+      renderHeaderCell: () => 'Address A',
+      renderCell: (item) => <TableCellLayout> {item.primary} </TableCellLayout>,
+    }),
+    createTableColumn<ITLSConnect>({
+      columnId: "second",
+      renderHeaderCell: () => 'Address B',
+      renderCell: (item) => <TableCellLayout> {item.second} </TableCellLayout>,
+    }),
+    createTableColumn<ITLSConnect>({
+      columnId: "count",
+      renderHeaderCell: () => 'Count',
+      renderCell: (item) => <TableCellLayout>{item.list.length}</TableCellLayout>,
+    }),
+    createTableColumn<ITLSConnect>({
+      columnId: "alpn",
+      renderHeaderCell: () => 'ALPN',
+      renderCell: (item) => {
+        let str = 'N/A';
+        if (item.list && item.list.length) {
+          const set = new Set();
+          for (const it of item.list) {
+            if (it && it.alpn) {
+              for (const p of it.alpn) {
+                set.add(p)
 
+              }
+            }
+          }
+          str = [...set].join(', ')
+        }
+        return <TableCellLayout>{str}</TableCellLayout>
+      },
+    }),
+    createTableColumn<ITLSConnect>({
+      columnId: "sni",
+      renderHeaderCell: () => 'SNI',
+      renderCell: (item) => {
+        let str = 'N/A';
+        if (item.list && item.list.length) {
+          const set = new Set();
+          for (const it of item.list) {
+            if (it.hostname) {
+              set.add(it.hostname);
+            }
+          }
+          str = [...set].join(', ')
+        }
+        return <TableCellLayout>{str}</TableCellLayout>
+      },
+    }),
+  ];
+  const pageSize = 20;
+  const load = async (page: number) => {
+    const data: ComRequest = {
+      catelog: "tls",
+      type: "list",
+      param: { ...compute(page, pageSize) },
+    };
+    return tlsList(data);;
+  }
 
   const breads = [
     { name: "TLS", icon: <TLSIcon />, path: "/tls/hosts" }
   ]
-  if (list.length == 0){
-    return <Empty/>
-  }
-  const headCell = (item: ITLSInfo) => {
-    if(item.alpn && item.alpn.length){
-      return <TableCellLayout media={<LockClosedColor />}>
-                  {item.alpn.join(',')}
-    </TableCellLayout>
-    }
-    return <TableCellLayout media={<LockClosedColor />} style={{color: '#999', fontStyle: 'italic'}}>
-                  none
-    </TableCellLayout>
-  }
-  return (
-    <PageFrame breads={breads}>
-      <Table size="small" style={{ minWidth: "510px" }}>
-        <TableHeader>
-          <TableRow>
-            <TableHeaderCell style={{width: "100px"}}>
-              Protocol
-            </TableHeaderCell>
-            <TableHeaderCell>
-              Host
-            </TableHeaderCell>
-            <TableHeaderCell>
-              Count
-            </TableHeaderCell>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {list.map((item) => (
-            <TableRow key={item.hostname}>
-              <TableCell>
-                {headCell(item)}
-              </TableCell>
-              <TableCell>
-                <TableCellLayout>
-                  {item.hostname}
-                </TableCellLayout>
-              </TableCell>
-              <TableCell>
-                <TableCellLayout>
-                  {item.count}
-                </TableCellLayout>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </PageFrame>
-  );
-};
+  const columnSizingOptions = {
+    index: {
+      minWidth: 50,
+      idealWidth: 50,
+      autoFitColumns: true,
+    },
+    version: {
+      minWidth: 90,
+      idealWidth: 90,
+      autoFitColumns: true,
+    },
+    cs: {
+      minWidth: 330,
+      idealWidth: 330,
+      autoFitColumns: true,
+
+    },
+    primary: {
+      minWidth: 160,
+      idealWidth: 160,
+      autoFitColumns: true,
+    },
+    second: {
+      minWidth: 160,
+      idealWidth: 160,
+      autoFitColumns: true,
+    },
+    alpn: {
+      minWidth: 80,
+      idealWidth: 80,
+      autoFitColumns: true,
+    },
+    count: {
+      minWidth: 50,
+      idealWidth: 50,
+      autoFitColumns: true,
+    },
+
+  };
+  const gridProps = {
+    columns, pageSize, columnSizingOptions, load, breads
+  };
+  return <Grid {...gridProps} />;
+}
+
+export default Component;

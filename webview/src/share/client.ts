@@ -46,8 +46,10 @@ export abstract class PCAPClient {
     if (this.ctx) {
       try {
         const rs = await this.ctx.update(data);
-        this.emitMessage(ComMessage.new(ComType.PRGRESS_STATUS, rs));
-        return rs;
+        if(rs) {
+          this.emitMessage(ComMessage.new(ComType.PRGRESS_STATUS, rs));
+          return rs;
+        }
       } catch (e) {
         console.error(e);
         this.emitMessage(new ComMessage(ComType.error, "failed to open file"));
@@ -102,8 +104,12 @@ export abstract class PCAPClient {
               rs = this.ctx.list_dns(start, size);
               this.emitMessage(ComMessage.new(ComType.DNS_CONNECTIONS, rs, requestId));
               return;
-
             }
+          case "tls": {
+            const rs = this.ctx.list_tls(start, size);
+            this.emitMessage(ComMessage.new(ComType.TLS_CONNECTIONS, rs, requestId));
+            return;
+          }
           default:
             return;
         }
@@ -174,13 +180,9 @@ export abstract class PCAPClient {
   }
   private async stat(field: string): Promise<string> {
     if (this.ctx) {
-      return this.ctx.stat(field)
+      return this.ctx.stat(field) || '[]';
     }
     return "[]";
-  }
-
-  private tls_list(): string | undefined {
-    return this.ctx?.list_tls()
   }
 
   private async process(): Promise<void> {
@@ -266,13 +268,13 @@ export abstract class PCAPClient {
           }
           break;
         }
-        case ComType.TLS_REQ: {
-          const result = this.tls_list() || '[]';
-          this.emitMessage(
-            ComMessage.new(ComType.TLS_RES, result, id),
-          );
-          break;
-        }
+        // case ComType.TLS_REQ: {
+        //   const result = this.tls_list() || '[]';
+        //   this.emitMessage(
+        //     ComMessage.new(ComType.TLS_RES, result, id),
+        //   );
+        //   break;
+        // }
         case ComType.STAT_REQ: {
           const req: StatRequest = body;
           const rs = await this.stat(req.field);

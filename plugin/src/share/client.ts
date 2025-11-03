@@ -10,7 +10,7 @@ function frameSelectConvert(frameSelect: FrameResult): any {
   const datasource = [];
   const len = frameSelect.data_count();
   for (let i = 0; i < len; i += 1) {
-    let data = frameSelect.data(i);
+    const data = frameSelect.data(i);
     if (data) {
       const _range = frameSelect.range(i);
       let range = null;
@@ -46,8 +46,10 @@ export abstract class PCAPClient {
     if (this.ctx) {
       try {
         const rs = await this.ctx.update(data);
-        this.emitMessage(ComMessage.new(ComType.PRGRESS_STATUS, rs));
-        return rs;
+        if(rs) {
+          this.emitMessage(ComMessage.new(ComType.PRGRESS_STATUS, rs));
+          return rs;
+        }
       } catch (e) {
         console.error(e);
         this.emitMessage(new ComMessage(ComType.error, "failed to open file"));
@@ -83,18 +85,31 @@ export abstract class PCAPClient {
             rs = this.ctx.list_conversations(start, size, param.ip || '');
             this.emitMessage(ComMessage.new(ComType.CONVERSATIONS, rs, requestId));
             return;
-          case "connection":
-            rs = this.ctx.list_connections(param.conversionIndex, start, size);
-            this.emitMessage(ComMessage.new(ComType.CONNECTIONS, rs, requestId));
+          case "connection": {
+              rs = this.ctx.list_connections(param.conversionIndex, start, size);
+              this.emitMessage(ComMessage.new(ComType.CONNECTIONS, rs, requestId));
+              return;
+            }
+          case "http_connection": {
+              rs = this.ctx.list_http(start, size, param.host || '', '');
+              this.emitMessage(ComMessage.new(ComType.HTTP_CONNECTIONS, rs, requestId));
+              return;
+            }
+          case "udp": {
+              rs = this.ctx.list_udp(start, size, param.ip || '');
+              this.emitMessage(ComMessage.new(ComType.UDP_CONNECTIONS, rs, requestId));
+              return;
+            }
+          case "dns": {
+              rs = this.ctx.list_dns(start, size);
+              this.emitMessage(ComMessage.new(ComType.DNS_CONNECTIONS, rs, requestId));
+              return;
+            }
+          case "tls": {
+            const rs = this.ctx.list_tls(start, size);
+            this.emitMessage(ComMessage.new(ComType.TLS_CONNECTIONS, rs, requestId));
             return;
-          case "http_connection":
-            rs = this.ctx.list_http(start, size, param.host || '', '');
-            this.emitMessage(ComMessage.new(ComType.HTTP_CONNECTIONS, rs, requestId));
-            return;
-          case "udp":
-            rs = this.ctx.list_udp(start, size, param.ip || '');
-            this.emitMessage(ComMessage.new(ComType.UDP_CONNECTIONS, rs, requestId));
-            return;
+          }
           default:
             return;
         }
@@ -140,7 +155,8 @@ export abstract class PCAPClient {
           default:
             return;
         }
-      } catch (_) {
+      } catch (e) {
+        console.error(e);
         this.emitMessage(new ComMessage(ComType.error, "failed"));
       }
     }
@@ -149,7 +165,7 @@ export abstract class PCAPClient {
     );
   }
   private async http_detail2(index: number): Promise<IHttpDetail[]> {
-    let rs = this.ctx?.http_detail(index);
+    const rs = this.ctx?.http_detail(index) || [];
     const convert = (data: HttpDetail): IHttpDetail => {
       const headers = data.headers();
       const raw = data.raw_content();
@@ -164,13 +180,9 @@ export abstract class PCAPClient {
   }
   private async stat(field: string): Promise<string> {
     if (this.ctx) {
-      return this.ctx.stat(field)
+      return this.ctx.stat(field) || '[]';
     }
     return "[]";
-  }
-
-  private tls_list(): string | undefined {
-    return this.ctx?.list_tls()
   }
 
   private async process(): Promise<void> {
@@ -256,13 +268,13 @@ export abstract class PCAPClient {
           }
           break;
         }
-        case ComType.TLS_REQ: {
-          const result = this.tls_list() || '[]';
-          this.emitMessage(
-            ComMessage.new(ComType.TLS_RES, result, id),
-          );
-          break;
-        }
+        // case ComType.TLS_REQ: {
+        //   const result = this.tls_list() || '[]';
+        //   this.emitMessage(
+        //     ComMessage.new(ComType.TLS_RES, result, id),
+        //   );
+        //   break;
+        // }
         case ComType.STAT_REQ: {
           const req: StatRequest = body;
           const rs = await this.stat(req.field);

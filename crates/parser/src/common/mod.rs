@@ -10,20 +10,21 @@ use std::{
     collections::HashMap,
     hash::{BuildHasherDefault, Hash, Hasher},
     net::{Ipv4Addr, Ipv6Addr},
-    ops::{Range},
+    ops::Range,
 };
 
 use crate::{
     add_field_label_no_range,
     common::{
         concept::{
-            ConversationCriteria, CounterItem, DNSRecord, FrameIndex, HttpCriteria, HttpMessageDetail, IndexHashMap, NameService, TLSConversation, TLSItem, UDPConversation, VConnection, VConversation, VHttpConnection
+            ConversationCriteria, CounterItem, DNSRecord, FrameIndex, HttpCriteria, HttpMessageDetail, IndexHashMap, NameService, TLSConversation, TLSItem, UDPConversation,
+            VConnection, VConversation, VHttpConnection,
         },
         connection::{TcpFlagField, TlsData},
         util::date_str,
     },
     files::{pcap::PCAP, pcapng::PCAPNG},
-    protocol::{detail, link_type_map, parse, summary},
+    protocol::{detail, link_type_map, parse, summary, transport::tls::tls_version_map},
 };
 use anyhow::{bail, Result};
 use concept::{Criteria, Field, FrameInfo, FrameInternInfo, ListResult, ProgressStatus};
@@ -651,7 +652,7 @@ where
         ListResult::new(start, total, data)
     }
 
-    fn parse_handshake<R>(&self, tls_data: &TlsData, msg_type: u8, resolve: fn(reader: &mut Reader) -> Result<R>) -> Result<R> {
+    fn parse_handshake(&self, tls_data: &TlsData, msg_type: u8, item: &mut TLSItem) -> Result<()> {
         let ranges: Vec<Range<usize>> = tls_data.segments.iter().map(|f| f.range.clone()).collect();
         let data = self.loader.loads(&ranges)?;
         let ds = DataSource::create(data, 0..0);
@@ -678,19 +679,21 @@ where
                     let extention_len = reader.read16(true)?;
                     if extention_len > 0 {
                         let mut extention_reader = reader.slice_as_reader(extention_len as usize)?;
-                        // if let Ok(sni) = resolve_sni(&mut extention_reader) {}
-                        return resolve(&mut extention_reader);
+                        return resolve_sni(&mut extention_reader, item);
                     }
                 }
                 2 => {
                     reader.forward(34);
                     let session_id_len = reader.read8()? as usize;
                     reader.forward(session_id_len);
-                    reader.forward(3);
+                    let cs = reader.read16(true)?;
+                    let suites = crate::constants::tls_cipher_suites_mapper(cs).to_string();
+                    item.cipher_suite = Some(suites);
+                    reader.forward(1);
                     let extention_len = reader.read16(true)?;
                     if extention_len > 0 {
                         let mut extention_reader = reader.slice_as_reader(extention_len as usize)?;
-                        return resolve(&mut extention_reader);
+                        return resolve_alpn(&mut extention_reader, item);
                     }
                 }
                 _ => {}
@@ -700,12 +703,12 @@ where
         bail!("")
     }
 
-    fn _resolve_tls<R>(&self, index: FrameIndex, msg_type: u8, resolve: fn(reader: &mut Reader) -> Result<R>) -> Result<R> {
+    fn _resolve_tls(&self, index: FrameIndex, msg_type: u8, item: &mut TLSItem) -> Result<()> {
         if let Some(frame) = self.ctx.list.get(index as usize) {
             if let ProtocolInfoField::TLS(tls_list) = &frame.protocol_field {
                 for block in &tls_list.list {
                     if block.content_type == 22 {
-                        return self.parse_handshake(&block, msg_type, resolve);
+                        return self.parse_handshake(&block, msg_type, item);
                     }
                 }
             }
@@ -713,31 +716,7 @@ where
         bail!("")
     }
 
-    pub fn tls_infos(&self) -> Vec<TLSItem> {
-        let mut map: FastHashMap<String, TLSItem> = FastHashMap::default();
-        for conver in &self.ctx.conversation_list {
-            for connection in &conver.connections {
-                // let (client_index, server_index) = &connection.tls_meta;
-                if let Some(index) = connection.tls_meta.client() {
-                    if let Ok(sni) = self._resolve_tls(index, 1, resolve_sni) {
-                        let _entry = map.entry(sni.clone()).or_insert(TLSItem::new(Some(sni)));
-                        // entry.update();
-                        // if entry.alpn.is_empty() {
-                        //     if let Some(index) = connection.tls_meta.server() {
-                        //         if let Ok(alpn) = self._resolve_tls(index, 2, resolve_alpn) {
-                        //             entry.add_alpn(alpn);
-                        //         }
-                        //     }
-                        // }
-                    }
-                }
-            }
-        }
-        map.into_values().collect()
-    }
-
     pub fn _tls_connects(&self) -> Vec<usize> {
-        // let mut map = IndexHashMap::default();
         let mut list = vec![];
         for conver in &self.ctx.conversation_list {
             for connection in &conver.connections {
@@ -751,16 +730,16 @@ where
     }
     fn tlscon(&self, conversaction_index: usize) -> Option<TLSConversation> {
         if let Some(conv) = self.ctx.conversation_list.get(conversaction_index) {
-            let mut rs = TLSConversation::new(conv.primary.clone(), conv.second.clone());
+            let mut rs = TLSConversation::new(conversaction_index, conv.primary.clone(), conv.second.clone());
             for connection in &conv.connections {
                 let meta = &connection.tls_meta;
                 if meta.exists() {
                     let mut item = TLSItem::default();
                     if let Some(index) = meta.client() {
-                            item.hostname = self._resolve_tls(index, 1, resolve_sni).ok();
+                        self._resolve_tls(index, 1, &mut item).ok();
                     }
                     if let Some(index) = meta.server() {
-                            item.alpn = self._resolve_tls(index, 2, resolve_alpn).ok();
+                        self._resolve_tls(index, 2, &mut item).ok();
                     }
                     rs.list.push(item);
                 }
@@ -770,7 +749,7 @@ where
             None
         }
     }
-    
+
     pub fn tls_connections(&self, cri: Criteria) -> ListResult<TLSConversation> {
         let Criteria { start, size } = cri;
         let list = self._tls_connects();
@@ -906,7 +885,7 @@ where
     }
 }
 
-fn resolve_sni(reader: &mut Reader) -> Result<String> {
+fn resolve_sni(reader: &mut Reader, item: &mut TLSItem) -> Result<()> {
     while reader.left() >= 4 {
         let extention_type = reader.read16(true)?;
         let extention_len = reader.read16(true)?;
@@ -914,37 +893,49 @@ fn resolve_sni(reader: &mut Reader) -> Result<String> {
             let mut ext_reader = reader.slice_as_reader(extention_len as usize)?;
             ext_reader.forward(5);
             let sni = ext_reader.read_string((extention_len - 5) as usize)?;
-
-            return Ok(sni);
+            item.hostname = Some(sni);
         } else {
             reader.forward(extention_len as usize);
         }
     }
-    bail!("")
+    Ok(())
 }
 
-fn resolve_alpn(reader: &mut Reader) -> Result<Vec<String>> {
+fn resolve_alpn(reader: &mut Reader, item: &mut TLSItem) -> Result<()> {
     while reader.left() >= 6 {
         let extention_type = reader.read16(true)?;
         let _extention_len = reader.read16(true)?;
-        if extention_type == 16 {
-            let mut list = vec![];
-            let extention_len = reader.read16(true)?;
-            let mut ext_reader = reader.slice_as_reader(extention_len as usize)?;
-            loop {
-                if ext_reader.left() == 0 {
-                    break;
+        match extention_type {
+            16 => {
+                let mut list = vec![];
+                let extention_len = reader.read16(true)?;
+                let mut ext_reader = reader.slice_as_reader(extention_len as usize)?;
+                loop {
+                    if ext_reader.left() == 0 {
+                        break;
+                    }
+                    let item_len = ext_reader.read8()?;
+                    let item = ext_reader.read_string(item_len as usize)?;
+                    list.push(item);
                 }
-                let item_len = ext_reader.read8()?;
-                let item = ext_reader.read_string(item_len as usize)?;
-                list.push(item);
-            }
-            return Ok(list);
-        } else {
-            reader.forward(_extention_len as usize);
+                item.alpn = Some(list);
+
+            },
+            43 => {
+                if _extention_len == 2 {
+                    let v = reader.read16(true)?;
+                    item.version = tls_version_map(v).map(String::from);
+                }
+                // let v = reader.read16(true)?;
+                //tls_version
+
+            },
+            _ => {
+                reader.forward(_extention_len as usize);
+            },
         }
     }
-    bail!("")
+    Ok(())
 }
 
 pub mod concept;

@@ -58,7 +58,7 @@ function Component() {
     }
 
     const breads = [
-        { name: "NDS", icon: <DNSIcon />, path: "/dns" }
+        { name: "DNS", icon: <DNSIcon />, path: "/dns" }
     ]
     const columnSizingOptions = {
         sender: {

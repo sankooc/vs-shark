@@ -657,14 +657,16 @@ impl HttpMessageDetail {
 
 #[derive(Serialize)]
 pub struct TLSConversation {
+    pub index: usize,
     pub primary: String,
     pub second: String,
     pub list: Vec<TLSItem>
 }
 
 impl TLSConversation {
-    pub fn new(primary: String, second: String) -> Self {
+    pub fn new(index: usize, primary: String, second: String) -> Self {
         Self {
+            index,
             primary, second,
             list: vec![]
         }
@@ -676,6 +678,8 @@ impl TLSConversation {
 pub struct TLSItem {
     pub hostname: Option<String>,
     pub alpn: Option<Vec<String>>,
+    pub version: Option<String>,
+    pub cipher_suite: Option<String>,
     // pub count: usize,
 }
 

@@ -24,6 +24,7 @@ export enum ComType {
   HTTP_CONNECTIONS = "http_connections",
   UDP_CONNECTIONS = "UDP_CONNECTIONS",
   DNS_CONNECTIONS = "DNS_CONNECTIONS",
+  TLS_CONNECTIONS = "TLS_CONNECTIONS",
   HTTP_DETAIL_REQ = "http_detail_req",
   HTTP_DETAIL_RES = "http_detail_res",
   STAT_REQ = "STAT_REQ",
@@ -168,8 +169,15 @@ export interface MessageCompress {
 
 export interface ITLSInfo {
   hostname: string,
+  version: string,
+  cipher_suite: string,
   alpn: string[],
-  count: number,
+}
+export interface ITLSConnect {
+  index?: number,
+  primary: string,
+  second: string,
+  list: ITLSInfo[],
 }
 export interface IHttpDetail {
   headers: string[],
