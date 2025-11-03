@@ -10,7 +10,7 @@ use std::{
     ops::Range,
 };
 
-use crate::{common::{ResourceLoader, concept::{ConnectionIndex, Conversation, FrameIndex, TCPStatistic, VEndpoint}}, protocol};
+use crate::{common::{ResourceLoader, concept::{ConnectionIndex, Conversation, FrameIndex, TCPStatistic, TLSInfo, VEndpoint}}, protocol};
 
 use super::{
     enum_def::{Protocol, SegmentStatus, TCPConnectStatus, TCPDetail, TCPFLAG},
@@ -385,7 +385,7 @@ pub struct Connection {
     pub primary: Endpoint,
     pub second: Endpoint,
     pub protocol: Protocol,
-    pub tls_meta: (Option<FrameIndex>, Option<FrameIndex>)
+    pub tls_meta: TLSInfo,
 }
 impl Connection {
     pub fn new(primary: Endpoint, second: Endpoint) -> Self {
@@ -393,7 +393,7 @@ impl Connection {
             primary,
             second,
             protocol: Protocol::None,
-            tls_meta: (None, None)
+            tls_meta: TLSInfo::default(),
         }
     }
     pub fn primary(&self) -> &Endpoint {

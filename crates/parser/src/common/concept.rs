@@ -83,7 +83,7 @@ pub struct InstanceConfig {
 //     }
 // }
 
-#[derive(Serialize)]
+#[derive(Serialize, Default)]
 pub struct LineChartData {
     pub x_axis: Vec<u64>,
     pub y_axis: Vec<String>,
@@ -116,11 +116,11 @@ pub struct ProgressStatus {
     pub left: usize,
 }
 
-impl ProgressStatus {
-    pub fn to_json(&self) -> String {
-        serde_json::to_string(self).unwrap()
-    }
-}
+// impl ProgressStatus {
+//     pub fn to_json(&self) -> String {
+//         serde_json::to_string(self).unwrap()
+//     }
+// }
 
 #[derive(Serialize)]
 pub struct ListResult<T> {
@@ -504,6 +504,40 @@ impl DNSRecord {
     }
 }
 
+#[derive(Default)]
+pub struct TLSInfo {
+    client_hello: Option<FrameIndex>,
+    server_hello: Option<FrameIndex>,
+    cert: Option<FrameIndex>,
+}
+
+impl TLSInfo {
+    pub fn exists(&self) -> bool{
+        self.client_hello.is_some() || self.server_hello.is_some() || self.cert.is_some()
+    }
+    pub fn update_client(&mut self, index: FrameIndex){
+        self.client_hello = Some(index);
+    }
+    pub fn update_server(&mut self, index: FrameIndex){
+        self.server_hello = Some(index);
+    }
+    pub fn update_cert(&mut self, index: FrameIndex){
+        self.cert = Some(index);
+    }
+    pub fn client(&self) -> Option<FrameIndex> {
+        return self.client_hello
+    }
+    pub fn server(&self) -> Option<FrameIndex> {
+        return self.server_hello
+    }
+    pub fn cert(&self) -> Option<FrameIndex> {
+        return self.cert
+    }
+
+}
+
+
+
 #[derive(Clone, Copy)]
 pub enum NameService {
     DNS,
@@ -620,23 +654,41 @@ impl HttpMessageDetail {
     }
 }
 
-#[derive(Serialize, Clone)]
+
+#[derive(Serialize)]
+pub struct TLSConversation {
+    pub primary: String,
+    pub second: String,
+    pub list: Vec<TLSItem>
+}
+
+impl TLSConversation {
+    pub fn new(primary: String, second: String) -> Self {
+        Self {
+            primary, second,
+            list: vec![]
+        }
+    }
+}
+
+
+#[derive(Default, Serialize, Clone)]
 pub struct TLSItem {
-    pub hostname: String,
-    pub alpn: Vec<String>,
-    pub count: usize,
+    pub hostname: Option<String>,
+    pub alpn: Option<Vec<String>>,
+    // pub count: usize,
 }
 
 impl TLSItem {
-    pub fn new(hostname: String) -> Self {
-        Self { hostname, count: 0, alpn: vec![] }
+    pub fn new(hostname: Option<String>) -> Self {
+        Self { hostname, ..Default::default()}
     }
-    pub fn update(&mut self) {
-        self.count += 1;
-    }
-    pub fn add_alpn(&mut self, alpn: Vec<String>) {
-        self.alpn = alpn;
-    }
+    // pub fn update(&mut self) {
+    //     self.count += 1;
+    // }
+    // pub fn add_alpn(&mut self, alpn: String) {
+    //     self.alpn = Some(alpn);
+    // }
 }
 
 fn decode_bytes(body_raw: &[u8], encoding: HttpEncoding) -> String {

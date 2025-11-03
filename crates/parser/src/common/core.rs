@@ -484,12 +484,14 @@ impl Context {
         match &flag {
             TLSFlag::ClientHello => {
                 if let Some(connection) = self._connection(frame) {
-                    connection.tls_meta = (Some(index), connection.tls_meta.1);
+                    connection.tls_meta.update_client(index);
+                    // connection.tls_meta = (Some(index), connection.tls_meta.1);
                 }
             }
             TLSFlag::ServerHello => {
                 if let Some(connection) = self._connection(frame) {
-                    connection.tls_meta = (connection.tls_meta.0, Some(index));
+                    connection.tls_meta.update_server(index);
+                    // connection.tls_meta = (connection.tls_meta.0, Some(index));
                 }
             }
             _ => {}
@@ -531,18 +533,18 @@ impl Context {
             map.insert(key.clone(), T::from(1));
         }
     }
-    pub fn _list_map<K, T>(map: &FastHashMap<K, T>) -> String
+    pub fn _list_map<K, T>(map: &FastHashMap<K, T>) -> Vec<CounterItem>
     where
         K: core::hash::Hash + Eq + ToString,
         T: Copy + Into<usize>,
     {
-        let rs: Vec<CounterItem> = map.iter().map(|(k, v)| CounterItem::new(k.to_string(), (*v).into())).collect();
-        serde_json::to_string(&rs).unwrap_or("[]".into())
+        map.iter().map(|(k, v)| CounterItem::new(k.to_string(), (*v).into())).collect()
+        // serde_json::to_string(&rs).unwrap_or("[]".into())
     }
 }
 
 impl Context {
-    pub fn stat_http_host(&self) -> String {
+    pub fn stat_http_host(&self) -> Vec<CounterItem> {
         Context::_list_map(&self.http_hostnames)
     }
     // pub fn add_tls_sni(&mut self, sni: String) {
@@ -557,10 +559,10 @@ impl Context {
     pub fn add_ip6(&mut self, ip: &Ipv6Addr) {
         Context::add_map(ip, &mut self.stat_ip6);
     }
-    pub fn stat_ip4(&self) -> String {
+    pub fn stat_ip4(&self) -> Vec<CounterItem> {
         Context::_list_map(&self.stat_ip4)
     }
-    pub fn stat_ip6(&self) -> String {
+    pub fn stat_ip6(&self) -> Vec<CounterItem> {
         Context::_list_map(&self.stat_ip6)
     }
 }
@@ -581,7 +583,7 @@ fn flat(map: &HashMap<String, usize>) -> Vec<CounterItem> {
 // }
 
 impl Context {
-    pub fn stat_http_data(&self) -> String {
+    pub fn stat_http_data(&self) -> Vec<Vec<CounterItem>> {
         let mut method_map: HashMap<String, usize> = HashMap::with_capacity(4);
         let mut status_map: HashMap<String, usize> = HashMap::with_capacity(6);
         let mut type_map: HashMap<String, usize> = HashMap::new();
@@ -591,17 +593,18 @@ impl Context {
             Context::add_map2(&status, &mut status_map);
             Context::add_map2(&content_type, &mut type_map);
         }
-        serde_json::to_string(&vec![flat(&method_map), flat(&status_map), flat(&type_map)]).unwrap()
+        vec![flat(&method_map), flat(&status_map), flat(&type_map)]
+        // serde_json::to_string(&vec![flat(&method_map), flat(&status_map), flat(&type_map)]).unwrap()
     }
-    pub fn stat_frame(&self) -> String {
+    pub fn stat_frame(&self) -> LineChartData {
         if self.list.len() <= 10 {
-            return "{}".to_string();
+            return LineChartData::default();
         }
         let first = self.list.first().unwrap();
         let last = self.list.last().unwrap();
         let period = last.info.time.saturating_sub(first.info.time);
         if period < 100 {
-            return "{}".to_string();
+            return LineChartData::default();
         }
         let size: usize = 200;
         let r = period.div_ceil(size as u64);
@@ -656,7 +659,7 @@ impl Context {
             }
         }
 
-        let data = LineChartData::new(series, protocols.iter().map(|f| (*f).into()).collect(), vec![tcp, udp, http, tls, other]);
-        serde_json::to_string(&data).unwrap_or("{}".into())
+        LineChartData::new(series, protocols.iter().map(|f| (*f).into()).collect(), vec![tcp, udp, http, tls, other])
+        // serde_json::to_string(&data).unwrap_or("{}".into())
     }
 }

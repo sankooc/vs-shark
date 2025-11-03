@@ -10,13 +10,15 @@ use std::{
     collections::HashMap,
     hash::{BuildHasherDefault, Hash, Hasher},
     net::{Ipv4Addr, Ipv6Addr},
-    ops::Range,
+    ops::{Range},
 };
 
 use crate::{
     add_field_label_no_range,
     common::{
-        concept::{ConversationCriteria, DNSRecord, FrameIndex, HttpCriteria, HttpMessageDetail, IndexHashMap, NameService, TLSItem, UDPConversation, VConnection, VConversation, VHttpConnection},
+        concept::{
+            ConversationCriteria, CounterItem, DNSRecord, FrameIndex, HttpCriteria, HttpMessageDetail, IndexHashMap, NameService, TLSConversation, TLSItem, UDPConversation, VConnection, VConversation, VHttpConnection
+        },
         connection::{TcpFlagField, TlsData},
         util::date_str,
     },
@@ -29,7 +31,6 @@ use connection::ConnectState;
 use enum_def::{AddressField, DataError, FileType, Protocol, ProtocolInfoField};
 use io::{DataSource, MacAddress, Reader, IO};
 use rustc_hash::FxHasher;
-use serde_json::Error;
 
 pub type FastHashMap<K, V> = HashMap<K, V, BuildHasherDefault<FxHasher>>;
 
@@ -267,8 +268,7 @@ impl EthernetCache {
     }
 }
 
-pub struct Instance<T>
-{
+pub struct Instance<T> {
     loader: T,
     ds: DataSource,
     file_type: FileType,
@@ -276,11 +276,10 @@ pub struct Instance<T>
     last: usize,
 }
 
-impl <T> Instance<T> {
+impl<T> Instance<T> {
     pub fn context(&self) -> &Context {
         &self.ctx
     }
-    
 
     pub fn frame(&self, index: usize) -> Option<&Frame> {
         self.ctx.list.get(index)
@@ -491,11 +490,6 @@ where
         }
         ListResult::new(start, total, items)
     }
-    pub fn frames_list_json(&self, cri: Criteria) -> Result<String, Error> {
-        let item = self.frames_by(cri);
-        serde_json::to_string(&item)
-    }
-
     fn frame_field(&self, frame: &Frame) -> Field {
         let mut f = Field::children();
         if let Some(range) = frame.range.as_ref() {
@@ -556,13 +550,6 @@ where
             }
         }
         None
-    }
-
-    pub fn select_frame_json(&self, index: usize) -> Result<String, Error> {
-        if let Some((list, _)) = self.select_frame(index) {
-            return serde_json::to_string(&list);
-        }
-        Ok("[]".into())
     }
 
     pub fn conversation_count(&self) -> usize {
@@ -730,18 +717,18 @@ where
         let mut map: FastHashMap<String, TLSItem> = FastHashMap::default();
         for conver in &self.ctx.conversation_list {
             for connection in &conver.connections {
-                let (client_index, server_index) = &connection.tls_meta;
-                if let Some(index) = client_index {
-                    if let Ok(sni) = self._resolve_tls(*index, 1, resolve_sni) {
-                        let entry = map.entry(sni.clone()).or_insert(TLSItem::new(sni));
-                        entry.update();
-                        if entry.alpn.is_empty() {
-                            if let Some(index) = server_index {
-                                if let Ok(alpn) = self._resolve_tls(*index, 2, resolve_alpn) {
-                                    entry.add_alpn(alpn);
-                                }
-                            }
-                        }
+                // let (client_index, server_index) = &connection.tls_meta;
+                if let Some(index) = connection.tls_meta.client() {
+                    if let Ok(sni) = self._resolve_tls(index, 1, resolve_sni) {
+                        let _entry = map.entry(sni.clone()).or_insert(TLSItem::new(Some(sni)));
+                        // entry.update();
+                        // if entry.alpn.is_empty() {
+                        //     if let Some(index) = connection.tls_meta.server() {
+                        //         if let Ok(alpn) = self._resolve_tls(index, 2, resolve_alpn) {
+                        //             entry.add_alpn(alpn);
+                        //         }
+                        //     }
+                        // }
                     }
                 }
             }
@@ -749,7 +736,62 @@ where
         map.into_values().collect()
     }
 
-    pub fn ipaddress_distribute(&self) -> String {
+    pub fn _tls_connects(&self) -> Vec<usize> {
+        // let mut map = IndexHashMap::default();
+        let mut list = vec![];
+        for conver in &self.ctx.conversation_list {
+            for connection in &conver.connections {
+                if connection.tls_meta.exists() {
+                    list.push(conver.key);
+                    break;
+                }
+            }
+        }
+        list
+    }
+    fn tlscon(&self, conversaction_index: usize) -> Option<TLSConversation> {
+        if let Some(conv) = self.ctx.conversation_list.get(conversaction_index) {
+            let mut rs = TLSConversation::new(conv.primary.clone(), conv.second.clone());
+            for connection in &conv.connections {
+                let meta = &connection.tls_meta;
+                if meta.exists() {
+                    let mut item = TLSItem::default();
+                    if let Some(index) = meta.client() {
+                            item.hostname = self._resolve_tls(index, 1, resolve_sni).ok();
+                    }
+                    if let Some(index) = meta.server() {
+                            item.alpn = self._resolve_tls(index, 2, resolve_alpn).ok();
+                    }
+                    rs.list.push(item);
+                }
+            }
+            Some(rs)
+        } else {
+            None
+        }
+    }
+    
+    pub fn tls_connections(&self, cri: Criteria) -> ListResult<TLSConversation> {
+        let Criteria { start, size } = cri;
+        let list = self._tls_connects();
+        let total = list.len();
+        let end = cmp::min(start + size, total);
+
+        if end <= start {
+            ListResult::new(start, 0, vec![])
+        } else {
+            let _list: &[usize] = &list[start..end];
+            let mut items = vec![];
+            for t_index in _list {
+                if let Some(item) = self.tlscon(*t_index) {
+                    items.push(item);
+                }
+            }
+            ListResult::new(start, total, items)
+        }
+    }
+
+    pub fn ipaddress_distribute(&self) -> Vec<CounterItem> {
         let get_ip4_type = |addr: &Ipv4Addr| {
             if addr.is_loopback() {
                 "loopback"
@@ -825,7 +867,7 @@ where
         for frame in &self.context().list {
             let index = frame.info.index;
             match &frame.protocol_field {
-                ProtocolInfoField::DNSQUERY(ns_type,transaction_id) => {
+                ProtocolInfoField::DNSQUERY(ns_type, transaction_id) => {
                     if let NameService::DNS = ns_type {
                         if *transaction_id != 0 {
                             let (_, rs) = map.get_or_add(transaction_id);
@@ -834,7 +876,7 @@ where
                         }
                     }
                 }
-                ProtocolInfoField::DNSRESPONSE(ns_type,transaction_id) => {
+                ProtocolInfoField::DNSRESPONSE(ns_type, transaction_id) => {
                     if let NameService::DNS = ns_type {
                         if *transaction_id != 0 {
                             if let Some((_, rs)) = map.get(transaction_id) {
@@ -862,8 +904,6 @@ where
             ListResult::new(start, total, items)
         }
     }
-
-
 }
 
 fn resolve_sni(reader: &mut Reader) -> Result<String> {
