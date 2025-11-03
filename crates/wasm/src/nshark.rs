@@ -1,32 +1,58 @@
 use js_sys::Uint8Array;
 use pcap::common::{
-    Instance, concept::{ConversationCriteria, Criteria, HttpCriteria}
+    concept::{ConversationCriteria, Criteria, HttpCriteria},
+    Instance, ResourceLoader,
 };
+use serde::Serialize;
 use wasm_bindgen::prelude::*;
 
-use crate::entity::{parse_http_message, Conf, FrameRange, FrameResult};
+use crate::entity::{Conf, FrameResult, HttpDetail, Range};
 
+pub struct WASMLoader {
+    id: String,
+}
+impl WASMLoader {
+    pub fn new(id: String) -> Self {
+        Self { id }
+    }
+    pub fn id(&self) -> String {
+        self.id.clone()
+    }
+}
+
+impl ResourceLoader for WASMLoader {
+    fn load(&self, r: &std::ops::Range<usize>) -> anyhow::Result<Vec<u8>> {
+        let data = load_data(&self.id, r.into());
+        Ok(data.to_vec())
+    }
+    fn loads(&self, ranges: &[std::ops::Range<usize>]) -> anyhow::Result<Vec<u8>> {
+        let rs = ranges.iter().map(|f| f.into()).collect();
+        Ok(loads_data(&self.id, rs).to_vec())
+    }
+}
 #[wasm_bindgen]
 pub struct WContext {
-    ctx: Box<Instance>,
+    ctx: Instance<WASMLoader>,
 }
 
 #[wasm_bindgen]
 impl WContext {
     #[wasm_bindgen(constructor)]
     pub fn new(conf: Conf) -> WContext {
-        let ins = Instance::new(conf.batch_size());
-        WContext { ctx: Box::new(ins) }
+        let loader = WASMLoader::new(conf.id());
+        let ins = Instance::new(conf.batch_size(), loader);
+        WContext { ctx: ins }
     }
 
     #[wasm_bindgen]
-    pub fn update(&mut self, s: &Uint8Array) -> String {
+    pub fn update(&mut self, s: &Uint8Array) -> Option<String> {
         let slice = s.to_vec();
-        self.ctx.update(slice).unwrap().to_json()
+        self.ctx.update(slice).ok().as_ref().map(jsonlize).flatten()
     }
     #[wasm_bindgen]
-    pub fn update_slice(&mut self, s: &[u8]) -> String {
-        self.ctx.update_slice(s).unwrap().to_json()
+    pub fn update_slice(&mut self, s: &[u8]) -> Option<String> {
+        self.ctx.update_slice(s).ok().as_ref().map(jsonlize).flatten()
+        // self.ctx.update_slice(s).unwrap().to_json()
     }
 
     #[wasm_bindgen]
@@ -35,102 +61,118 @@ impl WContext {
     }
 
     #[wasm_bindgen]
-    pub fn list(&mut self, catelog: String, start: usize, size: usize) -> String {
+    pub fn list(&mut self, catelog: String, start: usize, size: usize) -> Option<String> {
         let cri = Criteria { start, size };
         match catelog.as_str() {
-            "frame" => self.ctx.frames_list_json(cri).unwrap(),
-            _ => "{}".into(),
+            "frame" => {
+                let rs =self.ctx.frames_by(cri);
+                jsonlize(&rs)
+            },
+            _ => None,
         }
     }
 
     #[wasm_bindgen]
-    pub fn frame_range(&self, index: usize) -> FrameRange {
-        let mut rs = FrameRange::new();
-        if let Some(f) = self.ctx.frame(index) {
-            if let Some(range) = f.frame_range() {
-                rs.frame = range.into();
-            }
-            if let Some(range) = f.range() {
-                rs.data = range.into();
-            }
-        }
-        rs
-    }
-
-    #[wasm_bindgen]
-    pub fn select(&self, catelog: String, index: usize, s: &Uint8Array) -> String {
+    pub fn select(&self, catelog: String, index: usize) -> Option<String> {
         match catelog.as_str() {
             "frame" => {
-                let slice = s.to_vec();
-                self.ctx.select_frame_json(index, slice).unwrap()
-            }
-            _ => "{}".into(),
+                self.ctx.select_frame(index).map(|(items, _)| serde_json::to_string(&items).ok()).flatten()
+            },
+            _ => None,
         }
     }
 
     #[wasm_bindgen]
-    pub fn select_frame(&self, index: usize, s: &Uint8Array) -> FrameResult {
-        let slice = s.to_vec();
-        if let Some((list, _, extra)) = self.ctx.select_frame(index, slice) {
+    pub fn select_frame(&self, index: usize) -> FrameResult {
+        if let Some((list, datsources)) = self.ctx.select_frame(index) {
             let data = serde_json::to_string(&list).unwrap();
-            let rs = FrameResult::new(data, extra);
+            let rs = FrameResult::new(data, datsources);
             return rs;
         }
         FrameResult::empty()
     }
     #[wasm_bindgen]
-    pub fn list_conversations(&self, start: usize, size: usize, ip: String) -> String {
+    pub fn list_conversations(&self, start: usize, size: usize, ip: String) -> Option<String> {
         let filter = if ip.is_empty() { ConversationCriteria::default() } else { ConversationCriteria::ip(ip) };
         let rs = self.ctx.conversations(Criteria { start, size }, filter);
-        serde_json::to_string(&rs).unwrap_or("{}".into())
+        jsonlize(&rs)
     }
     #[wasm_bindgen]
-    pub fn list_connections(&self, index: usize, start: usize, size: usize) -> String {
+    pub fn list_connections(&self, index: usize, start: usize, size: usize) -> Option<String> {
         let rs = self.ctx.connections(index, Criteria { start, size });
-        serde_json::to_string(&rs).unwrap_or("{}".into())
+        jsonlize(&rs)
     }
     #[wasm_bindgen]
-    pub fn list_http(&self, start: usize, size: usize, hostname: String, _method: String) -> String {
+    pub fn list_http(&self, start: usize, size: usize, hostname: String, _method: String) -> Option<String> {
         let filter = if hostname.is_empty() { None } else { Some(HttpCriteria::hostname(hostname)) };
         let rs = self.ctx.http_connections(Criteria { start, size }, filter);
-        serde_json::to_string(&rs).unwrap_or("{}".into())
+        jsonlize(&rs)
     }
     #[wasm_bindgen]
-    pub fn list_udp(&self, start: usize, size: usize, ip: String) -> String {
+    pub fn list_udp(&self, start: usize, size: usize, ip: String) -> Option<String> {
         let filter = if ip.is_empty() { None } else { Some(ip) };
         let rs = self.ctx.udp_conversations(Criteria { start, size }, filter);
-        serde_json::to_string(&rs).unwrap_or("{}".into())
+        jsonlize(&rs)
     }
     #[wasm_bindgen]
-    pub fn http_message_detail(&self, head: String, headers: Vec<u8>, body: Option<Vec<u8>>) -> String {
-        let rs = parse_http_message(&head, headers, body);
-        serde_json::to_string(&rs).unwrap_or("{}".into())
+    pub fn list_tls(&self, start: usize, size: usize) -> Option<String> {
+        let list = self.ctx.tls_connections(Criteria { start, size });
+        jsonlize(&list)
     }
     #[wasm_bindgen]
-    pub fn http_header_parse(&self, head: String, header: &Uint8Array, body: &Uint8Array) -> String {
-        let slice = header.to_vec();
-        let mut content = None;
-        if body.length() > 0 {
-            content = Some(body.to_vec());
-        }
-        let rs = parse_http_message(&head, slice, content);
-        serde_json::to_string(&rs).unwrap_or("{}".into())
+    pub fn list_dns(&self, start: usize, size: usize) -> Option<String> {
+        let list = self.ctx.dns_records(Criteria { start, size });
+        jsonlize(&list)
     }
     #[wasm_bindgen]
-    pub fn stat(&self, field: String) -> String {
-        match field.as_str() {
-            "http_host" => self.ctx.get_context().stat_http_host(),
-            "tls_sni" => self.ctx.get_context().stat_tls_sni(),
-            "ip4" => self.ctx.get_context().stat_ip4(),
-            "ip6" => self.ctx.get_context().stat_ip6(),
-            "http_data" => self.ctx.get_context().stat_http_data(),
-            "frame" => self.ctx.get_context().stat_frame(),
-            _ => "[]".to_string(),
+    pub fn http_detail(&self, index: usize) -> Option<Vec<HttpDetail>> {
+        if let Some(data) = self.ctx.http_detail(index) {
+            Some(data.into_iter().map(HttpDetail::from).collect())
+        } else {
+            None
         }
     }
+    
+    #[wasm_bindgen]
+    pub fn stat(&self, field: String) -> Option<String> {
+        let ctx = self.ctx.context();
+        let items = match field.as_str() {
+            "http_host" => ctx.stat_http_host(),
+            "ip4" => ctx.stat_ip4(),
+            "ip6" => ctx.stat_ip6(),
+            "http_data" => {
+                let rs = ctx.stat_http_data();
+                return jsonlize(&rs);
+            },
+            "frame" =>  {
+                let rs = ctx.stat_frame();
+                return jsonlize(&rs);
+            },
+            "ip_address" => self.ctx.ipaddress_distribute(),
+            _ => {
+                return None;
+            },
+        };
+        return jsonlize(&items)
+    }
+}
+
+fn jsonlize<T>(data: &T) -> Option<String>
+where
+    T: Serialize,
+{
+    serde_json::to_string(&data).ok()
 }
 
 #[wasm_bindgen]
 pub fn load(conf: Conf) -> WContext {
+    wasm_log("start load wasm");
     WContext::new(conf)
+}
+
+#[wasm_bindgen]
+extern "C" {
+    fn load_data(id: &str, r: Range) -> Uint8Array;
+    fn loads_data(id: &str, r: Vec<Range>) -> Uint8Array;
+    fn wasm_log(str: &str);
 }

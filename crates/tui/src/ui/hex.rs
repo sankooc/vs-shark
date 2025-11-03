@@ -22,7 +22,6 @@ impl <'a>HexState<'a> {
 
 pub struct HexView<'a> {
     state: &'a HexState<'a>,
-    // data: Option<(usize, usize, Rc<Vec<u8>>)>
 }
 
 impl<'a> From<&'a HexState<'a>> for HexView<'a> {
@@ -40,7 +39,6 @@ impl Widget for &mut HexView<'_> {
         let start = self.state.start;
         let size = self.state.size;
         let range = start..start+size;
-        // let data = _data.2.clone();
         let len = data.len();
         if len == 0 {
             return;

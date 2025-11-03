@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-expressions */
 import { DataGrid, DataGridBody, DataGridCell, DataGridHeader, DataGridHeaderCell, DataGridRow, Slot, TableColumnDefinition, TableColumnSizingOptions, useFluent, useScrollbarWidth } from "@fluentui/react-components";
 import { IListResult } from "../../share/gen";
 import Pagination from './pagination2';
@@ -37,7 +38,7 @@ function Component<T>(props: GridProps<T>) {
             props.breads && props.breads.length > 0 && <BreadItem items={props.breads} ></BreadItem>
         }
         <DataGrid items={result.items}
-            size="small"
+            size="extra-small"
             resizableColumns
             columnSizingOptions={columnSizingOptions}
             columns={props.columns} style={{ minWidth: "auto", overflow: 'hidden auto' }} className="h-full" >

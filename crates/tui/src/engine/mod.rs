@@ -1,23 +1,25 @@
-use std::io::{Read, Seek, SeekFrom};
+use std::fs::File;
+use std::io::Read;
 use std::ops::Range;
 use std::sync::mpsc::Receiver;
 use std::thread;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
-use std::{fs::File, io::BufReader};
+use std::{io::BufReader};
 
-use pcap::common::concept::{ConversationCriteria, Criteria, Field, FrameIndex, FrameInfo, ListResult, ProgressStatus, VConnection, VConversation, VHttpConnection};
+use pcap::common::concept::{ConversationCriteria, Criteria, Field, FrameIndex, FrameInfo, HttpMessageDetail, Language, ListResult, ProgressStatus, VConnection, VConversation, VHttpConnection};
 use pcap::common::io::DataSource;
-use pcap::common::{trim_data, Instance};
+use pcap::common::{Instance, ResourceLoader};
 use std::sync::mpsc::Sender;
+use util::{file_seek, file_seeks};
 
-use crate::MAX_CONTENT_SIZE;
+// use crate::MAX_CONTENT_SIZE;
 
 pub enum PcapEvent {
     Quit,
     ProgressStatus(ProgressStatus),
     Init,
     FrameList(ListResult<FrameInfo>),
-    FrameData(Vec<Field>, Option<DataSource>, Option<Vec<u8>>),
+    FrameData(Vec<Field>, Vec<DataSource>),
     ConversationList(ListResult<VConversation>),
     ConnectionList(ListResult<VConnection>),
     HttpConnectionList(ListResult<VHttpConnection>),
@@ -34,8 +36,28 @@ pub enum PcapUICommand {
     ConnectionList(usize, usize, usize),
     HttpConnectionList(usize, usize),
     HttpContent(VHttpConnection),
+    HttpDetail(usize),
 }
 
+pub struct LocalResource {
+    filepath: String,
+}
+
+impl ResourceLoader for LocalResource {
+    fn load(&self, range: &Range<usize>) -> anyhow::Result<Vec<u8>> {
+        file_seek(&self.filepath, range)
+    }
+    fn loads(&self, ranges: &[Range<usize>]) -> anyhow::Result<Vec<u8>> {
+        file_seeks(&self.filepath, ranges)
+    }
+}
+
+
+impl LocalResource {
+    fn new(filepath: String) -> Self {
+        LocalResource { filepath }
+    }
+}
 
 pub struct HttpMessageWrap {
     pub headers: Vec<String>,
@@ -49,76 +71,74 @@ impl HttpMessageWrap {
     }
 }
 
+impl From<&HttpMessageDetail> for HttpMessageWrap {
+    fn from(value: &HttpMessageDetail) -> Self {
+        let mime = value.text_type();
+        let parsed_content = value.get_text_content();
+        let headers = value.headers.clone();
+        HttpMessageWrap::new(headers, mime, parsed_content)
+    }
+}
+
 pub struct Service {
     file: File,
     fname: String,
     sender: Sender<PcapEvent>,
     receiver: Receiver<PcapUICommand>,
 }
-#[derive(Clone, Copy)]
-pub enum Language {
-    Text,
-    Json,
-    JavaScript,
-    Css,
-    Html,
-    Xml,
-    Csv,
-    Yaml,
-    Binary,
-}
 
-pub fn seek2(fname: &str, range: Range<usize>) -> anyhow::Result<Vec<u8>> {
-    let offset = range.start as u64;
-    let size = range.end - range.start;
-    let mut file = File::open(fname).unwrap();
-    file.seek(SeekFrom::Start(offset))?;
-    let mut buffer = vec![0; size];
-    file.read_exact(&mut buffer)?;
-    Ok(buffer)
-}
-pub fn concat_data(file: &mut File, ranges: Vec<(usize, usize)>, len: Option<usize>) -> anyhow::Result<Vec<u8>> {
-    if ranges.is_empty() {
-        return Ok(vec![]);
-    }
-    let max = if let Some(length) = len {
-        length
-    } else {
-        ranges.iter().map(|(start, end)| end - start).sum()
-    };
-    let mut rs = Vec::with_capacity(max);
-    for (start, end) in ranges {
-        file.seek(SeekFrom::Start(start as u64))?;
-        let left = max - rs.len();
-        let _size = end - start;
-        let size = std::cmp::min(left, _size);
-        let mut buffer = vec![0; size];
-        file.read_exact(&mut buffer)?;
-        rs.extend_from_slice(&buffer);
-        if rs.len() >= max {
-            break;
-        }
-    }
+// pub fn seek2(fname: &str, range: Range<usize>) -> anyhow::Result<Vec<u8>> {
+//     let offset = range.start as u64;
+//     let size = range.end - range.start;
+//     let mut file = File::open(fname).unwrap();
+//     file.seek(SeekFrom::Start(offset))?;
+//     let mut buffer = vec![0; size];
+//     file.read_exact(&mut buffer)?;
+//     Ok(buffer)
+// }
+// pub fn concat_data(file: &mut File, ranges: Vec<(usize, usize)>, len: Option<usize>) -> anyhow::Result<Vec<u8>> {
+//     if ranges.is_empty() {
+//         return Ok(vec![]);
+//     }
+//     let max = if let Some(length) = len {
+//         length
+//     } else {
+//         ranges.iter().map(|(start, end)| end - start).sum()
+//     };
+//     let mut rs = Vec::with_capacity(max);
+//     for (start, end) in ranges {
+//         file.seek(SeekFrom::Start(start as u64))?;
+//         let left = max - rs.len();
+//         let _size = end - start;
+//         let size = std::cmp::min(left, _size);
+//         let mut buffer = vec![0; size];
+//         file.read_exact(&mut buffer)?;
+//         rs.extend_from_slice(&buffer);
+//         if rs.len() >= max {
+//             break;
+//         }
+//     }
 
-    Ok(rs)
-}
+//     Ok(rs)
+// }
 
 impl Service {
     pub fn new(fname: String, sender: Sender<PcapEvent>, receiver: Receiver<PcapUICommand>) -> Self {
         let file = File::open(fname.clone()).unwrap();
         Self { fname, file, sender, receiver }
     }
-    pub fn seek(&mut self, range: Range<usize>) -> anyhow::Result<Vec<u8>> {
-        let offset = range.start as u64;
-        let size = range.end - range.start;
-        self.file.seek(SeekFrom::Start(offset))?;
-        let mut buffer = vec![0; size];
-        self.file.read_exact(&mut buffer)?;
-        Ok(buffer)
-    }
+    // pub fn seek(&mut self, range: Range<usize>) -> anyhow::Result<Vec<u8>> {
+    //     let offset = range.start as u64;
+    //     let size = range.end - range.start;
+    //     self.file.seek(SeekFrom::Start(offset))?;
+    //     let mut buffer = vec![0; size];
+    //     self.file.read_exact(&mut buffer)?;
+    //     Ok(buffer)
+    // }
     pub fn run(&mut self) -> anyhow::Result<()> {
         let batch_size = 1024 * 256;
-        let mut ins = Instance::new(batch_size);
+        let loader = LocalResource::new(self.fname.clone());
+        let mut ins = Instance::new(batch_size, loader);
         let mut reader = BufReader::new(&mut self.file);
         let mut pos = 0;
         let mut buffer = vec![0; batch_size];
@@ -134,20 +154,18 @@ impl Service {
                     }
                     PcapUICommand::FrameData(index) => {
                         if let Some(frame) = ins.frame(index as usize) {
-                            if let Some(range) = frame.range() {
-                                let data = seek2(&self.fname, range)?;
-                                if let Some((rs, source, extra)) = ins.select_frame(index as usize, data) {
-                                    let ds = if let Some(_source) = source {
-                                        let range = frame.frame_range().unwrap();
-                                        let data_source = DataSource::create(_source, range);
-                                        Some(data_source)
-                                    } else {
-                                        None
-                                    };
-                                    self.sender.send(PcapEvent::FrameData(rs, ds, extra)).unwrap();
+                            if let Some(_range) = frame.range() {
+                                if let Some((rs, datasources)) = ins.select_frame(index as usize) {
+                                    // let ds = if let Some(_source) = source {
+                                    //     let range = _range2.unwrap();
+                                    //     let data_source = DataSource::create(_source, range);
+                                    //     Some(data_source)
+                                    // } else {
+                                    //     None
+                                    // };
+                                    self.sender.send(PcapEvent::FrameData(rs, datasources)).unwrap();
                                 }
                             }
-                            // self.sender.send(PcapEvent::FrameData(frame)).unwrap();
                         }
                     }
                     PcapUICommand::ConversationList(start, size) => {
@@ -165,25 +183,51 @@ impl Service {
                         let result_list = ins.http_connections(cri, None);
                         self.sender.send(PcapEvent::HttpConnectionList(result_list)).unwrap();
                     }
-                    PcapUICommand::HttpContent(http_connection) => {
-                        if let Ok(mut file) = File::open(&self.fname) {
-                            let request = if let Some(req) = &http_connection.request {
-                                let header = concat_data(&mut file, http_connection.request_headers, None).unwrap_or_default();
-                                let entity = concat_data(&mut file, http_connection.request_body, Some(MAX_CONTENT_SIZE)).unwrap_or_default();
-                                Some(parse_http_message(req, header, entity))
+                    PcapUICommand::HttpDetail(index) => {
+                        if let Some(rs) = ins.http_detail(index) {
+                            let request = if rs.len() > 0 {
+                                let item = rs.first().unwrap();
+                                if item.is_request {
+                                    Some(item.into())
+                                } else {
+                                    None
+                                }
                             } else {
                                 None
                             };
-                            let response = if let Some(res) = &http_connection.response {
-                                let header = concat_data(&mut file, http_connection.response_headers, None).unwrap_or_default();
-                                let entity = concat_data(&mut file, http_connection.response_body, Some(MAX_CONTENT_SIZE)).unwrap_or_default();
-                                Some(parse_http_message(res, header, entity))
+                            let response: Option<HttpMessageWrap> = if rs.len() > 0 {
+                                let item = rs.last().unwrap();
+                                if item.is_request {
+                                    None
+                                } else {
+                                    Some(item.into())
+                                }
                             } else {
                                 None
                             };
                             self.sender.send(PcapEvent::HttpContent(request, response)).unwrap();
                         }
                     }
+                    
+                    // PcapUICommand::HttpContent(http_connection) => {
+                    //     if let Ok(mut file) = File::open(&self.fname) {
+                    //         let request = if let Some(req) = &http_connection.request {
+                    //             let header = concat_data(&mut file, http_connection.request_headers, None).unwrap_or_default();
+                    //             let entity = concat_data(&mut file, http_connection.request_body, Some(MAX_CONTENT_SIZE)).unwrap_or_default();
+                    //             Some(parse_http_message(req, header, entity))
+                    //         } else {
+                    //             None
+                    //         };
+                    //         let response = if let Some(res) = &http_connection.response {
+                    //             let header = concat_data(&mut file, http_connection.response_headers, None).unwrap_or_default();
+                    //             let entity = concat_data(&mut file, http_connection.response_body, Some(MAX_CONTENT_SIZE)).unwrap_or_default();
+                    //             Some(parse_http_message(res, header, entity))
+                    //         } else {
+                    //             None
+                    //         };
+                    //         self.sender.send(PcapEvent::HttpContent(request, response)).unwrap();
+                    //     }
+                    // }
                     _ => {}
                 },
                 _ => {}
@@ -227,141 +271,135 @@ impl Service {
     }
 }
 
-fn parse_content_type(content_type_str: &str) -> Language {
+// fn parse_content_type(content_type_str: &str) -> Language {
+//     let main_type = content_type_str.to_lowercase();
 
-    let main_type = content_type_str.to_lowercase();
+//     if main_type.is_empty() {
+//         return Language::Binary;
+//     }
+//     if main_type.contains("/json") {
+//         return Language::Json;
+//     }
+//     if main_type.contains("/javascript") {
+//         return Language::JavaScript;
+//     }
+//     if main_type.contains("/css") {
+//         return Language::Css;
+//     }
+//     if main_type.contains("/html") {
+//         return Language::Html;
+//     }
+//     if main_type.contains("/xml") {
+//         return Language::Xml;
+//     }
+//     if main_type.contains("/csv") {
+//         return Language::Csv;
+//     }
+//     if main_type.contains("/yaml") {
+//         return Language::Yaml;
+//     }
+//     if main_type.contains("text/") {
+//         return Language::Text;
+//     }
+//     Language::Binary
+// }
 
-    if main_type.is_empty() {
-        return Language::Binary;
-    }
-    if main_type.contains("/json") {
-        return Language::Json;
-    }
-    if main_type.contains("/javascript") {
-        return Language::JavaScript;
-    }
-    if main_type.contains("/css") {
-        return Language::Css;
-    }
-    if main_type.contains("/html") {
-        return Language::Html;
-    }
-    if main_type.contains("/xml") {
-        return Language::Xml;
-    }
-    if main_type.contains("/csv") {
-        return Language::Csv;
-    }
-    if main_type.contains("/yaml") {
-        return Language::Yaml;
-    }
-    if main_type.contains("text/") {
-        return Language::Text;
-    }
-    Language::Binary
-}
+// fn parse_http_message(head: &str, header: Vec<u8>, entity: Vec<u8>) -> HttpMessageWrap {
+//     let (mut headers, mime, encoding) = parse_header_content(header);
+//     headers.insert(0, head.to_string());
+//     let body = parse_body_with_mime(entity, &mime, encoding);
+//     HttpMessageWrap::new(headers, mime, body)
+// }
 
-fn parse_http_message(head: &str, header: Vec<u8>, entity: Vec<u8>) -> HttpMessageWrap {
-    let (mut headers, mime, encoding) = parse_header_content(header);
-    headers.insert(0, head.to_string());
-    let body = parse_body_with_mime(entity, &mime, encoding);
-    HttpMessageWrap::new(headers, mime,body)
-}
+// fn parse_header_content(header_raw: Vec<u8>) -> (Vec<String>, Language, HttpEncoding) {
+//     if header_raw.is_empty() {
+//         return (vec![], Language::Binary, HttpEncoding::None);
+//     }
+//     let text = String::from_utf8_lossy(&header_raw);
+//     let headers: Vec<&str> = text.split("\r\n").collect();
+//     let mut content_type = Language::Binary;
+//     let mut encoding = HttpEncoding::None;
+//     let mut rs = vec![];
+//     for head in headers.into_iter() {
+//         if head.chars().count() == 0 {
+//             continue;
+//         }
+//         rs.push(head.into());
+//         if head.starts_with("Content-Type: ") || head.starts_with("content-type: ") {
+//             content_type = parse_content_type(&head[14..]);
+//         }
+//         if head.starts_with("Content-Encoding: ") || head.starts_with("content-encoding: ") {
+//             let _type = trim_data(&head.as_bytes()[18..]);
+//             match _type {
+//                 b"gzip" => {
+//                     encoding = HttpEncoding::Gzip;
+//                 }
+//                 b"deflate" => {
+//                     encoding = HttpEncoding::Deflate;
+//                 }
+//                 b"br" => {
+//                     encoding = HttpEncoding::Brotli;
+//                 }
+//                 b"zstd" => {
+//                     encoding = HttpEncoding::Zstd;
+//                 }
+//                 _ => {}
+//             }
+//             // encoding = HttpEncoding::Gzip;
+//         }
+//     }
+//     (rs, content_type, encoding)
+// }
 
-fn parse_header_content(header_raw: Vec<u8>) -> (Vec<String>, Language, HttpEncoding) {
-    if header_raw.is_empty() {
-        return (vec![], Language::Binary, HttpEncoding::None);
-    }
-    let text = String::from_utf8_lossy(&header_raw);
-    let headers: Vec<&str> = text.split("\r\n").collect();
-    let mut content_type = Language::Binary;
-    let mut encoding = HttpEncoding::None;
-    let mut rs = vec![];
-    for head in headers.into_iter() {
-        if head.chars().count() == 0 {
-            continue;
-        }
-        rs.push(head.into());
-        if head.starts_with("Content-Type: ") || head.starts_with("content-type: ") {
-            content_type = parse_content_type(&head[14..]);
-        }
-        if head.starts_with("Content-Encoding: ") || head.starts_with("content-encoding: ") {
-            let _type = trim_data(&head.as_bytes()[18..]);
-            match _type {
-                b"gzip" => {
-                    encoding = HttpEncoding::Gzip;
-                }
-                b"deflate" => {
-                    encoding = HttpEncoding::Deflate;
-                }
-                b"br" => {
-                    encoding = HttpEncoding::Brotli;
-                }
-                b"zstd" => {
-                    encoding = HttpEncoding::Zstd;
-                }
-                _ => {}
-            }
-            // encoding = HttpEncoding::Gzip;
-        }
-    }
-    (rs, content_type, encoding)
-}
 
-enum HttpEncoding {
-    None,
-    Gzip,
-    Deflate,
-    Brotli,
-    Zstd,
-}
-
-fn parse_body_with_mime(body_raw: Vec<u8>, mime: &Language, encoding: HttpEncoding) -> Option<String> {
-    if let Language::Binary = &mime { return None }
-    let decoded_data = match encoding {
-        HttpEncoding::None => body_raw,
-        HttpEncoding::Gzip => {
-            use flate2::read::GzDecoder;
-            use std::io::Read;
-            let mut decoder = GzDecoder::new(&body_raw[..]);
-            let mut decoded = Vec::new();
-            match decoder.read_to_end(&mut decoded) {
-                Ok(_) => decoded,
-                Err(_) => body_raw,
-            }
-        }
-        HttpEncoding::Deflate => {
-            use flate2::read::DeflateDecoder;
-            use std::io::Read;
-            let mut decoder = DeflateDecoder::new(&body_raw[..]);
-            let mut decoded = Vec::new();
-            match decoder.read_to_end(&mut decoded) {
-                Ok(_) => decoded,
-                Err(_) => body_raw,
-            }
-        }
-        HttpEncoding::Brotli => {
-            use brotli::Decompressor;
-            use std::io::Read;
-            let mut decoded = Vec::new();
-            match Decompressor::new(&body_raw[..], 4096).read_to_end(&mut decoded) {
-                Ok(_) => decoded,
-                Err(_) => body_raw,
-            }
-        }
-        HttpEncoding::Zstd => {
-            use std::io::Read;
-            use zstd::stream::read::Decoder;
-            let Ok(mut decoder) = Decoder::new(&body_raw[..]) else {
-                return Some(String::from_utf8_lossy(&body_raw).to_string());
-            };
-            let mut decoded = Vec::new();
-            match decoder.read_to_end(&mut decoded) {
-                Ok(_) => decoded,
-                Err(_) => body_raw,
-            }
-        }
-    };
-    let plain = String::from_utf8(decoded_data).unwrap_or_default();
-    Some(plain)
-}
+// fn parse_body_with_mime(body_raw: Vec<u8>, mime: &Language, encoding: HttpEncoding) -> Option<String> {
+//     if let Language::Binary = &mime {
+//         return None;
+//     }
+//     let decoded_data = match encoding {
+//         HttpEncoding::None => body_raw,
+//         HttpEncoding::Gzip => {
+//             use flate2::read::GzDecoder;
+//             use std::io::Read;
+//             let mut decoder = GzDecoder::new(&body_raw[..]);
+//             let mut decoded = Vec::new();
+//             match decoder.read_to_end(&mut decoded) {
+//                 Ok(_) => decoded,
+//                 Err(_) => body_raw,
+//             }
+//         }
+//         HttpEncoding::Deflate => {
+//             use flate2::read::DeflateDecoder;
+//             use std::io::Read;
+//             let mut decoder = DeflateDecoder::new(&body_raw[..]);
+//             let mut decoded = Vec::new();
+//             match decoder.read_to_end(&mut decoded) {
+//                 Ok(_) => decoded,
+//                 Err(_) => body_raw,
+//             }
+//         }
+//         HttpEncoding::Brotli => {
+//             use brotli::Decompressor;
+//             use std::io::Read;
+//             let mut decoded = Vec::new();
+//             match Decompressor::new(&body_raw[..], 4096).read_to_end(&mut decoded) {
+//                 Ok(_) => decoded,
+//                 Err(_) => body_raw,
+//             }
+//         }
+//         HttpEncoding::Zstd => {
+//             use std::io::Read;
+//             use zstd::stream::read::Decoder;
+//             let Ok(mut decoder) = Decoder::new(&body_raw[..]) else {
+//                 return Some(String::from_utf8_lossy(&body_raw).to_string());
+//             };
+//             let mut decoded = Vec::new();
+//             match decoder.read_to_end(&mut decoded) {
+//                 Ok(_) => decoded,
+//                 Err(_) => body_raw,
+//             }
+//         }
+//     };
+//     let plain = String::from_utf8(decoded_data).unwrap_or_default();
+//     Some(plain)
+// }

@@ -10,7 +10,7 @@ use std::{
     ops::Range,
 };
 
-use crate::{common::concept::{ConnectionIndex, Conversation, FrameIndex, TCPStatistic, VEndpoint}, protocol};
+use crate::{common::{ResourceLoader, concept::{ConnectionIndex, Conversation, FrameIndex, TCPStatistic, TLSInfo, VEndpoint}}, protocol};
 
 use super::{
     enum_def::{Protocol, SegmentStatus, TCPConnectStatus, TCPDetail, TCPFLAG},
@@ -181,6 +181,10 @@ impl TlsData {
             }
         }
         buffer
+    }
+    pub fn concat_segment_data(&self, loader: &dyn ResourceLoader) -> Option<Vec<u8>> {
+        let ranges = self.segments.iter().map( |f | f.range.clone()).collect::<Vec<Range<usize>>>();
+        loader.loads(&ranges).ok()
     }
 }
 
@@ -381,6 +385,7 @@ pub struct Connection {
     pub primary: Endpoint,
     pub second: Endpoint,
     pub protocol: Protocol,
+    pub tls_meta: TLSInfo,
 }
 impl Connection {
     pub fn new(primary: Endpoint, second: Endpoint) -> Self {
@@ -388,6 +393,7 @@ impl Connection {
             primary,
             second,
             protocol: Protocol::None,
+            tls_meta: TLSInfo::default(),
         }
     }
     pub fn primary(&self) -> &Endpoint {

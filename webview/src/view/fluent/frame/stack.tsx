@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Cursor, IField, IFrameSelect, VRange } from "../../../share/common";
+import { Cursor, IField, IFrameSelect } from "../../../share/common";
 import { useStore } from "../../store";
 import { makeStyles, Tree, TreeItem, TreeItemLayout } from "@fluentui/react-components";
 import AutoSizer from "react-virtualized-auto-sizer";
@@ -28,7 +28,7 @@ interface StackProps {
 
 export default function Stack(props: StackProps) {
   const styles = useStyles();
-  const [data, setData] = useState<IFrameSelect>({ fields: [], start: 0, end: 0, data: new Uint8Array() });
+  const [data, setData] = useState<IFrameSelect>({ fields: [], datasource: [] });
   const [select, setSelect] = useState<string>("");
   const [cursor, setCursor] = useState<Cursor | undefined>();
   const _request = useStore((state) => state.request);
@@ -48,27 +48,19 @@ export default function Stack(props: StackProps) {
   }, [props.select]);
 
   const send = (selected: IField) => {
-    if (selected.source) {
-      const extra = data.extra;
+    const ds = data.datasource[selected.source || 0];
+    if (ds) {
+      const scope = ds.range;
+      const tab = selected.source == 0 ? 'Frame' : 'Segment';
+      const data = ds.data;
       const cursor = {
-        scope: new VRange(0, extra?.length || 0),
-        data: extra,
-        tab: 'Segment',
+        scope,
+        data,
+        tab,
         selected: {
           start: selected.start || 0,
           size: selected.size || 0,
         }
-      };
-      setCursor(cursor);
-    } else {
-      const cursor = {
-        scope: new VRange(data.start, data.end),
-        data: data.data,
-        tab: `Frame(${props.select + 1})`,
-        selected: {
-          start: selected.start || 0,
-          size: selected.size || 0,
-        },
       };
       setCursor(cursor);
     }

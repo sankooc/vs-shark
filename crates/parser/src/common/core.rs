@@ -12,8 +12,12 @@ use std::{
 use anyhow::{bail, Result};
 
 use crate::common::{
-    concept::{ConnectionIndex, Conversation, ConversationKey, CounterItem, FrameIndex, HttpConnectIndex, LineChartData, MessageIndex, Timestamp, VHttpConnection},
+    concept::{
+        ConnectionIndex, Conversation, ConversationKey, CounterItem, FrameIndex, HttpConnectIndex, HttpCriteria, HttpMessageDetail, LineChartData, MessageIndex, Timestamp,
+        VHttpConnection,
+    },
     enum_def::{AddressField, Protocol},
+    ResourceLoader,
 };
 
 use super::{
@@ -43,6 +47,10 @@ impl SegmentData {
             SegmentData::Single(segment) => vec![(segment.range.start, segment.range.end)],
             SegmentData::Multiple(segments) => segments.iter().map(|segment| (segment.range.start, segment.range.end)).collect(),
         }
+    }
+    pub fn to_range(&self) -> Vec<Range<usize>> {
+        let ranges = self.to_vec();
+        ranges.iter().map(|(start, end)| *start..*end).collect::<Vec<Range<usize>>>()
     }
 }
 
@@ -101,7 +109,7 @@ pub struct HttpConntect {
     pub request: Option<MessageIndex>,
     pub response: Option<MessageIndex>,
     pub hostname: Option<String>,
-    pub rt: Timestamp,
+    pub latency: (f64, NString),
 }
 
 impl HttpConntect {
@@ -112,12 +120,10 @@ impl HttpConntect {
             None
         }
     }
-    pub fn conv(&self, ctx: &Context) -> VHttpConnection {
+    pub fn conv(&self, ctx: &Context, index: usize) -> VHttpConnection {
         let mut rs = VHttpConnection::default();
         if let Some(request_index) = &self.request {
             if let Some(message) = ctx.http_messages.get(*request_index as usize) {
-                rs.request_headers = message.headers.to_vec();
-                rs.request_body = message.content.to_vec();
                 rs.hostname = message.hostname.clone().unwrap_or("".to_string());
                 if let Some(ll) = &message.length {
                     rs.length = *ll;
@@ -130,8 +136,6 @@ impl HttpConntect {
         }
         if let Some(response_index) = &self.response {
             if let Some(message) = ctx.http_messages.get(*response_index as usize) {
-                rs.response_headers = message.headers.to_vec();
-                rs.response_body = message.content.to_vec();
                 if let Some(ll) = message.length {
                     rs.length = ll;
                 }
@@ -141,8 +145,36 @@ impl HttpConntect {
                 rs.response = Some(message.host.clone());
             }
         }
-        rs.rt = if self.rt > 0 { format!("{}µs", self.rt) } else { "N/A".to_string() };
+        
+        rs.latency = format!("{} {}", self.latency.0, self.latency.1);
+        rs.index = index;
         rs
+    }
+
+    fn to_detail(&self, ctx: &Context, loader: &dyn ResourceLoader, index: &Option<MessageIndex>, is_request: bool) -> Result<HttpMessageDetail> {
+        if let Some(request_index) = index {
+            if let Some(message) = ctx.http_messages.get(*request_index as usize) {
+                let header_range = message.headers.to_range();
+                let header_data = loader.loads(&header_range)?;
+                let text = String::from_utf8_lossy(&header_data);
+                let mut headers: Vec<String> = text.split("\r\n").map(|f| f.to_string()).filter(|f| !f.is_empty()).collect();
+                headers.insert(0, message.host.clone());
+                let body_range = message.content.to_range();
+                let content = loader.loads(&body_range)?;
+                return Ok(HttpMessageDetail::new(is_request, headers, content));
+            }
+        }
+        bail!("")
+    }
+    pub fn convert_to_detail(&self, ctx: &Context, loader: &dyn ResourceLoader) -> Result<Vec<HttpMessageDetail>> {
+        let mut list = vec![];
+        if let Ok(message) = self.to_detail(ctx, loader, &self.request, true) {
+            list.push(message);
+        }
+        if let Ok(message) = self.to_detail(ctx, loader, &self.response, false) {
+            list.push(message);
+        }
+        Ok(list)
     }
 
     pub fn info(&self, ctx: &Context) -> (String, String, String) {
@@ -163,6 +195,17 @@ impl HttpConntect {
         };
         (method, status, ct)
     }
+
+    pub fn do_match(&self, filter: &Option<HttpCriteria>) -> bool {
+        if let Some(fil) = filter {
+            if let Some(_host) = &fil.hostname {
+                if let Some(hn) = &self.hostname {
+                    return hn.contains(_host);
+                }
+            }
+        }
+        true
+    }
 }
 
 impl HttpConntect {
@@ -180,9 +223,9 @@ impl HttpConntect {
             ..Default::default()
         }
     }
-    fn add_response(&mut self, message_index: MessageIndex, ts: Timestamp) {
+    fn add_response(&mut self, message_index: MessageIndex, ts: (f64, NString)) {
         self.response = Some(message_index);
-        self.rt = ts;
+        self.latency = ts;
     }
 }
 
@@ -203,7 +246,7 @@ pub struct Context {
     pub http_messages: Vec<HttpMessage>,
     pub http_hostnames: FastHashMap<String, u16>,
 
-    pub tls_sni: FastHashMap<String, u16>,
+    // pub tls_sni: FastHashMap<String, u16>,
     // ethernet
     pub ethermap: FastHashMap<u64, EthernetCache>,
     pub ipv6map: FastHashMap<u64, (u8, Ipv6Addr, Ipv6Addr)>,
@@ -241,7 +284,8 @@ impl Context {
         } else if let Some((http_connect_index, ts)) = self.http_connections_map.get(&connect_index) {
             if let Some(connect) = self.http_connections.get_mut(*http_connect_index as usize) {
                 let fd = timestamp.saturating_sub(*ts);
-                connect.add_response(message_index, fd);
+                let latency = super::concept::period(timestamp, fd);
+                connect.add_response(message_index, latency);
                 self.http_connections_map.remove(&connect_index);
             }
         } else {
@@ -335,6 +379,12 @@ impl PartialOrd for IPV6Point {
     }
 }
 
+pub enum TLSFlag {
+    None,
+    ClientHello,
+    ServerHello,
+}
+
 impl Context {
     pub fn new() -> Self {
         Self::default()
@@ -404,7 +454,7 @@ impl Context {
         }
     }
 
-    pub fn connection(&mut self, frame: &mut Frame) -> Option<(ConnectionIndex, &mut Endpoint)> {
+    pub fn connection(&mut self, frame: &Frame) -> Option<(ConnectionIndex, &mut Endpoint)> {
         if let Some(tcp_info) = &frame.tcp_info {
             if let Some(((conversation_index, connect_index), reverse)) = tcp_info.connection {
                 if let Some(conversation) = self.conversation_list.get_mut(conversation_index) {
@@ -418,6 +468,34 @@ impl Context {
             }
         }
         None
+    }
+    pub fn _connection(&mut self, frame: &Frame) -> Option<&mut Connection> {
+        if let Some(tcp_info) = &frame.tcp_info {
+            if let Some(((conversation_index, connect_index), _)) = tcp_info.connection {
+                if let Some(conversation) = self.conversation_list.get_mut(conversation_index) {
+                    return conversation.connection(connect_index);
+                }
+            }
+        }
+        None
+    }
+    pub fn tls_flag_update(&mut self, frame: &Frame, flag: TLSFlag) {
+        let index = frame.info.index;
+        match &flag {
+            TLSFlag::ClientHello => {
+                if let Some(connection) = self._connection(frame) {
+                    connection.tls_meta.update_client(index);
+                    // connection.tls_meta = (Some(index), connection.tls_meta.1);
+                }
+            }
+            TLSFlag::ServerHello => {
+                if let Some(connection) = self._connection(frame) {
+                    connection.tls_meta.update_server(index);
+                    // connection.tls_meta = (connection.tls_meta.0, Some(index));
+                }
+            }
+            _ => {}
+        }
     }
     pub fn add_http_hostname(&mut self, message_index: MessageIndex, hostname: &str) {
         if let Some(message) = self.http_messages.get(message_index as usize) {
@@ -433,7 +511,7 @@ impl Context {
 }
 
 impl Context {
-    fn add_map<K, T>(key: &K, map: &mut FastHashMap<K, T>)
+    pub fn add_map<K, T>(key: &K, map: &mut FastHashMap<K, T>)
     where
         K: core::hash::Hash + Eq + Clone,
         T: AddAssign + Default + Copy + From<u8>,
@@ -455,36 +533,36 @@ impl Context {
             map.insert(key.clone(), T::from(1));
         }
     }
-    fn _list_map<K, T>(map: &FastHashMap<K, T>) -> String
+    pub fn _list_map<K, T>(map: &FastHashMap<K, T>) -> Vec<CounterItem>
     where
         K: core::hash::Hash + Eq + ToString,
         T: Copy + Into<usize>,
     {
-        let rs: Vec<CounterItem> = map.iter().map(|(k, v)| CounterItem::new(k.to_string(), (*v).into())).collect();
-        serde_json::to_string(&rs).unwrap_or("[]".into())
+        map.iter().map(|(k, v)| CounterItem::new(k.to_string(), (*v).into())).collect()
+        // serde_json::to_string(&rs).unwrap_or("[]".into())
     }
 }
 
 impl Context {
-    pub fn stat_http_host(&self) -> String {
+    pub fn stat_http_host(&self) -> Vec<CounterItem> {
         Context::_list_map(&self.http_hostnames)
     }
-    pub fn add_tls_sni(&mut self, sni: String) {
-        Context::add_map(&sni, &mut self.tls_sni);
-    }
-    pub fn stat_tls_sni(&self) -> String {
-        Context::_list_map(&self.tls_sni)
-    }
+    // pub fn add_tls_sni(&mut self, sni: String) {
+    //     Context::add_map(&sni, &mut self.tls_sni);
+    // }
+    // pub fn stat_tls_sni(&self) -> String {
+    //     Context::_list_map(&self.tls_sni)
+    // }
     pub fn add_ip4(&mut self, ip: &Ipv4Addr) {
         Context::add_map(ip, &mut self.stat_ip4);
     }
     pub fn add_ip6(&mut self, ip: &Ipv6Addr) {
         Context::add_map(ip, &mut self.stat_ip6);
     }
-    pub fn stat_ip4(&self) -> String {
+    pub fn stat_ip4(&self) -> Vec<CounterItem> {
         Context::_list_map(&self.stat_ip4)
     }
-    pub fn stat_ip6(&self) -> String {
+    pub fn stat_ip6(&self) -> Vec<CounterItem> {
         Context::_list_map(&self.stat_ip6)
     }
 }
@@ -505,7 +583,7 @@ fn flat(map: &HashMap<String, usize>) -> Vec<CounterItem> {
 // }
 
 impl Context {
-    pub fn stat_http_data(&self) -> String {
+    pub fn stat_http_data(&self) -> Vec<Vec<CounterItem>> {
         let mut method_map: HashMap<String, usize> = HashMap::with_capacity(4);
         let mut status_map: HashMap<String, usize> = HashMap::with_capacity(6);
         let mut type_map: HashMap<String, usize> = HashMap::new();
@@ -515,17 +593,18 @@ impl Context {
             Context::add_map2(&status, &mut status_map);
             Context::add_map2(&content_type, &mut type_map);
         }
-        serde_json::to_string(&vec![flat(&method_map), flat(&status_map), flat(&type_map)]).unwrap()
+        vec![flat(&method_map), flat(&status_map), flat(&type_map)]
+        // serde_json::to_string(&vec![flat(&method_map), flat(&status_map), flat(&type_map)]).unwrap()
     }
-    pub fn stat_frame(&self) -> String {
+    pub fn stat_frame(&self) -> LineChartData {
         if self.list.len() <= 10 {
-            return "{}".to_string();
+            return LineChartData::default();
         }
         let first = self.list.first().unwrap();
         let last = self.list.last().unwrap();
         let period = last.info.time.saturating_sub(first.info.time);
         if period < 100 {
-            return "{}".to_string();
+            return LineChartData::default();
         }
         let size: usize = 200;
         let r = period.div_ceil(size as u64);
@@ -579,9 +658,8 @@ impl Context {
                 }
             }
         }
-        
-    
-        let data = LineChartData::new(series, protocols.iter().map(|f| (*f).into()).collect(), vec![tcp, udp, http, tls, other]);
-        serde_json::to_string(&data).unwrap_or("{}".into())
+
+        LineChartData::new(series, protocols.iter().map(|f| (*f).into()).collect(), vec![tcp, udp, http, tls, other])
+        // serde_json::to_string(&data).unwrap_or("{}".into())
     }
 }

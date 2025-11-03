@@ -24,7 +24,6 @@ pub fn compile_expression(expr: &str) -> Result<BpfExpr> {
         ["port", port] => Ok(BpfExpr::Port(port.parse()?)),
         ["tcp", "port", port] => Ok(BpfExpr::TcpPort(port.parse()?)),
         ["udp", "port", port] => Ok(BpfExpr::UdpPort(port.parse()?)),
-        // 支持简单的 and/or 组合
         [left, "and", right @ ..] => {
             let left_expr = compile_expression(left)?;
             let right_expr = compile_expression(&right.join(" "))?;

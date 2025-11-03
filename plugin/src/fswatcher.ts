@@ -1,4 +1,5 @@
 import * as fs from "fs";
+import { Range } from "rshark";
 
 interface FileTailWatcherOptions {
   chunkSize?: number;
@@ -87,6 +88,40 @@ export class FileTailWatcher {
       length,
       position
     );
+    return buffer;
+  }
+  load(range: Range): Buffer | undefined {
+    const fd = fs.openSync(this.filePath, "r+");
+    try {
+      const position = range.start;
+      const len = range.end - position;
+      return this.readRandomAccessSync(fd, position, len);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      fs.closeSync(fd);
+    }
+    return;
+  }
+  loads(ranges: Range[]): Buffer | undefined {
+    const fd = fs.openSync(this.filePath, "r+");
+    try {
+      const list = ranges.map((range: Range) => {
+        const position = range.start;
+        const len = range.end - position;
+        return this.readRandomAccessSync(fd, position, len);
+      })
+      return Buffer.concat(list);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      fs.closeSync(fd);
+    }
+    return;
+  }
+  readRandomAccessSync(fd: number, position: number, length: number): Buffer {
+    const buffer = Buffer.alloc(length);
+    const len = fs.readSync(fd, buffer, 0, length, position);
     return buffer;
   }
 

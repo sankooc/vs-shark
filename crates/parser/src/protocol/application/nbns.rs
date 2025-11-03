@@ -6,11 +6,7 @@
 use crate::{
     add_field_format, add_field_format_fn, add_field_label, add_sub_field, add_sub_field_with_reader,
     common::{
-        concept::Field,
-        core::Context,
-        enum_def::{Protocol, ProtocolInfoField},
-        io::Reader,
-        Frame,
+        Frame, concept::{Field, NameService}, core::Context, enum_def::{Protocol, ProtocolInfoField}, io::Reader
     },
     constants::{dns_class_mapper, nbns_type_mapper},
 };
@@ -145,40 +141,22 @@ pub struct Visitor;
 
 impl Visitor {
     pub fn info(_: &Context, frame: &Frame) -> Option<String> {
-        if let ProtocolInfoField::NBNS(transaction_id, is_response, name) = &frame.protocol_field {
-            let type_str = if *is_response { "response" } else { "query" };
-            return Some(format!("NetBIOS Name Service ({type_str}) ID: 0x{transaction_id:04x}, Name: {name}"));
+        match &frame.protocol_field {
+            ProtocolInfoField::DNSRESPONSE(_, transaction_id) => Some(format!("NetBIOS Name Service Response) ID: 0x{transaction_id:04x}")),
+            ProtocolInfoField::DNSQUERY(_, transaction_id) => Some(format!("NetBIOS Name Service Quert) ID: 0x{transaction_id:04x}")),
+            _ => None
         }
-        None
     }
 
     pub fn parse(_: &mut Context, frame: &mut Frame, reader: &mut Reader) -> Result<Protocol> {
-        // NBNS header is similar to DNS
         let transaction_id = reader.read16(true)?;
         let flags = reader.read16(true)?;
         let is_response = (flags & 0x8000) != 0;
-
-        let query_count = reader.read16(true)?;
-        reader.forward(6);
-        // let answer_count = reader.read16(true)?;
-        // let authority_count = reader.read16(true)?;
-        // let additional_count = reader.read16(true)?;
-
-        // Parse the first query name if present
-        let mut name = String::from("<unknown>");
-        if query_count > 0 {
-            name = parse_nbns_name(reader)?;
-
-            // Skip the query type and class
-            reader.read16(true)?; // type
-            reader.read16(true)?; // class
-        }
-
-        // Store NBNS information in the frame
-        frame.protocol_field = ProtocolInfoField::NBNS(transaction_id, is_response, name);
-
-        // Skip the rest of the packet
-
+        frame.protocol_field = if is_response {
+            ProtocolInfoField::DNSRESPONSE(NameService::NBNS, transaction_id)
+        } else {
+            ProtocolInfoField::DNSQUERY(NameService::NBNS, transaction_id)
+        };
         Ok(Protocol::None)
     }
 

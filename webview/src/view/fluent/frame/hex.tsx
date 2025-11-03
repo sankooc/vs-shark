@@ -1,7 +1,7 @@
 import './hex.scss';
 import { Cursor } from "../../../share/common";
 import { Tab, TabList } from "@fluentui/react-components";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 
 const ALL_EXCEPT_PRINTABLE_LATIN = /[^\x20-\x7f]/g;
@@ -20,6 +20,19 @@ interface HexProps {
     highlight?: [number, number]
 }
 function Hex(props: HexProps) {
+
+    const containerRef = useRef<HTMLDivElement>(null);
+    const targetRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        if (targetRef.current && containerRef.current) {
+            containerRef.current.scrollTop = 0;
+            const parentRect = containerRef.current.getBoundingClientRect();
+            const childRect = targetRef.current.getBoundingClientRect();
+            const distanceFromTop = childRect.top - parentRect.top;
+            containerRef.current.scrollTop = distanceFromTop;
+        }
+    }, props.highlight);
     const indexes = [];
     const codes = [];
     let start = 0;
@@ -31,7 +44,7 @@ function Hex(props: HexProps) {
         return "";
     };
     const data = { data: props.bin, index: props.highlight };
-    let hasData = !!data?.data;
+    const hasData = !!data?.data;
     const texts = [];
     if (data.data) {
         const lent = data.data!.length;
@@ -90,21 +103,34 @@ function Hex(props: HexProps) {
     if (!hasData || !indexes.length) {
         return <div id="detail"></div>;
     }
+    const createCodeProps = (index: number) => {
+        if (index === start) {
+            return {
+                // key: 'code' + index,
+                // className: getActive(index),
+                ref: targetRef
+            };
+        }
+        return {
+        };
+    }
     return (
-        <div className="detail">
-            <div className="index">
-                {indexes.map((inx) => (
-                    <pre key={"line" + inx}>{inx}</pre>
-                ))}
+        <div className="flex-1 flex-grow-1 tab-content" ref={containerRef}>
+            <div className="detail" >
+                <div className="index">
+                    {indexes.map((inx) => (
+                        <pre key={"line" + inx}>{inx}</pre>
+                    ))}
+                </div>
+                <div className="hex">
+                    {codes.map((code, inx) => (
+                        <code key={"code" + inx} className={getActive(inx)} {...createCodeProps(inx)}>
+                            {code}
+                        </code>
+                    ))}
+                </div>
+                <div className="text">{texts}</div>
             </div>
-            <div className="hex">
-                {codes.map((code, inx) => (
-                    <code key={"code" + inx} className={getActive(inx)}>
-                        {code}
-                    </code>
-                ))}
-            </div>
-            <div className="text">{texts}</div>
         </div>
     );
 }
@@ -126,7 +152,7 @@ function Component(props: Props) {
         }
     }
 
-    let bin = props.cursor?.data;
+    const bin = props.cursor?.data;
     if (!props.cursor || !bin) {
         return <div style={{ padding: "10px" }}> No Data </div>;
     }
@@ -145,9 +171,7 @@ function Component(props: Props) {
             <Tab value="source">{props.cursor?.tab}</Tab>
             <Tab value="select">Select</Tab>
         </TabList>
-        <div className="flex-1 flex-grow-1 tab-content" style={{marginTop: "5px"}}>
-            <Hex {...hexProps} />
-        </div>
+        <Hex {...hexProps} />
     </div>
 }
 

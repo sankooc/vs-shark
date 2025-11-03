@@ -7,11 +7,7 @@ use std::net::{Ipv4Addr, Ipv6Addr};
 
 use crate::{
     add_field_backstep, add_field_format, add_field_format_fn, add_sub_field_with_reader, common::{
-        concept::Field,
-        core::Context,
-        enum_def::{Protocol, ProtocolInfoField},
-        io::Reader,
-        Frame,
+        Frame, concept::{Field, NameService}, core::Context, enum_def::{Protocol, ProtocolInfoField}, io::Reader
     }, constants::{dns_class_mapper, dns_type_mapper}
 };
 use anyhow::Result;
@@ -146,15 +142,30 @@ fn format_dns_flags(flags: u16) -> Vec<String> {
     result
 }
 
+
+pub fn name_service_parse(frame: &mut Frame, reader: &mut Reader, ns_type: NameService) -> Result<Protocol>{
+    let transaction_id = reader.read16(true)?;
+    let flags = reader.read16(true)?;
+    let is_response = (flags & 0x8000) != 0;
+    if is_response {
+        frame.protocol_field = ProtocolInfoField::DNSRESPONSE(ns_type, transaction_id);
+    } else {
+        frame.protocol_field = ProtocolInfoField::DNSQUERY(ns_type,transaction_id);
+    }
+    frame.add_proto(crate::common::ProtoMask::DNS);
+    Ok(Protocol::None)
+
+}
+
 pub struct Visitor;
 
 impl Visitor {
     pub fn info(_: &Context, frame: &Frame) -> Option<String> {
         match &frame.protocol_field {
-            ProtocolInfoField::DnsRESPONSE(transaction_id) => {
+            ProtocolInfoField::DNSRESPONSE(_,transaction_id) => {
                 Some(format!("Domain Name System (response) ID: 0x{transaction_id:04x}"))
             }
-            ProtocolInfoField::DnsQUERY(transaction_id) => {
+            ProtocolInfoField::DNSQUERY(_, transaction_id) => {
                 Some(format!("Domain Name System (query) ID: 0x{transaction_id:04x}"))
             }
             _ => None,
@@ -162,17 +173,7 @@ impl Visitor {
     }
 
     pub fn parse(_: &mut Context, frame: &mut Frame, reader: &mut Reader) -> Result<Protocol> {
-        // DNS header
-        let transaction_id = reader.read16(true)?;
-        let flags = reader.read16(true)?;
-        let is_response = (flags & 0x8000) != 0;
-        if is_response {
-            frame.protocol_field = ProtocolInfoField::DnsRESPONSE(transaction_id);
-        } else {
-            frame.protocol_field = ProtocolInfoField::DnsQUERY(transaction_id);
-        }
-        frame.add_proto(crate::common::ProtoMask::DNS);
-        Ok(Protocol::None)
+        name_service_parse(frame, reader, NameService::DNS)
     }
 
     pub fn detail(field: &mut Field, _: &Context, _: &Frame, reader: &mut Reader) -> Result<Protocol> {

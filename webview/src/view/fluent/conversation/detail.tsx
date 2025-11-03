@@ -6,7 +6,7 @@ import Grid from "../table";
 import { connect_size } from "../../conf";
 import { useParams, useLocation } from "react-router";
 import { ConversationIcon, protocolText } from "../common";
-import { ArrowDownloadRegular, ArrowUploadRegular, DesktopMacRegular, TextBulletListSquareRegular, UsbPlugFilled } from "@fluentui/react-icons";
+import { DesktopMacRegular, TextBulletListSquareRegular, UsbPlugFilled } from "@fluentui/react-icons";
 
 
 const SIZE: "small" | "medium" = 'small';
@@ -16,7 +16,7 @@ export default function Component() {
     const location = useLocation();
     const title = location.state?.title || "detail";
     const pageSize = connect_size;
-    const connections = useStore((state) => state.connections);
+    const connections = useStore((state) => state.connectionList);
     const columns: TableColumnDefinition<IVConnection>[] = [
         createTableColumn<IVConnection>({
             columnId: "protocol",
@@ -30,18 +30,18 @@ export default function Component() {
             },
         }),
         createTableColumn<IVConnection>({
-            columnId: "primary.host",
-            renderHeaderCell: () => <><DesktopMacRegular /> Sender</>,
+            columnId: "host",
+            renderHeaderCell: () => <><DesktopMacRegular /> Address</>,
             renderCell: (item) => {
                 return (
                     <TableCellLayout>
-                        {item.primary.host}
+                        {item.primary.host + "/" + item.second.host}
                     </TableCellLayout>
                 );
             },
         }),
         createTableColumn<IVConnection>({
-            columnId: "primary.port",
+            columnId: "primary_port",
             renderHeaderCell: () => <><UsbPlugFilled /> S-port</>,
             renderCell: (item) => {
                 return (
@@ -52,18 +52,7 @@ export default function Component() {
             },
         }),
         createTableColumn<IVConnection>({
-            columnId: "second.host",
-            renderHeaderCell: () => <><DesktopMacRegular /> Receiver</>,
-            renderCell: (item) => {
-                return (
-                    <TableCellLayout>
-                        {item.second.host}
-                    </TableCellLayout>
-                );
-            },
-        }),
-        createTableColumn<IVConnection>({
-            columnId: "second.port",
+            columnId: "second_port",
             renderHeaderCell: () => <><UsbPlugFilled /> R-port</>,
             renderCell: (item) => {
                 return (
@@ -75,66 +64,33 @@ export default function Component() {
         }),
         createTableColumn<IVConnection>({
             columnId: "primary.statistic.throughput",
-            renderHeaderCell: () => <><ArrowUploadRegular />Bytes</>,
+            renderHeaderCell: () => <>Bytes(TX/RX)</>,
             renderCell: (item) => {
                 return (
                     <TableCellLayout>
-                        {format_bytes_single_unit(item.primary.statistic.throughput)}
+                        {format_bytes_single_unit(item.primary.statistic.throughput) + "/" + format_bytes_single_unit(item.second.statistic.throughput)}
                     </TableCellLayout>
                 );
             },
         }),
         createTableColumn<IVConnection>({
             columnId: "primary.statistic.count",
-            renderHeaderCell: () => <><ArrowUploadRegular />TX-Packets</>,
+            renderHeaderCell: () => <>Packets(TX/RX)</>,
             renderCell: (item) => {
                 return (
                     <TableCellLayout>
-                        {item.primary.statistic.count}
+                        {item.primary.statistic.count + "/" + item.second.statistic.count}
                     </TableCellLayout>
                 );
             },
         }),
         createTableColumn<IVConnection>({
             columnId: "primary.statistic.clean_throughput",
-            renderHeaderCell: () => <><ArrowUploadRegular />TX-Used</>,
+            renderHeaderCell: () => <>TCP(TX/RX)</>,
             renderCell: (item) => {
                 return (
                     <TableCellLayout>
-                        {format_bytes_single_unit(item.primary.statistic.clean_throughput)}
-                    </TableCellLayout>
-                );
-            },
-        }),
-        createTableColumn<IVConnection>({
-            columnId: "second.statistic.throughput",
-            renderHeaderCell: () => <><ArrowDownloadRegular />RX-Bytes</>,
-            renderCell: (item) => {
-                return (
-                    <TableCellLayout>
-                        {format_bytes_single_unit(item.second.statistic.throughput)}
-                    </TableCellLayout>
-                );
-            },
-        }),
-        createTableColumn<IVConnection>({
-            columnId: "second.statistic.count",
-            renderHeaderCell: () => <><ArrowDownloadRegular />RX-Packet</>,
-            renderCell: (item) => {
-                return (
-                    <TableCellLayout>
-                        {item.second.statistic.count}
-                    </TableCellLayout>
-                );
-            },
-        }),
-        createTableColumn<IVConnection>({
-            columnId: "second.statistic.clean_throughput",
-            renderHeaderCell: () => <><ArrowDownloadRegular />RX-Used</>,
-            renderCell: (item) => {
-                return (
-                    <TableCellLayout>
-                        {format_bytes_single_unit(item.second.statistic.clean_throughput)}
+                        {format_bytes_single_unit(item.primary.statistic.clean_throughput) + '/' + format_bytes_single_unit(item.second.statistic.clean_throughput)}
                     </TableCellLayout>
                 );
             },

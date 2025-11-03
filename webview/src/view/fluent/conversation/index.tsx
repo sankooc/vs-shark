@@ -7,32 +7,24 @@ import Grid from "../table";
 import { conversation_size } from "../../conf";
 
 import { useNavigate } from "react-router";
-import { ConversationIcon, IPSelector } from "../common";
-import { BoxRegular, DesktopMacRegular, DocumentMultipleRegular, DocumentRegular, DocumentTextRegular, FolderListRegular, MoreHorizontalFilled, TextBulletListSquareColor } from "@fluentui/react-icons";
-
-// import { PageFrame } from '../table';
+import { ActionInfoIcon, ActionMoreIcon, ConversationIcon, IPSelector } from "../common";
+import { BoxRegular, DesktopMacRegular, DocumentTextRegular, FolderListRegular } from "@fluentui/react-icons";
 
 const SIZE: "small" | "medium" = 'small';
 
-const headIcon = (item: IVConversation) => {
-    if(item && item.connects > 1){
-        return <DocumentMultipleRegular/>
-    }
-    return <DocumentRegular />
-}
 
 function Component() {
-    const conversations = useStore((state) => state.conversations);
+    const conversations = useStore((state) => state.conversationList);
     const navigate = useNavigate();
-    const [ ip, setIp ] = useState<string>('');
+    const [ip, setIp] = useState<string>('');
     const columns: TableColumnDefinition<IVConversation>[] = [
         createTableColumn<IVConversation>({
             columnId: "sender",
             renderHeaderCell: () => <><DesktopMacRegular /> Sender</>,
             renderCell: (item) => {
                 return (
-                    <TableCellLayout media={headIcon(item)}>
-                        {item.sender}
+                    <TableCellLayout>
+                        <>{item.sender}</>
                     </TableCellLayout>
                 );
             },
@@ -75,13 +67,12 @@ function Component() {
         }),
         createTableColumn<IVConversation>({
             columnId: "ops",
-            renderHeaderCell: () => "ext",
+            renderHeaderCell: () => "actions",
             renderCell: (item) => {
                 return <TableCellLayout><Toolbar aria-label="Default" size="small">
-                    <ToolbarButton icon={<TextBulletListSquareColor />} onClick={() => { onClick(item) }} />
-                    <ToolbarButton icon={<MoreHorizontalFilled />} />
+                    <ToolbarButton icon={ActionInfoIcon()} onClick={() => { onClick(item) }} />
+                    <ToolbarButton icon={ActionMoreIcon()} />
                 </Toolbar></TableCellLayout>
-                // return <TableCellLayout media={<TextBulletListSquareColor />} style={{cursor: 'pointer'}}></TableCellLayout>
             },
         }),
     ];
@@ -95,7 +86,7 @@ function Component() {
         const data: ComRequest = {
             catelog: "conversation",
             type: "list",
-            param:{ ...compute(page, pageSize), ip: _ip },
+            param: { ...compute(page, pageSize), ip: _ip },
         };
         return conversations(data);
     }

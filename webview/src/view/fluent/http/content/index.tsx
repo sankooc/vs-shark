@@ -1,4 +1,4 @@
-import { HttpMessageWrap } from "../../../../share/common";
+import { IHttpDetail } from "../../../../share/common";
 
 import HexView from './hexview';
 import PlainText from './plain';
@@ -8,7 +8,7 @@ import { bundleIcon, CalendarAgendaFilled, CalendarAgendaRegular } from "@fluent
 import { useState } from "react";
 import ImageView from "./image";
 type ContentProps = {
-    hmw: HttpMessageWrap;
+    hmw: IHttpDetail;
 }
 const CalendarAgenda = bundleIcon(CalendarAgendaFilled, CalendarAgendaRegular);
 
@@ -43,8 +43,8 @@ const parseMime = (headers: string[]): string => {
     }
     return '';
 }
-const renderContent = (hmw: HttpMessageWrap) => {
-    const ds = !!hmw.parsed_content ? 'preview' : 'raw';
+const renderContent = (hmw: IHttpDetail) => {
+    const ds = !!hmw.plaintext ? 'preview' : 'raw';
     const [selectedValue, setSelectedValue] = useState<TabValue>(ds);
     const onTabSelect = (_: SelectTabEvent, data: SelectTabData) => {
         setSelectedValue(data.value);
@@ -52,8 +52,8 @@ const renderContent = (hmw: HttpMessageWrap) => {
     const _mime = parseMime(hmw.headers);
     const inContent = () => {
         if (selectedValue === 'preview') {
-            if (detectText(_mime) && hmw!.parsed_content) {
-                return <PlainText text={hmw!.parsed_content!} mime={hmw.mime} />
+            if (detectText(_mime) && hmw!.plaintext) {
+                return <PlainText text={hmw!.plaintext!} mime={hmw.content_type || 'plaintext'} />
             }
             if(detectImage(_mime) && hmw.raw?.length){
                 return <ImageView raw={hmw.raw} mime={_mime}/>
@@ -80,7 +80,7 @@ const renderContent = (hmw: HttpMessageWrap) => {
 
 export default function Component(props: ContentProps) {
     const { hmw } = props;
-    if (hmw.parsed_content || hmw.raw?.length){
+    if (hmw.plaintext || hmw.raw){
         return renderContent(props.hmw);
     }
     return <Empty/>;

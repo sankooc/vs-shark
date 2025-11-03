@@ -7,10 +7,9 @@ import indexCss from './index.module.scss';
 import { useNavigate } from "react-router";
 import Grid from "../table";
 import { http_size } from "../../conf";
-import { HttpIcon } from "../common";
-import { BorderAllRegular, ClipboardCodeRegular, DesktopSignalRegular, ImageRegular, TextWordCountRegular, CodeBlockRegular, ContentViewRegular, TextBulletListSquareColor, MoreHorizontalFilled, WarningRegular, CheckmarkSquareRegular } from "@fluentui/react-icons";
+import { ActionInfoIcon, ActionMoreIcon, HttpIcon } from "../common";
+import { BorderAllRegular, ClipboardCodeRegular, DesktopSignalRegular, ImageRegular, TextWordCountRegular, CodeBlockRegular, ContentViewRegular, WarningRegular, CheckmarkSquareRegular, ClockRegular } from "@fluentui/react-icons";
 
-// import HTTPChart from '../overview/http';
 
 import { useId, Label } from "@fluentui/react-components";
 
@@ -64,8 +63,7 @@ const http_connct_status = (status: string) => {
 }
 
 function Component() {
-    const httpConnections = useStore((state) => state.httpConnections);
-    const cachehttp = useStore((state) => state.cachehttp);
+    const httpConnections = useStore((state) => state.httpList);
     const stat = useStore((state) => state.stat);
     const [httpHosts, setHttpHosts] = useState<ICounterItem[]>([]);
     const [hostSelect, setHostSelect] = useState<string>(NoneOption);
@@ -92,8 +90,15 @@ function Component() {
                     }
                 }
                 const media = http_connct_status(status);
+                let color = '#fabd2f';
+                const code = parseInt(status, 10);
+                if(code < 400){
+                    color = '#b8bb26';
+                } else if (code >= 400){
+                    color = '#fb4934'; 
+                }
                 return (
-                    <TableCellLayout media={media} style={{ textAlign: 'center' }}>
+                    <TableCellLayout media={media} style={{ textAlign: 'center', color }}>
                         {status}
                     </TableCellLayout>
                 );
@@ -166,31 +171,35 @@ function Component() {
                 return '';
             },
         }),
-        // createTableColumn<IVHttpConnection>({
-        //     columnId: "time",
-        //     renderHeaderCell: () => <><ClockRegular /> Time</>,
-        //     renderCell: (item) => {
-        //         const timeStr = item.rt;
-        //         return <TableCellLayout media={http_rt_icon(item)}>
-        //             {timeStr}
-        //         </TableCellLayout>
-        //     },
-        // }),
+        createTableColumn<IVHttpConnection>({
+            columnId: "time",
+            renderHeaderCell: () => <><ClockRegular /> Time</>,
+            renderCell: (item) => {
+                const timeStr = item.latency;
+                return <TableCellLayout >
+                    {timeStr}
+                </TableCellLayout>
+            },
+        }),
         createTableColumn<IVHttpConnection>({
             columnId: "ops",
-            renderHeaderCell: () => "ext",
+            renderHeaderCell: () => "action",
             renderCell: (item) => {
                 return <Toolbar aria-label="Default" size="small">
-                    <ToolbarButton icon={<TextBulletListSquareColor />} onClick={() => { onClick(item) }} />
-                    <ToolbarButton icon={<MoreHorizontalFilled />} />
+                    <ToolbarButton icon={ActionInfoIcon()} onClick={() => { onClick(item) }} />
+                    <ToolbarButton icon={ActionMoreIcon()} />
                 </Toolbar>
                 // return <TableCellLayout media={<TextBulletListSquareColor />} style={{cursor: 'pointer'}}></TableCellLayout>
             },
         }),
     ];
     const onClick = (item: IVHttpConnection) => {
-        cachehttp(item);
-        navigate('/http/detail', { state: { title: '' } });
+        // cachehttp(item);
+        const index = item.index;
+        const title = item.hostname || 'detail';
+        if (index >=0 ){
+            navigate('/http/detail/' + index, { state: { title } });
+        }
     };
     const pageSize = http_size;
     const load = async (page: number, _: any) => {

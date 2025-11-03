@@ -9,19 +9,22 @@ use std::{
     cmp,
     collections::HashMap,
     hash::{BuildHasherDefault, Hash, Hasher},
+    net::{Ipv4Addr, Ipv6Addr},
     ops::Range,
 };
 
 use crate::{
     add_field_label_no_range,
     common::{
-        concept::{ConversationCriteria, HttpCriteria, UDPConversation, VConnection, VConversation, VHttpConnection},
-        connection::TcpFlagField,
-        core::HttpConntect,
+        concept::{
+            ConversationCriteria, CounterItem, DNSRecord, FrameIndex, HttpCriteria, HttpMessageDetail, IndexHashMap, NameService, TLSConversation, TLSItem, UDPConversation,
+            VConnection, VConversation, VHttpConnection,
+        },
+        connection::{TcpFlagField, TlsData},
         util::date_str,
     },
     files::{pcap::PCAP, pcapng::PCAPNG},
-    protocol::{detail, link_type_map, parse, summary},
+    protocol::{detail, link_type_map, parse, summary, transport::tls::tls_version_map},
 };
 use anyhow::{bail, Result};
 use concept::{Criteria, Field, FrameInfo, FrameInternInfo, ListResult, ProgressStatus};
@@ -29,7 +32,6 @@ use connection::ConnectState;
 use enum_def::{AddressField, DataError, FileType, Protocol, ProtocolInfoField};
 use io::{DataSource, MacAddress, Reader, IO};
 use rustc_hash::FxHasher;
-use serde_json::Error;
 
 pub type FastHashMap<K, V> = HashMap<K, V, BuildHasherDefault<FxHasher>>;
 
@@ -40,6 +42,15 @@ pub type NString = &'static str;
 pub fn range64(range: Range<usize>) -> Range<u64> {
     range.start as u64..range.end as u64
 }
+
+// fn field_session_id_str(data: &[u8]) -> String {
+//     let len = std::cmp::min(32, data.len());
+//     let mut rs = String::with_capacity(len * 2);
+//     for (_, item) in data.iter().enumerate().take(len) {
+//         rs.push_str(&format!("{:02x}", *item));
+//     }
+//     rs
+// }
 
 pub fn quick_hash<T>(data: T) -> u64
 where
@@ -144,6 +155,11 @@ impl ProtoMask {
     }
 }
 
+pub trait ResourceLoader {
+    fn load(&self, range: &Range<usize>) -> anyhow::Result<Vec<u8>>;
+    fn loads(&self, ranges: &[Range<usize>]) -> anyhow::Result<Vec<u8>>;
+}
+
 #[derive(Default)]
 pub struct Frame {
     pub range: Option<Range<usize>>,
@@ -164,6 +180,9 @@ impl Frame {
     pub fn new() -> Self {
         Self { ..Default::default() }
     }
+    /**
+     * frame range with segments
+     */
     pub fn range(&self) -> Option<Range<usize>> {
         if let ProtocolInfoField::TLS(tls_list) = &self.protocol_field {
             if !tls_list.list.is_empty() {
@@ -177,6 +196,14 @@ impl Frame {
             }
         }
         self.range.clone()
+    }
+    pub fn compact(&self) -> bool {
+        if let ProtocolInfoField::TLS(tls_list) = &self.protocol_field {
+            if tls_list.list.len() > 0 {
+                return false;
+            }
+        }
+        true
     }
     pub fn frame_range(&self) -> Option<Range<usize>> {
         self.range.clone()
@@ -242,18 +269,33 @@ impl EthernetCache {
     }
 }
 
-pub struct Instance {
+pub struct Instance<T> {
+    loader: T,
     ds: DataSource,
     file_type: FileType,
     ctx: Context,
     last: usize,
 }
 
-impl Instance {
-    pub fn new(batch_size: usize) -> Instance {
+impl<T> Instance<T> {
+    pub fn context(&self) -> &Context {
+        &self.ctx
+    }
+
+    pub fn frame(&self, index: usize) -> Option<&Frame> {
+        self.ctx.list.get(index)
+    }
+}
+
+impl<T> Instance<T>
+where
+    T: ResourceLoader,
+{
+    pub fn new(batch_size: usize, loader: T) -> Self {
         let size = cmp::max(batch_size, 1024 * 128);
         let ds = DataSource::new(size, 0);
         Self {
+            loader,
             ds,
             file_type: FileType::NONE,
             ctx: Context::new(),
@@ -261,8 +303,8 @@ impl Instance {
         }
     }
 
-    pub fn get_context(&self) -> &Context {
-        &self.ctx
+    pub fn loader(&self) -> &dyn ResourceLoader {
+        &self.loader
     }
 
     pub fn parse(&mut self) -> Result<ProgressStatus> {
@@ -302,7 +344,7 @@ impl Instance {
             match rs {
                 Ok((next, _frame)) => {
                     if let Some(frame) = _frame {
-                        Instance::parse_packet(cxt, frame, ds);
+                        Instance::<T>::parse_packet(cxt, frame, ds);
                     }
                     reader.cursor = next;
                 }
@@ -395,7 +437,10 @@ where
     ListResult::new(start, total, list)
 }
 
-impl Instance {
+impl<T> Instance<T>
+where
+    T: ResourceLoader,
+{
     pub fn get_count(&self, catelog: &str) -> usize {
         match catelog {
             "frame" => self.ctx.list.len(),
@@ -403,17 +448,9 @@ impl Instance {
         }
     }
     pub fn frames_by(&self, cri: Criteria) -> ListResult<FrameInfo> {
-        // let Criteria { start, size } = cri;
-        // let info = self.context().get_info();
-        // let start_ts = info.start_time;
         let start = cri.start;
         let size = cri.size;
         let fs: &[Frame] = &self.ctx.list;
-
-        // for frame in fs {
-        // frame.
-        //TODO
-        // }
         let total = fs.len();
         let mut items = Vec::new();
         if total <= start {
@@ -454,14 +491,6 @@ impl Instance {
         }
         ListResult::new(start, total, items)
     }
-    pub fn frames_list_json(&self, cri: Criteria) -> Result<String, Error> {
-        let item = self.frames_by(cri);
-        serde_json::to_string(&item)
-    }
-
-    pub fn frame(&self, index: usize) -> Option<&Frame> {
-        self.ctx.list.get(index)
-    }
     fn frame_field(&self, frame: &Frame) -> Field {
         let mut f = Field::children();
         if let Some(range) = frame.range.as_ref() {
@@ -487,15 +516,13 @@ impl Instance {
         add_field_label_no_range!(f, format!("Capture length: {}", size));
         f
     }
-    pub fn select_frame(&self, index: usize, data: Vec<u8>) -> Option<(Vec<Field>, Option<Vec<u8>>, Option<Vec<u8>>)> {
-        let mut extra_data = None;
-
+    pub fn select_frame(&self, index: usize) -> Option<(Vec<Field>, Vec<DataSource>)> {
         if let Some(frame) = self.frame(index) {
-            if let Some(range) = frame.range() {
-                let ds: DataSource = DataSource::create(data, range);
-                let rg = frame.frame_range().unwrap();
-                let mut reader = Reader::new_sub(&ds, rg).unwrap();
-                let source = reader.dump_as_vec().ok();
+            if let Some(range) = frame.frame_range() {
+                let data = self.loader.load(&range).unwrap();
+                let ds = DataSource::create(data, range);
+                let mut datasources = vec![];
+                let mut reader = Reader::new(&ds);
                 let mut list = vec![];
                 let mut _next = frame.head;
                 list.push(self.frame_field(frame));
@@ -507,13 +534,10 @@ impl Instance {
                         _ => {
                             let mut f = Field::children();
                             f.start = reader.cursor;
-                            if let Ok((next, _extra_data)) = detail(_next, &mut f, &self.ctx, frame, &mut reader) {
+                            if let Ok((next, _extra_data)) = detail(_next, &mut f, self, frame, &mut reader, &mut datasources) {
                                 f.size = reader.cursor - f.start;
                                 list.push(f);
                                 _next = next;
-                                if let Some(data) = _extra_data {
-                                    extra_data = Some(data);
-                                }
                             } else {
                                 f.summary = format!("Parse [{_next}] failed");
                                 break;
@@ -521,17 +545,12 @@ impl Instance {
                         }
                     }
                 }
-                return Some((list, source, extra_data));
+                datasources.insert(0, ds);
+                return Some((list, datasources));
+                // return Some((list, source, extra_data, range));
             }
         }
         None
-    }
-
-    pub fn select_frame_json(&self, index: usize, data: Vec<u8>) -> Result<String, Error> {
-        if let Some((list, _, _)) = self.select_frame(index, data) {
-            return serde_json::to_string(&list);
-        }
-        Ok("[]".into())
     }
 
     pub fn conversation_count(&self) -> usize {
@@ -566,33 +585,29 @@ impl Instance {
     }
     pub fn http_connections(&self, cri: Criteria, filter: Option<HttpCriteria>) -> ListResult<VHttpConnection> {
         let Criteria { start, size } = cri;
-        if let Some(fil) = filter {
-            let _hostname = fil.hostname.unwrap();
-            let mut total = 0;
-            let mut list = vec![];
-            for item in &self.ctx.http_connections {
-                if let Some(hn) = item.hostname.clone() {
-                    if hn.contains(&_hostname) {
-                        total += 1;
-                        if list.len() < size {
-                            list.push(item);
-                        }
-                    }
+        let mut total = 0;
+        let mut list = vec![];
+        for (index, item) in self.ctx.http_connections.iter().enumerate() {
+            let count = list.len();
+            if item.do_match(&filter) {
+                if total >= start && count < size {
+                    list.push(item.conv(&self.ctx, index));
                 }
+                total += 1;
             }
-            let result = self._http_iter(&list);
-            return ListResult::new(start, total, result);
         }
-        let all_collections = &self.ctx.http_connections;
-        let total = all_collections.len();
-        let end = cmp::min(start + size, total);
-        if end <= start {
-            return ListResult::new(start, 0, vec![]);
-        }
-        let _data = &all_collections[start..end];
-        let list = self._http_iter(_data);
         ListResult::new(start, total, list)
     }
+
+    pub fn http_detail(&self, index: usize) -> Option<Vec<HttpMessageDetail>> {
+        let loader = &self.loader;
+        if let Some(http_connect) = self.ctx.http_connections.get(index) {
+            http_connect.convert_to_detail(&self.ctx, loader).ok()
+        } else {
+            None
+        }
+    }
+
     fn _udp_conversations(&self, ip: Option<String>) -> Vec<UDPConversation> {
         let mut map = FastHashMap::<String, UDPConversation>::default();
         for frame in &self.ctx.list {
@@ -636,13 +651,293 @@ impl Instance {
         let data = list[start..end].to_vec();
         ListResult::new(start, total, data)
     }
-    fn _http_iter<T>(&self, list: &[T]) -> Vec<VHttpConnection>
-    where
-        T: Borrow<HttpConntect>,
-    {
-        list.iter().map(|item| item.borrow().conv(&self.ctx)).collect()
+
+    fn parse_handshake(&self, tls_data: &TlsData, msg_type: u8, item: &mut TLSItem) -> Result<()> {
+        let ranges: Vec<Range<usize>> = tls_data.segments.iter().map(|f| f.range.clone()).collect();
+        let data = self.loader.loads(&ranges)?;
+        let ds = DataSource::create(data, 0..0);
+        let mut reader = Reader::new(&ds);
+        reader.read8()?;
+        reader.forward(2);
+        let len1 = reader.read16(true)?;
+        let mt = reader.read8()?;
+        if mt != msg_type {
+            bail!("msg type missmatch")
+        }
+        let len2 = reader.read24()?;
+        let diff = len1.saturating_sub(len2 as u16);
+        if diff == 4 {
+            match mt {
+                1 => {
+                    reader.forward(34);
+                    let session_id_len = reader.read8()? as usize;
+                    reader.forward(session_id_len);
+                    let cipher_suite_len = reader.read16(true)?;
+                    reader.forward(cipher_suite_len as usize);
+                    let compression_len = reader.read8()?;
+                    reader.forward(compression_len as usize);
+                    let extention_len = reader.read16(true)?;
+                    if extention_len > 0 {
+                        let mut extention_reader = reader.slice_as_reader(extention_len as usize)?;
+                        return resolve_sni(&mut extention_reader, item);
+                    }
+                }
+                2 => {
+                    reader.forward(34);
+                    let session_id_len = reader.read8()? as usize;
+                    reader.forward(session_id_len);
+                    let cs = reader.read16(true)?;
+                    let suites = crate::constants::tls_cipher_suites_mapper(cs).to_string();
+                    item.cipher_suite = Some(suites);
+                    reader.forward(1);
+                    let extention_len = reader.read16(true)?;
+                    if extention_len > 0 {
+                        let mut extention_reader = reader.slice_as_reader(extention_len as usize)?;
+                        return resolve_alpn(&mut extention_reader, item);
+                    }
+                }
+                _ => {}
+            }
+        }
+
+        bail!("")
+    }
+
+    fn _resolve_tls(&self, index: FrameIndex, msg_type: u8, item: &mut TLSItem) -> Result<()> {
+        if let Some(frame) = self.ctx.list.get(index as usize) {
+            if let ProtocolInfoField::TLS(tls_list) = &frame.protocol_field {
+                for block in &tls_list.list {
+                    if block.content_type == 22 {
+                        return self.parse_handshake(&block, msg_type, item);
+                    }
+                }
+            }
+        }
+        bail!("")
+    }
+
+    pub fn _tls_connects(&self) -> Vec<usize> {
+        let mut list = vec![];
+        for conver in &self.ctx.conversation_list {
+            for connection in &conver.connections {
+                if connection.tls_meta.exists() {
+                    list.push(conver.key);
+                    break;
+                }
+            }
+        }
+        list
+    }
+    fn tlscon(&self, conversaction_index: usize) -> Option<TLSConversation> {
+        if let Some(conv) = self.ctx.conversation_list.get(conversaction_index) {
+            let mut rs = TLSConversation::new(conversaction_index, conv.primary.clone(), conv.second.clone());
+            for connection in &conv.connections {
+                let meta = &connection.tls_meta;
+                if meta.exists() {
+                    let mut item = TLSItem::default();
+                    if let Some(index) = meta.client() {
+                        self._resolve_tls(index, 1, &mut item).ok();
+                    }
+                    if let Some(index) = meta.server() {
+                        self._resolve_tls(index, 2, &mut item).ok();
+                    }
+                    rs.list.push(item);
+                }
+            }
+            Some(rs)
+        } else {
+            None
+        }
+    }
+
+    pub fn tls_connections(&self, cri: Criteria) -> ListResult<TLSConversation> {
+        let Criteria { start, size } = cri;
+        let list = self._tls_connects();
+        let total = list.len();
+        let end = cmp::min(start + size, total);
+
+        if end <= start {
+            ListResult::new(start, 0, vec![])
+        } else {
+            let _list: &[usize] = &list[start..end];
+            let mut items = vec![];
+            for t_index in _list {
+                if let Some(item) = self.tlscon(*t_index) {
+                    items.push(item);
+                }
+            }
+            ListResult::new(start, total, items)
+        }
+    }
+
+    pub fn ipaddress_distribute(&self) -> Vec<CounterItem> {
+        let get_ip4_type = |addr: &Ipv4Addr| {
+            if addr.is_loopback() {
+                "loopback"
+            } else if addr.is_broadcast() {
+                "broadcast"
+            } else if addr.is_multicast() {
+                "multicast"
+            } else if addr.is_private() {
+                "private"
+            } else if addr.is_link_local() {
+                "link_local"
+            } else if addr.is_documentation() {
+                "documentation"
+            } else {
+                "public"
+            }
+        };
+        let get_ip6_type = |addr: &Ipv6Addr| {
+            if addr.is_loopback() {
+                "loopback"
+            } else if addr.is_multicast() {
+                "multicast"
+            } else if addr.is_unique_local() {
+                "unique_local"
+            } else if addr.is_unicast_link_local() {
+                "unicast_link_local"
+            } else {
+                "public"
+            }
+        };
+
+        let mut map: FastHashMap<String, usize> = FastHashMap::default();
+        let ipv4 = String::from("IPv4");
+        let ipv6 = String::from("IPv6");
+        for frame in &self.ctx.list {
+            match &frame.address_field {
+                AddressField::IPv4(source, target) => {
+                    Context::add_map(&ipv4, &mut map);
+                    {
+                        let _type = get_ip4_type(source);
+                        let str = _type.to_string();
+                        Context::add_map(&str, &mut map);
+                    }
+                    {
+                        let _type = get_ip4_type(target);
+                        let str = _type.to_string();
+                        Context::add_map(&str, &mut map);
+                    }
+                }
+                AddressField::IPv6(key) => {
+                    Context::add_map(&ipv6, &mut map);
+                    if let Some((_, source, target)) = self.ctx.ipv6map.get(key) {
+                        {
+                            let _type = get_ip6_type(source);
+                            let str = _type.to_string();
+                            Context::add_map(&str, &mut map);
+                        }
+                        {
+                            let _type = get_ip6_type(target);
+                            let str = _type.to_string();
+                            Context::add_map(&str, &mut map);
+                        }
+                    }
+                }
+                _ => {}
+            }
+        }
+        Context::_list_map(&map)
+    }
+
+    fn dns_list(&self) -> Vec<(u16, Option<FrameIndex>, Option<FrameIndex>)> {
+        let mut map: IndexHashMap<u16, (u16, Option<FrameIndex>, Option<FrameIndex>)> = IndexHashMap::default();
+        for frame in &self.context().list {
+            let index = frame.info.index;
+            match &frame.protocol_field {
+                ProtocolInfoField::DNSQUERY(ns_type, transaction_id) => {
+                    if let NameService::DNS = ns_type {
+                        if *transaction_id != 0 {
+                            let (_, rs) = map.get_or_add(transaction_id);
+                            rs.0 = *transaction_id;
+                            rs.1 = Some(index);
+                        }
+                    }
+                }
+                ProtocolInfoField::DNSRESPONSE(ns_type, transaction_id) => {
+                    if let NameService::DNS = ns_type {
+                        if *transaction_id != 0 {
+                            if let Some((_, rs)) = map.get(transaction_id) {
+                                rs.2 = Some(index);
+                            }
+                        }
+                    }
+                }
+                _ => {}
+            }
+        }
+        map.list()
+    }
+
+    pub fn dns_records(&self, cri: Criteria) -> ListResult<DNSRecord> {
+        let Criteria { start, size } = cri;
+        let list = self.dns_list();
+        let total = list.len();
+        let end = cmp::min(start + size, total);
+        if end <= start {
+            ListResult::new(start, 0, vec![])
+        } else {
+            let _list = &list[start..end];
+            let items = _list.iter().map(|f| DNSRecord::convert(self, f)).collect();
+            ListResult::new(start, total, items)
+        }
     }
 }
+
+fn resolve_sni(reader: &mut Reader, item: &mut TLSItem) -> Result<()> {
+    while reader.left() >= 4 {
+        let extention_type = reader.read16(true)?;
+        let extention_len = reader.read16(true)?;
+        if extention_type == 0 {
+            let mut ext_reader = reader.slice_as_reader(extention_len as usize)?;
+            ext_reader.forward(5);
+            let sni = ext_reader.read_string((extention_len - 5) as usize)?;
+            item.hostname = Some(sni);
+        } else {
+            reader.forward(extention_len as usize);
+        }
+    }
+    Ok(())
+}
+
+fn resolve_alpn(reader: &mut Reader, item: &mut TLSItem) -> Result<()> {
+    while reader.left() >= 6 {
+        let extention_type = reader.read16(true)?;
+        let _extention_len = reader.read16(true)?;
+        match extention_type {
+            16 => {
+                let mut list = vec![];
+                let extention_len = reader.read16(true)?;
+                let mut ext_reader = reader.slice_as_reader(extention_len as usize)?;
+                loop {
+                    if ext_reader.left() == 0 {
+                        break;
+                    }
+                    let item_len = ext_reader.read8()?;
+                    let item = ext_reader.read_string(item_len as usize)?;
+                    list.push(item);
+                }
+                item.alpn = Some(list);
+
+            },
+            43 => {
+                if _extention_len == 2 {
+                    let v = reader.read16(true)?;
+                    item.version = tls_version_map(v).map(String::from);
+                }
+                // let v = reader.read16(true)?;
+                //tls_version
+
+            },
+            _ => {
+                reader.forward(_extention_len as usize);
+            },
+        }
+    }
+    Ok(())
+}
+
 pub mod concept;
 pub mod connection;
 pub mod core;

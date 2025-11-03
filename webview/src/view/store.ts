@@ -8,12 +8,13 @@ import {
   DataResponse,
   deserialize,
   IFrameSelect,
-  MessageCompress,
+  IHttpDetail,
+  ITLSConnect,
   PcapFile,
   StatRequest,
   VRange,
 } from "../share/common";
-import { IFrameInfo, IListResult, IProgressStatus, IVConnection, IVConversation, IVHttpConnection, IUDPConversation } from "../share/gen";
+import { IFrameInfo, IListResult, IProgressStatus, IVConnection, IVConversation, IVHttpConnection, IUDPConversation, IDNSRecord } from "../share/gen";
 import mitt from "mitt";
 
 
@@ -32,15 +33,16 @@ interface PcapState {
   sendReady: () => void;
   request: <F>(data: any) => Promise<F>;
   requestData: (data: VRange) => Promise<DataResponse>;
-  conversations: (data: any) => Promise<IListResult<IVConversation>>;
-  udps: (data: any) => Promise<IListResult<IUDPConversation>>;
-  connections: (data: any) => Promise<IListResult<IVConnection>>;
-  httpConnections: (data: any) => Promise<IListResult<IVHttpConnection>>;
-  httpDetail: (data: IVHttpConnection) => Promise<MessageCompress[]>
+  conversationList: (data: any) => Promise<IListResult<IVConversation>>;
+  udpList: (data: any) => Promise<IListResult<IUDPConversation>>;
+  dnsList: (data: any) => Promise<IListResult<IDNSRecord>>;
+  tlsList: (data: any) => Promise<IListResult<ITLSConnect>>;
+  connectionList: (data: any) => Promise<IListResult<IVConnection>>;
+  httpList: (data: any) => Promise<IListResult<IVHttpConnection>>;
+  httpDetail: (index: number) => Promise<IHttpDetail[]>
   cachehttp: (conn: IVHttpConnection | null) => void;
   getHttpCache: () => IVHttpConnection | null;
   stat: (request: StatRequest) => Promise<any> ;
-  // frameList: (page: number, size: number) => Promise<IListResult<IFrameInfo>>;
 }
 // const compute = (page: number, size: number): Pagination => {
 //   if (page < 1) {
@@ -95,13 +97,15 @@ export const useStore = create<PcapState>()((set) => {
         break;
       }
       case ComType.STAT_RES:
+      case ComType.TLS_RES:
       {
         emitter.emit(id, deserialize(body));
         break;
       }
       case ComType.FRAMES_SELECT:
         {
-          const fr: IFrameSelect = { start: body.start, end: body.end, data: body.data, fields: deserialize(body.liststr), extra: body.extra };
+          const {str, datasource} = body;
+          const fr: IFrameSelect = { fields: deserialize(str), datasource };
           emitter.emit(id, fr);
           break;
         }
@@ -110,6 +114,8 @@ export const useStore = create<PcapState>()((set) => {
       case ComType.CONNECTIONS:
       case ComType.HTTP_CONNECTIONS:
       case ComType.UDP_CONNECTIONS:
+      case ComType.DNS_CONNECTIONS:
+      case ComType.TLS_CONNECTIONS:
         emitter.emit(id, deserialize(body));
         break;
       case ComType.FRAME_SCOPE_RES:
@@ -143,27 +149,34 @@ export const useStore = create<PcapState>()((set) => {
       const req = new ComMessage(ComType.DATA, data);
       return doRequest<DataResponse>(req);
     },
-    conversations: (data: any): Promise<IListResult<IVConversation>> => {
+    conversationList: (data: any): Promise<IListResult<IVConversation>> => {
       const req = new ComMessage(ComType.REQUEST, data);
       return doRequest<IListResult<IVConversation>>(req);
-      // return Promise.resolve(convMock);
     },
-    udps: (data: any): Promise<IListResult<IUDPConversation>> => {
+    udpList: (data: any): Promise<IListResult<IUDPConversation>> => {
       const req = new ComMessage(ComType.REQUEST, data);
       return doRequest<IListResult<IUDPConversation>>(req);
     },
-    connections: (data: any): Promise<IListResult<IVConnection>> => {
+    dnsList: (data: any): Promise<IListResult<IDNSRecord>> => {
+      const req = new ComMessage(ComType.REQUEST, data);
+      return doRequest<IListResult<IDNSRecord>>(req);
+    },
+    tlsList: (data: any) => {
+      const req = new ComMessage(ComType.REQUEST, data);
+      return doRequest<IListResult<ITLSConnect>>(req);
+    },
+    connectionList: (data: any): Promise<IListResult<IVConnection>> => {
       const req = new ComMessage(ComType.REQUEST, data);
       return doRequest<IListResult<IVConnection>>(req);
       // return Promise.resolve(connMock);
     },
-    httpConnections: (data: any): Promise<IListResult<IVHttpConnection>> => {
+    httpList: (data: any): Promise<IListResult<IVHttpConnection>> => {
       const req = new ComMessage(ComType.REQUEST, data);
       return doRequest<IListResult<IVHttpConnection>>(req);
     },
-    httpDetail: (data: IVHttpConnection): Promise<MessageCompress[]> => {
-      const req = new ComMessage(ComType.HTTP_DETAIL_REQ, data);
-      return doRequest<MessageCompress[]>(req);
+    httpDetail: (index: number): Promise<IHttpDetail[]> => {
+      const req = new ComMessage(ComType.HTTP_DETAIL_REQ, {index});
+      return doRequest<IHttpDetail[]>(req);
     },
     cachehttp: (conn: IVHttpConnection | null) => {
       httpCache = conn;

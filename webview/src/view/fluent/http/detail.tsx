@@ -1,83 +1,55 @@
 import { useEffect, useState } from "react";
 import { useStore } from "../../store";
 import { SelectTabData, SelectTabEvent, Tab, TabList, TabValue, Tree, TreeItem, TreeItemLayout } from "@fluentui/react-components";
-import {  HttpMessageWrap, MessageCompress } from "../../../share/common";
+import { IHttpDetail } from "../../../share/common";
 import indexCss from './index.module.scss';
-import { HttpIcon } from "../common";
-import { AirplaneLandingRegular, AirplaneTakeOffRegular, DocumentGlobeRegular, DocumentOnePageRegular, PanelTopContractRegular, PanelTopExpandRegular } from "@fluentui/react-icons";
+import { HttpHeaderIcon, HttpIcon, TabHttpHead, TabHttpReq, TabHttpRequest, TabHttpRes, TabHttpResponse } from "../common";
+// import { AirplaneLandingRegular, AirplaneTakeOffRegular, DocumentGlobeRegular, DocumentOnePageRegular, PanelTopContractRegular, PanelTopExpandRegular } from "@fluentui/react-icons";
 import ContentComponent from './content';
 import Empty from "./content/empty";
 
-import {PageFrame} from '../table';
-
-
-// const useStyles = makeStyles({
-//     customTree: {
-//         '--spacingHorizontalXXL': '12px',
-//         '--fontWeightRegular': 'bold',
-//         'padding': '5px',
-//     },
-//     tab: {
-//         button: {
-//             color: 'red'
-//         }
-//     }
-// });
+import { PageFrame } from '../table';
+import { useLocation, useParams } from "react-router";
 
 export default function ConnectionList() {
 
     const httpDetail = useStore((state) => state.httpDetail);
-    const getHttpCache = useStore((state) => state.getHttpCache);
-    const [_list, setList] = useState<HttpMessageWrap[]>([]);
+    const [_list, setList] = useState<IHttpDetail[]>([]);
     const [select, setSelect] = useState<string>('');
     const [selectedValue, setSelectedValue] = useState<TabValue>("Header");
+
+    const { httpIndex } = useParams();
+    const location = useLocation();
+    const title = location.state?.title || "detail";
+
 
     const onTabSelect = (_: SelectTabEvent, data: SelectTabData) => {
         setSelectedValue(data.value);
     };
 
     useEffect(() => {
-        const connection = getHttpCache();
-        if (!connection) {
-            return;
+        if (httpIndex) {
+            const index = parseInt(httpIndex, 10);
+            if(index >=0) {
+                httpDetail(index).then(setList);
+            }
         }
-        httpDetail(connection).then((rs: MessageCompress[]) => {
-            const list: HttpMessageWrap[] = rs.map((r: MessageCompress) => {
-                const rt = JSON.parse(r.json);
-                if (r.data.length > 0) {
-                    rt.raw = r.data;
-                }
-                return rt;
-            });
-            setList(list);
-        });
     }, []);
-    // const styles = useStyles();
-    const build = (hmw: HttpMessageWrap) => {
+    const build = (hmw: IHttpDetail) => {
         const it = hmw.headers;
         const head = it[0];
         const items = [];
         for (let i = 1; i < it.length; i += 1) {
             const text = it[i];
             items.push(<TreeItem itemType="leaf" key={text}>
-                <TreeItemLayout iconBefore={<DocumentOnePageRegular />} onClick={() => {
+                <TreeItemLayout iconBefore={HttpHeaderIcon()} onClick={() => {
                     setSelect(text);
-                    // setHmw(undefined);
                 }} className={select === text ? indexCss.treeitem_select : indexCss.treeitem} >{text}</TreeItemLayout>
             </TreeItem>);
         }
-        // if (hmw.raw && hmw.raw.length > 0) {
-            // const len = hmw.raw.length;
-            // const key = `content-${hmw.headers[0]}`;
-            // items.push(<TreeItem itemType="leaf" key={key}>
-            //     <TreeItemLayout onClick={() => {
-            //         setSelect(key);
-            //     }} className={select === key ? indexCss.treeitem_select : indexCss.treeitem} >Entity({format_bytes_single_unit(len)})</TreeItemLayout>
-            // </TreeItem>);
-        // }
-        let icon = <AirplaneTakeOffRegular />;
-        if (head && head.startsWith('HTTP/')){
-            icon = <AirplaneLandingRegular />
+        let icon = TabHttpRequest();
+        if (head && head.startsWith('HTTP/')) {
+            icon = TabHttpResponse();
         }
         return <TreeItem itemType="branch" key={head}>
             <TreeItemLayout iconBefore={icon} onClick={() => {
@@ -88,19 +60,9 @@ export default function ConnectionList() {
             </Tree>
         </TreeItem>
     }
-    let title = "Request";
-    if (_list && _list.length) {
-        const hmw = _list[0];
-        for (const h of hmw.headers) {
-            if (h.toLowerCase().startsWith("host:")) {
-                title = h.substring(5).trim();
-                break;
-            }
-        }
-    }
     const breads = [
         { name: "HTTP Requests", icon: <HttpIcon />, path: "/https" },
-        { name: title, path: "/http/detail" }
+        { name: title, path: "/http/detail/" + httpIndex }
     ]
 
     const contentRender = () => {
@@ -125,18 +87,18 @@ export default function ConnectionList() {
                 break;
             }
         }
-        return <Empty/>
+        return <Empty />
     }
     return (<PageFrame breads={breads}>
         <>
             <TabList selectedValue={selectedValue} onTabSelect={onTabSelect} >
-                <Tab id="Header" icon={<DocumentGlobeRegular />} value="Header">
+                <Tab id="Header" icon={TabHttpHead()} value="Header">
                     Header
                 </Tab>
-                <Tab id="Payload" icon={<PanelTopContractRegular />} value="Payload">
+                <Tab id="Payload" icon={TabHttpReq()} value="Payload">
                     Payload
                 </Tab>
-                <Tab id="Response" icon={<PanelTopExpandRegular />} value="Response">
+                <Tab id="Response" icon={TabHttpRes()} value="Response">
                     Response
                 </Tab>
             </TabList>
