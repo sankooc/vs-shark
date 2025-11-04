@@ -91,14 +91,14 @@ ready.then((rs) => {
       return;
     }
     if (type == ComType.PROCESS_DATA) {
-      let body = event.data.body;
+      const body = event.data.body;
       const data = body.data as Uint8Array;
       client.data = data;
       if (data.length <= BATCH_SIZE) {
         client.handle(event.data);
       } else {
         for (let i = 0; i < data.length; i += BATCH_SIZE) {
-          let _data = data.subarray(i, i + BATCH_SIZE);
+          const _data = data.subarray(i, i + BATCH_SIZE);
           const e = { id, type, body: { data: _data } };
           client.handle(e);
         }

@@ -78,7 +78,7 @@ export abstract class PCAPClient {
         let rs;
         switch (catelog) {
           case "frame":
-            rs = this.ctx.list("frame", start, size);
+            rs = this.ctx.list_frames(start, size);
             this.emitMessage(ComMessage.new(ComType.FRAMES, rs, requestId));
             return;
           case "conversation":

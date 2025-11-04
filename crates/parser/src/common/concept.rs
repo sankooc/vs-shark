@@ -7,7 +7,10 @@ use std::hash::Hash;
 
 use serde::Serialize;
 
-use crate::common::{connection::Connection, enum_def::Protocol, FastHashMap, Instance, NString};
+use crate::{
+    common::{connection::Connection, enum_def::Protocol, FastHashMap, Instance, NString},
+    protocol::transport::tls::tls_version_map,
+};
 
 use super::enum_def::PacketStatus;
 
@@ -477,7 +480,10 @@ pub struct DNSRecord {
 
 impl DNSRecord {
     pub fn convert<T>(instance: &Instance<T>, item: &(u16, Option<FrameIndex>, Option<FrameIndex>)) -> Self {
-        let mut rs = DNSRecord{transaction_id: item.0, ..Default::default()};
+        let mut rs = DNSRecord {
+            transaction_id: item.0,
+            ..Default::default()
+        };
         let mut start = 0;
         if let Some(index) = item.1 {
             if let Some(frame) = instance.frame(index as usize) {
@@ -673,15 +679,37 @@ impl TLSConversation {
 pub struct TLSItem {
     pub hostname: Option<String>,
     pub alpn: Option<Vec<String>>,
+    #[serde(skip)]
+    pub version_code: u16,
+    #[serde(skip)]
+    pub cs_code: u16,
     pub version: Option<String>,
     pub cipher_suite: Option<String>,
+    pub security: String,
     // pub count: usize,
 }
 
+// impl Default for TLSItem {
+//     fn default() -> Self {
+//         Self { security: String::from("unknown"), ..Default::default()  }
+//     }
+// }
+
 impl TLSItem {
-    pub fn new(hostname: Option<String>) -> Self {
-        Self { hostname, ..Default::default() }
+    // pub fn new(hostname: Option<String>) -> Self {
+    //     Self { hostname, security: String::from("unknown"), ..Default::default() }
+    // }
+    pub fn set_cipher_suite(&mut self, code: u16) {
+        self.cs_code = code;
+        let suites = crate::constants::tls_cipher_suites_mapper(code).to_string();
+        self.cipher_suite = Some(suites);
     }
+    pub fn set_version(&mut self, code: u16) {
+        self.version_code = code;
+        self.version = tls_version_map(code).map(String::from);
+        self.security = format!("{:?}", security_level(self.version_code, self.cs_code)).to_lowercase()
+    }
+
     // pub fn update(&mut self) {
     //     self.count += 1;
     // }
@@ -690,6 +718,42 @@ impl TLSItem {
     // }
 }
 
+
+#[derive(Clone, Copy, Default, Debug)]
+pub enum SecurityLevel {
+    LOW,
+    HIGH,
+    #[default]
+    UNKNOWN,
+}
+
+const TLS12_STRONG_CIPHERS: [u16; 9] = [
+    0xC02F, // ECDHE-RSA-AES128-GCM-SHA256
+    0xC02B, // ECDHE-ECDSA-AES128-GCM-SHA256
+    0xC030, // ECDHE-RSA-AES256-GCM-SHA384
+    0xC02C, // ECDHE-ECDSA-AES256-GCM-SHA384
+    0xCCA8, // ECDHE-RSA-CHACHA20-POLY1305
+    0xCCA9, // ECDHE-ECDSA-CHACHA20-POLY1305
+    0x009E, // DHE-RSA-AES128-GCM-SHA256
+    0x009F, // DHE-RSA-AES256-GCM-SHA384
+    0xCCAA, // DHE-RSA-CHACHA20-POLY1305
+];
+
+pub fn security_level(version: u16, ciphersuite: u16) -> SecurityLevel {
+    use SecurityLevel::*;
+    match version {
+        0x0304 => HIGH,
+        0x0303 => {
+            if TLS12_STRONG_CIPHERS.contains(&ciphersuite) {
+                HIGH
+            } else {
+                LOW
+            }
+        }
+        0x0301 | 0x0302 | 0x0300 => LOW,
+        _ => UNKNOWN,
+    }
+}
 fn decode_bytes(body_raw: &[u8], encoding: HttpEncoding) -> String {
     let decoded_data = match encoding {
         HttpEncoding::None => body_raw.to_vec(),

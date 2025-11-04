@@ -143,7 +143,7 @@ const mapper: Partial<Record<keyof Theme, string>> = {
 
 
 export const buildTheme = () => {
-    let isWebview = typeof acquireVsCodeApi === 'function';
+    const isWebview = typeof acquireVsCodeApi === 'function';
     if (!isWebview) {
         import('../../scss/var.scss');
         return webDarkTheme;

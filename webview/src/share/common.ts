@@ -56,7 +56,7 @@ let counter = 0;
 
 const getMessageId = (type: string) => {
   const cc = counter++;
-  return `${cc}_${type}_${Date.now()}`
+  return `${cc}_${type}_${Date.now()}`;
 }
 
 export class ComMessage<T> {
@@ -172,6 +172,7 @@ export interface ITLSInfo {
   version: string,
   cipher_suite: string,
   alpn: string[],
+  security: string,
 }
 export interface ITLSConnect {
   index?: number,

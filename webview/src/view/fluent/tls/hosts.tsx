@@ -4,13 +4,50 @@ import { compute, ComRequest, ITLSConnect } from "../../../share/common";
 import Grid from "../table";
 
 import { TLSIcon } from "../common";
+import { CheckmarkSquareRegular, ShieldQuestionRegular, WarningRegular } from "@fluentui/react-icons";
+
+
+const getLevel = (item: ITLSConnect) => {
+  let rs = 'unknown';
+  if (item && item.list) {
+    for (const it of item.list) {
+      if (it.security === 'low') {
+        return 'low'
+      }
+      if (it.security === 'high') {
+        rs = it.security;
+      }
+    }
+  }
+  return rs;
+}
+
 function Component() {
   const tlsList = useStore((state) => state.tlsList);
+  const ipMap = new Map();
   const columns: TableColumnDefinition<ITLSConnect>[] = [
     createTableColumn<ITLSConnect>({
       columnId: "index",
       renderHeaderCell: () => 'Index',
-      renderCell: (item) => <TableCellLayout> {item.index} </TableCellLayout>,
+      renderCell: (item) => {
+        const level = getLevel(item);
+        let media = <ShieldQuestionRegular />;
+        let color = '#fabd2f';
+        switch (level) {
+          case 'high': {
+            media = <CheckmarkSquareRegular />;
+            color = '#b8bb26';
+            break;
+          }
+          case 'low': {
+            media = <WarningRegular />;
+            color = '#fb4934';
+            break;
+          }
+          default:
+        }
+        return <TableCellLayout media={media} style={{color}}></TableCellLayout>
+      },
     }),
     createTableColumn<ITLSConnect>({
       columnId: "version",
@@ -46,13 +83,16 @@ function Component() {
     }),
     createTableColumn<ITLSConnect>({
       columnId: "primary",
-      renderHeaderCell: () => 'Address A',
-      renderCell: (item) => <TableCellLayout> {item.primary} </TableCellLayout>,
-    }),
-    createTableColumn<ITLSConnect>({
-      columnId: "second",
-      renderHeaderCell: () => 'Address B',
-      renderCell: (item) => <TableCellLayout> {item.second} </TableCellLayout>,
+      renderHeaderCell: () => 'Address',
+      renderCell: (item) => {
+        let str = '';
+        if (ipMap.get(item.primary) >= ipMap.get(item.second)) {
+          str = `${item.primary}-${item.second}`;
+        } else {
+          str = `${item.second}-${item.primary}`;
+        }
+        return <TableCellLayout> {str} </TableCellLayout>
+      },
     }),
     createTableColumn<ITLSConnect>({
       columnId: "count",
@@ -98,13 +138,29 @@ function Component() {
     }),
   ];
   const pageSize = 20;
+
   const load = async (page: number) => {
     const data: ComRequest = {
       catelog: "tls",
       type: "list",
       param: { ...compute(page, pageSize) },
     };
-    return tlsList(data);;
+    const rs = await tlsList(data);
+    ipMap.clear();
+    const add = (key: string) => {
+      if (!key.length) {
+        return;
+      }
+      const count = ipMap.get(key) || 0;
+      ipMap.set(key, count + 1);
+    }
+    if (rs) {
+      for (const item of rs.items) {
+        add(item.primary);
+        add(item.second);
+      }
+    }
+    return rs;
   }
 
   const breads = [
@@ -128,13 +184,13 @@ function Component() {
 
     },
     primary: {
-      minWidth: 160,
-      idealWidth: 160,
+      minWidth: 300,
+      idealWidth: 300,
       autoFitColumns: true,
     },
     second: {
-      minWidth: 160,
-      idealWidth: 160,
+      minWidth: 300,
+      idealWidth: 300,
       autoFitColumns: true,
     },
     alpn: {
