@@ -129,7 +129,7 @@ impl TableStyle<VConnection> for ConnectionStyle {
 impl Conversation {
     pub fn new() -> Self {
         Self {
-            state: CustomTableState::new(),
+            state: CustomTableState::default(),
             detail: None,
         }
     }
@@ -205,7 +205,7 @@ impl ControlState for Conversation {
                 if let Some(item) = self.state.list.items.get(self.state.select) {
                     let key = item.key;
                     let title = format!("{} -> {}", item.sender, item.receiver);
-                    self.detail = Some((key, title, CustomTableState::new()));
+                    self.detail = Some((key, title, CustomTableState::default()));
                     return PcapUICommand::ConnectionList(key, 0, PAGE_SIZE);
                 }
             }

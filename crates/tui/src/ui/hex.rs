@@ -48,7 +48,7 @@ impl Widget for &mut HexView<'_> {
         let mut _cursor = 0;
         let mut head = None;
         for inx in 0..line_count {
-            let index:Span = format!("  {:#07x}0  ", inx).into();
+            let index:Span = format!("  {inx:#07x}0  ").into();
             let mut ll = vec![index.style(get_protocol_color("tcp"))];
             let size: usize = cmp::min(8, len - _cursor);
             // let _data_range = _cursor.._cursor + size;
@@ -65,9 +65,9 @@ impl Widget for &mut HexView<'_> {
                 //     return get_protocol_color("tls");
                 // }
                 if range.contains(&s) {
-                    return get_protocol_color("dns");
+                    get_protocol_color("dns")
                 } else {
-                    return get_protocol_color("tls");
+                    get_protocol_color("tls")
                 }
             };
             let mut _style = get_style(_cursor);

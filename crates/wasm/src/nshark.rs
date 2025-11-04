@@ -47,11 +47,11 @@ impl WContext {
     #[wasm_bindgen]
     pub fn update(&mut self, s: &Uint8Array) -> Option<String> {
         let slice = s.to_vec();
-        self.ctx.update(slice).ok().as_ref().map(jsonlize).flatten()
+        self.ctx.update(slice).ok().as_ref().and_then(jsonlize)
     }
     #[wasm_bindgen]
     pub fn update_slice(&mut self, s: &[u8]) -> Option<String> {
-        self.ctx.update_slice(s).ok().as_ref().map(jsonlize).flatten()
+        self.ctx.update_slice(s).ok().as_ref().and_then(jsonlize)
         // self.ctx.update_slice(s).unwrap().to_json()
     }
 
@@ -76,7 +76,8 @@ impl WContext {
     pub fn select(&self, catelog: String, index: usize) -> Option<String> {
         match catelog.as_str() {
             "frame" => {
-                self.ctx.select_frame(index).map(|(items, _)| serde_json::to_string(&items).ok()).flatten()
+                // self.ctx.select_frame(index).map(|(items, _)| serde_json::to_string(&items).ok()).flatten()
+                self.ctx.select_frame(index).and_then(|(items, _)| serde_json::to_string(&items).ok())
             },
             _ => None,
         }
@@ -126,11 +127,12 @@ impl WContext {
     }
     #[wasm_bindgen]
     pub fn http_detail(&self, index: usize) -> Option<Vec<HttpDetail>> {
-        if let Some(data) = self.ctx.http_detail(index) {
-            Some(data.into_iter().map(HttpDetail::from).collect())
-        } else {
-            None
-        }
+        self.ctx.http_detail(index).map(|data| data.into_iter().map(HttpDetail::from).collect())
+        // if let Some(data) = self.ctx.http_detail(index) {
+        //     Some(data.into_iter().map(HttpDetail::from).collect())
+        // } else {
+        //     None
+        // }
     }
     
     #[wasm_bindgen]
@@ -153,7 +155,7 @@ impl WContext {
                 return None;
             },
         };
-        return jsonlize(&items)
+        jsonlize(&items)
     }
 }
 

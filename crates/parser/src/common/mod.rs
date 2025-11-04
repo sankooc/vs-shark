@@ -708,7 +708,7 @@ where
             if let ProtocolInfoField::TLS(tls_list) = &frame.protocol_field {
                 for block in &tls_list.list {
                     if block.content_type == 22 {
-                        return self.parse_handshake(&block, msg_type, item);
+                        return self.parse_handshake(block, msg_type, item);
                     }
                 }
             }
@@ -846,21 +846,17 @@ where
         for frame in &self.context().list {
             let index = frame.info.index;
             match &frame.protocol_field {
-                ProtocolInfoField::DNSQUERY(ns_type, transaction_id) => {
-                    if let NameService::DNS = ns_type {
-                        if *transaction_id != 0 {
-                            let (_, rs) = map.get_or_add(transaction_id);
-                            rs.0 = *transaction_id;
-                            rs.1 = Some(index);
-                        }
+                ProtocolInfoField::DNSQUERY(NameService::DNS, transaction_id) => {
+                    if *transaction_id != 0 {
+                        let (_, rs) = map.get_or_add(transaction_id);
+                        rs.0 = *transaction_id;
+                        rs.1 = Some(index);
                     }
                 }
-                ProtocolInfoField::DNSRESPONSE(ns_type, transaction_id) => {
-                    if let NameService::DNS = ns_type {
-                        if *transaction_id != 0 {
-                            if let Some((_, rs)) = map.get(transaction_id) {
-                                rs.2 = Some(index);
-                            }
+                ProtocolInfoField::DNSRESPONSE(NameService::DNS, transaction_id) => {
+                    if *transaction_id != 0 {
+                        if let Some((_, rs)) = map.get(transaction_id) {
+                            rs.2 = Some(index);
                         }
                     }
                 }
@@ -919,8 +915,7 @@ fn resolve_alpn(reader: &mut Reader, item: &mut TLSItem) -> Result<()> {
                     list.push(item);
                 }
                 item.alpn = Some(list);
-
-            },
+            }
             43 => {
                 if _extention_len == 2 {
                     let v = reader.read16(true)?;
@@ -928,11 +923,10 @@ fn resolve_alpn(reader: &mut Reader, item: &mut TLSItem) -> Result<()> {
                 }
                 // let v = reader.read16(true)?;
                 //tls_version
-
-            },
+            }
             _ => {
                 reader.forward(_extention_len as usize);
-            },
+            }
         }
     }
     Ok(())

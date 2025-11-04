@@ -72,8 +72,8 @@ impl TableStyle<FrameInfo> for FrameStyle {
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum SelectPanel {
-    LIST,
-    STACK,
+    List,
+    Stack,
 }
 
 pub struct App {
@@ -86,8 +86,8 @@ pub struct App {
 impl App {
     pub fn new() -> Self {
         Self {
-            cursor: SelectPanel::LIST,
-            state: CustomTableState::new(),
+            cursor: SelectPanel::List,
+            state: CustomTableState::default(),
             view: StackView::default(),
         }
     }
@@ -101,7 +101,7 @@ impl App {
         self.state.previous()
     }
     fn render_table(&mut self, buf: &mut Buffer, area: Rect) {
-        render_table(FrameStyle, &mut self.state, area, buf,0);
+        render_table(FrameStyle, &self.state, area, buf,0);
     }
 }
 
@@ -115,12 +115,12 @@ impl Widget for &mut App {
         let vertical = Layout::vertical([Constraint::Min(4), Constraint::Min(5)]);
         let rects = vertical.split(area);
         {
-            // let _area = get_erea(buf, rects[0], self.cursor == SelectPanel::LIST);
+            // let _area = get_erea(buf, rects[0], self.cursor == SelectPanel::List);
             self.render_table(buf, rects[0]);
         }
 
-        if self.cursor == SelectPanel::STACK {
-            // let _area = get_erea(buf, rects[1], self.cursor == SelectPanel::STACK);
+        if self.cursor == SelectPanel::Stack {
+            // let _area = get_erea(buf, rects[1], self.cursor == SelectPanel::Stack);
             self.view.render(rects[1], buf);
         } else {
             let block = content_border_low();
@@ -141,16 +141,16 @@ impl ControlState for App {
         if self.state.loading {
             return PcapUICommand::None;
         }
-        if self.cursor == SelectPanel::STACK {
+        if self.cursor == SelectPanel::Stack {
             if let KeyCode::Backspace = event.code {
-                self.cursor = SelectPanel::LIST;
+                self.cursor = SelectPanel::List;
                 return PcapUICommand::Refresh;
             }
             return self.view.control(false, event);
         }
         match event.code {
             KeyCode::Enter => {
-                self.cursor = SelectPanel::STACK;
+                self.cursor = SelectPanel::Stack;
                 if let Some(finfo) = self.state.list.items.get(self.state.select) {
                     return PcapUICommand::FrameData(finfo.index);
                 }
@@ -193,11 +193,11 @@ impl ControlState for App {
             PcapEvent::Init => PcapUICommand::FrameList(0, 100),
             PcapEvent::FrameList(list) => {
                 self.state.update(list);
-                self.cursor = SelectPanel::LIST;
+                self.cursor = SelectPanel::List;
                 PcapUICommand::Refresh
             }
             _ => match self.cursor {
-                SelectPanel::LIST => PcapUICommand::None,
+                SelectPanel::List => PcapUICommand::None,
                 _ => self.view.update(event),
             },
         }

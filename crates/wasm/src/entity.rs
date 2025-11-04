@@ -83,18 +83,15 @@ impl FrameResult {
     //     }
     // }
     fn _data(&self, index: usize) -> Option<Uint8Array> {
-        if let Some(ds) = self.datasources.get(index) {
-            Some(Uint8Array::from(ds.data.as_slice()))
-        } else {
-            None
-        }
+        self.datasources.get(index).map(|ds|Uint8Array::from(ds.data.as_slice()))
+        // if let Some(ds) = self.datasources.get(index) {
+        //     Some(Uint8Array::from(ds.data.as_slice()))
+        // } else {
+        //     None
+        // }
     }
     fn _range(&self, index: usize) -> Option<Range> {
-        if let Some(ds) = self.datasources.get(index) {
-            Some(ds.range().into())
-        } else {
-            None
-        }
+        self.datasources.get(index).map(|ds|ds.range().into())
     }
     #[wasm_bindgen]
     pub fn list(&self) -> String {

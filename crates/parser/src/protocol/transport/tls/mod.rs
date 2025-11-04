@@ -170,20 +170,12 @@ impl Visitor {
                     let ds = _reader.ds();
                     let reader = Reader::new_sub(ds, range)?;
                     list.push(parse_segment(reader, 0)?);
-                } else {
-                    if let Some(data) = item.concat_segment_data(loader) {
-                        let ds = DataSource::create(data, 0..0);
-                        let reader = Reader::new(&ds);
-                        let counter = (datasources.len() + 1) as u8;
-                        list.push(parse_segment(reader, counter)?);
-                        datasources.push(ds);
-                        // let _data = std::mem::take(&mut ds.data);
-                        // extra_data = Some(_data);
-                    }
-                    // let data = item.combind(_reader.ds());
-                    // let mut ds = DataSource::create(data, 0..0);
-                    // let reader = Reader::new(&ds);
-                    // list.push(parse_segment(reader, 1)?);
+                } else if let Some(data) = item.concat_segment_data(loader) {
+                    let ds = DataSource::create(data, 0..0);
+                    let reader = Reader::new(&ds);
+                    let counter = (datasources.len() + 1) as u8;
+                    list.push(parse_segment(reader, counter)?);
+                    datasources.push(ds);
                     // let _data = std::mem::take(&mut ds.data);
                     // extra_data = Some(_data);
                 }
@@ -212,14 +204,15 @@ pub fn tls_version_map(val: u16) -> Option<NString> {
         0x04 => "TLSv1.3",
         _ => return None,
     };
-    return Some(v);
+    Some(v)
 }
 
 fn tls_version(val: u16) -> String {
     if let Some(v) = tls_version_map(val) {
-        return v.to_string();
+        v.to_string()
+    } else {
+        "".to_string()
     }
-    return "".to_string();
 }
 
 // fn parse_sni(reader: &mut Reader) -> Result<String> {

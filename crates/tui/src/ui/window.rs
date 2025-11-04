@@ -39,7 +39,7 @@ impl Widget for &mut MainUI {
     }
 }
 fn create_tab_title(title: impl Display) -> Line<'static> {
-    format!("  {}  ", title).set_style(NAGETIVE_STYLE).into()
+    format!("  {title}  ").set_style(NAGETIVE_STYLE).into()
 }
 
 impl MainUI {
@@ -63,7 +63,7 @@ impl MainUI {
     }
     fn render_main_view(&mut self, area: Rect, buf: &mut Buffer) {
         let main_area = main_block(area, buf);
-        if let Some(_) = &self.progress {
+        if self.progress.is_some() {
             self.container.do_render(main_area, buf);
         } else {
             loading::line(main_area, buf);
@@ -120,7 +120,7 @@ impl MainUI {
             }
             2 => {
                 self.active_tab = active_tab;
-                self.container = TabContainer::Http(http::Page::new());
+                self.container = TabContainer::Http(http::Page::default());
                 self.container.update(PcapEvent::Init)
             }
             _ => PcapUICommand::None,
@@ -159,7 +159,7 @@ impl ControlState for MainUI {
     fn update(&mut self, event: PcapEvent) -> PcapUICommand {
         match event {
             PcapEvent::ProgressStatus(status) => {
-                if let None = self.progress {
+                if self.progress.is_none() {
                     self.progress = Some(status);
                     self.container.update(PcapEvent::Init)
                 } else {

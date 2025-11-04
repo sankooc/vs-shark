@@ -75,10 +75,10 @@
 //     // pub fn selection(&mut self) -> Option<Box<&mut dyn ControlState>> {
 //     //     if let Some(frame_data) = &mut self.frame_data {
 //     //         match frame_data.cursor {
-//     //             SelectPanel::LIST => {
+//     //             SelectPanel::List => {
 //     //                 return Some(Box::new(frame_data));
 //     //             },
-//     //             SelectPanel::STACK => {
+//     //             SelectPanel::Stack => {
 //     //                 if let Some(field) = &mut frame_data.field {
 //     //                     return Some(Box::new(field));
 //     //                 }

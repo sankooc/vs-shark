@@ -22,16 +22,16 @@ use crate::{
 
 // use crate::loading;
 
+mod block;
+mod code;
 mod conversation;
-mod http;
 mod frames;
 mod hex;
+mod http;
 mod loading;
 mod popup;
 mod stack;
 mod window;
-mod block;
-mod code;
 
 pub struct UI {
     sender: Sender<PcapUICommand>,
@@ -131,17 +131,15 @@ impl UI {
         }
         while quiting {
             if event::poll(Duration::from_millis(10)).unwrap() {
-                if let Ok(event) = event::read() {
-                    if let Event::Key(key) = event {
-                        match key.kind {
-                            KeyEventKind::Press => match key.code {
-                                _ => {
-                                    let _ = self.sender.send(PcapUICommand::Quit);
-                                    break;
-                                }
-                            },
-                            _ => {}
-                        }
+                if let Ok(Event::Key(key)) = event::read() {
+                    match key.kind {
+                        KeyEventKind::Press => match key.code {
+                            _ => {
+                                let _ = self.sender.send(PcapUICommand::Quit);
+                                break;
+                            }
+                        },
+                        _ => {}
                     }
                 }
             }
@@ -159,14 +157,18 @@ pub struct CustomTableState<T> {
     pub list: ListResult<T>,
     pub select: usize,
 }
-impl<T> CustomTableState<T> {
-    pub fn new() -> Self {
+
+impl<T> Default for CustomTableState<T> {
+    fn default() -> Self {
         Self {
             loading: true,
             list: ListResult::empty(),
             select: 0,
         }
     }
+}
+
+impl<T> CustomTableState<T> {
     pub fn update(&mut self, list: ListResult<T>) {
         self.list = list;
         self.select = 0;
@@ -180,13 +182,13 @@ impl<T> CustomTableState<T> {
         ss.position(self.select * ITEM_HEIGHT)
     }
     pub fn next(&mut self) -> usize {
-        if self.list.items.len() > 0 && self.select < self.list.items.len() - 1 {
+        if !self.list.items.is_empty() && self.select < self.list.items.len() - 1 {
             self.select += 1;
         }
         self.select
     }
     pub fn previous(&mut self) -> usize {
-        if self.list.items.len() > 0 && self.select > 0 {
+        if !self.list.items.is_empty() && self.select > 0 {
             self.select -= 1;
         }
         self.select
@@ -212,7 +214,7 @@ pub fn render_table<T>(ts: impl TableStyle<T>, state: &CustomTableState<T>, area
     // }
     let mut index = 0;
     let rows = items.iter().map(|data| {
-        let rs: Vec<Cell> = ts.get_row(data,index == state.select).iter().map(|s| s.clone().into()).collect();
+        let rs: Vec<Cell> = ts.get_row(data, index == state.select).iter().map(|s| s.clone().into()).collect();
         let row_style = ts.get_row_style(data, status);
         index += 1;
         rs.into_iter().collect::<Row>().bold().add_modifier(Modifier::BOLD).style(row_style).height(1)
@@ -227,7 +229,7 @@ pub fn render_table<T>(ts: impl TableStyle<T>, state: &CustomTableState<T>, area
     if let Some(block) = ts.get_block() {
         t = t.block(block);
     }
-    let mut t_area = area.clone();
+    let mut t_area = area;
     t_area.width -= 1;
     StatefulWidget::render(t, t_area, buf, &mut state.get_selection());
     let scroll = Scrollbar::new(ScrollbarOrientation::VerticalRight);

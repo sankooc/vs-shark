@@ -477,8 +477,7 @@ pub struct DNSRecord {
 
 impl DNSRecord {
     pub fn convert<T>(instance: &Instance<T>, item: &(u16, Option<FrameIndex>, Option<FrameIndex>)) -> Self {
-        let mut rs = DNSRecord::default();
-        rs.transaction_id = item.0;
+        let mut rs = DNSRecord{transaction_id: item.0, ..Default::default()};
         let mut start = 0;
         if let Some(index) = item.1 {
             if let Some(frame) = instance.frame(index as usize) {
@@ -512,31 +511,28 @@ pub struct TLSInfo {
 }
 
 impl TLSInfo {
-    pub fn exists(&self) -> bool{
+    pub fn exists(&self) -> bool {
         self.client_hello.is_some() || self.server_hello.is_some() || self.cert.is_some()
     }
-    pub fn update_client(&mut self, index: FrameIndex){
+    pub fn update_client(&mut self, index: FrameIndex) {
         self.client_hello = Some(index);
     }
-    pub fn update_server(&mut self, index: FrameIndex){
+    pub fn update_server(&mut self, index: FrameIndex) {
         self.server_hello = Some(index);
     }
-    pub fn update_cert(&mut self, index: FrameIndex){
+    pub fn update_cert(&mut self, index: FrameIndex) {
         self.cert = Some(index);
     }
     pub fn client(&self) -> Option<FrameIndex> {
-        return self.client_hello
+        self.client_hello
     }
     pub fn server(&self) -> Option<FrameIndex> {
-        return self.server_hello
+        self.server_hello
     }
     pub fn cert(&self) -> Option<FrameIndex> {
-        return self.cert
+        self.cert
     }
-
 }
-
-
 
 #[derive(Clone, Copy)]
 pub enum NameService {
@@ -654,25 +650,24 @@ impl HttpMessageDetail {
     }
 }
 
-
 #[derive(Serialize)]
 pub struct TLSConversation {
     pub index: usize,
     pub primary: String,
     pub second: String,
-    pub list: Vec<TLSItem>
+    pub list: Vec<TLSItem>,
 }
 
 impl TLSConversation {
     pub fn new(index: usize, primary: String, second: String) -> Self {
         Self {
             index,
-            primary, second,
-            list: vec![]
+            primary,
+            second,
+            list: vec![],
         }
     }
 }
-
 
 #[derive(Default, Serialize, Clone)]
 pub struct TLSItem {
@@ -685,7 +680,7 @@ pub struct TLSItem {
 
 impl TLSItem {
     pub fn new(hostname: Option<String>) -> Self {
-        Self { hostname, ..Default::default()}
+        Self { hostname, ..Default::default() }
     }
     // pub fn update(&mut self) {
     //     self.count += 1;
@@ -756,12 +751,12 @@ where
 {
     pub fn get_or_add(&mut self, key: &K) -> (usize, &mut V) {
         if let Some(val) = self.map.get(key) {
-            return (*val, self.list.get_mut(*val).unwrap());
+            (*val, self.list.get_mut(*val).unwrap())
         } else {
             let index = self.list.len();
             self.map.insert(key.clone(), index);
             self.list.push(V::default());
-            return (index, self.list.get_mut(index).unwrap());
+            (index, self.list.get_mut(index).unwrap())
         }
     }
 

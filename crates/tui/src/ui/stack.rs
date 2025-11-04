@@ -57,7 +57,7 @@ impl Widget for &mut StackView {
         
 
         let selected = self.tree_state.selected();
-        if selected.len() > 0 {
+        if !selected.is_empty() {
             let (_, start, size, source) = selected.last().unwrap().clone();
             if let Some(datasource) = self.datasources.get(source as usize) {
                 let offset = start.saturating_sub(datasource.range().start);
@@ -129,8 +129,8 @@ impl ControlState for StackView {
 }
 fn convert_fields(list: &[Field]) -> Vec<TreeItem<'static, Indendity>> {
     let mut rs = Vec::new();
-    let mut count = 0;
-    for item in list {
+    // let mut count = 0;
+    for (count, item) in list.iter().enumerate() {
         let start = item.start;
         let size = item.size;
         let source = item.source;
@@ -142,7 +142,6 @@ fn convert_fields(list: &[Field]) -> Vec<TreeItem<'static, Indendity>> {
         } else {
             rs.push(TreeItem::new_leaf(key, item.summary.clone()));
         }
-        count += 1;
     }
     rs
 }
