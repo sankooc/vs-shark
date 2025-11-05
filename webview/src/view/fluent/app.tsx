@@ -21,6 +21,7 @@ import HttpDetailComponent from "./http/detail";
 import OverviewComponent from "./overview";
 import UDPComponent from './udp';
 import DNSComponent from './dns';
+import DNSRecordComponent from './dns/sub';
 import TLSHostList from './tls';
 import TLSConvList from './tls/sub';
 
@@ -173,6 +174,7 @@ const Basic = () => {
             <Route path="/tls/:index" element={<TLSConvList/>}/>
             <Route path="/udp" element={<UDPComponent />} />
             <Route path="/dns" element={<DNSComponent />} />
+            <Route path="/dns/:index" element={<DNSRecordComponent />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </div>

@@ -1,11 +1,11 @@
 import { useStore } from "../../store";
-import { createTableColumn, TableCellLayout, TableColumnDefinition, Toolbar, ToolbarButton, Tooltip } from "@fluentui/react-components";
+import { createTableColumn, TableCellLayout, TableColumnDefinition, Toolbar, ToolbarButton } from "@fluentui/react-components";
 import { compute, ComRequest, ITLSConnect } from "../../../share/common";
 import Grid from "../table";
 
 import { ActionInfoIcon, ActionMoreIcon, TLSIcon } from "../common";
 import { CheckmarkSquareRegular, ShieldQuestionRegular, WarningRegular } from "@fluentui/react-icons";
-import { useNavigate, useParams } from "react-router";
+import { useNavigate } from "react-router";
 
 
 const getLevel = (item: ITLSConnect) => {
@@ -78,22 +78,6 @@ function Component() {
         return <TableCellLayout>{str}</TableCellLayout>
       },
     }),
-    // createTableColumn<ITLSConnect>({
-    //   columnId: "cs",
-    //   renderHeaderCell: () => 'CipherSuite',
-    //   renderCell: (item) => {
-    //     let str = '';
-    //     if (item.list && item.list.length) {
-    //       for (const it of item.list) {
-    //         if (it.cipher_suite) {
-    //           str = it.cipher_suite;
-    //           break;
-    //         }
-    //       }
-    //     }
-    //     return <TableCellLayout>{str}</TableCellLayout>
-    //   },
-    // }),
     createTableColumn<ITLSConnect>({
       columnId: "primary",
       renderHeaderCell: () => 'Address',

@@ -39,9 +39,10 @@ function Component<T>(props: GridProps<T>) {
         }
         <DataGrid items={result.items}
             size="extra-small"
+            style={{ minWidth: "auto", overflow: 'hidden auto' }}
             resizableColumns
             columnSizingOptions={columnSizingOptions}
-            columns={props.columns} style={{ minWidth: "auto", overflow: 'hidden auto' }} className="h-full" >
+            columns={props.columns} className="h-full" >
             <DataGridHeader style={{ paddingRight: scrollbarWidth, backgroundColor: '#458588' }}>
                 <DataGridRow>
                     {({ renderHeaderCell }) => (

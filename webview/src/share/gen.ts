@@ -86,9 +86,17 @@ export interface IUDPConversation {
     records: number[][];
 }
 
-export interface IDNSRecord {
+export interface IDNSResponse {
     transaction_id: number,
     source: string,
     target: string,
+    index: string,
     latency: [number, string],
+}
+
+export interface IDNSRecord {
+    host: string,
+    rtype: string,
+    class: string,
+    info: string,
 }

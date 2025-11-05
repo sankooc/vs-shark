@@ -17,8 +17,7 @@ use crate::{
     add_field_label_no_range,
     common::{
         concept::{
-            ConversationCriteria, CounterItem, DNSRecord, FrameIndex, HttpCriteria, HttpMessageDetail, IndexHashMap, LineChartData, NameService, TLSConversation, TLSItem,
-            UDPConversation, VConnection, VConversation, VHttpConnection,
+            ConversationCriteria, CounterItem, DNSRecord, DNSResponse, FrameIndex, HttpCriteria, HttpMessageDetail, IndexHashMap, LineChartData, NameService, TLSConversation, TLSItem, UDPConversation, VConnection, VConversation, VHttpConnection
         },
         connection::{TcpFlagField, TlsData},
         util::date_str,
@@ -869,14 +868,14 @@ where
         for frame in &self.context().list {
             let index = frame.info.index;
             match &frame.protocol_field {
-                ProtocolInfoField::DNSQUERY(NameService::DNS, transaction_id) => {
+                ProtocolInfoField::DNSQUERY(NameService::DNS, transaction_id, _) => {
                     if *transaction_id != 0 {
                         let (_, rs) = map.get_or_add(transaction_id);
                         rs.0 = *transaction_id;
                         rs.1 = Some(index);
                     }
                 }
-                ProtocolInfoField::DNSRESPONSE(NameService::DNS, transaction_id) => {
+                ProtocolInfoField::DNSRESPONSE(NameService::DNS, transaction_id, _) => {
                     if *transaction_id != 0 {
                         if let Some((_, rs)) = map.get(transaction_id) {
                             rs.2 = Some(index);
@@ -889,21 +888,24 @@ where
         map.list()
     }
 
-    pub fn dns_records(&self, cri: Criteria) -> ListResult<DNSRecord> {
+    pub fn dns_records(&self, cri: Criteria) -> ListResult<DNSResponse> {
         let list = self.intern_dns_list();
-        let convert = |f: &(u16, Option<FrameIndex>, Option<FrameIndex>)| DNSRecord::convert(self, f);
+        let convert = |f: &(u16, Option<FrameIndex>, Option<FrameIndex>)| DNSResponse::convert(self, f);
         paging_into(&list, cri, convert)
     }
-    pub fn dns_record(&self, index: usize) {
+    pub fn dns_record(&self, index: usize, cri: Criteria) -> ListResult<DNSRecord>{
         if let Some(frame) = self.ctx.list.get(index) {
-            if let Some(ds) = self.frame_datasource(frame) {
-                let mut reader = Reader::new(&ds);
-                let mut field = Field::children();
-                if let Ok(_) = dns::Visitor::_detail(&mut field, &mut reader) {
-                    // parse_dns_name(reader, start_offset)?
+            if let ProtocolInfoField::DNSRESPONSE(_, _, start ) = &frame.protocol_field {
+                if let Some(ds) = self.frame_datasource(frame) {
+                    let mut reader = Reader::new(&ds);
+                    reader.cursor = *start;
+                    if let Ok(list) = dns::Visitor::answers(&mut reader) {
+                        return paging(&list, cri);
+                    }
                 }
             }
         }
+        ListResult::empty()
     }
 }
 

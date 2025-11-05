@@ -1,14 +1,16 @@
 import { useStore } from "../../store";
-import { IDNSRecord } from "../../../share/gen";
-import { createTableColumn, TableCellLayout, TableColumnDefinition } from "@fluentui/react-components";
+import { IDNSResponse } from "../../../share/gen";
+import { createTableColumn, TableCellLayout, TableColumnDefinition, Toolbar, ToolbarButton } from "@fluentui/react-components";
 import { compute, ComRequest } from "../../../share/common";
 import Grid from "../table";
 
-import { DNSIcon } from "../common";
+import { ActionInfoIcon, ActionMoreIcon, DNSIcon } from "../common";
+import { useNavigate } from "react-router";
 function Component() {
     const dnsList = useStore((state) => state.dnsList);
-    const columns: TableColumnDefinition<IDNSRecord>[] = [
-        createTableColumn<IDNSRecord>({
+    const navigate = useNavigate();
+    const columns: TableColumnDefinition<IDNSResponse>[] = [
+        createTableColumn<IDNSResponse>({
             columnId: "transaction",
             renderHeaderCell: () => 'TID',
             renderCell: (item) => {
@@ -19,7 +21,7 @@ function Component() {
                 );
             },
         }),
-        createTableColumn<IDNSRecord>({
+        createTableColumn<IDNSResponse>({
             columnId: "receiver",
             renderHeaderCell: () => 'Server',
             renderCell: (item) => {
@@ -30,13 +32,13 @@ function Component() {
                 );
             },
         }),
-        createTableColumn<IDNSRecord>({
-            columnId: "count",
+        createTableColumn<IDNSResponse>({
+            columnId: "client",
             renderHeaderCell: () => 'Client',
             renderCell: (item) => <TableCellLayout>{item.target}</TableCellLayout>,
         }),
-        createTableColumn<IDNSRecord>({
-            columnId: "bytes",
+        createTableColumn<IDNSResponse>({
+            columnId: "latency",
             renderHeaderCell: () => 'Latency',
             renderCell: (item) => {
                 let content = 'N/A';
@@ -46,7 +48,24 @@ function Component() {
                 return <TableCellLayout>{content}</TableCellLayout>
             },
         }),
+        createTableColumn<IDNSResponse>({
+          columnId: "ops",
+          renderHeaderCell: () => "action",
+          renderCell: (_item) => {
+            return <Toolbar aria-label="Default" size="small">
+              <ToolbarButton icon={ActionInfoIcon()} onClick={() => { onClick(_item) }} />
+              <ToolbarButton icon={ActionMoreIcon()}/>
+            </Toolbar>
+          },
+        }),
     ];
+    const onClick = (item: IDNSResponse) => {
+        console.log('dns', item.index);
+        const index = item.index;
+        if (undefined != index) {
+          navigate('/dns/' + index);
+        }
+    }
     const pageSize = 30;
     const load = async (page: number) => {
         const data: ComRequest = {
@@ -54,22 +73,30 @@ function Component() {
             type: "list",
             param: { ...compute(page, pageSize) },
         };
-        return dnsList(data);;
+        return dnsList(data);
     }
 
     const breads = [
         { name: "DNS", icon: <DNSIcon />, path: "/dns" }
     ]
     const columnSizingOptions = {
-        sender: {
-            minWidth: 250,
-            idealWidth: 250,
+        transaction: {
+            minWidth: 120,
+            idealWidth: 120,
             autoFitColumns: true,
         },
         receiver: {
-            minWidth: 200,
-            idealWidth: 250,
+            minWidth: 250,
+            idealWidth: 300,
             autoFitColumns: true,
+        },
+        client: {
+            minWidth: 250,
+            idealWidth: 300,
+        },
+        latency: {
+            minWidth: 120,
+            idealWidth: 120,
         }
 
     };

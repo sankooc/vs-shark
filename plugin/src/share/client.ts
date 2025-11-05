@@ -46,7 +46,7 @@ export abstract class PCAPClient {
     if (this.ctx) {
       try {
         const rs = await this.ctx.update(data);
-        if(rs) {
+        if (rs) {
           this.emitMessage(ComMessage.new(ComType.PRGRESS_STATUS, rs));
           return rs;
         }
@@ -78,7 +78,7 @@ export abstract class PCAPClient {
         let rs;
         switch (catelog) {
           case "frame":
-            rs = this.ctx.list("frame", start, size);
+            rs = this.ctx.list_frames(start, size);
             this.emitMessage(ComMessage.new(ComType.FRAMES, rs, requestId));
             return;
           case "conversation":
@@ -86,28 +86,38 @@ export abstract class PCAPClient {
             this.emitMessage(ComMessage.new(ComType.CONVERSATIONS, rs, requestId));
             return;
           case "connection": {
-              rs = this.ctx.list_connections(param.conversionIndex, start, size);
-              this.emitMessage(ComMessage.new(ComType.CONNECTIONS, rs, requestId));
-              return;
-            }
+            rs = this.ctx.list_connections(param.conversionIndex, start, size);
+            this.emitMessage(ComMessage.new(ComType.CONNECTIONS, rs, requestId));
+            return;
+          }
           case "http_connection": {
-              rs = this.ctx.list_http(start, size, param.host || '', '');
-              this.emitMessage(ComMessage.new(ComType.HTTP_CONNECTIONS, rs, requestId));
-              return;
-            }
+            rs = this.ctx.list_http(start, size, param.host || '', '');
+            this.emitMessage(ComMessage.new(ComType.HTTP_CONNECTIONS, rs, requestId));
+            return;
+          }
           case "udp": {
-              rs = this.ctx.list_udp(start, size, param.ip || '');
-              this.emitMessage(ComMessage.new(ComType.UDP_CONNECTIONS, rs, requestId));
-              return;
-            }
+            rs = this.ctx.list_udp(start, size, param.ip || '');
+            this.emitMessage(ComMessage.new(ComType.UDP_CONNECTIONS, rs, requestId));
+            return;
+          }
           case "dns": {
-              rs = this.ctx.list_dns(start, size);
-              this.emitMessage(ComMessage.new(ComType.DNS_CONNECTIONS, rs, requestId));
-              return;
-            }
+            rs = this.ctx.list_dns(start, size);
+            this.emitMessage(ComMessage.new(ComType.DNS_CONNECTIONS, rs, requestId));
+            return;
+          }
+          case "dns_record": {
+            const rs = this.ctx.dns_records(param.index, start, size);
+            this.emitMessage(ComMessage.new(ComType.DNS_RCD_CONNECTIONS, rs, requestId));
+            return;
+          }
           case "tls": {
             const rs = this.ctx.list_tls(start, size);
             this.emitMessage(ComMessage.new(ComType.TLS_CONNECTIONS, rs, requestId));
+            return;
+          }
+          case "tls_conv": {
+            const rs = this.ctx.list_tls_conv(param.index, start, size);
+            this.emitMessage(ComMessage.new(ComType.TLS_CONVERSATION_ITEMS, rs, requestId));
             return;
           }
           default:

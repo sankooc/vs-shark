@@ -15,7 +15,7 @@ import {
   StatRequest,
   VRange,
 } from "../share/common";
-import { IFrameInfo, IListResult, IProgressStatus, IVConnection, IVConversation, IVHttpConnection, IUDPConversation, IDNSRecord } from "../share/gen";
+import { IFrameInfo, IListResult, IProgressStatus, IVConnection, IVConversation, IVHttpConnection, IUDPConversation, IDNSResponse, IDNSRecord } from "../share/gen";
 import mitt from "mitt";
 
 
@@ -36,7 +36,8 @@ interface PcapState {
   requestData: (data: VRange) => Promise<DataResponse>;
   conversationList: (data: any) => Promise<IListResult<IVConversation>>;
   udpList: (data: any) => Promise<IListResult<IUDPConversation>>;
-  dnsList: (data: any) => Promise<IListResult<IDNSRecord>>;
+  dnsList: (data: any) => Promise<IListResult<IDNSResponse>>;
+  dnsRecords: (data: any) => Promise<IListResult<IDNSRecord>>;
   tlsList: (data: any) => Promise<IListResult<ITLSConnect>>;
   tlsConvList: (data: any) => Promise<IListResult<ITLSInfo>>;
   connectionList: (data: any) => Promise<IListResult<IVConnection>>;
@@ -117,6 +118,7 @@ export const useStore = create<PcapState>()((set) => {
       case ComType.HTTP_CONNECTIONS:
       case ComType.UDP_CONNECTIONS:
       case ComType.DNS_CONNECTIONS:
+      case ComType.DNS_RCD_CONNECTIONS:
       case ComType.TLS_CONNECTIONS:
       case ComType.TLS_CONVERSATION_ITEMS:
         emitter.emit(id, deserialize(body));
@@ -160,7 +162,11 @@ export const useStore = create<PcapState>()((set) => {
       const req = new ComMessage(ComType.REQUEST, data);
       return doRequest<IListResult<IUDPConversation>>(req);
     },
-    dnsList: (data: any): Promise<IListResult<IDNSRecord>> => {
+    dnsList: (data: any): Promise<IListResult<IDNSResponse>> => {
+      const req = new ComMessage(ComType.REQUEST, data);
+      return doRequest<IListResult<IDNSResponse>>(req);
+    },
+    dnsRecords: (data: any): Promise<IListResult<IDNSRecord>> => {
       const req = new ComMessage(ComType.REQUEST, data);
       return doRequest<IListResult<IDNSRecord>>(req);
     },

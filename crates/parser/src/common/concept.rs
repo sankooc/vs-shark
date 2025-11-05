@@ -470,18 +470,19 @@ pub fn period(sample: u64, time: u64) -> (f64, NString) {
 }
 
 #[derive(Serialize, Default, Debug)]
-pub struct DNSRecord {
+pub struct DNSResponse {
     transaction_id: u16,
     source: String,
     target: String,
     response: Option<usize>,
+    index: Option<usize>,
     latency: (f64, NString),
     // content: String,
 }
 
-impl DNSRecord {
+impl DNSResponse {
     pub fn convert<T>(instance: &Instance<T>, item: &(u16, Option<FrameIndex>, Option<FrameIndex>)) -> Self {
-        let mut rs = DNSRecord {
+        let mut rs = DNSResponse {
             transaction_id: item.0,
             ..Default::default()
         };
@@ -498,6 +499,7 @@ impl DNSRecord {
 
         if let Some(index) = item.2 {
             if let Some(frame) = instance.frame(index as usize) {
+                rs.index = Some(index as usize);
                 if let Some((ip, _)) = frame.addresses(instance.context()) {
                     rs.target = ip;
                 }
@@ -854,5 +856,19 @@ where
         let rs = std::mem::take(&mut self.list);
         self.map.clear();
         rs
+    }
+}
+
+
+#[derive(Serialize, Debug, Default, Clone)]
+pub struct DNSRecord {
+    pub host: String,
+    pub rtype: String,
+    pub class: String,
+    pub info: Option<String>
+}
+impl DNSRecord {
+    pub fn new(host: String, rtype: String, class: String, info: Option<String>) -> Self {
+        Self{host, rtype, class, info}
     }
 }

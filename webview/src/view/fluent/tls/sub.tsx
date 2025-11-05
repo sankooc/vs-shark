@@ -1,10 +1,9 @@
 import { useStore } from "../../store";
-import { createTableColumn, TableCellLayout, TableColumnDefinition, Toolbar, ToolbarButton, Tooltip } from "@fluentui/react-components";
+import { createTableColumn, TableCellLayout, TableColumnDefinition } from "@fluentui/react-components";
 import { compute, ComRequest, ITLSInfo } from "../../../share/common";
 import Grid from "../table";
 
-import { ActionInfoIcon, ActionMoreIcon, infoLevel, TLSIcon } from "../common";
-import { CheckmarkSquareRegular, ShieldQuestionRegular, WarningRegular } from "@fluentui/react-icons";
+import { infoLevel, TLSIcon } from "../common";
 import { useParams } from "react-router";
 
 
@@ -50,8 +49,7 @@ function Component() {
       columnId: "count",
       renderHeaderCell: () => 'Count',
       renderCell: (item) => {
-        let str = item.count;
-        return <TableCellLayout>{str}</TableCellLayout>
+        return <TableCellLayout>{item.count}</TableCellLayout>
       },
     }),
 
@@ -73,23 +71,7 @@ function Component() {
       type: "list",
       param: { ...compute(page, pageSize), index },
     };
-    const rs = await tlsList(data);
-    // ipMap.clear();
-    // const add = (key: string) => {
-    //   if (!key.length) {
-    //     return;
-    //   }
-    //   const count = ipMap.get(key) || 0;
-    //   ipMap.set(key, count + 1);
-    // }
-    // if (rs) {
-    //   for (const item of rs.items) {
-    //     add(item.primary);
-    //     add(item.second);
-    //   }
-    // }
-    return rs;
-    // return []
+    return tlsList(data)
   }
 
   const breads = [

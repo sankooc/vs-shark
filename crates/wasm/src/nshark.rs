@@ -121,6 +121,11 @@ impl WContext {
         jsonlize(&list)
     }
     #[wasm_bindgen]
+    pub fn dns_records(&self, index: usize, start: usize, size: usize) -> Option<String> {
+        let list = self.ctx.dns_record(index, Criteria { start, size });
+        jsonlize(&list)
+    }
+    #[wasm_bindgen]
     pub fn http_detail(&self, index: usize) -> Option<Vec<HttpDetail>> {
         self.ctx.http_detail(index).map(|data| data.into_iter().map(HttpDetail::from).collect())
     }

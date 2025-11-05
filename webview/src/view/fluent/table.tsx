@@ -60,7 +60,7 @@ function Component<T>(props: GridProps<T>) {
         <DataGrid items={result.items}
             size='small'
             resizableColumns
-            style={{minWidth: 'auto'}}
+            style={{ minWidth: "auto", overflow: 'hidden auto' }}
             // resizableColumnsOptions={{autoFitColumns: true}}
             columnSizingOptions={columnSizingOptions}
             columns={props.columns} className="h-full w-full" >
