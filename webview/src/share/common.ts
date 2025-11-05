@@ -175,6 +175,8 @@ export interface ITLSInfo {
   alpn: string[],
   security: string,
   count: number,
+  addr_1: string,
+  addr_2: string,
 }
 export interface ITLSConnect {
   index?: number,

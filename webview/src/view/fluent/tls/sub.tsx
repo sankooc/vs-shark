@@ -3,64 +3,48 @@ import { createTableColumn, TableCellLayout, TableColumnDefinition, Toolbar, Too
 import { compute, ComRequest, ITLSInfo } from "../../../share/common";
 import Grid from "../table";
 
-import { ActionInfoIcon, ActionMoreIcon, TLSIcon } from "../common";
+import { ActionInfoIcon, ActionMoreIcon, infoLevel, TLSIcon } from "../common";
 import { CheckmarkSquareRegular, ShieldQuestionRegular, WarningRegular } from "@fluentui/react-icons";
 import { useParams } from "react-router";
 
 
-// const getLevel = (item: ITLSInfo) => {
-//   let rs = 'unknown';
-//   if (item && item.list) {
-//     for (const it of item.list) {
-//       if (it.security === 'low') {
-//         return 'low'
-//       }
-//       if (it.security === 'high') {
-//         rs = it.security;
-//       }
-//     }
-//   }
-//   return rs;
-// }
-
 function Component() {
   const tlsList = useStore((state) => state.tlsConvList);
-  const ipMap = new Map();
   const columns: TableColumnDefinition<ITLSInfo>[] = [
-    // createTableColumn<ITLSInfo>({
-    //   columnId: "index",
-    //   renderHeaderCell: () => 'Index',
-    //   renderCell: (item) => {
-    //     const level = getLevel(item);
-    //     let media = <ShieldQuestionRegular />;
-    //     let color = '#fabd2f';
-    //     switch (level) {
-    //       case 'high': {
-    //         media = <CheckmarkSquareRegular />;
-    //         color = '#b8bb26';
-    //         break;
-    //       }
-    //       case 'low': {
-    //         media = <WarningRegular />;
-    //         color = '#fb4934';
-    //         break;
-    //       }
-    //       default:
-    //     }
-    //     return <TableCellLayout media={media} style={{ color }}>{item.index}</TableCellLayout>;
-    //     // const id = `tcl-${item.index}`
-    //     // return <Tooltip content="Bold" relationship="label" mountNode={document.getElementById(id)}>
-    //     //   <TableCellLayout media={media} style={{ color }} id={id}>{item.index}</TableCellLayout>
-    //     // </Tooltip>
-    //   },
-    // }),
+    createTableColumn<ITLSInfo>({
+      columnId: "id",
+      renderHeaderCell: () => '',
+      renderCell: (item) => {
+        const secure = item.security || '';
+        const [color, media] = infoLevel(secure);
+        return <TableCellLayout media={media} style={{color}} ></TableCellLayout>;
+      },
+    }),
+    createTableColumn<ITLSInfo>({
+      columnId: "sni",
+      renderHeaderCell: () => 'SNI',
+      renderCell: (item) => <TableCellLayout>{item.hostname || '<none>'}</TableCellLayout>,
+    }),
+    createTableColumn<ITLSInfo>({
+      columnId: "alpn",
+      renderHeaderCell: () => 'ALPN',
+      renderCell: (item) => {
+        let str = 'N/A';
+        if(item && item.alpn){
+          str = item.alpn.join(',')
+        }
+        return <TableCellLayout>{str}</TableCellLayout>
+      },
+    }),
     createTableColumn<ITLSInfo>({
       columnId: "version",
       renderHeaderCell: () => 'Ver',
-      renderCell: (item) => {
-        let str = item.hostname;
-        return <TableCellLayout>{str}</TableCellLayout>
-      },
+      renderCell: (item) => <TableCellLayout>{item.version}</TableCellLayout>,
+    }),
+    createTableColumn<ITLSInfo>({
+      columnId: "cipher_suite",
+      renderHeaderCell: () => 'Ciphersuite',
+      renderCell: (item) => <TableCellLayout>{item.cipher_suite}</TableCellLayout>,
     }),
     createTableColumn<ITLSInfo>({
       columnId: "count",
@@ -70,86 +54,15 @@ function Component() {
         return <TableCellLayout>{str}</TableCellLayout>
       },
     }),
-    // createTableColumn<ITLSInfo>({
-    //   columnId: "cs",
-    //   renderHeaderCell: () => 'CipherSuite',
-    //   renderCell: (item) => {
-    //     let str = '';
-    //     if (item.list && item.list.length) {
-    //       for (const it of item.list) {
-    //         if (it.cipher_suite) {
-    //           str = it.cipher_suite;
-    //           break;
-    //         }
-    //       }
-    //     }
-    //     return <TableCellLayout>{str}</TableCellLayout>
-    //   },
-    // }),
-    // createTableColumn<ITLSInfo>({
-    //   columnId: "primary",
-    //   renderHeaderCell: () => 'Address',
-    //   renderCell: (item) => {
-    //     let str = '';
-    //     if (ipMap.get(item.primary) >= ipMap.get(item.second)) {
-    //       str = `${item.primary} -> ${item.second}`;
-    //     } else {
-    //       str = `${item.second} -> ${item.primary}`;
-    //     }
-    //     return <TableCellLayout> {str} </TableCellLayout>
-    //   },
-    // }),
-    // createTableColumn<ITLSInfo>({
-    //   columnId: "count",
-    //   renderHeaderCell: () => 'Count',
-    //   renderCell: (item) => <TableCellLayout>{item.list.length}</TableCellLayout>,
-    // }),
-    // createTableColumn<ITLSInfo>({
-    //   columnId: "alpn",
-    //   renderHeaderCell: () => 'ALPN',
-    //   renderCell: (item) => {
-    //     let str = 'N/A';
-    //     if (item.list && item.list.length) {
-    //       const set = new Set();
-    //       for (const it of item.list) {
-    //         if (it && it.alpn) {
-    //           for (const p of it.alpn) {
-    //             set.add(p)
-    //           }
-    //         }
-    //       }
-    //       str = [...set].join(', ')
-    //     }
-    //     return <TableCellLayout>{str}</TableCellLayout>
-    //   },
-    // }),
-    // createTableColumn<ITLSInfo>({
-    //   columnId: "sni",
-    //   renderHeaderCell: () => 'SNI',
-    //   renderCell: (item) => {
-    //     let str = 'N/A';
-    //     if (item.list && item.list.length) {
-    //       const set = new Set();
-    //       for (const it of item.list) {
-    //         if (it.hostname) {
-    //           set.add(it.hostname);
-    //         }
-    //       }
-    //       str = [...set].join(', ')
-    //     }
-    //     return <TableCellLayout>{str}</TableCellLayout>
-    //   },
-    // }),
-    // createTableColumn<ITLSInfo>({
-    //   columnId: "ops",
-    //   renderHeaderCell: () => "action",
-    //   renderCell: (_item) => {
-    //     return <Toolbar aria-label="Default" size="small">
-    //       <ToolbarButton icon={ActionInfoIcon()} onClick={() => { }} />
-    //       <ToolbarButton icon={ActionMoreIcon()}/>
-    //     </Toolbar>
-    //   },
-    // }),
+
+    createTableColumn<ITLSInfo>({
+      columnId: "addr",
+      renderHeaderCell: () => 'IP',
+      renderCell: (item) => {
+        const str = `${item.addr_1} -> ${item.addr_2}`;
+        return <TableCellLayout>{str}</TableCellLayout>
+      },
+    }),
   ];
   const pageSize = 20;
   const { index } = useParams();
@@ -184,9 +97,9 @@ function Component() {
     { name: `${index}`, path: "/tls/" + index }
   ]
   const columnSizingOptions = {
-    index: {
-      minWidth: 70,
-      idealWidth: 70,
+    id: {
+      minWidth: 30,
+      idealWidth: 30,
       autoFitColumns: true,
     },
     version: {
@@ -226,10 +139,10 @@ function Component() {
       defaultWidth: 300,
       autoFitColumns: true,
     },
-    ops: {
-      idealWidth: 100,
-      minWidth: 80,
-      defaultWidth: 80,
+    cipher_suite: {
+      idealWidth: 300,
+      minWidth: 300,
+      defaultWidth: 300,
       autoFitColumns: true,
     }
   };

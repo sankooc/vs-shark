@@ -24,7 +24,7 @@ use crate::{
         util::date_str,
     },
     files::{pcap::PCAP, pcapng::PCAPNG},
-    protocol::{detail, link_type_map, parse, summary},
+    protocol::{application::dns, detail, link_type_map, parse, summary},
 };
 use anyhow::{bail, Result};
 use concept::{Criteria, Field, FrameInfo, FrameInternInfo, ListResult, ProgressStatus};
@@ -598,6 +598,16 @@ where
         add_field_label_no_range!(f, format!("Capture length: {}", size));
         f
     }
+
+    pub fn frame_datasource(&self, frame: &Frame) -> Option<DataSource> {
+        if let Some(range) = frame.frame_range() {
+            if let Ok(data) = self.loader.load(&range) {
+                let ds = DataSource::create(data, range);
+                return Some(ds);
+            }
+        }
+        None
+    }
     pub fn select_frame(&self, index: usize) -> Option<(Vec<Field>, Vec<DataSource>)> {
         if let Some(frame) = self.frame(index) {
             if let Some(range) = frame.frame_range() {
@@ -791,20 +801,28 @@ where
         }
         list
     }
-    fn intern_tls_conv_from_index(&self, conversaction_index: usize) -> Option<TLSConversation> {
+    fn intern_tls_conv_from_index(&self, conversaction_index: usize, complete: bool) -> Option<TLSConversation> {
         if let Some(conv) = self.ctx.conversation_list.get(conversaction_index) {
             let mut rs = TLSConversation::new(conversaction_index, conv.primary.clone(), conv.second.clone());
-            // let mut tls_map = IndexHashMap::default();
+            let primary_host = &conv.primary;
+            let second_host = &conv.second;
             let mut map = FastHashMap::default();
             for connection in &conv.connections {
                 let meta = &connection.tls_meta;
                 if meta.exists() {
+                    let p_port = connection.primary.port;
+                    let s_port = connection.second.port;
+
                     let mut item = TLSItem::default();
                     if let Some(index) = meta.client() {
                         self.intern_resolve_tls_handshake(index, 1, &mut item).ok();
                     }
                     if let Some(index) = meta.server() {
                         self.intern_resolve_tls_handshake(index, 2, &mut item).ok();
+                    }
+                    if complete {
+                        item.addr_1 = Some(format!("{primary_host}:{p_port}"));
+                        item.addr_2 = Some(format!("{second_host}:{s_port}"));
                     }
                     let key = item.get_trait();
                     let _item = map.entry(key).or_insert(item);
@@ -830,7 +848,7 @@ where
             let _list: &[usize] = &list[start..end];
             let mut items = vec![];
             for t_index in _list {
-                if let Some(item) = self.intern_tls_conv_from_index(*t_index) {
+                if let Some(item) = self.intern_tls_conv_from_index(*t_index, false) {
                     items.push(item);
                 }
             }
@@ -839,7 +857,7 @@ where
     }
 
     pub fn tls_conv_list(&self, conv_index: usize, cri: Criteria) -> ListResult<TLSItem> {
-        if let Some(conv) = self.intern_tls_conv_from_index(conv_index) {
+        if let Some(conv) = self.intern_tls_conv_from_index(conv_index, true) {
             paging(&conv.list, cri)
         } else {
             ListResult::new(cri.start, 0, vec![])
@@ -873,14 +891,26 @@ where
 
     pub fn dns_records(&self, cri: Criteria) -> ListResult<DNSRecord> {
         let list = self.intern_dns_list();
-        let convert = | f: &(u16, Option<FrameIndex>, Option<FrameIndex>)| DNSRecord::convert(self, f);
+        let convert = |f: &(u16, Option<FrameIndex>, Option<FrameIndex>)| DNSRecord::convert(self, f);
         paging_into(&list, cri, convert)
+    }
+    pub fn dns_record(&self, index: usize) {
+        if let Some(frame) = self.ctx.list.get(index) {
+            if let Some(ds) = self.frame_datasource(frame) {
+                let mut reader = Reader::new(&ds);
+                let mut field = Field::children();
+                if let Ok(_) = dns::Visitor::_detail(&mut field, &mut reader) {
+                    // parse_dns_name(reader, start_offset)?
+                }
+            }
+        }
     }
 }
 
-
-
-fn paging<T>(list: &[T], cri: Criteria) -> ListResult<T> where T: Clone {
+fn paging<T>(list: &[T], cri: Criteria) -> ListResult<T>
+where
+    T: Clone,
+{
     let Criteria { start, size } = cri;
     let total = list.len();
     let end = cmp::min(start + size, total);
@@ -892,7 +922,10 @@ fn paging<T>(list: &[T], cri: Criteria) -> ListResult<T> where T: Clone {
     }
 }
 
-fn paging_into<T, R, F>(list: &[T], cri: Criteria, convert: F) -> ListResult<R> where F: Fn(&T) -> R{
+fn paging_into<T, R, F>(list: &[T], cri: Criteria, convert: F) -> ListResult<R>
+where
+    F: Fn(&T) -> R,
+{
     let Criteria { start, size } = cri;
     let total = list.len();
     let end = cmp::min(start + size, total);
@@ -903,7 +936,6 @@ fn paging_into<T, R, F>(list: &[T], cri: Criteria, convert: F) -> ListResult<R> 
         ListResult::new(start, total, items)
     }
 }
-
 
 fn resolve_sni(reader: &mut Reader, item: &mut TLSItem) -> Result<()> {
     while reader.left() >= 4 {

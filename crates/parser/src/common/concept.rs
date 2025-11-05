@@ -474,6 +474,7 @@ pub struct DNSRecord {
     transaction_id: u16,
     source: String,
     target: String,
+    response: Option<usize>,
     latency: (f64, NString),
     // content: String,
 }
@@ -503,6 +504,7 @@ impl DNSRecord {
                 if start > 0 {
                     rs.latency = period(frame.info.time, frame.info.time.saturating_sub(start));
                 }
+                rs.response = Some(index as usize);
             }
         }
         rs
@@ -687,6 +689,8 @@ pub struct TLSItem {
     pub cipher_suite: Option<String>,
     pub security: String,
     pub count: usize,
+    pub addr_1: Option<String>,
+    pub addr_2: Option<String>,
 }
 
 // impl Default for TLSItem {

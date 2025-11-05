@@ -10,7 +10,7 @@ function Component() {
     const columns: TableColumnDefinition<IDNSRecord>[] = [
         createTableColumn<IDNSRecord>({
             columnId: "transaction",
-            renderHeaderCell: () => 'Id',
+            renderHeaderCell: () => 'TID',
             renderCell: (item) => {
                 return (
                     <TableCellLayout>
@@ -62,7 +62,7 @@ function Component() {
     ]
     const columnSizingOptions = {
         sender: {
-            minWidth: 200,
+            minWidth: 250,
             idealWidth: 250,
             autoFitColumns: true,
         },
