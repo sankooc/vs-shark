@@ -25,6 +25,7 @@ export enum ComType {
   UDP_CONNECTIONS = "UDP_CONNECTIONS",
   DNS_CONNECTIONS = "DNS_CONNECTIONS",
   TLS_CONNECTIONS = "TLS_CONNECTIONS",
+  TLS_CONVERSATION_ITEMS = "TLS_CONVERSATION_ITEMS",
   HTTP_DETAIL_REQ = "http_detail_req",
   HTTP_DETAIL_RES = "http_detail_res",
   STAT_REQ = "STAT_REQ",
@@ -173,6 +174,7 @@ export interface ITLSInfo {
   cipher_suite: string,
   alpn: string[],
   security: string,
+  count: number,
 }
 export interface ITLSConnect {
   index?: number,

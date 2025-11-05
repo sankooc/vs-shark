@@ -1,10 +1,11 @@
 import { useStore } from "../../store";
-import { createTableColumn, TableCellLayout, TableColumnDefinition } from "@fluentui/react-components";
+import { createTableColumn, TableCellLayout, TableColumnDefinition, Toolbar, ToolbarButton, Tooltip } from "@fluentui/react-components";
 import { compute, ComRequest, ITLSConnect } from "../../../share/common";
 import Grid from "../table";
 
-import { TLSIcon } from "../common";
+import { ActionInfoIcon, ActionMoreIcon, TLSIcon } from "../common";
 import { CheckmarkSquareRegular, ShieldQuestionRegular, WarningRegular } from "@fluentui/react-icons";
+import { useNavigate, useParams } from "react-router";
 
 
 const getLevel = (item: ITLSConnect) => {
@@ -24,7 +25,15 @@ const getLevel = (item: ITLSConnect) => {
 
 function Component() {
   const tlsList = useStore((state) => state.tlsList);
+  const navigate = useNavigate();
   const ipMap = new Map();
+  const onClick = (item: ITLSConnect) => {
+    // cachehttp(item);
+    const index = item.index;
+    if (undefined != index) {
+      navigate('/tls/' + index);
+    }
+  };
   const columns: TableColumnDefinition<ITLSConnect>[] = [
     createTableColumn<ITLSConnect>({
       columnId: "index",
@@ -46,7 +55,11 @@ function Component() {
           }
           default:
         }
-        return <TableCellLayout media={media} style={{color}}></TableCellLayout>
+        return <TableCellLayout media={media} style={{ color }}>{item.index}</TableCellLayout>;
+        // const id = `tcl-${item.index}`
+        // return <Tooltip content="Bold" relationship="label" mountNode={document.getElementById(id)}>
+        //   <TableCellLayout media={media} style={{ color }} id={id}>{item.index}</TableCellLayout>
+        // </Tooltip>
       },
     }),
     createTableColumn<ITLSConnect>({
@@ -65,31 +78,31 @@ function Component() {
         return <TableCellLayout>{str}</TableCellLayout>
       },
     }),
-    createTableColumn<ITLSConnect>({
-      columnId: "cs",
-      renderHeaderCell: () => 'CipherSuite',
-      renderCell: (item) => {
-        let str = '';
-        if (item.list && item.list.length) {
-          for (const it of item.list) {
-            if (it.cipher_suite) {
-              str = it.cipher_suite;
-              break;
-            }
-          }
-        }
-        return <TableCellLayout>{str}</TableCellLayout>
-      },
-    }),
+    // createTableColumn<ITLSConnect>({
+    //   columnId: "cs",
+    //   renderHeaderCell: () => 'CipherSuite',
+    //   renderCell: (item) => {
+    //     let str = '';
+    //     if (item.list && item.list.length) {
+    //       for (const it of item.list) {
+    //         if (it.cipher_suite) {
+    //           str = it.cipher_suite;
+    //           break;
+    //         }
+    //       }
+    //     }
+    //     return <TableCellLayout>{str}</TableCellLayout>
+    //   },
+    // }),
     createTableColumn<ITLSConnect>({
       columnId: "primary",
       renderHeaderCell: () => 'Address',
       renderCell: (item) => {
         let str = '';
         if (ipMap.get(item.primary) >= ipMap.get(item.second)) {
-          str = `${item.primary}-${item.second}`;
+          str = `${item.primary} -> ${item.second}`;
         } else {
-          str = `${item.second}-${item.primary}`;
+          str = `${item.second} -> ${item.primary}`;
         }
         return <TableCellLayout> {str} </TableCellLayout>
       },
@@ -110,7 +123,6 @@ function Component() {
             if (it && it.alpn) {
               for (const p of it.alpn) {
                 set.add(p)
-
               }
             }
           }
@@ -134,6 +146,16 @@ function Component() {
           str = [...set].join(', ')
         }
         return <TableCellLayout>{str}</TableCellLayout>
+      },
+    }),
+    createTableColumn<ITLSConnect>({
+      columnId: "ops",
+      renderHeaderCell: () => "action",
+      renderCell: (_item) => {
+        return <Toolbar aria-label="Default" size="small">
+          <ToolbarButton icon={ActionInfoIcon()} onClick={() => { onClick(_item) }} />
+          <ToolbarButton icon={ActionMoreIcon()}/>
+        </Toolbar>
       },
     }),
   ];
@@ -164,12 +186,12 @@ function Component() {
   }
 
   const breads = [
-    { name: "TLS", icon: <TLSIcon />, path: "/tls/hosts" }
+    { name: "TLS", icon: <TLSIcon />, path: "/tlslist" }
   ]
   const columnSizingOptions = {
     index: {
-      minWidth: 50,
-      idealWidth: 50,
+      minWidth: 70,
+      idealWidth: 70,
       autoFitColumns: true,
     },
     version: {
@@ -203,7 +225,18 @@ function Component() {
       idealWidth: 50,
       autoFitColumns: true,
     },
-
+    sni: {
+      minWidth: 500,
+      idealWidth: 300,
+      defaultWidth: 300,
+      autoFitColumns: true,
+    },
+    ops: {
+      idealWidth: 100,
+      minWidth: 80,
+      defaultWidth: 80,
+      autoFitColumns: true,
+    }
   };
   const gridProps = {
     columns, pageSize, columnSizingOptions, load, breads

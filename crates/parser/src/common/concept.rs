@@ -656,7 +656,7 @@ impl HttpMessageDetail {
     }
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Debug)]
 pub struct TLSConversation {
     pub index: usize,
     pub primary: String,
@@ -675,7 +675,7 @@ impl TLSConversation {
     }
 }
 
-#[derive(Default, Serialize, Clone)]
+#[derive(Default, Serialize, Clone, Debug)]
 pub struct TLSItem {
     pub hostname: Option<String>,
     pub alpn: Option<Vec<String>>,
@@ -686,7 +686,7 @@ pub struct TLSItem {
     pub version: Option<String>,
     pub cipher_suite: Option<String>,
     pub security: String,
-    // pub count: usize,
+    pub count: usize,
 }
 
 // impl Default for TLSItem {
@@ -701,13 +701,28 @@ impl TLSItem {
     // }
     pub fn set_cipher_suite(&mut self, code: u16) {
         self.cs_code = code;
-        let suites = crate::constants::tls_cipher_suites_mapper(code).to_string();
-        self.cipher_suite = Some(suites);
     }
     pub fn set_version(&mut self, code: u16) {
         self.version_code = code;
-        self.version = tls_version_map(code).map(String::from);
-        self.security = format!("{:?}", security_level(self.version_code, self.cs_code)).to_lowercase()
+        // self.version = tls_version_map(code).map(String::from);
+        // self.security = format!("{:?}", security_level(self.version_code, self.cs_code)).to_lowercase()
+    }
+    pub fn update(&mut self){
+        self.count += 1;
+        if self.version_code != 0 && self.version.is_none() {
+            self.version = tls_version_map(self.version_code).map(String::from);
+        }
+        if self.cs_code != 0 && self.cipher_suite.is_none() {
+            let suites = crate::constants::tls_cipher_suites_mapper(self.cs_code).to_string();
+            self.cipher_suite = Some(suites);
+        }
+        if self.security.is_empty() {
+            self.security = format!("{:?}", security_level(self.version_code, self.cs_code)).to_lowercase()
+        }
+    }
+    
+    pub fn get_trait(&self) -> (Option<String>, u16, u16){
+        (self.hostname.clone(), self.cs_code, self.version_code)
     }
 
     // pub fn update(&mut self) {
@@ -750,7 +765,7 @@ pub fn security_level(version: u16, ciphersuite: u16) -> SecurityLevel {
                 LOW
             }
         }
-        0x0301 | 0x0302 | 0x0300 => LOW,
+        0x0300..=0x0302 => LOW,
         _ => UNKNOWN,
     }
 }

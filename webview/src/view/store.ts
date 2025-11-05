@@ -10,6 +10,7 @@ import {
   IFrameSelect,
   IHttpDetail,
   ITLSConnect,
+  ITLSInfo,
   PcapFile,
   StatRequest,
   VRange,
@@ -37,6 +38,7 @@ interface PcapState {
   udpList: (data: any) => Promise<IListResult<IUDPConversation>>;
   dnsList: (data: any) => Promise<IListResult<IDNSRecord>>;
   tlsList: (data: any) => Promise<IListResult<ITLSConnect>>;
+  tlsConvList: (data: any) => Promise<IListResult<ITLSInfo>>;
   connectionList: (data: any) => Promise<IListResult<IVConnection>>;
   httpList: (data: any) => Promise<IListResult<IVHttpConnection>>;
   httpDetail: (index: number) => Promise<IHttpDetail[]>
@@ -116,6 +118,7 @@ export const useStore = create<PcapState>()((set) => {
       case ComType.UDP_CONNECTIONS:
       case ComType.DNS_CONNECTIONS:
       case ComType.TLS_CONNECTIONS:
+      case ComType.TLS_CONVERSATION_ITEMS:
         emitter.emit(id, deserialize(body));
         break;
       case ComType.FRAME_SCOPE_RES:
@@ -164,6 +167,10 @@ export const useStore = create<PcapState>()((set) => {
     tlsList: (data: any) => {
       const req = new ComMessage(ComType.REQUEST, data);
       return doRequest<IListResult<ITLSConnect>>(req);
+    },
+    tlsConvList: (data: any) => {
+      const req = new ComMessage(ComType.REQUEST, data);
+      return doRequest<IListResult<ITLSInfo>>(req);
     },
     connectionList: (data: any): Promise<IListResult<IVConnection>> => {
       const req = new ComMessage(ComType.REQUEST, data);

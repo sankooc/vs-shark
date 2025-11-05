@@ -110,6 +110,11 @@ export abstract class PCAPClient {
             this.emitMessage(ComMessage.new(ComType.TLS_CONNECTIONS, rs, requestId));
             return;
           }
+          case "tls_conv": {
+            const rs = this.ctx.list_tls_conv(param.index, start, size);
+            this.emitMessage(ComMessage.new(ComType.TLS_CONVERSATION_ITEMS, rs, requestId));
+            return;
+          }
           default:
             return;
         }

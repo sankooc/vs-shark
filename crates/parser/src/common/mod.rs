@@ -646,21 +646,10 @@ where
     }
     pub fn connections(&self, conversation_index: usize, cri: Criteria) -> ListResult<VConnection> {
         if let Some(connects) = self.ctx.conversation_list.get(conversation_index) {
-            let Criteria { start, size } = cri;
-            let total = connects.connections.len();
-            let end = cmp::min(start + size, total);
-            if end <= start {
-                return ListResult::empty();
-            }
-            let _data = &connects.connections[start..end];
-            let mut list = vec![];
-            for item in _data {
-                list.push(item.into());
-            }
-            return ListResult::new(start, total, list);
+            paging_into(&connects.connections, cri, |f| f.into())
+        } else {
+            ListResult::empty()
         }
-
-        ListResult::empty()
     }
     pub fn http_connections(&self, cri: Criteria, filter: Option<HttpCriteria>) -> ListResult<VHttpConnection> {
         let Criteria { start, size } = cri;
@@ -720,15 +709,8 @@ where
         map.values().cloned().collect()
     }
     pub fn udp_conversations(&self, cri: Criteria, filter: Option<String>) -> ListResult<UDPConversation> {
-        let Criteria { start, size } = cri;
         let list = self.intern_udp_conversations(filter);
-        let total = list.len();
-        let end = cmp::min(start + size, total);
-        if end <= start {
-            return ListResult::new(start, 0, vec![]);
-        }
-        let data = list[start..end].to_vec();
-        ListResult::new(start, total, data)
+        paging(&list, cri)
     }
 
     fn intern_parse_handshake(&self, tls_data: &TlsData, msg_type: u8, item: &mut TLSItem) -> Result<()> {
@@ -812,6 +794,8 @@ where
     fn intern_tls_conv_from_index(&self, conversaction_index: usize) -> Option<TLSConversation> {
         if let Some(conv) = self.ctx.conversation_list.get(conversaction_index) {
             let mut rs = TLSConversation::new(conversaction_index, conv.primary.clone(), conv.second.clone());
+            // let mut tls_map = IndexHashMap::default();
+            let mut map = FastHashMap::default();
             for connection in &conv.connections {
                 let meta = &connection.tls_meta;
                 if meta.exists() {
@@ -822,9 +806,12 @@ where
                     if let Some(index) = meta.server() {
                         self.intern_resolve_tls_handshake(index, 2, &mut item).ok();
                     }
-                    rs.list.push(item);
+                    let key = item.get_trait();
+                    let _item = map.entry(key).or_insert(item);
+                    _item.update();
                 }
             }
+            rs.list = map.into_values().collect();
             Some(rs)
         } else {
             None
@@ -848,6 +835,14 @@ where
                 }
             }
             ListResult::new(start, total, items)
+        }
+    }
+
+    pub fn tls_conv_list(&self, conv_index: usize, cri: Criteria) -> ListResult<TLSItem> {
+        if let Some(conv) = self.intern_tls_conv_from_index(conv_index) {
+            paging(&conv.list, cri)
+        } else {
+            ListResult::new(cri.start, 0, vec![])
         }
     }
 
@@ -877,19 +872,38 @@ where
     }
 
     pub fn dns_records(&self, cri: Criteria) -> ListResult<DNSRecord> {
-        let Criteria { start, size } = cri;
         let list = self.intern_dns_list();
-        let total = list.len();
-        let end = cmp::min(start + size, total);
-        if end <= start {
-            ListResult::new(start, 0, vec![])
-        } else {
-            let _list = &list[start..end];
-            let items = _list.iter().map(|f| DNSRecord::convert(self, f)).collect();
-            ListResult::new(start, total, items)
-        }
+        let convert = | f: &(u16, Option<FrameIndex>, Option<FrameIndex>)| DNSRecord::convert(self, f);
+        paging_into(&list, cri, convert)
     }
 }
+
+
+
+fn paging<T>(list: &[T], cri: Criteria) -> ListResult<T> where T: Clone {
+    let Criteria { start, size } = cri;
+    let total = list.len();
+    let end = cmp::min(start + size, total);
+    if end <= start {
+        ListResult::new(start, 0, vec![])
+    } else {
+        let items = list[start..end].to_vec();
+        ListResult::new(start, total, items)
+    }
+}
+
+fn paging_into<T, R, F>(list: &[T], cri: Criteria, convert: F) -> ListResult<R> where F: Fn(&T) -> R{
+    let Criteria { start, size } = cri;
+    let total = list.len();
+    let end = cmp::min(start + size, total);
+    if end <= start {
+        ListResult::new(start, 0, vec![])
+    } else {
+        let items = list[start..end].iter().map(convert).collect();
+        ListResult::new(start, total, items)
+    }
+}
+
 
 fn resolve_sni(reader: &mut Reader, item: &mut TLSItem) -> Result<()> {
     while reader.left() >= 4 {
