@@ -21,7 +21,10 @@ import HttpDetailComponent from "./http/detail";
 import OverviewComponent from "./overview";
 import UDPComponent from './udp';
 import DNSComponent from './dns';
-import TLSHostList from './tls/hosts';
+import DNSRecordComponent from './dns/sub';
+import TLSHostList from './tls';
+import TLSConvList from './tls/sub';
+
 import { useStore } from "../store";
 import LoadingComponent from './loading';
 import { ConversationIcon, DNSIcon, FrameIcon, HttpIcon, OverviewIcon, StatisticTabIcon, TLSIcon, UDPTabIcon } from "./common";
@@ -56,7 +59,7 @@ const Nav = () => {
     icon: HttpIcon,
   }, {
     name: 'TLS',
-    path: 'tls/hosts',
+    path: 'tlslist',
     icon: TLSIcon,
   }, {
     name: 'DNS',
@@ -167,9 +170,11 @@ const Basic = () => {
             <Route path="/conversation/:conversationIndex" element={<ConversationDetailComponent />} />
             <Route path="/https" element={<HttpComponent />} />
             <Route path="/http/detail/:httpIndex" element={<HttpDetailComponent />} />
-            <Route path="/tls/hosts" element={<TLSHostList />} />
+            <Route path="/tlslist" element={<TLSHostList />} />
+            <Route path="/tls/:index" element={<TLSConvList/>}/>
             <Route path="/udp" element={<UDPComponent />} />
             <Route path="/dns" element={<DNSComponent />} />
+            <Route path="/dns/:index" element={<DNSRecordComponent />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </div>

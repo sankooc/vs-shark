@@ -29,8 +29,9 @@ impl FileBatchReader {
         self.count
     }
     pub fn read(&mut self) -> std::io::Result<(u64, Vec<u8>)> {
-        let mut buffer = Vec::with_capacity(self.block_size as usize);
-        buffer.resize(self.block_size as usize, 0);
+        // let mut buffer = Vec::with_capacity(self.block_size as usize);
+        // buffer.resize(self.block_size as usize, 0);
+        let mut buffer = vec![0; self.block_size as usize];
         let n = self.file.read(&mut buffer)?;
         if n == 0 {
             return Err(std::io::Error::new(ErrorKind::OutOfMemory, "overflow"));

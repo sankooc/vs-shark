@@ -47,37 +47,21 @@ impl WContext {
     #[wasm_bindgen]
     pub fn update(&mut self, s: &Uint8Array) -> Option<String> {
         let slice = s.to_vec();
-        self.ctx.update(slice).ok().as_ref().map(jsonlize).flatten()
+        self.ctx.update(slice).ok().as_ref().and_then(jsonlize)
     }
     #[wasm_bindgen]
     pub fn update_slice(&mut self, s: &[u8]) -> Option<String> {
-        self.ctx.update_slice(s).ok().as_ref().map(jsonlize).flatten()
+        self.ctx.update_slice(s).ok().as_ref().and_then(jsonlize)
         // self.ctx.update_slice(s).unwrap().to_json()
-    }
-
-    #[wasm_bindgen]
-    pub fn count(&self, catelog: String) -> usize {
-        self.ctx.get_count(&catelog)
-    }
-
-    #[wasm_bindgen]
-    pub fn list(&mut self, catelog: String, start: usize, size: usize) -> Option<String> {
-        let cri = Criteria { start, size };
-        match catelog.as_str() {
-            "frame" => {
-                let rs =self.ctx.frames_by(cri);
-                jsonlize(&rs)
-            },
-            _ => None,
-        }
     }
 
     #[wasm_bindgen]
     pub fn select(&self, catelog: String, index: usize) -> Option<String> {
         match catelog.as_str() {
             "frame" => {
-                self.ctx.select_frame(index).map(|(items, _)| serde_json::to_string(&items).ok()).flatten()
-            },
+                // self.ctx.select_frame(index).map(|(items, _)| serde_json::to_string(&items).ok()).flatten()
+                self.ctx.select_frame(index).and_then(|(items, _)| serde_json::to_string(&items).ok())
+            }
             _ => None,
         }
     }
@@ -90,6 +74,13 @@ impl WContext {
             return rs;
         }
         FrameResult::empty()
+    }
+    
+    #[wasm_bindgen]
+    pub fn list_frames(&mut self, start: usize, size: usize) -> Option<String> {
+        let cri = Criteria { start, size };
+        let rs = self.ctx.frames_by(cri);
+        jsonlize(&rs)
     }
     #[wasm_bindgen]
     pub fn list_conversations(&self, start: usize, size: usize, ip: String) -> Option<String> {
@@ -120,40 +111,46 @@ impl WContext {
         jsonlize(&list)
     }
     #[wasm_bindgen]
+    pub fn list_tls_conv(&self, index: usize, start: usize, size: usize) -> Option<String> {
+        let list = self.ctx.tls_conv_list(index, Criteria { start, size });
+        jsonlize(&list)
+    }
+    #[wasm_bindgen]
     pub fn list_dns(&self, start: usize, size: usize) -> Option<String> {
         let list = self.ctx.dns_records(Criteria { start, size });
         jsonlize(&list)
     }
     #[wasm_bindgen]
-    pub fn http_detail(&self, index: usize) -> Option<Vec<HttpDetail>> {
-        if let Some(data) = self.ctx.http_detail(index) {
-            Some(data.into_iter().map(HttpDetail::from).collect())
-        } else {
-            None
-        }
+    pub fn dns_records(&self, index: usize, start: usize, size: usize) -> Option<String> {
+        let list = self.ctx.dns_record(index, Criteria { start, size });
+        jsonlize(&list)
     }
-    
+    #[wasm_bindgen]
+    pub fn http_detail(&self, index: usize) -> Option<Vec<HttpDetail>> {
+        self.ctx.http_detail(index).map(|data| data.into_iter().map(HttpDetail::from).collect())
+    }
+
     #[wasm_bindgen]
     pub fn stat(&self, field: String) -> Option<String> {
-        let ctx = self.ctx.context();
+        // let ctx = self.ctx.context();
         let items = match field.as_str() {
-            "http_host" => ctx.stat_http_host(),
-            "ip4" => ctx.stat_ip4(),
-            "ip6" => ctx.stat_ip6(),
+            "http_host" => self.ctx.stat_http_host(),
+            "ip4" => self.ctx.stat_ip4(),
+            "ip6" => self.ctx.stat_ip6(),
             "http_data" => {
-                let rs = ctx.stat_http_data();
+                let rs = self.ctx.stat_http();
                 return jsonlize(&rs);
-            },
-            "frame" =>  {
-                let rs = ctx.stat_frame();
+            }
+            "frame" => {
+                let rs = self.ctx.stat_frame();
                 return jsonlize(&rs);
-            },
-            "ip_address" => self.ctx.ipaddress_distribute(),
+            }
+            "ip_address" => self.ctx.stat_ipaddress_distribute(),
             _ => {
                 return None;
-            },
+            }
         };
-        return jsonlize(&items)
+        jsonlize(&items)
     }
 }
 

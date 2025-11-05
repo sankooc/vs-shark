@@ -7,7 +7,10 @@ use std::hash::Hash;
 
 use serde::Serialize;
 
-use crate::common::{connection::Connection, enum_def::Protocol, FastHashMap, Instance, NString};
+use crate::{
+    common::{connection::Connection, enum_def::Protocol, FastHashMap, Instance, NString},
+    protocol::transport::tls::tls_version_map,
+};
 
 use super::enum_def::PacketStatus;
 
@@ -467,18 +470,22 @@ pub fn period(sample: u64, time: u64) -> (f64, NString) {
 }
 
 #[derive(Serialize, Default, Debug)]
-pub struct DNSRecord {
+pub struct DNSResponse {
     transaction_id: u16,
     source: String,
     target: String,
+    response: Option<usize>,
+    index: Option<usize>,
     latency: (f64, NString),
     // content: String,
 }
 
-impl DNSRecord {
+impl DNSResponse {
     pub fn convert<T>(instance: &Instance<T>, item: &(u16, Option<FrameIndex>, Option<FrameIndex>)) -> Self {
-        let mut rs = DNSRecord::default();
-        rs.transaction_id = item.0;
+        let mut rs = DNSResponse {
+            transaction_id: item.0,
+            ..Default::default()
+        };
         let mut start = 0;
         if let Some(index) = item.1 {
             if let Some(frame) = instance.frame(index as usize) {
@@ -492,12 +499,14 @@ impl DNSRecord {
 
         if let Some(index) = item.2 {
             if let Some(frame) = instance.frame(index as usize) {
+                rs.index = Some(index as usize);
                 if let Some((ip, _)) = frame.addresses(instance.context()) {
                     rs.target = ip;
                 }
                 if start > 0 {
                     rs.latency = period(frame.info.time, frame.info.time.saturating_sub(start));
                 }
+                rs.response = Some(index as usize);
             }
         }
         rs
@@ -512,31 +521,28 @@ pub struct TLSInfo {
 }
 
 impl TLSInfo {
-    pub fn exists(&self) -> bool{
+    pub fn exists(&self) -> bool {
         self.client_hello.is_some() || self.server_hello.is_some() || self.cert.is_some()
     }
-    pub fn update_client(&mut self, index: FrameIndex){
+    pub fn update_client(&mut self, index: FrameIndex) {
         self.client_hello = Some(index);
     }
-    pub fn update_server(&mut self, index: FrameIndex){
+    pub fn update_server(&mut self, index: FrameIndex) {
         self.server_hello = Some(index);
     }
-    pub fn update_cert(&mut self, index: FrameIndex){
+    pub fn update_cert(&mut self, index: FrameIndex) {
         self.cert = Some(index);
     }
     pub fn client(&self) -> Option<FrameIndex> {
-        return self.client_hello
+        self.client_hello
     }
     pub fn server(&self) -> Option<FrameIndex> {
-        return self.server_hello
+        self.server_hello
     }
     pub fn cert(&self) -> Option<FrameIndex> {
-        return self.cert
+        self.cert
     }
-
 }
-
-
 
 #[derive(Clone, Copy)]
 pub enum NameService {
@@ -654,39 +660,77 @@ impl HttpMessageDetail {
     }
 }
 
-
-#[derive(Serialize)]
+#[derive(Serialize, Debug)]
 pub struct TLSConversation {
     pub index: usize,
     pub primary: String,
     pub second: String,
-    pub list: Vec<TLSItem>
+    pub list: Vec<TLSItem>,
 }
 
 impl TLSConversation {
     pub fn new(index: usize, primary: String, second: String) -> Self {
         Self {
             index,
-            primary, second,
-            list: vec![]
+            primary,
+            second,
+            list: vec![],
         }
     }
 }
 
-
-#[derive(Default, Serialize, Clone)]
+#[derive(Default, Serialize, Clone, Debug)]
 pub struct TLSItem {
     pub hostname: Option<String>,
     pub alpn: Option<Vec<String>>,
+    #[serde(skip)]
+    pub version_code: u16,
+    #[serde(skip)]
+    pub cs_code: u16,
     pub version: Option<String>,
     pub cipher_suite: Option<String>,
-    // pub count: usize,
+    pub security: String,
+    pub count: usize,
+    pub addr_1: Option<String>,
+    pub addr_2: Option<String>,
 }
 
+// impl Default for TLSItem {
+//     fn default() -> Self {
+//         Self { security: String::from("unknown"), ..Default::default()  }
+//     }
+// }
+
 impl TLSItem {
-    pub fn new(hostname: Option<String>) -> Self {
-        Self { hostname, ..Default::default()}
+    // pub fn new(hostname: Option<String>) -> Self {
+    //     Self { hostname, security: String::from("unknown"), ..Default::default() }
+    // }
+    pub fn set_cipher_suite(&mut self, code: u16) {
+        self.cs_code = code;
     }
+    pub fn set_version(&mut self, code: u16) {
+        self.version_code = code;
+        // self.version = tls_version_map(code).map(String::from);
+        // self.security = format!("{:?}", security_level(self.version_code, self.cs_code)).to_lowercase()
+    }
+    pub fn update(&mut self){
+        self.count += 1;
+        if self.version_code != 0 && self.version.is_none() {
+            self.version = tls_version_map(self.version_code).map(String::from);
+        }
+        if self.cs_code != 0 && self.cipher_suite.is_none() {
+            let suites = crate::constants::tls_cipher_suites_mapper(self.cs_code).to_string();
+            self.cipher_suite = Some(suites);
+        }
+        if self.security.is_empty() {
+            self.security = format!("{:?}", security_level(self.version_code, self.cs_code)).to_lowercase()
+        }
+    }
+    
+    pub fn get_trait(&self) -> (Option<String>, u16, u16){
+        (self.hostname.clone(), self.cs_code, self.version_code)
+    }
+
     // pub fn update(&mut self) {
     //     self.count += 1;
     // }
@@ -695,6 +739,42 @@ impl TLSItem {
     // }
 }
 
+
+#[derive(Clone, Copy, Default, Debug)]
+pub enum SecurityLevel {
+    LOW,
+    HIGH,
+    #[default]
+    UNKNOWN,
+}
+
+const TLS12_STRONG_CIPHERS: [u16; 9] = [
+    0xC02F, // ECDHE-RSA-AES128-GCM-SHA256
+    0xC02B, // ECDHE-ECDSA-AES128-GCM-SHA256
+    0xC030, // ECDHE-RSA-AES256-GCM-SHA384
+    0xC02C, // ECDHE-ECDSA-AES256-GCM-SHA384
+    0xCCA8, // ECDHE-RSA-CHACHA20-POLY1305
+    0xCCA9, // ECDHE-ECDSA-CHACHA20-POLY1305
+    0x009E, // DHE-RSA-AES128-GCM-SHA256
+    0x009F, // DHE-RSA-AES256-GCM-SHA384
+    0xCCAA, // DHE-RSA-CHACHA20-POLY1305
+];
+
+pub fn security_level(version: u16, ciphersuite: u16) -> SecurityLevel {
+    use SecurityLevel::*;
+    match version {
+        0x0304 => HIGH,
+        0x0303 => {
+            if TLS12_STRONG_CIPHERS.contains(&ciphersuite) {
+                HIGH
+            } else {
+                LOW
+            }
+        }
+        0x0300..=0x0302 => LOW,
+        _ => UNKNOWN,
+    }
+}
 fn decode_bytes(body_raw: &[u8], encoding: HttpEncoding) -> String {
     let decoded_data = match encoding {
         HttpEncoding::None => body_raw.to_vec(),
@@ -756,12 +836,12 @@ where
 {
     pub fn get_or_add(&mut self, key: &K) -> (usize, &mut V) {
         if let Some(val) = self.map.get(key) {
-            return (*val, self.list.get_mut(*val).unwrap());
+            (*val, self.list.get_mut(*val).unwrap())
         } else {
             let index = self.list.len();
             self.map.insert(key.clone(), index);
             self.list.push(V::default());
-            return (index, self.list.get_mut(index).unwrap());
+            (index, self.list.get_mut(index).unwrap())
         }
     }
 
@@ -776,5 +856,19 @@ where
         let rs = std::mem::take(&mut self.list);
         self.map.clear();
         rs
+    }
+}
+
+
+#[derive(Serialize, Debug, Default, Clone)]
+pub struct DNSRecord {
+    pub host: String,
+    pub rtype: String,
+    pub class: String,
+    pub info: Option<String>
+}
+impl DNSRecord {
+    pub fn new(host: String, rtype: String, class: String, info: Option<String>) -> Self {
+        Self{host, rtype, class, info}
     }
 }

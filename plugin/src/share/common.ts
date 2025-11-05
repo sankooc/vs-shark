@@ -24,7 +24,9 @@ export enum ComType {
   HTTP_CONNECTIONS = "http_connections",
   UDP_CONNECTIONS = "UDP_CONNECTIONS",
   DNS_CONNECTIONS = "DNS_CONNECTIONS",
+  DNS_RCD_CONNECTIONS = "DNS_RCD_CONNECTIONS",
   TLS_CONNECTIONS = "TLS_CONNECTIONS",
+  TLS_CONVERSATION_ITEMS = "TLS_CONVERSATION_ITEMS",
   HTTP_DETAIL_REQ = "http_detail_req",
   HTTP_DETAIL_RES = "http_detail_res",
   STAT_REQ = "STAT_REQ",
@@ -56,7 +58,7 @@ let counter = 0;
 
 const getMessageId = (type: string) => {
   const cc = counter++;
-  return `${cc}_${type}_${Date.now()}`
+  return `${cc}_${type}_${Date.now()}`;
 }
 
 export class ComMessage<T> {
@@ -172,6 +174,10 @@ export interface ITLSInfo {
   version: string,
   cipher_suite: string,
   alpn: string[],
+  security: string,
+  count: number,
+  addr_1: string,
+  addr_2: string,
 }
 export interface ITLSConnect {
   index?: number,

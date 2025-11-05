@@ -142,20 +142,21 @@ pub struct Visitor;
 impl Visitor {
     pub fn info(_: &Context, frame: &Frame) -> Option<String> {
         match &frame.protocol_field {
-            ProtocolInfoField::DNSRESPONSE(_, transaction_id) => Some(format!("NetBIOS Name Service Response) ID: 0x{transaction_id:04x}")),
-            ProtocolInfoField::DNSQUERY(_, transaction_id) => Some(format!("NetBIOS Name Service Quert) ID: 0x{transaction_id:04x}")),
+            ProtocolInfoField::DNSRESPONSE(_, transaction_id, _) => Some(format!("NetBIOS Name Service Response) ID: 0x{transaction_id:04x}")),
+            ProtocolInfoField::DNSQUERY(_, transaction_id, _) => Some(format!("NetBIOS Name Service Quert) ID: 0x{transaction_id:04x}")),
             _ => None
         }
     }
 
     pub fn parse(_: &mut Context, frame: &mut Frame, reader: &mut Reader) -> Result<Protocol> {
+        let start_offset = reader.cursor;
         let transaction_id = reader.read16(true)?;
         let flags = reader.read16(true)?;
         let is_response = (flags & 0x8000) != 0;
         frame.protocol_field = if is_response {
-            ProtocolInfoField::DNSRESPONSE(NameService::NBNS, transaction_id)
+            ProtocolInfoField::DNSRESPONSE(NameService::NBNS, transaction_id, start_offset)
         } else {
-            ProtocolInfoField::DNSQUERY(NameService::NBNS, transaction_id)
+            ProtocolInfoField::DNSQUERY(NameService::NBNS, transaction_id, start_offset)
         };
         Ok(Protocol::None)
     }

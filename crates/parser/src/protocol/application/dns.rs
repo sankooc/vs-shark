@@ -1,14 +1,16 @@
 // Copyright (c) 2025 sankooc
-// 
+//
 // This file is part of the pcapview project.
 // Licensed under the MIT License - see https://opensource.org/licenses/MIT
 
 use std::net::{Ipv4Addr, Ipv6Addr};
 
 use crate::{
-    add_field_backstep, add_field_format, add_field_format_fn, add_sub_field_with_reader, common::{
-        Frame, concept::{Field, NameService}, core::Context, enum_def::{Protocol, ProtocolInfoField}, io::Reader
-    }, constants::{dns_class_mapper, dns_type_mapper}
+    add_field_backstep, add_field_format, add_field_format_fn, add_sub_field_with_reader,
+    common::{
+        Frame, concept::{DNSRecord, Field, NameService}, core::Context, enum_def::{Protocol, ProtocolInfoField}, io::Reader
+    },
+    constants::{dns_class_mapper, dns_type_mapper},
 };
 use anyhow::Result;
 
@@ -142,19 +144,18 @@ fn format_dns_flags(flags: u16) -> Vec<String> {
     result
 }
 
-
-pub fn name_service_parse(frame: &mut Frame, reader: &mut Reader, ns_type: NameService) -> Result<Protocol>{
+pub fn name_service_parse(frame: &mut Frame, reader: &mut Reader, ns_type: NameService) -> Result<Protocol> {
+    let start_offset = reader.cursor;
     let transaction_id = reader.read16(true)?;
     let flags = reader.read16(true)?;
     let is_response = (flags & 0x8000) != 0;
     if is_response {
-        frame.protocol_field = ProtocolInfoField::DNSRESPONSE(ns_type, transaction_id);
+        frame.protocol_field = ProtocolInfoField::DNSRESPONSE(ns_type, transaction_id, start_offset);
     } else {
-        frame.protocol_field = ProtocolInfoField::DNSQUERY(ns_type,transaction_id);
+        frame.protocol_field = ProtocolInfoField::DNSQUERY(ns_type, transaction_id, start_offset);
     }
     frame.add_proto(crate::common::ProtoMask::DNS);
     Ok(Protocol::None)
-
 }
 
 pub struct Visitor;
@@ -162,12 +163,8 @@ pub struct Visitor;
 impl Visitor {
     pub fn info(_: &Context, frame: &Frame) -> Option<String> {
         match &frame.protocol_field {
-            ProtocolInfoField::DNSRESPONSE(_,transaction_id) => {
-                Some(format!("Domain Name System (response) ID: 0x{transaction_id:04x}"))
-            }
-            ProtocolInfoField::DNSQUERY(_, transaction_id) => {
-                Some(format!("Domain Name System (query) ID: 0x{transaction_id:04x}"))
-            }
+            ProtocolInfoField::DNSRESPONSE(_, transaction_id, _) => Some(format!("Domain Name System (response) ID: 0x{transaction_id:04x}")),
+            ProtocolInfoField::DNSQUERY(_, transaction_id, _) => Some(format!("Domain Name System (query) ID: 0x{transaction_id:04x}")),
             _ => None,
         }
     }
@@ -175,7 +172,9 @@ impl Visitor {
     pub fn parse(_: &mut Context, frame: &mut Frame, reader: &mut Reader) -> Result<Protocol> {
         name_service_parse(frame, reader, NameService::DNS)
     }
-
+    // pub fn detail(field: &mut Field, _: &Context, _: &Frame, reader: &mut Reader) -> Result<Protocol> {
+    //     Visitor::_detail(field, reader)
+    // }
     pub fn detail(field: &mut Field, _: &Context, _: &Frame, reader: &mut Reader) -> Result<Protocol> {
         let start_offset = reader.cursor;
 
@@ -187,7 +186,7 @@ impl Visitor {
         let mut flags_field = Field::with_children(format!("Flags: 0x{flags:04x}"), reader.cursor - 2, 2);
 
         for flag_str in format_dns_flags(flags) {
-            add_field_backstep!(flags_field, reader,2, flag_str);
+            add_field_backstep!(flags_field, reader, 2, flag_str);
         }
         field.children.as_mut().unwrap().push(flags_field);
 
@@ -222,20 +221,135 @@ impl Visitor {
         }
 
         if additional_count > 0 && reader.left() > 0 {
-
             for _ in 0..additional_count {
                 if reader.left() < 10 {
                     break;
                 }
                 add_sub_field_with_reader!(field, reader, |reader2, field2| parese_resource_record_field(reader2, field2, start_offset))?;
             }
-
         }
-
-        // Set summary
         let type_str = if is_response { "response" } else { "query" };
         field.summary = format!("Domain Name System ({type_str}) ID: 0x{transaction_id:04x}");
         Ok(Protocol::None)
+    }
+
+    pub fn answers(reader: &mut Reader) -> Result<Vec<DNSRecord>> {
+        let start_offset = reader.cursor;
+        let _tid = reader.read16(true)?;
+        reader.read16(true)?; // flag
+        let query_count = reader.read16(true)?;
+        let answer_count = reader.read16(true)?;
+        reader.forward(4);
+
+        if query_count > 0 {
+            for _ in 0..query_count {
+                parse_dns_name(reader, start_offset)?;
+                reader.forward(4);
+            }
+        }
+        let mut rs = vec![];
+
+        if answer_count > 0 && reader.left() > 0 {
+            for _ in 0..answer_count {
+                if reader.left() < 10 {
+                    break;
+                }
+                let mut item = DNSRecord::default();
+                let host = parse_dns_name(reader, start_offset)?;
+                let record_type = reader.read16(true)?;
+                item.host = host;
+                item.rtype = dns_type_mapper(record_type).to_string();
+                let mut message = None;
+                match record_type {
+                    41 => {
+                        // "Type: OPT (41)".into()
+                    }
+                    3 | 4 | 20 => {
+                        // "Deprecated"
+                    }
+                    249 | 250 => {
+                        // field.summary = "Type: DDNS".into();
+                    }
+                    255 => {
+                        // field.summary = "Type: ANY".into();
+                    }
+                    46..=48 => {
+                        // field.summary = "Type: DNSSEC".into();
+                    }
+                    _ => {
+                        let record_class = reader.read16(true)?;
+                        item.class = dns_class_mapper(record_class).to_string();
+                        let _ttl = reader.read32(true)?;
+                        let data_len =  reader.read16(true)? as usize;
+                        let finish = reader.cursor + data_len;
+                        let _record_data = match record_type {
+                            1 => {
+                                // A record
+                                if data_len == 4 {
+                                    let _cotent = reader.slice(data_len, true)?;
+                                    let ip = Ipv4Addr::from(<[u8; 4]>::try_from(_cotent).unwrap());
+                                    message = Some(ip.to_string());
+                                }
+                            }
+                            28 => {
+                                // AAAA record
+                                if data_len == 16 {
+                                    let _cotent = reader.slice(data_len, true)?;
+                                    let ip_data = Ipv6Addr::from(<[u8; 16]>::try_from(_cotent).unwrap());
+                                    message = Some(ip_data.to_string());
+                                }
+                            }
+                            5 => {
+                                if let Ok(cname) = parse_dns_name(reader, start_offset) {
+                                    message = Some(cname);
+                                }
+                            },
+                            2 => {
+                                // NS record
+                                if let Ok(ns) = parse_dns_name(reader, start_offset) {
+                                    message = Some(ns)
+                                }
+                            },
+                            16 => {
+                                // TXT record
+                                let mut txt_data = String::new();
+                                let mut remaining = data_len;
+                                let _data_start = reader.cursor;
+
+                                while remaining > 0 && reader.left() > 0 {
+                                    if reader.left() < 1 {
+                                        break;
+                                    }
+
+                                    let str_len = reader.read8()? as usize;
+                                    if str_len > remaining - 1 || str_len > reader.left() {
+                                        break;
+                                    }
+
+                                    let txt_bytes = reader.slice(str_len, true)?;
+                                    if let Ok(txt) = std::str::from_utf8(txt_bytes) {
+                                        if !txt_data.is_empty() {
+                                            txt_data.push_str(", ");
+                                        }
+                                        txt_data.push_str(&format!("\"{txt}\""));
+                                    }
+
+                                    remaining -= str_len + 1; // +1 for length byte
+                                }
+                                if !txt_data.is_empty() {
+                                    message = Some(txt_data)
+                                }
+                            }
+                            _ => {}
+                        };
+                        reader.set(finish);
+                    }
+                }
+                item.info = message;
+                rs.push(item);
+            }
+        }
+        Ok(rs)
     }
 }
 fn rr_type(t: u16) -> String {
@@ -263,20 +377,20 @@ fn parese_resource_record_field(reader: &mut Reader, field: &mut Field, start_of
         41 => {
             add_field_format!(field, reader, reader.read16(true)?, "UDP payload size: {} bytes");
             field.summary = "Type: OPT (41)".into();
-        },
+        }
         3 | 4 | 20 => {
             // dep
             field.summary = "Deprecated".into();
-        },
+        }
         249 | 250 => {
             field.summary = "Type: DDNS".into();
-        },
+        }
         255 => {
             field.summary = "Type: ANY".into();
-        },
+        }
         46..=48 => {
             field.summary = "Type: DNSSEC".into();
-        },
+        }
         _ => {
             let record_class = add_field_format_fn!(field, reader, reader.read16(true)?, rr_class);
             add_field_format_fn!(field, reader, reader.read32(true)?, rr_ttl);
@@ -414,9 +528,8 @@ fn parese_resource_record_field(reader: &mut Reader, field: &mut Field, start_of
             if !record_data.is_empty() {
                 add_field_backstep!(field, reader, data_len, record_data.clone());
             }
-            field.summary  = format!("{}, type {}, class {}, {}", name, dns_type_mapper(record_type), dns_class_mapper(record_class), record_data);
+            field.summary = format!("{}, type {}, class {}, {}", name, dns_type_mapper(record_type), dns_class_mapper(record_class), record_data);
         }
     }
     Ok(())
-
 }

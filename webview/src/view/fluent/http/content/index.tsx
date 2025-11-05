@@ -43,9 +43,15 @@ const parseMime = (headers: string[]): string => {
     }
     return '';
 }
-const renderContent = (hmw: IHttpDetail) => {
-    const ds = !!hmw.plaintext ? 'preview' : 'raw';
+
+
+export default function Component(props: ContentProps) {
+    const { hmw } = props;
+    const ds = hmw.plaintext ? 'preview' : 'raw';
     const [selectedValue, setSelectedValue] = useState<TabValue>(ds);
+    if (!hmw.plaintext && !hmw.raw){
+        return <Empty/>;
+    }
     const onTabSelect = (_: SelectTabEvent, data: SelectTabData) => {
         setSelectedValue(data.value);
     };
@@ -75,13 +81,4 @@ const renderContent = (hmw: IHttpDetail) => {
         </TabList>
         {inContent()}
     </div>
-}
-
-
-export default function Component(props: ContentProps) {
-    const { hmw } = props;
-    if (hmw.plaintext || hmw.raw){
-        return renderContent(props.hmw);
-    }
-    return <Empty/>;
 }

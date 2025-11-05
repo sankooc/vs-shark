@@ -189,7 +189,6 @@ function Component() {
                     <ToolbarButton icon={ActionInfoIcon()} onClick={() => { onClick(item) }} />
                     <ToolbarButton icon={ActionMoreIcon()} />
                 </Toolbar>
-                // return <TableCellLayout media={<TextBulletListSquareColor />} style={{cursor: 'pointer'}}></TableCellLayout>
             },
         }),
     ];

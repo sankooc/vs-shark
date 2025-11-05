@@ -8,7 +8,7 @@ import {
     Label,
     Select,
 } from "@fluentui/react-components";
-import { BookGlobe20Filled, BookGlobe20Regular, bundleIcon, CallInboundRegular, CallOutboundRegular, ChartMultiple20Filled, ChartMultiple20Regular, ClipboardBulletListRtlFilled, ClipboardBulletListRtlRegular, DocumentBulletList20Filled, DocumentBulletList20Regular, DocumentGlobeRegular, DocumentOnePageRegular, FormSparkle20Filled, FormSparkle20Regular, GlobeColor, InfoRegular, LockClosedKeyRegular, MailTemplate20Filled, MailTemplate20Regular, MoreHorizontalFilled, PanelTopContractRegular, PanelTopExpandRegular, PlugConnected20Filled, PlugConnected20Regular, QuestionFilled, ShieldLock20Filled, ShieldLock20Regular, TextboxRotate9020Filled, TextboxRotate9020Regular, TriangleLeft20Filled, TriangleLeft20Regular, TriangleRight20Filled, TriangleRight20Regular } from "@fluentui/react-icons";
+import { BookGlobe20Filled, BookGlobe20Regular, bundleIcon, CallInboundRegular, CallOutboundRegular, ChartMultiple20Filled, ChartMultiple20Regular, CheckmarkSquareRegular, ClipboardBulletListRtlFilled, ClipboardBulletListRtlRegular, DocumentBulletList20Filled, DocumentBulletList20Regular, DocumentGlobeRegular, DocumentOnePageRegular, FormSparkle20Filled, FormSparkle20Regular, GlobeColor, InfoRegular, LockClosedKeyRegular, MailTemplate20Filled, MailTemplate20Regular, MoreHorizontalFilled, PanelTopContractRegular, PanelTopExpandRegular, PlugConnected20Filled, PlugConnected20Regular, QuestionFilled, ShieldLock20Filled, ShieldLock20Regular, ShieldQuestionRegular, TextboxRotate9020Filled, TextboxRotate9020Regular, TriangleLeft20Filled, TriangleLeft20Regular, TriangleRight20Filled, TriangleRight20Regular, WarningRegular } from "@fluentui/react-icons";
 import React, { JSX, useEffect, useId, useState } from "react";
 
 import { useNavigate } from "react-router";
@@ -54,14 +54,14 @@ export const PrevIcon = bundleIcon(TriangleLeft20Filled, TriangleLeft20Regular);
 
 export const DetailIcon = bundleIcon(ClipboardBulletListRtlFilled, ClipboardBulletListRtlRegular);
 
-export const HttpHeaderIcon = () => <DocumentOnePageRegular/>
-export const TabHttpHead = () => <DocumentGlobeRegular/>
+export const HttpHeaderIcon = () => <DocumentOnePageRegular />
+export const TabHttpHead = () => <DocumentGlobeRegular />
 export const TabHttpReq = () => <PanelTopContractRegular />
-export const TabHttpRes = () => <PanelTopExpandRegular/>
+export const TabHttpRes = () => <PanelTopExpandRegular />
 
-export const ActionInfoIcon = () => <InfoRegular/>
-export const ActionMoreIcon = () => <MoreHorizontalFilled/>;
-export const TabHttpRequest = () => <CallInboundRegular/>
+export const ActionInfoIcon = () => <InfoRegular />
+export const ActionMoreIcon = () => <MoreHorizontalFilled />;
+export const TabHttpRequest = () => <CallInboundRegular />
 export const TabHttpResponse = () => <CallOutboundRegular />
 
 
@@ -159,4 +159,22 @@ export function IPSelector(props: SelectorProps) {
             {options}
         </Select>
     </>;
+}
+
+
+export function infoLevel(level: string): [string, JSX.Element] {
+    switch (level) {
+        case 'info':
+        case 'high': {
+            return ['#b8bb26', <CheckmarkSquareRegular />]
+        }
+        case 'error':
+        case 'low': {
+            return ['#fb4934', <WarningRegular />]
+        }
+        default: {
+            return ['#fabd2f', <ShieldQuestionRegular />];
+        }
+    }
+    // return ['', <ShieldQuestionRegular />]
 }

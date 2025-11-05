@@ -1,12 +1,14 @@
 use std::fs::File;
+use std::io::BufReader;
 use std::io::Read;
 use std::ops::Range;
 use std::sync::mpsc::Receiver;
 use std::thread;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
-use std::{io::BufReader};
 
-use pcap::common::concept::{ConversationCriteria, Criteria, Field, FrameIndex, FrameInfo, HttpMessageDetail, Language, ListResult, ProgressStatus, VConnection, VConversation, VHttpConnection};
+use pcap::common::concept::{
+    ConversationCriteria, Criteria, Field, FrameIndex, FrameInfo, HttpMessageDetail, Language, ListResult, ProgressStatus, VConnection, VConversation, VHttpConnection,
+};
 use pcap::common::io::DataSource;
 use pcap::common::{Instance, ResourceLoader};
 use std::sync::mpsc::Sender;
@@ -51,7 +53,6 @@ impl ResourceLoader for LocalResource {
         file_seeks(&self.filepath, ranges)
     }
 }
-
 
 impl LocalResource {
     fn new(filepath: String) -> Self {
@@ -144,8 +145,8 @@ impl Service {
         let mut buffer = vec![0; batch_size];
         'main: loop {
             let start_loop = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis();
-            match self.receiver.try_recv() {
-                Ok(cmd) => match cmd {
+            if let Ok(cmd) = self.receiver.try_recv() {
+                match cmd {
                     PcapUICommand::Quit => break,
                     PcapUICommand::FrameList(start, size) => {
                         let cri = Criteria { start, size };
@@ -185,7 +186,7 @@ impl Service {
                     }
                     PcapUICommand::HttpDetail(index) => {
                         if let Some(rs) = ins.http_detail(index) {
-                            let request = if rs.len() > 0 {
+                            let request = if !rs.is_empty() {
                                 let item = rs.first().unwrap();
                                 if item.is_request {
                                     Some(item.into())
@@ -195,7 +196,7 @@ impl Service {
                             } else {
                                 None
                             };
-                            let response: Option<HttpMessageWrap> = if rs.len() > 0 {
+                            let response: Option<HttpMessageWrap> = if !rs.is_empty() {
                                 let item = rs.last().unwrap();
                                 if item.is_request {
                                     None
@@ -208,7 +209,7 @@ impl Service {
                             self.sender.send(PcapEvent::HttpContent(request, response)).unwrap();
                         }
                     }
-                    
+
                     // PcapUICommand::HttpContent(http_connection) => {
                     //     if let Ok(mut file) = File::open(&self.fname) {
                     //         let request = if let Some(req) = &http_connection.request {
@@ -229,8 +230,7 @@ impl Service {
                     //     }
                     // }
                     _ => {}
-                },
-                _ => {}
+                }
             }
             let metadata = reader.get_ref().metadata()?;
             let new_len = metadata.len();
@@ -350,7 +350,6 @@ impl Service {
 //     }
 //     (rs, content_type, encoding)
 // }
-
 
 // fn parse_body_with_mime(body_raw: Vec<u8>, mime: &Language, encoding: HttpEncoding) -> Option<String> {
 //     if let Language::Binary = &mime {

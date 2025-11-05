@@ -98,10 +98,11 @@ pub const ACTIVE_TAB_COLOR: Color = GRUVBOX_D_AQUA;
 pub fn get_active_tab_color() -> Style {
     Style::new().fg(HEAD_FG).bg(ACTIVE_TAB_COLOR)
 }
-pub fn get_color(class_name: &'static str) -> Style {
-  match class_name {
-    _ => Style::new().fg(GRUVBOX_FG_0).bg(GRUVBOX_D_BLUE)
-  }  
+pub fn get_color(_class_name: &'static str) -> Style {
+//   match class_name {
+//     _ => Style::new().fg(GRUVBOX_FG_0).bg(GRUVBOX_D_BLUE)
+//   } 
+Style::new().fg(GRUVBOX_FG_0).bg(GRUVBOX_D_BLUE) 
 }
 pub fn panel_color() -> Style {
     Style::new().fg(GRUVBOX_FG)

@@ -109,13 +109,13 @@ function Component() {
     ]
     const columnSizingOptions = {
         sender: {
-            minWidth: 200,
-            idealWidth: 250,
+            minWidth: 300,
+            idealWidth: 300,
             autoFitColumns: true,
         },
         receiver: {
-            minWidth: 200,
-            idealWidth: 250,
+            minWidth: 300,
+            idealWidth: 300,
             autoFitColumns: true,
         }
 

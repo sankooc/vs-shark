@@ -70,10 +70,10 @@ impl TableStyle<VHttpConnection> for ConversationStyle {
     }
 }
 
-impl Page {
-    pub fn new() -> Self {
+impl Default for Page {
+    fn default() -> Self {
         Self {
-            state: CustomTableState::new(),
+            state: CustomTableState::default(),
             detail: None,
         }
     }
@@ -235,11 +235,11 @@ impl HttpHeadersView {
             }
 
             if let Some(content) = &item.parsed_content {
-                if content.len() > 0 {
+                if !content.is_empty() {
                     child.push(TreeItem::new_leaf(HeaderKey::Content(index), format!("Entity: {}", format_bytes_single_unit_int(content.len()))));
                 }
             }
-            let it = TreeItem::new(HeaderKey::Message(index), item.headers.get(0).unwrap().clone(), child).expect("need unique id");
+            let it = TreeItem::new(HeaderKey::Message(index), item.headers.first().unwrap().clone(), child).expect("need unique id");
             rs.push(it);
         }
         rs
