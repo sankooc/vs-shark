@@ -27,9 +27,7 @@ export default function CommandDemo() {
     const inputRef = useRef<HTMLInputElement>(null);
     const iframeRef = useRef<HTMLIFrameElement>(null);
     const [blocked, setBlocked] = useState<boolean>(false);
-    // const [iframeSrc, _setIframeSrc] = useState<string>("index.html");
-    // const [_isLoaded, setIsLoading] = useState(true);
-    const iframeSrc = 'index.html';
+    const iframeSrc = 'app.html';
     loadIFrame(iframeRef.current);
 
     const onFileChangeCapture = (e: React.ChangeEvent<HTMLInputElement>) => {

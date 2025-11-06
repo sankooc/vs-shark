@@ -13,13 +13,18 @@ export default defineConfig(({ command, mode }) => {
   }
 
   const mainEntry = {
-    main: resolve(__dirname, 'index.html'),
+    main: resolve(__dirname, 'app.html'),
   }
 
   const getEntries = () => {
     if (command === 'serve') return allEntries
     if (env.VITE_BUILD_ALL === 'true') return allEntries
     return mainEntry
+  }
+
+  const getOutput = () => {
+    if (env.VITE_BUILD_ALL === 'true') return './dist'
+    return './../plugin/dist/web'
   }
 
   return {
@@ -47,7 +52,7 @@ export default defineConfig(({ command, mode }) => {
     // },
     assetsInclude: ['**/*.ttf'],
     build: {
-      outDir: './../plugin/dist/web',
+      outDir: getOutput(),
       emptyOutDir: true,
       rollupOptions: {
         input: getEntries(),
