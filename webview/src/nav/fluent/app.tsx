@@ -4,7 +4,10 @@ import { useStore } from "../store";
 import { ComMessage, ComType, PcapFile } from "../../share/common";
 import {
     Button,
+    Toolbar,
+    Text,
 } from "@fluentui/react-components";
+import { AddRegular, DeleteRegular } from "@fluentui/react-icons";
 
 
 // import { getTheme } from '@fluentui/react';
@@ -18,6 +21,7 @@ export default function CommandDemo() {
     const loadIFrame = useStore((state) => state.loadIFrame);
     const send = useStore((state) => state.send);
     const loadData = useStore((state) => state.loadData);
+    const reset = useStore((state) => state.reset);
     const [pFile, setPFile] = useState<PFile | undefined>(undefined);
     // const [theme, _setTheme] = useState<string>("DarkTheme");
     const inputRef = useRef<HTMLInputElement>(null);
@@ -60,16 +64,26 @@ export default function CommandDemo() {
         <>
             <div style={{ padding: "5px", borderBottom: 'solid 1px #ddd' }} className="flex flex-row justify-content-between">
                 <div>
-                    {pFile && <span style={{ marginRight: "4px" }}>{pFile.name}</span>}
-                    <Button disabled={blocked} onClick={() => inputRef.current?.click()} size="small">Select PCAP File</Button>
+                    <Toolbar aria-label="Default" size="small">
+                        {pFile && <Text style={{ marginRight: "10px" }}>{pFile.name}</Text>}
+                        {pFile?
+                        <Button
+                            disabled={blocked}
+                            size="small"
+                            onClick={() => {
+                                setPFile(undefined);
+                                if(inputRef.current){
+                                    inputRef.current.value = '';
+                                }
+                                reset();}} icon={<DeleteRegular />}
+                        >Reset</Button>: <Button
+                            disabled={blocked}
+                            size="small"
+                            onClick={() => inputRef.current?.click()} icon={<AddRegular />}
+                        >Select PCAP File</Button>}
+                        
+                    </Toolbar>
                 </div>
-                {/* <Dropdown placeholder="Select an Theme" defaultValue={theme} defaultSelectedOptions={[theme]} size="small">
-                    {options.map((option) => (
-                        <Option key={option}>
-                            {option}
-                        </Option>
-                    ))}
-                </Dropdown> */}
             </div>
             <input
                 type="file"

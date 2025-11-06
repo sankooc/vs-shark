@@ -5,6 +5,37 @@ import { _log } from "../view/util";
 const ready = init();
 
 
+
+class Client extends PCAPClient {
+  doReady(): void {
+    this.init();
+  }
+  // async pickData(start: number, end: number): Promise<Uint8Array> {
+  //   const _data = client.data!.slice(start, end);
+  //   return _data;
+  // }
+  emitMessage(msg: ComMessage<any>): void {
+    ctx.postMessage(msg);
+  }
+  public data: Uint8Array = new Uint8Array();
+  constructor() {
+    super();
+  }
+  printLog(log: ComLog): void {
+    console.log(log.level, log.msg);
+  }
+  appendData(data: Uint8Array): void {
+    const newData = new Uint8Array(this.data.length + data.length);
+    newData.set(this.data, 0);
+    newData.set(data, this.data.length);
+    this.data = newData;
+  }
+  clear(): void {
+    this.emitMessage(ComMessage.new(ComType.PRGRESS_STATUS, undefined));
+    this.touchFile(undefined);
+    this.data = new Uint8Array();
+  }
+}
 const self_ = self as any;
 const g_map: any = {
 
@@ -45,52 +76,20 @@ self_.wasm_log = (str: string) => {
 ready.then((rs) => {
   _log("wasm loaded", rs);
 
-  class Client extends PCAPClient {
-    doReady(): void {
-      this.init();
-    }
-    // async pickData(start: number, end: number): Promise<Uint8Array> {
-    //   const _data = client.data!.slice(start, end);
-    //   return _data;
-    // }
-    emitMessage(msg: ComMessage<any>): void {
-      ctx.postMessage(msg);
-    }
-    public data: Uint8Array = new Uint8Array();
-    constructor() {
-      super();
-    }
-    printLog(log: ComLog): void {
-      console.log(log.level, log.msg);
-    }
-    appendData(data: Uint8Array): void {
-      const newData = new Uint8Array(this.data.length + data.length);
-      newData.set(this.data, 0);
-      newData.set(data, this.data.length);
-      this.data = newData;
-    }
-  }
-
   const client = new Client();
   g_map.current = client;
   ctx.addEventListener("message", (event: MessageEvent<any>) => {
     const id = event.data?.id;
     const type = event.data?.type;
-    if (type == ComType.DATA && id) {
-      const r = event.data.body as VRange;
-      const start = r.start;
-      const size = r.end - r.start;
-      if (start >= 0 && size > 0 && client.data!.length > start + size) {
-        const _data = client.data!.slice(start, start + size);
-        ctx.postMessage({ type: ComType.RESPONSE, id, body: { data: _data } }, [
-          _data.buffer,
-        ]);
-      } else {
-        ctx.postMessage({ type: ComType.RESPONSE, id });
-      }
-      return;
+    if (type == ComType.RESET) {
+        client.clear();
+        return;
     }
+
     if (type == ComType.PROCESS_DATA) {
+      if (null != client) {
+        client.clear();
+      }
       const body = event.data.body;
       const data = body.data as Uint8Array;
       client.data = data;
@@ -102,6 +101,20 @@ ready.then((rs) => {
           const e = { id, type, body: { data: _data } };
           client.handle(e);
         }
+      }
+      return;
+    }
+    if (type == ComType.DATA && id) {
+      const r = event.data.body as VRange;
+      const start = r.start;
+      const size = r.end - r.start;
+      if (start >= 0 && size > 0 && client.data!.length > start + size) {
+        const _data = client.data!.slice(start, start + size);
+        ctx.postMessage({ type: ComType.RESPONSE, id, body: { data: _data } }, [
+          _data.buffer,
+        ]);
+      } else {
+        ctx.postMessage({ type: ComType.RESPONSE, id });
       }
       return;
     }

@@ -1,8 +1,12 @@
-export function deserialize<T>(content: string): T {
+export function deserialize<T>(content: string): T | undefined {
+  if(!content){
+    return;
+  }
   return JSON.parse(content);
 }
 
 export enum ComType {
+  RESET = "RESET",
   SERVER_REDAY = "ready",
   CLIENT_REDAY = "_ready",
   TOUCH_FILE = "file_touch",

@@ -63,7 +63,7 @@ export abstract class PCAPClient {
   abstract emitMessage(msg: ComMessage<any>): void;
   // abstract pickData(start: number, end: number): Promise<Uint8Array>;
 
-  private touchFile(fileInfo: PcapFile): void {
+  protected touchFile(fileInfo: PcapFile | undefined): void {
     this.info = fileInfo;
     this.emitMessage(ComMessage.new(ComType.FILEINFO, fileInfo));
   }

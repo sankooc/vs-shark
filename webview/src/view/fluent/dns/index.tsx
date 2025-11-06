@@ -60,7 +60,6 @@ function Component() {
         }),
     ];
     const onClick = (item: IDNSResponse) => {
-        console.log('dns', item.index);
         const index = item.index;
         if (undefined != index) {
           navigate('/dns/' + index);
