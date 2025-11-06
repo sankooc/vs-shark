@@ -19,11 +19,11 @@ class PFile {
 
 export default function CommandDemo() {
     const loadIFrame = useStore((state) => state.loadIFrame);
+    const [isLoading, setIsLoading] = useState<boolean>(true);
     const send = useStore((state) => state.send);
     const loadData = useStore((state) => state.loadData);
     const reset = useStore((state) => state.reset);
     const [pFile, setPFile] = useState<PFile | undefined>(undefined);
-    // const [theme, _setTheme] = useState<string>("DarkTheme");
     const inputRef = useRef<HTMLInputElement>(null);
     const iframeRef = useRef<HTMLIFrameElement>(null);
     const [blocked, setBlocked] = useState<boolean>(false);
@@ -52,7 +52,7 @@ export default function CommandDemo() {
         }
     };
     const handleIframeLoad = useCallback(() => {
-        // setIsLoading(false);
+        setIsLoading(false);
     }, []);
     // const options = [
     //     "DarkTheme",
@@ -60,7 +60,7 @@ export default function CommandDemo() {
     // ];
     return (
         <>
-            <div style={{ padding: "5px", borderBottom: 'solid 1px #ddd' }} className="flex flex-row justify-content-between">
+            {isLoading? null: (<div style={{ padding: "5px", borderBottom: 'solid 1px #ddd' }} className="flex flex-row justify-content-between">
                 <div>
                     <Toolbar aria-label="Default" size="small">
                         {pFile && <Text style={{ marginRight: "10px" }}>{pFile.name}</Text>}
@@ -82,7 +82,7 @@ export default function CommandDemo() {
                         
                     </Toolbar>
                 </div>
-            </div>
+            </div>)}
             <input
                 type="file"
                 ref={inputRef}
@@ -96,7 +96,7 @@ export default function CommandDemo() {
                 onLoad={handleIframeLoad}
                 placeholderContent={
                     <div className="custom-placeholder">
-                        <div className="placeholder-text">Loading App</div>
+                        <div className="placeholder-text">Loading App Resource</div>
                     </div>
                 }
             />
