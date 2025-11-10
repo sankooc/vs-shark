@@ -14,9 +14,6 @@ anyhow.workspace = true
 tui-tree-widget.workspace = true
 enum_dispatch.workspace = true
 
-# flate2 = "1.0"
-# brotli = "3.3"
-# zstd = "0.12"
-syntect = "5.2.0"
+syntect.workspace = true
 
 # tokio = { version = "1", features = ["full"] }
