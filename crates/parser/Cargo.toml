@@ -22,11 +22,11 @@ strum_macros.workspace = true
 serde = { workspace = true, features = ["derive"]}
 serde_json.workspace = true
 ahash = { version = "0.8", default-features = false }
-rustc-hash = "1.1"
-memchr = "2.7.4"
-flate2 = "1.0"
-brotli = "3.3"
-zstd = "0.12"
+rustc-hash.workspace = true
+memchr.workspace = true
+flate2.workspace = true
+brotli.workspace = true
+zstd.workspace = true
 
 [dev-dependencies]
 util = { path = "../util" }
