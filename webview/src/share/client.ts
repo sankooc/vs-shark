@@ -91,17 +91,17 @@ export abstract class PCAPClient {
             return;
           }
           case "http_connection": {
-            rs = this.ctx.list_http(start, size, param.host || '', '');
+            rs = this.ctx.list_http(start, size, param.host || '', '',!!param.asc);
             this.emitMessage(ComMessage.new(ComType.HTTP_CONNECTIONS, rs, requestId));
             return;
           }
           case "udp": {
-            rs = this.ctx.list_udp(start, size, param.ip || '');
+            rs = this.ctx.list_udp(start, size, param.ip || '', !!param.asc);
             this.emitMessage(ComMessage.new(ComType.UDP_CONNECTIONS, rs, requestId));
             return;
           }
           case "dns": {
-            rs = this.ctx.list_dns(start, size);
+            rs = this.ctx.list_dns(start, size, !!param.asc);
             this.emitMessage(ComMessage.new(ComType.DNS_CONNECTIONS, rs, requestId));
             return;
           }
