@@ -17,9 +17,11 @@ use crate::{
     add_field_label_no_range,
     common::{
         concept::{
-            ConversationCriteria, CounterItem, DNSRecord, DNSResponse, FrameIndex, HttpCriteria, HttpMessageDetail, IndexHashMap, LineChartData, NameService, TLSConversation, TLSItem, UDPConversation, VConnection, VConversation, VHttpConnection
+            ConversationCriteria, CounterItem, DNSRecord, DNSResponse, FrameIndex, HttpCriteria, HttpMessageDetail, IndexHashMap, LineChartData, NameService, TLSConversation,
+            TLSItem, UDPConversation, VConnection, VConversation, VHttpConnection,
         },
         connection::{TcpFlagField, TlsData},
+        core::HttpConntect,
         util::date_str,
     },
     files::{pcap::PCAP, pcapng::PCAPNG},
@@ -660,11 +662,21 @@ where
             ListResult::empty()
         }
     }
-    pub fn http_connections(&self, cri: Criteria, filter: Option<HttpCriteria>) -> ListResult<VHttpConnection> {
+
+    fn iter_http<'a>(&'a self, asc: bool) -> Box<dyn Iterator<Item = &'a HttpConntect>+'a> {
+        if asc {
+            Box::new(self.ctx.http_connections.iter())
+        } else {
+            Box::new(self.ctx.http_connections.iter().rev())
+        }
+    }
+    pub fn http_connections(&self, cri: Criteria, filter: Option<HttpCriteria>, asc: bool) -> ListResult<VHttpConnection> {
+        // let first = self.context().list.first().unwrap().info.time;
         let Criteria { start, size } = cri;
         let mut total = 0;
         let mut list = vec![];
-        for (index, item) in self.ctx.http_connections.iter().enumerate() {
+        let itertor = self.iter_http(asc);
+        for (index, item) in itertor.enumerate() {
             let count = list.len();
             if item.do_match(&filter) {
                 if total >= start && count < size {
@@ -685,8 +697,9 @@ where
         }
     }
 
-    fn intern_udp_conversations(&self, ip: Option<String>) -> Vec<UDPConversation> {
+    fn intern_udp_conversations(&self, ip: Option<String>, asc: bool) -> Vec<UDPConversation> {
         let mut map = FastHashMap::<String, UDPConversation>::default();
+        let first = self.ctx.list.first().unwrap().info.time;
         for frame in &self.ctx.list {
             if frame.has_proto(ProtoMask::UDP) {
                 if let Some((source, target)) = frame.addresses(&self.ctx) {
@@ -699,8 +712,9 @@ where
                             if let Some(item) = map.get_mut(&key) {
                                 item.incr(len, time);
                             } else {
-                                let mut item = UDPConversation::new(index, source.clone(), target.clone(), source_port, target_port);
+                                let mut item = UDPConversation::new(index, time, source.clone(), target.clone(), source_port, target_port);
                                 item.incr(len, time);
+                                item.init(first);
                                 map.insert(key, item);
                             }
                         };
@@ -715,10 +729,20 @@ where
                 }
             }
         }
-        map.values().cloned().collect()
+        let mut rs: Vec<UDPConversation> = map.into_iter().map(|(_, v)| v).collect();
+        let compare = |a: &UDPConversation, b: &UDPConversation| {
+            let rs = a.ts.cmp(&b.ts);
+            if asc {
+                rs
+            } else {
+                rs.reverse()
+            }
+        };
+        rs.sort_by(compare);
+        rs
     }
-    pub fn udp_conversations(&self, cri: Criteria, filter: Option<String>) -> ListResult<UDPConversation> {
-        let list = self.intern_udp_conversations(filter);
+    pub fn udp_conversations(&self, cri: Criteria, filter: Option<String>, asc: bool) -> ListResult<UDPConversation> {
+        let list = self.intern_udp_conversations(filter, asc);
         paging(&list, cri)
     }
 
@@ -863,39 +887,61 @@ where
         }
     }
 
-    fn intern_dns_list(&self) -> Vec<(u16, Option<FrameIndex>, Option<FrameIndex>)> {
-        let mut map: IndexHashMap<u16, (u16, Option<FrameIndex>, Option<FrameIndex>)> = IndexHashMap::default();
-        for frame in &self.context().list {
+    fn intern_dns_list(&self, asc: bool) -> Vec<DNSResponse> {
+        let mut map: IndexHashMap<u16, DNSResponse> = IndexHashMap::default();
+        for frame in &self.context().list{
             let index = frame.info.index;
             match &frame.protocol_field {
                 ProtocolInfoField::DNSQUERY(NameService::DNS, transaction_id, _) => {
                     if *transaction_id != 0 {
                         let (_, rs) = map.get_or_add(transaction_id);
-                        rs.0 = *transaction_id;
-                        rs.1 = Some(index);
+                        rs.transaction_id = *transaction_id;
+                        rs.request = Some(index as usize);
+                        if let Some(frame) = self.context().frame(index) {
+                            rs.req_ts = frame.info.time;
+                        }
+                        
                     }
                 }
                 ProtocolInfoField::DNSRESPONSE(NameService::DNS, transaction_id, _) => {
                     if *transaction_id != 0 {
-                        if let Some((_, rs)) = map.get(transaction_id) {
-                            rs.2 = Some(index);
+                        let (_, rs) = map.get_or_add(transaction_id);
+                        rs.transaction_id = *transaction_id;
+                        rs.response = Some(index as usize);
+                        if let Some(frame) = self.context().frame(index) {
+                            rs.res_ts = frame.info.time;
                         }
                     }
                 }
                 _ => {}
             }
         }
-        map.list()
+
+        let mut rs: Vec<DNSResponse> = map.list().into_iter().filter(|f| f.is_complete()).collect();
+        for record in rs.iter_mut() {
+            record.fix_offset();
+        }
+        let compare = |a: &DNSResponse, b: &DNSResponse| {
+            let rs = a._latency.cmp(&b._latency);
+            if asc {
+                rs
+            } else {
+                rs.reverse()
+            }
+        };
+        rs.sort_by(compare);
+        rs
     }
 
-    pub fn dns_records(&self, cri: Criteria) -> ListResult<DNSResponse> {
-        let list = self.intern_dns_list();
-        let convert = |f: &(u16, Option<FrameIndex>, Option<FrameIndex>)| DNSResponse::convert(self, f);
+    pub fn dns_records(&self, cri: Criteria, asc: bool) -> ListResult<DNSResponse> {
+        let first = self.context().list.first().unwrap().info.time;
+        let list = self.intern_dns_list(asc);
+        let convert = |f: &DNSResponse| DNSResponse::convert(self, f, first);
         paging_into(&list, cri, convert)
     }
-    pub fn dns_record(&self, index: usize, cri: Criteria) -> ListResult<DNSRecord>{
+    pub fn dns_record(&self, index: usize, cri: Criteria) -> ListResult<DNSRecord> {
         if let Some(frame) = self.ctx.list.get(index) {
-            if let ProtocolInfoField::DNSRESPONSE(_, _, start ) = &frame.protocol_field {
+            if let ProtocolInfoField::DNSRESPONSE(_, _, start) = &frame.protocol_field {
                 if let Some(ds) = self.frame_datasource(frame) {
                     let mut reader = Reader::new(&ds);
                     reader.cursor = *start;

@@ -181,7 +181,7 @@ impl Service {
                     }
                     PcapUICommand::HttpConnectionList(start, size) => {
                         let cri = Criteria { start, size };
-                        let result_list = ins.http_connections(cri, None);
+                        let result_list = ins.http_connections(cri, None, true);
                         self.sender.send(PcapEvent::HttpConnectionList(result_list)).unwrap();
                     }
                     PcapUICommand::HttpDetail(index) => {

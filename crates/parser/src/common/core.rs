@@ -17,6 +17,7 @@ use crate::common::{
         VHttpConnection,
     },
     enum_def::{AddressField, Protocol},
+    util::date_str,
     ResourceLoader,
 };
 
@@ -132,6 +133,10 @@ impl HttpConntect {
                     rs.content_type = ct.clone();
                 }
                 rs.request = Some(message.host.clone());
+                if let Some(frame) = ctx.frame(message.frame_index) {
+                    rs.ts = frame.info.time;
+                    rs.ts_str = date_str(frame.info.time);
+                }
             }
         }
         if let Some(response_index) = &self.response {
@@ -143,9 +148,14 @@ impl HttpConntect {
                     rs.content_type = ct.clone();
                 }
                 rs.response = Some(message.host.clone());
+                if rs.ts == 0 {
+                    if let Some(frame) = ctx.frame(message.frame_index) {
+                        rs.ts = frame.info.time;
+                    }
+                }
             }
         }
-        
+
         rs.latency = format!("{} {}", self.latency.0, self.latency.1);
         rs.index = index;
         rs
@@ -296,6 +306,16 @@ impl Context {
     }
     pub fn get_http_message(&mut self, message_index: MessageIndex) -> Option<&mut HttpMessage> {
         self.http_messages.get_mut(message_index as usize)
+    }
+    pub fn frame(&self, index: FrameIndex) -> Option<&Frame> {
+        self.list.get(index as usize)
+    }
+    pub fn frames<'a>(&'a self, asc: bool) -> Box<dyn Iterator<Item = &'a Frame> + 'a> {
+        if asc {
+            Box::new(self.list.iter())
+        } else {
+            Box::new(self.list.iter().rev())
+        }
     }
 }
 
@@ -535,11 +555,12 @@ impl Context {
     }
     pub fn _list_map<K, T>(map: &FastHashMap<K, T>) -> Vec<CounterItem>
     where
-        K: core::hash::Hash + Eq + ToString,
+        K: core::hash::Hash + Eq + ToString + Ord,
         T: Copy + Into<usize>,
     {
-        map.iter().map(|(k, v)| CounterItem::new(k.to_string(), (*v).into())).collect()
-        // serde_json::to_string(&rs).unwrap_or("[]".into())
+        let mut keys: Vec<&K> = map.keys().collect();
+        keys.sort();
+        keys.iter().map(|k| CounterItem::new((*k).to_string(), (*map.get(*k).unwrap()).into())).collect()
     }
 }
 

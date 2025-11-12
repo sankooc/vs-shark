@@ -3,11 +3,10 @@ import { IUDPConversation } from "../../../share/gen";
 import { createTableColumn, TableCellLayout, TableColumnDefinition } from "@fluentui/react-components";
 import { compute, ComRequest, format_bytes_single_unit, formatMicroseconds } from "../../../share/common";
 import { useState } from "react";
-import Grid from "../table";
-import { conversation_size } from "../../conf";
+import Grid, { SortState } from "../table";
 
 // import { useNavigate } from "react-router";
-import { IPSelector, UDPTabIcon } from "../common";
+import { IPSelector, TimeIcon, UDPTabIcon } from "../common";
 import { BoxRegular, DesktopMacRegular, DocumentMultipleRegular, DocumentRegular, DocumentTextRegular } from "@fluentui/react-icons";
 import Spark from "../overview/spark";
 
@@ -24,9 +23,33 @@ const headIcon = (item: IUDPConversation) => {
 
 function Component() {
     const conversations = useStore((state) => state.udpList);
+    // const tableFeature = useTableSort({});
+
+    // const [sortState, setSortState] = useState<TableSortState<IUDPConversation>>({
+    //     sortColumn: "time",
+    //     sortDirection: "ascending",
+    // });
     // const navigate = useNavigate();
+    const [sortState, setSortState] = useState<SortState>({
+        sortColumn: 'time',
+        sortDirection: 'ascending'
+    })
     const [ip, setIp] = useState<string>('');
     const columns: TableColumnDefinition<IUDPConversation>[] = [
+        createTableColumn<IUDPConversation>({
+            columnId: "time",
+            renderHeaderCell: TimeIcon,
+            compare: (_a, _b) => {
+                return 0;
+            },
+            renderCell: (item) => {
+                let content = item.ts_str;
+                if (item.offset_str) {
+                    content = content + ` (+${item.offset_str[0]}${item.offset_str[1]})`
+                }
+                return <TableCellLayout>{content}</TableCellLayout>
+            },
+        }),
         createTableColumn<IUDPConversation>({
             columnId: "sender",
             renderHeaderCell: () => <><DesktopMacRegular /> Address A</>,
@@ -89,17 +112,18 @@ function Component() {
                     console.error(e);
                 }
                 return <TableCellLayout>N/A</TableCellLayout>;
-                
+
             },
         }),
     ];
-    const pageSize = conversation_size;
+    const pageSize = 30;
     const load = async (page: number) => {
         const _ip = ip === 'ANY' ? '' : ip;
+        const asc = sortState.sortDirection === 'ascending';
         const data: ComRequest = {
             catelog: "udp",
             type: "list",
-            param: { ...compute(page, pageSize), ip: _ip },
+            param: { ...compute(page, pageSize), ip: _ip, asc },
         };
         return conversations(data);;
     }
@@ -108,23 +132,28 @@ function Component() {
         { name: "UDP", icon: <UDPTabIcon />, path: "/udp" }
     ]
     const columnSizingOptions = {
-        sender: {
+        time: {
             minWidth: 300,
             idealWidth: 300,
-            autoFitColumns: true,
+        },
+        sender: {
+            minWidth: 200,
+            idealWidth: 200,
         },
         receiver: {
-            minWidth: 300,
-            idealWidth: 300,
-            autoFitColumns: true,
+            minWidth: 200,
+            idealWidth: 200,
         }
-
     };
     const gridProps = {
         filterComponent: (<>
             <IPSelector onSelect={setIp} />
         </>),
         size: SIZE,
+        sortState,
+        onSortChange: (_e: Event, state: SortState) => {
+            setSortState(state);
+        },
         columns, pageSize, load, columnSizingOptions, breads
     };
     return <Grid {...gridProps} />;

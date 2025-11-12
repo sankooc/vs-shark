@@ -83,6 +83,8 @@ export interface IUDPConversation {
     receiver_port: number;
     packets: number;
     bytes: number;
+    ts_str: string;
+    offset_str: [number, string];
     records: number[][];
 }
 
@@ -90,8 +92,10 @@ export interface IDNSResponse {
     transaction_id: number,
     source: string,
     target: string,
-    index: string,
+    response?: string,
     latency: [number, string],
+    ts_str: string,
+    offset_str: string,
 }
 
 export interface IDNSRecord {
