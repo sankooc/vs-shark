@@ -94,15 +94,15 @@ impl WContext {
         jsonlize(&rs)
     }
     #[wasm_bindgen]
-    pub fn list_http(&self, start: usize, size: usize, hostname: String, _method: String) -> Option<String> {
+    pub fn list_http(&self, start: usize, size: usize, hostname: String, _method: String, asc: bool) -> Option<String> {
         let filter = if hostname.is_empty() { None } else { Some(HttpCriteria::hostname(hostname)) };
-        let rs = self.ctx.http_connections(Criteria { start, size }, filter);
+        let rs = self.ctx.http_connections(Criteria { start, size }, filter, asc);
         jsonlize(&rs)
     }
     #[wasm_bindgen]
-    pub fn list_udp(&self, start: usize, size: usize, ip: String) -> Option<String> {
+    pub fn list_udp(&self, start: usize, size: usize, ip: String, asc: bool) -> Option<String> {
         let filter = if ip.is_empty() { None } else { Some(ip) };
-        let rs = self.ctx.udp_conversations(Criteria { start, size }, filter);
+        let rs = self.ctx.udp_conversations(Criteria { start, size }, filter, asc);
         jsonlize(&rs)
     }
     #[wasm_bindgen]
@@ -116,8 +116,8 @@ impl WContext {
         jsonlize(&list)
     }
     #[wasm_bindgen]
-    pub fn list_dns(&self, start: usize, size: usize) -> Option<String> {
-        let list = self.ctx.dns_records(Criteria { start, size });
+    pub fn list_dns(&self, start: usize, size: usize, asc: bool) -> Option<String> {
+        let list = self.ctx.dns_records(Criteria { start, size }, asc);
         jsonlize(&list)
     }
     #[wasm_bindgen]
