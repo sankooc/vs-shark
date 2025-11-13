@@ -173,7 +173,7 @@ function Component() {
         }),
         createTableColumn<IVHttpConnection>({
             columnId: "time",
-            renderHeaderCell: () => <><ClockRegular /> Time</>,
+            renderHeaderCell: () => <><ClockRegular /> Latency</>,
             renderCell: (item) => {
                 const timeStr = item.latency;
                 return <TableCellLayout >
@@ -206,7 +206,7 @@ function Component() {
         const data: ComRequest = {
             catelog: "http_connection",
             type: "list",
-            param: { ...compute(page, pageSize), host },
+            param: { ...compute(page, pageSize), host, asc: true },
         };
         return httpConnections(data);
     }
@@ -228,10 +228,8 @@ function Component() {
             defaultWidth: 80,
         },
         host: {
-            autoFitColumns: true,
-            idealWidth: 1000,
+            idealWidth: 200,
             minWidth: 200,
-            // defaultWidth: 200,
         },
         length: {
             autoFitColumns: true,

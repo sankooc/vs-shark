@@ -8,7 +8,7 @@ import {
     Label,
     Select,
 } from "@fluentui/react-components";
-import { BookGlobe20Filled, BookGlobe20Regular, bundleIcon, CallInboundRegular, CallOutboundRegular, ChartMultiple20Filled, ChartMultiple20Regular, CheckmarkSquareRegular, ClipboardBulletListRtlFilled, ClipboardBulletListRtlRegular, DocumentBulletList20Filled, DocumentBulletList20Regular, DocumentGlobeRegular, DocumentOnePageRegular, FormSparkle20Filled, FormSparkle20Regular, GlobeColor, InfoRegular, LockClosedKeyRegular, MailTemplate20Filled, MailTemplate20Regular, MoreHorizontalFilled, PanelTopContractRegular, PanelTopExpandRegular, PlugConnected20Filled, PlugConnected20Regular, QuestionFilled, ShieldLock20Filled, ShieldLock20Regular, ShieldQuestionRegular, TextboxRotate9020Filled, TextboxRotate9020Regular, TriangleLeft20Filled, TriangleLeft20Regular, TriangleRight20Filled, TriangleRight20Regular, WarningRegular } from "@fluentui/react-icons";
+import { BookGlobe20Filled, BookGlobe20Regular, bundleIcon, CallInboundRegular, CallOutboundRegular, ChartMultiple20Filled, ChartMultiple20Regular, CheckmarkSquareRegular, ClipboardBulletListRtlFilled, ClipboardBulletListRtlRegular, ClockRegular, DocumentBulletList20Filled, DocumentBulletList20Regular, DocumentGlobeRegular, DocumentOnePageRegular, FormSparkle20Filled, FormSparkle20Regular, GlobeColor, InfoRegular, LockClosedKeyRegular, MailTemplate20Filled, MailTemplate20Regular, MoreHorizontalFilled, PanelTopContractRegular, PanelTopExpandRegular, PlugConnected20Filled, PlugConnected20Regular, QuestionFilled, ShieldLock20Filled, ShieldLock20Regular, ShieldQuestionRegular, TextboxRotate9020Filled, TextboxRotate9020Regular, TriangleLeft20Filled, TriangleLeft20Regular, TriangleRight20Filled, TriangleRight20Regular, WarningRegular } from "@fluentui/react-icons";
 import React, { JSX, useEffect, useId, useState } from "react";
 
 import { useNavigate } from "react-router";
@@ -61,8 +61,10 @@ export const TabHttpRes = () => <PanelTopExpandRegular />
 
 export const ActionInfoIcon = () => <InfoRegular />
 export const ActionMoreIcon = () => <MoreHorizontalFilled />;
-export const TabHttpRequest = () => <CallInboundRegular />
-export const TabHttpResponse = () => <CallOutboundRegular />
+export const TabHttpRequest = () => <CallInboundRegular />;
+export const TabHttpResponse = () => <CallOutboundRegular />;
+
+export const TimeIcon = () => <><ClockRegular />Time</>;
 
 
 // eslint-disable-next-line react-refresh/only-export-components

@@ -1,10 +1,28 @@
 import { Button, Card, DataGrid, DataGridBody, DataGridCell, DataGridHeader, DataGridHeaderCell, DataGridRow, Slot, TableColumnDefinition, TableColumnSizingOptions, useFluent, useScrollbarWidth } from "@fluentui/react-components";
+
+// import { UseTableFeaturesOptions } from "@fluentui/react-table";
+
 import { IListResult } from "../../share/gen";
 import Pagination from './pagination2';
 
 import { JSX, ReactNode, useEffect, useState } from "react";
 import { BreadItem } from "./common";
 import Empty from "./http/content/empty";
+import React from "react";
+
+// import {
+//   useTableFeatures,
+//   UseTableFeaturesOptions,
+//   TableState,
+//   TableSortState,
+// } from "@fluentui/react-table";
+
+type SortDirection = "ascending" | "descending";
+
+export interface SortState {
+  sortColumn?: string;
+  sortDirection?: SortDirection;
+}
 interface GridProps<T> {
     columns: TableColumnDefinition<T>[];
     header?: JSX.Element;
@@ -16,6 +34,8 @@ interface GridProps<T> {
     breads?: { icon?: Slot<'span'>, name: string, path?: string }[],
     // size?: "small" | "medium" | "extra-small",
     size?: string,
+    sortState?: SortState,
+    onSortChange?:  (e: Event, sortState: SortState) => void;
 }
 interface PageProps {
     children: React.ReactElement<ReactNode>;
@@ -51,19 +71,42 @@ function Component<T>(props: GridProps<T>) {
         props.load(1, null).then(setResult)
 
     }
-    useEffect(mountHook, [page]);
+    let _state = page + '';
+    if(props.sortState){
+        _state = _state + ' ' + props.sortState.sortDirection;
+    }
+    useEffect(mountHook, [_state]);
     const columnSizingOptions = { ...props.columnSizingOptions };
 
     let main = <Empty/>;
     if(result.items && result.items.length > 0){
+
+        const _props: any = {
+            resizableColumns: true,
+            columnSizingOptions,
+            // sortable: true,
+            // sortState : {sortColumn: 'time', sortDirection: 'ascending'}
+            // onSortChange={(e, item) => {
+            //     console.log('sort', item);
+            // }}
+            items: result.items,
+            columns: props.columns,
+            sortable: false,
+            sortState: undefined,
+        }
+        if(props.sortState){
+            _props.sortable = true;
+            _props.sortState = props.sortState;
+            _props.onSortChange = props.onSortChange;
+        }
         main = <>
-        <DataGrid items={result.items}
+        <DataGrid
             size='small'
-            resizableColumns
             style={{ minWidth: "auto", overflow: 'hidden auto' }}
             // resizableColumnsOptions={{autoFitColumns: true}}
-            columnSizingOptions={columnSizingOptions}
-            columns={props.columns} className="h-full w-full" >
+            // onSortChange={}
+            {..._props}
+            className="h-full w-full" >
             <DataGridHeader style={{ paddingRight: scrollbarWidth, backgroundColor: '#458588' }}>
                 <DataGridRow>
                     {({ renderHeaderCell }) => (

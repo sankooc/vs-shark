@@ -16,6 +16,7 @@ interface PcapState {
   // loadFile: (file: PcapFile) => void;
   // unloadFile: () => void;
   send: (message: ComMessage<any>) => void;
+  reset: () => void;
   loadData: (data: Uint8Array) => Promise<void>;
   loadIFrame: (iframe: HTMLIFrameElement | null) => void;
 }
@@ -47,6 +48,10 @@ export const useStore = create<PcapState>()((set, get) => {
     loadData: async (data: Uint8Array) => {
       const message = ComMessage.new(ComType.PROCESS_DATA, { data });
       worker.postMessage(message, [data.buffer]);
+    },
+    reset: () => {
+      const message = ComMessage.new(ComType.RESET, {});
+      worker.postMessage(message);
     },
     loadIFrame: (iframe: HTMLIFrameElement | null) => {
       const frame = get().iframe;

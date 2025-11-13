@@ -2,14 +2,30 @@ import { useStore } from "../../store";
 import { IDNSResponse } from "../../../share/gen";
 import { createTableColumn, TableCellLayout, TableColumnDefinition, Toolbar, ToolbarButton } from "@fluentui/react-components";
 import { compute, ComRequest } from "../../../share/common";
-import Grid from "../table";
+import Grid, { SortState } from "../table";
 
-import { ActionInfoIcon, ActionMoreIcon, DNSIcon } from "../common";
+import { ActionInfoIcon, ActionMoreIcon, DNSIcon, TimeIcon } from "../common";
 import { useNavigate } from "react-router";
+import { useState } from "react";
 function Component() {
     const dnsList = useStore((state) => state.dnsList);
     const navigate = useNavigate();
+    const [sortState, setSortState] = useState<SortState>({
+        sortColumn: 'latency',
+        sortDirection: 'ascending'
+    })
     const columns: TableColumnDefinition<IDNSResponse>[] = [
+        createTableColumn<IDNSResponse>({
+            columnId: "time",
+            renderHeaderCell: TimeIcon,
+            renderCell: (item) => {
+                let content = item.ts_str;
+                if (item.offset_str) {
+                    content = content + ` (+${item.offset_str[0]}${item.offset_str[1]})`
+                }
+                return <TableCellLayout>{content}</TableCellLayout>
+            },
+        }),
         createTableColumn<IDNSResponse>({
             columnId: "transaction",
             renderHeaderCell: () => 'TID',
@@ -40,38 +56,41 @@ function Component() {
         createTableColumn<IDNSResponse>({
             columnId: "latency",
             renderHeaderCell: () => 'Latency',
+            compare: (_a, _b) => {
+                return 0;
+            },
             renderCell: (item) => {
                 let content = 'N/A';
-                if (item.latency){
+                if (item.latency) {
                     content = `${item.latency[0]} ${item.latency[1]}`
                 }
                 return <TableCellLayout>{content}</TableCellLayout>
             },
         }),
         createTableColumn<IDNSResponse>({
-          columnId: "ops",
-          renderHeaderCell: () => "action",
-          renderCell: (_item) => {
-            return <Toolbar aria-label="Default" size="small">
-              <ToolbarButton icon={ActionInfoIcon()} onClick={() => { onClick(_item) }} />
-              <ToolbarButton icon={ActionMoreIcon()}/>
-            </Toolbar>
-          },
+            columnId: "ops",
+            renderHeaderCell: () => "action",
+            renderCell: (_item) => {
+                return <Toolbar aria-label="Default" size="small">
+                    <ToolbarButton icon={ActionInfoIcon()} onClick={() => { onClick(_item) }} />
+                    <ToolbarButton icon={ActionMoreIcon()} />
+                </Toolbar>
+            },
         }),
     ];
     const onClick = (item: IDNSResponse) => {
-        console.log('dns', item.index);
-        const index = item.index;
+        const index = item.response;
         if (undefined != index) {
-          navigate('/dns/' + index);
+            navigate('/dns/' + index);
         }
     }
     const pageSize = 30;
     const load = async (page: number) => {
+        const asc = sortState.sortDirection === 'ascending';
         const data: ComRequest = {
             catelog: "dns",
             type: "list",
-            param: { ...compute(page, pageSize) },
+            param: { ...compute(page, pageSize), asc },
         };
         return dnsList(data);
     }
@@ -80,15 +99,18 @@ function Component() {
         { name: "DNS", icon: <DNSIcon />, path: "/dns" }
     ]
     const columnSizingOptions = {
+
+        time: {
+            minWidth: 300,
+            idealWidth: 300,
+        },
         transaction: {
             minWidth: 120,
             idealWidth: 120,
-            autoFitColumns: true,
         },
         receiver: {
             minWidth: 250,
             idealWidth: 300,
-            autoFitColumns: true,
         },
         client: {
             minWidth: 250,
@@ -98,9 +120,17 @@ function Component() {
             minWidth: 120,
             idealWidth: 120,
         }
+        // opt: {
+        //     minWidth: 120,
+        //     idealWidth: 120,
+        // }
 
     };
     const gridProps = {
+        sortState,
+        onSortChange: (_e: Event, state: SortState) => {
+            setSortState(state);
+        },
         columns, pageSize, load, columnSizingOptions, breads
     };
     return <Grid {...gridProps} />;

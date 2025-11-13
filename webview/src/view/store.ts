@@ -108,7 +108,7 @@ export const useStore = create<PcapState>()((set) => {
       case ComType.FRAMES_SELECT:
         {
           const {str, datasource} = body;
-          const fr: IFrameSelect = { fields: deserialize(str), datasource };
+          const fr: IFrameSelect = { fields: deserialize(str) || [], datasource };
           emitter.emit(id, fr);
           break;
         }

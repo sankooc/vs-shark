@@ -17,7 +17,7 @@ function frameSelectConvert(frameSelect: FrameResult): any {
       if (_range) {
         range = new VRange(_range.start, _range.end);
       }
-      datasource.push({ data, range })
+      datasource.push({ data, range });
     }
   }
   return { str, datasource };
@@ -63,7 +63,7 @@ export abstract class PCAPClient {
   abstract emitMessage(msg: ComMessage<any>): void;
   // abstract pickData(start: number, end: number): Promise<Uint8Array>;
 
-  private touchFile(fileInfo: PcapFile): void {
+  protected touchFile(fileInfo: PcapFile | undefined): void {
     this.info = fileInfo;
     this.emitMessage(ComMessage.new(ComType.FILEINFO, fileInfo));
   }
@@ -91,17 +91,17 @@ export abstract class PCAPClient {
             return;
           }
           case "http_connection": {
-            rs = this.ctx.list_http(start, size, param.host || '', '');
+            rs = this.ctx.list_http(start, size, param.host || '', '',!!param.asc);
             this.emitMessage(ComMessage.new(ComType.HTTP_CONNECTIONS, rs, requestId));
             return;
           }
           case "udp": {
-            rs = this.ctx.list_udp(start, size, param.ip || '');
+            rs = this.ctx.list_udp(start, size, param.ip || '', !!param.asc);
             this.emitMessage(ComMessage.new(ComType.UDP_CONNECTIONS, rs, requestId));
             return;
           }
           case "dns": {
-            rs = this.ctx.list_dns(start, size);
+            rs = this.ctx.list_dns(start, size, !!param.asc);
             this.emitMessage(ComMessage.new(ComType.DNS_CONNECTIONS, rs, requestId));
             return;
           }
@@ -181,10 +181,10 @@ export abstract class PCAPClient {
       const raw = data.raw_content();
       const plaintext = data.get_text_content();
       const content_type = data.content_type();
-      return { headers, raw, plaintext, content_type }
-    }
+      return { headers, raw, plaintext, content_type };
+    };
     if (rs) {
-      return rs.map(convert)
+      return rs.map(convert);
     }
     return [];
   }

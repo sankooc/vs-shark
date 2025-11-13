@@ -4,6 +4,8 @@ web-site:
 	cp extension/CHANGELOG.md doc/pages/
 wasm:
 	cd crates/wasm && make web
+web-demo: wasm
+	cd webview && rm -rf dist && npm run ins && npm run build:local
 clean:
 	rm -rf ~/.cargo/registry/index/* ~/.cargo/.package-cache
 re-intall:

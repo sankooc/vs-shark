@@ -176,50 +176,41 @@ function Component() {
     index: {
       minWidth: 70,
       idealWidth: 70,
-      autoFitColumns: true,
     },
     version: {
       minWidth: 90,
       idealWidth: 90,
-      autoFitColumns: true,
     },
     cs: {
       minWidth: 330,
       idealWidth: 330,
-      autoFitColumns: true,
 
     },
     primary: {
       minWidth: 300,
       idealWidth: 300,
-      autoFitColumns: true,
     },
     second: {
       minWidth: 300,
       idealWidth: 300,
-      autoFitColumns: true,
     },
     alpn: {
       minWidth: 80,
       idealWidth: 80,
-      autoFitColumns: true,
     },
     count: {
       minWidth: 50,
       idealWidth: 50,
-      autoFitColumns: true,
     },
     sni: {
       minWidth: 500,
       idealWidth: 300,
       defaultWidth: 300,
-      autoFitColumns: true,
     },
     ops: {
       idealWidth: 100,
       minWidth: 80,
       defaultWidth: 80,
-      autoFitColumns: true,
     }
   };
   const gridProps = {

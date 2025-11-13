@@ -8,7 +8,7 @@ use std::hash::Hash;
 use serde::Serialize;
 
 use crate::{
-    common::{connection::Connection, enum_def::Protocol, FastHashMap, Instance, NString},
+    common::{connection::Connection, enum_def::Protocol, util::date_str, FastHashMap, Instance, NString},
     protocol::transport::tls::tls_version_map,
 };
 
@@ -323,9 +323,11 @@ pub struct VConversation {
     pub connects: usize,
 }
 
-#[derive(Serialize, Clone)]
+#[derive(Serialize, Clone, Default)]
 pub struct UDPConversation {
     pub index: usize,
+    #[serde(skip)]
+    pub ts: Timestamp,
     pub sender: String,
     pub receiver: String,
     pub sender_port: u16,
@@ -333,19 +335,24 @@ pub struct UDPConversation {
     pub packets: u32,
     pub bytes: usize,
     pub records: Vec<(u64, usize)>,
+    pub ts_str: String,
+    pub offset_str: (f64, NString),
 }
 impl UDPConversation {
-    pub fn new(index: usize, sender: String, receiver: String, sender_port: u16, receiver_port: u16) -> Self {
+    pub fn new(index: usize, ts: Timestamp, sender: String, receiver: String, sender_port: u16, receiver_port: u16) -> Self {
         Self {
             index,
+            ts,
             sender,
             receiver,
             sender_port,
             receiver_port,
-            packets: 0,
-            bytes: 0,
-            records: vec![],
+            ..Default::default()
         }
+    }
+    pub fn init(&mut self, first: Timestamp) {
+        self.ts_str = date_str(self.ts);
+        self.offset_str = period(self.ts, self.ts.saturating_sub(first));
     }
     pub fn incr(&mut self, mount: usize, time: u64) {
         self.packets += 1;
@@ -402,7 +409,7 @@ pub struct VEndpoint {
     pub statistic: TCPStatistic,
 }
 
-#[derive(Serialize, Default, Clone)]
+#[derive(Serialize, Default, Clone, Debug)]
 pub struct VHttpConnection {
     pub index: usize,
     pub request: Option<String>,
@@ -411,6 +418,9 @@ pub struct VHttpConnection {
     pub hostname: String,
     pub content_type: String,
     pub length: usize,
+    #[serde(skip)]
+    pub ts: Timestamp,
+    pub ts_str: String,
 }
 
 const NA: &str = "N/A";
@@ -469,27 +479,49 @@ pub fn period(sample: u64, time: u64) -> (f64, NString) {
     (val, unit)
 }
 
-#[derive(Serialize, Default, Debug)]
+#[derive(Serialize, Default, Debug, Clone)]
 pub struct DNSResponse {
-    transaction_id: u16,
-    source: String,
-    target: String,
-    response: Option<usize>,
-    index: Option<usize>,
-    latency: (f64, NString),
-    // content: String,
+    pub transaction_id: u16,
+    pub source: String,
+    pub target: String,
+    #[serde(skip)]
+    pub request: Option<usize>,
+    pub response: Option<usize>,
+    #[serde(skip)]
+    pub req_ts: Timestamp,
+    #[serde(skip)]
+    pub res_ts: Timestamp,
+    #[serde(skip)]
+    pub _latency: Timestamp,
+    pub latency: (f64, NString),
+    pub ts_str: String,
+    pub offset_str: (f64, NString),
 }
 
 impl DNSResponse {
-    pub fn convert<T>(instance: &Instance<T>, item: &(u16, Option<FrameIndex>, Option<FrameIndex>)) -> Self {
-        let mut rs = DNSResponse {
-            transaction_id: item.0,
-            ..Default::default()
-        };
-        let mut start = 0;
-        if let Some(index) = item.1 {
+    pub fn is_complete(&self) -> bool {
+        self.response.is_some()
+    }
+    pub fn fix_offset(&mut self) -> bool {
+        let rs = self.is_complete();
+        if self.request.is_some() && rs && self.res_ts > 0 {
+            self._latency = self.res_ts.saturating_sub(self.req_ts);
+        }
+        rs
+    }
+    pub fn convert<T>(instance: &Instance<T>, item: &DNSResponse, first: Timestamp) -> Self {
+        let mut rs = item.clone();
+
+        rs.ts_str = date_str(rs.res_ts);
+        rs.offset_str = period(rs.res_ts, rs.res_ts.saturating_sub(first));
+        rs.latency = period(rs.res_ts, rs._latency);
+
+        if let Some(index) = item.request {
             if let Some(frame) = instance.frame(index as usize) {
-                start = frame.info.time;
+                // start = frame.info.time;
+                // rs.ts = start;
+                // rs.ts_str = date_str(rs.res_ts);
+                // rs.offset_str = period(rs.res_ts, rs.res_ts.saturating_sub(first));
                 if let Some((ip, _)) = frame.addresses(instance.context()) {
                     rs.source = ip;
                 }
@@ -497,16 +529,11 @@ impl DNSResponse {
             }
         }
 
-        if let Some(index) = item.2 {
+        if let Some(index) = item.response {
             if let Some(frame) = instance.frame(index as usize) {
-                rs.index = Some(index as usize);
                 if let Some((ip, _)) = frame.addresses(instance.context()) {
                     rs.target = ip;
                 }
-                if start > 0 {
-                    rs.latency = period(frame.info.time, frame.info.time.saturating_sub(start));
-                }
-                rs.response = Some(index as usize);
             }
         }
         rs
@@ -571,6 +598,7 @@ pub enum HttpEncoding {
     Zstd,
 }
 
+#[derive(Debug)]
 pub struct HttpMessageDetail {
     pub is_request: bool,
     pub headers: Vec<String>,
@@ -713,7 +741,7 @@ impl TLSItem {
         // self.version = tls_version_map(code).map(String::from);
         // self.security = format!("{:?}", security_level(self.version_code, self.cs_code)).to_lowercase()
     }
-    pub fn update(&mut self){
+    pub fn update(&mut self) {
         self.count += 1;
         if self.version_code != 0 && self.version.is_none() {
             self.version = tls_version_map(self.version_code).map(String::from);
@@ -726,8 +754,8 @@ impl TLSItem {
             self.security = format!("{:?}", security_level(self.version_code, self.cs_code)).to_lowercase()
         }
     }
-    
-    pub fn get_trait(&self) -> (Option<String>, u16, u16){
+
+    pub fn get_trait(&self) -> (Option<String>, u16, u16) {
         (self.hostname.clone(), self.cs_code, self.version_code)
     }
 
@@ -738,7 +766,6 @@ impl TLSItem {
     //     self.alpn = Some(alpn);
     // }
 }
-
 
 #[derive(Clone, Copy, Default, Debug)]
 pub enum SecurityLevel {
@@ -859,16 +886,15 @@ where
     }
 }
 
-
 #[derive(Serialize, Debug, Default, Clone)]
 pub struct DNSRecord {
     pub host: String,
     pub rtype: String,
     pub class: String,
-    pub info: Option<String>
+    pub info: Option<String>,
 }
 impl DNSRecord {
     pub fn new(host: String, rtype: String, class: String, info: Option<String>) -> Self {
-        Self{host, rtype, class, info}
+        Self { host, rtype, class, info }
     }
 }

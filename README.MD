@@ -50,9 +50,9 @@
   - **Transport Layer**: TCP, UDP
   - **Application Layer**: TLS, HTTP, DNS, DHCP, SSDP, SIP
 
-<!-- ### 📦 Online Demo -->
+### 📦 Online Demo
 
-<!-- Try out [PcapViewer](https://sankooc.github.io/vs-shark/app/) in your browser. -->
+Try out [PcapViewer](https://sankooc.github.io/vs-shark/app/) in your browser.
 
 
 ### 🚀 Features in Action
