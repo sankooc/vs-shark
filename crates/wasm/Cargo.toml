@@ -1,6 +1,6 @@
 [package]
 name = "wasm-pcps"
-version = "0.3.6"
+version = "0.4.7"
 authors = ["sankooc <sankooc@163.com>"]
 description = "pcap/pcapng file analyzer"
 edition = "2021"

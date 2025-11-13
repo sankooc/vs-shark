@@ -3,8 +3,14 @@ resolver = "2"
 members = [
 "crates/wasm",
 "crates/tui",
-"crates/parser", "crates/util"]
+"crates/parser", "crates/util", "crates/pcap-gui"
+]
 
+[workspace.package]
+version = "0.4.6"
+edition = "2021"
+authors = ["sankooc <you@example.com>"]
+license = "MIT"
 
 [profile.release]
 panic = "unwind"

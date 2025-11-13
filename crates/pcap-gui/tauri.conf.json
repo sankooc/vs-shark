@@ -1,0 +1,29 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "pcapviewer_gui",
+  "version": "0.4.7",
+  "identifier": "com.sankooc.gui",
+  "build": {
+    "frontendDist": "../../webview/dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "gui",
+        "width": 800,
+        "height": 600
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["deb", "rpm"],
+    "icon": [
+      "../../assets/icon32.png",
+      "../../assets/icon128.png"
+    ]
+  }
+}
