@@ -1,16 +1,14 @@
-import { useStore } from "../../store";
+import { usePcapStore } from "../../../share/context";
 import { IUDPConversation } from "../../../share/gen";
 import { createTableColumn, TableCellLayout, TableColumnDefinition } from "@fluentui/react-components";
 import { compute, ComRequest, format_bytes_single_unit, formatMicroseconds } from "../../../share/common";
 import { useState } from "react";
 import Grid, { SortState } from "../table";
 
-// import { useNavigate } from "react-router";
 import { IPSelector, TimeIcon, UDPTabIcon } from "../common";
 import { BoxRegular, DesktopMacRegular, DocumentMultipleRegular, DocumentRegular, DocumentTextRegular } from "@fluentui/react-icons";
 import Spark from "../overview/spark";
 
-// import { PageFrame } from '../table';
 
 const SIZE: "small" | "medium" = 'small';
 
@@ -22,7 +20,7 @@ const headIcon = (item: IUDPConversation) => {
 }
 
 function Component() {
-    const conversations = useStore((state) => state.udpList);
+    const conversations = usePcapStore((state) => state.udpList);
     // const tableFeature = useTableSort({});
 
     // const [sortState, setSortState] = useState<TableSortState<IUDPConversation>>({

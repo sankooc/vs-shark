@@ -1,8 +1,8 @@
 
 import { FluentProvider } from '@fluentui/react-components';
+import "primeflex/primeflex.css";
 import './index.scss';
 import Application from './app';
-// import { useStore } from '../store';
 
 import { teamsDarkTheme } from "@fluentui/react-components";
 const UI = () => {

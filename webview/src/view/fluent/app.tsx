@@ -25,9 +25,10 @@ import DNSRecordComponent from './dns/sub';
 import TLSHostList from './tls';
 import TLSConvList from './tls/sub';
 
-import { useStore } from "../store";
+import { usePcapStore } from "../../share/context";
 import LoadingComponent from './loading';
 import { ConversationIcon, DNSIcon, FrameIcon, HttpIcon, OverviewIcon, StatisticTabIcon, TLSIcon, UDPTabIcon } from "./common";
+import { PcapState } from "../../share/common";
 
 const useCSS = makeStyles({
   nav: {
@@ -152,8 +153,8 @@ const Nav = () => {
 
 
 const Basic = () => {
-  const info = useStore((state) => state.fileinfo);
-  const progress = useStore((state) => state.progress);
+  const info = usePcapStore((state: PcapState) => state.fileinfo);
+  const progress = usePcapStore((state: PcapState) => state.progress);
   if (!progress) {
     return <LoadingComponent info={info} progress={progress} />
   }

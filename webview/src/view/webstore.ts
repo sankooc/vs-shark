@@ -12,48 +12,19 @@ import {
   ITLSConnect,
   ITLSInfo,
   PcapFile,
+  PcapState,
   StatRequest,
   VRange,
 } from "../share/common";
-import { IFrameInfo, IListResult, IProgressStatus, IVConnection, IVConversation, IVHttpConnection, IUDPConversation, IDNSResponse, IDNSRecord } from "../share/gen";
+import { IListResult, IProgressStatus, IVConnection, IVConversation, IVHttpConnection, IUDPConversation, IDNSResponse, IDNSRecord } from "../share/gen";
 import mitt from "mitt";
 
 
 // import convMock from '../mock/conversation.json';
 // import connMock from '../mock/connection.json';
 // import frameMock from '../mock/frame.json';
-import { PartialTheme } from "@fluentui/react-components";
-import { buildTheme } from "./fluent/theme";
+// import { buildTheme } from "./fluent/theme";
 
-interface PcapState {
-  theme: PartialTheme;
-  fileinfo?: PcapFile;
-  progress?: IProgressStatus;
-  frameResult?: IListResult<IFrameInfo>;
-  frameSelect?: string;
-  sendReady: () => void;
-  request: <F>(data: any) => Promise<F>;
-  requestData: (data: VRange) => Promise<DataResponse>;
-  conversationList: (data: any) => Promise<IListResult<IVConversation>>;
-  udpList: (data: any) => Promise<IListResult<IUDPConversation>>;
-  dnsList: (data: any) => Promise<IListResult<IDNSResponse>>;
-  dnsRecords: (data: any) => Promise<IListResult<IDNSRecord>>;
-  tlsList: (data: any) => Promise<IListResult<ITLSConnect>>;
-  tlsConvList: (data: any) => Promise<IListResult<ITLSInfo>>;
-  connectionList: (data: any) => Promise<IListResult<IVConnection>>;
-  httpList: (data: any) => Promise<IListResult<IVHttpConnection>>;
-  httpDetail: (index: number) => Promise<IHttpDetail[]>
-  cachehttp: (conn: IVHttpConnection | null) => void;
-  getHttpCache: () => IVHttpConnection | null;
-  stat: (request: StatRequest) => Promise<any> ;
-}
-// const compute = (page: number, size: number): Pagination => {
-//   if (page < 1) {
-//     return { start: 0, size: size };
-//   }
-//   const start = (page - 1) * size;
-//   return { start, size };
-// };
 
 // const commandMap = new Map<string, any>();
 const emitter = mitt();
@@ -78,11 +49,11 @@ export const useStore = create<PcapState>()((set) => {
   _log("create pcap store");
   onMessage("message", (e: any) => {
     const { type, body, id } = e.data;
-    if (type === "vscode-theme-change") {
-      const _theme = buildTheme();
-      set((state) => ({ ...state, theme: _theme }));
-      return;
-    }
+    // if (type === "vscode-theme-change") {
+    //   const _theme = buildTheme();
+    //   set((state) => ({ ...state, theme: _theme }));
+    //   return;
+    // }
     switch (type) {
       case ComType.SERVER_REDAY: {
         //   emitMessage(ComMessage.new(ComType.CLIENT_REDAY, Date.now()));
@@ -136,12 +107,12 @@ export const useStore = create<PcapState>()((set) => {
     }
   });
   emitMessage(ComMessage.new(ComType.CLIENT_REDAY, Date.now()));
-  const ctheme = buildTheme();
+  // const ctheme = buildTheme();
 
   let httpCache: IVHttpConnection | null = null;
 
   return {
-    theme: ctheme,
+    // theme: ctheme,
     sendReady: () => {
       emitMessage(ComMessage.new(ComType.CLIENT_REDAY, Date.now()));
     },

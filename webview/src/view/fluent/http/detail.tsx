@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useStore } from "../../store";
+import { usePcapStore } from "../../../share/context";
 import { SelectTabData, SelectTabEvent, Tab, TabList, TabValue, Tree, TreeItem, TreeItemLayout } from "@fluentui/react-components";
 import { IHttpDetail } from "../../../share/common";
 import indexCss from './index.module.scss';
@@ -13,7 +13,7 @@ import { useLocation, useParams } from "react-router";
 
 export default function ConnectionList() {
 
-    const httpDetail = useStore((state) => state.httpDetail);
+    const httpDetail = usePcapStore((state) => state.httpDetail);
     const [_list, setList] = useState<IHttpDetail[]>([]);
     const [select, setSelect] = useState<string>('');
     const [selectedValue, setSelectedValue] = useState<TabValue>("Header");

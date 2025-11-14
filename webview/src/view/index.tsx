@@ -1,6 +1,11 @@
 
 import ReactDOM from "react-dom/client";
-import "primeflex/primeflex.css";
 import Application from "./fluent/index";
+import { StoreProvider } from "../share/context";
+import { useStore } from './webstore';
 
-ReactDOM.createRoot(document.getElementById("app")!).render(<Application />);
+ReactDOM.createRoot(document.getElementById('app')!).render(
+  <StoreProvider store={useStore}>
+    <Application />
+  </StoreProvider>
+);

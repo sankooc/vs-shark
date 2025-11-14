@@ -161,7 +161,6 @@ impl Visitor {
                 add_field_rest_format!(field, reader, format!("Original Datagram: {} bytes", reader.left()));
             }
             13 | 14 => {
-                // Timestamp 或 Timestamp Reply
                 add_field_format!(field, reader, reader.read16(true)?, "Identifier: {}");
                 add_field_format!(field, reader, reader.read16(true)?, "Sequence Number: {}");
                 add_field_format!(field, reader, reader.read32(true)?, "Originate Timestamp: {} ms");
@@ -169,7 +168,6 @@ impl Visitor {
                 add_field_format!(field, reader, reader.read32(true)?, "Transmit Timestamp: {} ms");
             }
             15 | 16 => {
-                // Information Request 或 Information Reply
                 add_field_format!(field, reader, reader.read16(true)?, "Identifier: {}");
                 add_field_format!(field, reader, reader.read16(true)?, "Sequence Number: {}");
             }

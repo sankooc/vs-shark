@@ -1,4 +1,5 @@
-import { useStore } from "../../store";
+
+import { usePcapStore } from "../../../share/context";
 import { IVConversation } from "../../../share/gen";
 import { createTableColumn, TableCellLayout, TableColumnDefinition, Toolbar, ToolbarButton } from "@fluentui/react-components";
 import { compute, ComRequest, format_bytes_single_unit } from "../../../share/common";
@@ -14,7 +15,7 @@ const SIZE: "small" | "medium" = 'small';
 
 
 function Component() {
-    const conversations = useStore((state) => state.conversationList);
+    const conversations = usePcapStore((state) => state.conversationList);
     const navigate = useNavigate();
     const [ip, setIp] = useState<string>('');
     const columns: TableColumnDefinition<IVConversation>[] = [

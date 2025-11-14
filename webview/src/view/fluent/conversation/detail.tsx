@@ -1,4 +1,5 @@
-import { useStore } from "../../store";
+
+import { usePcapStore } from "../../../share/context";
 import { IVConnection} from "../../../share/gen";
 import { createTableColumn, TableCellLayout, TableColumnDefinition } from "@fluentui/react-components";
 import { compute, ComRequest, format_bytes_single_unit } from "../../../share/common";
@@ -16,7 +17,7 @@ export default function Component() {
     const location = useLocation();
     const title = location.state?.title || "detail";
     const pageSize = connect_size;
-    const connections = useStore((state) => state.connectionList);
+    const connections = usePcapStore((state) => state.connectionList);
     const columns: TableColumnDefinition<IVConnection>[] = [
         createTableColumn<IVConnection>({
             columnId: "protocol",

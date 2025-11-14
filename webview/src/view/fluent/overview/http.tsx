@@ -1,6 +1,6 @@
 import { Card } from "@fluentui/react-components";
 import ReactECharts from 'echarts-for-react';
-import { useStore } from "../../store";
+import { usePcapStore } from "../../../share/context";
 import { useEffect, useState } from "react";
 import { ICounterItem } from "../../../share/gen";
 
@@ -16,7 +16,7 @@ const Meta = {
 
 
 export default function Component() {
-    const stat = useStore((state) => state.stat);
+    const stat = usePcapStore((state) => state.stat);
     const [data, setData] = useState<ICounterItem[][]>([]);
     useEffect(() => {
         stat({ field: 'http_data' }).then(setData);

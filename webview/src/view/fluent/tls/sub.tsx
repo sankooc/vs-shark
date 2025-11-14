@@ -1,4 +1,4 @@
-import { useStore } from "../../store";
+import { usePcapStore } from "../../../share/context";
 import { createTableColumn, TableCellLayout, TableColumnDefinition } from "@fluentui/react-components";
 import { compute, ComRequest, ITLSInfo } from "../../../share/common";
 import Grid from "../table";
@@ -8,7 +8,7 @@ import { useParams } from "react-router";
 
 
 function Component() {
-  const tlsList = useStore((state) => state.tlsConvList);
+  const tlsList = usePcapStore((state) => state.tlsConvList);
   const columns: TableColumnDefinition<ITLSInfo>[] = [
     createTableColumn<ITLSInfo>({
       columnId: "id",

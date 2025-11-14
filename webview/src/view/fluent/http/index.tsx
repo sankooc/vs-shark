@@ -1,5 +1,5 @@
 // import React, { useEffect, useState } from "react";
-import { useStore } from "../../store";
+import { usePcapStore } from "../../../share/context";
 import { IVHttpConnection, ICounterItem } from "../../../share/gen";
 import { createTableColumn, Select, TableCellLayout, TableColumnDefinition, Toolbar, ToolbarButton } from "@fluentui/react-components";
 import { compute, ComRequest, format_bytes_single_unit } from "../../../share/common";
@@ -63,8 +63,8 @@ const http_connct_status = (status: string) => {
 }
 
 function Component() {
-    const httpConnections = useStore((state) => state.httpList);
-    const stat = useStore((state) => state.stat);
+    const httpConnections = usePcapStore((state) => state.httpList);
+    const stat = usePcapStore((state) => state.stat);
     const [httpHosts, setHttpHosts] = useState<ICounterItem[]>([]);
     const [hostSelect, setHostSelect] = useState<string>(NoneOption);
     useEffect(() => {

@@ -12,7 +12,7 @@ import { BookGlobe20Filled, BookGlobe20Regular, bundleIcon, CallInboundRegular, 
 import React, { JSX, useEffect, useId, useState } from "react";
 
 import { useNavigate } from "react-router";
-import { useStore } from "../store";
+import { usePcapStore } from "../../share/context";
 
 interface ConnectProp {
     items: {
@@ -94,7 +94,7 @@ const IPV6Option = "ipv6";
 
 export function IPSelector(props: SelectorProps) {
     const selectId = useId();
-    const stat = useStore((state) => state.stat);
+    const stat = usePcapStore((state) => state.stat);
 
     const [ip4s, setIp4s] = useState<string[]>([]);
     const [ip6s, setIp6s] = useState<string[]>([]);
