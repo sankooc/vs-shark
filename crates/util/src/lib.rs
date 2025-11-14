@@ -5,7 +5,6 @@ use std::{
 };
 
 pub struct FileBatchReader {
-    // filename: String,
     file: File,
     file_size: u64,
     block_size: u64,

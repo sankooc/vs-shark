@@ -9,7 +9,7 @@ use tauri_plugin_dialog::{DialogExt, MessageDialogKind};
 use std::sync::Mutex;
 use std::collections::VecDeque;
 use serde::{Serialize, Deserialize};
-
+mod core;
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct RecentFile {
     path: String,
@@ -102,6 +102,11 @@ async fn open_recent_file(app_handle: AppHandle, file_path: String) -> Result<()
     Ok(())
 }
 
+#[tauri::command]
+fn greet(name: &str) -> String {
+    format!("Hello, {}! You've been greeted from Rust!", name)
+}
+
 fn rebuild_menu(app_handle: &AppHandle) -> tauri::Result<()> {
     let recent_files: State<RecentFiles> = app_handle.state();
     let files = recent_files.get_files();
@@ -144,8 +149,8 @@ fn rebuild_menu(app_handle: &AppHandle) -> tauri::Result<()> {
     Ok(())
 }
 
-#[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+
     tauri::Builder::default()
         .setup(|app| {
             app.manage(RecentFiles::new());
@@ -199,7 +204,7 @@ pub fn run() {
         })
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
-        .invoke_handler(tauri::generate_handler![open_file_dialog, open_recent_file])
+        .invoke_handler(tauri::generate_handler![greet, open_file_dialog, open_recent_file])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
