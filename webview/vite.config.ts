@@ -19,12 +19,29 @@ export default defineConfig(({ command, mode }) => {
   const getEntries = () => {
     if (command === 'serve') return allEntries
     if (env.VITE_BUILD_ALL === 'true') return allEntries
+    if(env.VITE_BUILD_GUI === 'true') {
+      return {
+        index: resolve(__dirname, 'ui.html'),
+      };
+    }
+    if(env.VITE_BUILD_SOCKET === 'true') {
+      return resolve(__dirname, 'ui.html');
+    }
     return mainEntry
   }
 
   const getOutput = () => {
-    if (env.VITE_BUILD_ALL === 'true') return './dist'
-    return './../plugin/dist/web'
+    if (env.VITE_BUILD_ALL === 'true') return '../dist/web'
+    if (env.VITE_BUILD_VSCODE === 'true') {
+      return './../plugin/dist/web';
+    }
+    if(env.VITE_BUILD_GUI === 'true') {
+      return './../dist/gui';
+    }
+    if(env.VITE_BUILD_SOCKET == 'true') {
+      return './../dist/socket';
+    }
+    return './dist';
   }
 
   return {
@@ -43,13 +60,6 @@ export default defineConfig(({ command, mode }) => {
       exclude: ['rshark']
     },
     base: '',
-    // css: {
-    //   preprocessorOptions: {
-    //     scss: {
-    //       additionalData: `@import "src/scss/var.scss";`
-    //     }
-    //   }
-    // },
     assetsInclude: ['**/*.ttf'],
     build: {
       outDir: getOutput(),

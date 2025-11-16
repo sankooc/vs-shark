@@ -3,8 +3,8 @@ resolver = "2"
 members = [
 "crates/wasm",
 "crates/tui",
-"crates/parser", "crates/util", "crates/pcap-gui"
-]
+"crates/parser", "crates/util"
+, "crates/pcap-web"]
 
 [workspace.package]
 version = "0.4.6"

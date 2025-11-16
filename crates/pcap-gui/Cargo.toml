@@ -16,10 +16,10 @@ tauri-build = { version = "2", features = [] }
 [dependencies]
 tauri-plugin-dialog = "2.0"
 tauri-plugin-opener = "2"
-anyhow.workspace = true
 tauri = { version = "2", features = [] }
 pcap = { path = "../parser" }
 util = { path = "../util" }
+anyhow.workspace = true
 serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true
 tokio = { version = "1.48.0", features = ["macros", "rt-multi-thread", "sync", "time"] }

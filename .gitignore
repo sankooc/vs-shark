@@ -5,7 +5,7 @@ sandbox/
 extension/media/
 
 # Added by cargo
-
+/dist
 /target
 /release
 simulator.rs
