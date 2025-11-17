@@ -1,16 +1,19 @@
-use std::{ops::Range, thread::{self, Thread}, time::Duration};
+use std::{
+    ops::Range, path::Path, thread::{self}, time::Duration
+};
 
 use pcap::common::{Instance, ResourceLoader};
-use tokio::sync::mpsc;
+use tokio::sync::{mpsc, oneshot};
 use util::{file_seek, file_seeks};
 
 pub enum UICommand {
     Quit,
     None,
-    OpenFile(String),
+    OpenFile(oneshot::Sender<String>, String),
+    List(oneshot::Sender<String>, String),
 }
 
-pub enum PcapEngineCommand {
+pub enum EngineCommand {
     Quit,
     None,
     FileInfo(String),
@@ -43,42 +46,63 @@ impl LocalResource {
     }
 }
 
+fn create_instance(fname: String) -> Instance<LocalResource> {
+    let batch_size = 1024 * 1024 * 4;
+    let loader = LocalResource::new(fname);
+    Instance::new(batch_size as usize, loader)
+}
+
 pub struct Engine {
-    // ins: Instance<LocalResource>,
+    ins: Option<Instance<LocalResource>>,
     gui_rx: mpsc::Receiver<UICommand>,
-    rr_rx: mpsc::Receiver<ResourceCommand>,
+    // rr_rx: mpsc::Receiver<ResourceCommand>,
 }
 
 impl Engine {
-    pub fn new(
-        // ins: Instance<LocalResource>,
-        gui_rx: mpsc::Receiver<UICommand>,
-        rr_rx: mpsc::Receiver<ResourceCommand>,
-    ) -> Self {
-        Engine {
-            gui_rx,
-            rr_rx,
+    pub fn new(gui_rx: mpsc::Receiver<UICommand>) -> Self {
+        Engine { gui_rx, ins: None }
+    }
+}
+
+impl Engine {
+    async fn handle_gui(&mut self, cmd: UICommand) {
+        println!("Handling GUI command:");
+        match cmd {
+            UICommand::Quit => {
+                println!("Quit command received.");
+            }
+            UICommand::None => {
+                println!("No operation command received.");
+            }
+            UICommand::OpenFile(tx, filepath) => {
+                println!("Open file command received for file: {}", filepath);
+                let path = Path::new(&filepath);
+                if !path.exists() {
+                let _ = tx.send(format!("No File {} ", filepath));
+                    return;
+                }
+                self.ins = Some(create_instance(filepath.clone()));
+                let _ = tx.send(format!("File {} opened successfully.", filepath));
+            }
+            UICommand::List(tx, session_id) => {
+                println!("List command received for session: {}", session_id);
+                // Here you would add logic to get the list and send back a response
+                let _ = tx.send(format!("List for session {}.", session_id));
+            }
         }
     }
-}
-
-impl Engine {
-    async fn handle_gui(cmd: &UICommand) {
-        // todo!();
-    }
-    async fn handle_resource(cmd: &ResourceCommand) {}
-        // todo!();
+    async fn _handle_resource(_cmd: &ResourceCommand) {}
+    // todo!();
 
     pub async fn run(&mut self) {
         loop {
             tokio::select! {
                 Some(msg) = self.gui_rx.recv() => {
-                    let response = Self::handle_gui(&msg).await;
-                    
+                    let _response = self.handle_gui(msg).await;
                 }
-                Some(msg) = self.rr_rx.recv() => {
-                    let response = Self::handle_resource(&msg).await;
-                }
+                // Some(msg) = self.rr_rx.recv() => {
+                //     let response = Self::handle_resource(&msg).await;
+                // }
 
                 else => thread::sleep(Duration::from_millis(50)),
             }
@@ -86,18 +110,48 @@ impl Engine {
     }
 }
 
-
-pub trait UIEngine {
-    
+pub struct UIEngine {
+    gui_tx: mpsc::Sender<UICommand>,
+    rx: mpsc::Receiver<EngineCommand>,
 }
 
+impl UIEngine {
+    pub fn new(gui_tx: mpsc::Sender<UICommand>, rx: mpsc::Receiver<EngineCommand>) -> Self {
+        UIEngine { gui_tx, rx }
+    }
+    pub async fn open_file(&self, filepath: String) -> String {
+        let (tx, rx) = oneshot::channel();
 
-pub fn build_engine() -> Engine {
-    let (gui_rx, grx) = mpsc::channel::<UICommand>(10);
-    let (rui_rx, rrx) = mpsc::channel::<ResourceCommand>(10);
+        let _ = self.gui_tx.send(UICommand::OpenFile(tx, filepath)).await;
+        match rx.await {
+            Ok(result) => result,
+            Err(_) => String::new(),
+        }
+    }
+    pub async fn get_list(&self) -> String {
+        "list".to_string()
+    }
+    pub async fn run(&mut self) {
+        loop {
+            if let Some(msg) = self.rx.recv().await {
+                match msg {
+                    EngineCommand::Quit => break,
+                    EngineCommand::None => {}
+                    EngineCommand::FileInfo(_) => {}
+                }
+            } else {
+                thread::sleep(Duration::from_millis(50));
+            }
+        }
+    }
+}
 
-    Engine::new(
-        grx,
-        rrx,
-    )
+pub fn build_engine() -> (UIEngine, Engine) {
+    let (gui_tx, grx) = mpsc::channel::<UICommand>(10);
+    let (_rui_tx, _rrx) = mpsc::channel::<ResourceCommand>(10);
+    let (_e_tx, erx) = mpsc::channel::<EngineCommand>(10);
+    let ui_engine = UIEngine::new(gui_tx.clone(), erx);
+    let engine = Engine::new(grx);
+
+    (ui_engine, engine)
 }

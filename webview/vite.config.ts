@@ -6,7 +6,7 @@ import topLevelAwait from "vite-plugin-top-level-await";
 
 export default defineConfig(({ command, mode }) => {
   const env = loadEnv(mode, process.cwd())
-  
+
   const allEntries = {
     main: resolve(__dirname, 'index.html'),
     app: resolve(__dirname, 'app.html'),
@@ -17,14 +17,19 @@ export default defineConfig(({ command, mode }) => {
   }
 
   const getEntries = () => {
-    if (command === 'serve') return allEntries
+    if (command === 'serve') {
+      if (env.VITE_BUILD_SOCKET === 'true') {
+        return resolve(__dirname, 'ui.html');
+      }
+      return allEntries;
+    }
     if (env.VITE_BUILD_ALL === 'true') return allEntries
-    if(env.VITE_BUILD_GUI === 'true') {
+    if (env.VITE_BUILD_GUI === 'true') {
       return {
         index: resolve(__dirname, 'ui.html'),
       };
     }
-    if(env.VITE_BUILD_SOCKET === 'true') {
+    if (env.VITE_BUILD_SOCKET === 'true') {
       return resolve(__dirname, 'ui.html');
     }
     return mainEntry
@@ -35,10 +40,10 @@ export default defineConfig(({ command, mode }) => {
     if (env.VITE_BUILD_VSCODE === 'true') {
       return './../plugin/dist/web';
     }
-    if(env.VITE_BUILD_GUI === 'true') {
+    if (env.VITE_BUILD_GUI === 'true') {
       return './../dist/gui';
     }
-    if(env.VITE_BUILD_SOCKET == 'true') {
+    if (env.VITE_BUILD_SOCKET == 'true') {
       return './../dist/socket';
     }
     return './dist';
@@ -55,6 +60,14 @@ export default defineConfig(({ command, mode }) => {
         '@': resolve(__dirname, 'src'),
         '@assets': resolve(__dirname, 'src/assets')
       },
+    },
+    server: {
+      proxy: {
+        '/api': {
+          target: 'http://127.0.0.1:3000',
+          changeOrigin: true,
+        },
+      }
     },
     optimizeDeps: {
       exclude: ['rshark']

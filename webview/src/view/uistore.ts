@@ -1,6 +1,6 @@
 // userStore.ts
 import { create } from "zustand";
-import { onMessage, emitMessage } from "../common/connect";
+// import { onMessage, emitMessage } from "../common/connect";
 import { _log } from "./util";
 import {
   ComMessage,
@@ -46,75 +46,17 @@ const doRequest = <F>(data: ComMessage<any>): Promise<F> => {
 
 
 export const useStore = create<PcapState>()((set) => {
-  _log("create pcap store");
-  onMessage("message", (e: any) => {
-    const { type, body, id } = e.data;
-    // if (type === "vscode-theme-change") {
-    //   const _theme = buildTheme();
-    //   set((state) => ({ ...state, theme: _theme }));
-    //   return;
-    // }
-    switch (type) {
-      case ComType.SERVER_READY: {
-        //   emitMessage(ComMessage.new(ComType.CLIENT_READY, Date.now()));
-        break;
-      }
-      case ComType.FILEINFO:
-        {
-          const fileinfo = body as PcapFile;
-          set((state) => ({ ...state, fileinfo: fileinfo }));
-          break;
-        }
-      case ComType.PRGRESS_STATUS: {
-        const progress = deserialize(body) as IProgressStatus;
-        set((state) => ({ ...state, progress }));
-        break;
-      }
-      case ComType.STAT_RES:
-      case ComType.TLS_RES:
-      {
-        emitter.emit(id, deserialize(body));
-        break;
-      }
-      case ComType.FRAMES_SELECT:
-        {
-          const {str, datasource} = body;
-          const fr: IFrameSelect = { fields: deserialize(str) || [], datasource };
-          emitter.emit(id, fr);
-          break;
-        }
-      case ComType.FRAMES:
-      case ComType.CONVERSATIONS:
-      case ComType.CONNECTIONS:
-      case ComType.HTTP_CONNECTIONS:
-      case ComType.UDP_CONNECTIONS:
-      case ComType.DNS_CONNECTIONS:
-      case ComType.DNS_RCD_CONNECTIONS:
-      case ComType.TLS_CONNECTIONS:
-      case ComType.TLS_CONVERSATION_ITEMS:
-        emitter.emit(id, deserialize(body));
-        break;
-      case ComType.FRAME_SCOPE_RES:
-      case ComType.HTTP_DETAIL_RES:
-        emitter.emit(id, body);
-        break;
-      case ComType.RESPONSE:
-        emitter.emit(id, body);
-        break;
-      case ComType.error:
-        emitter.emit(id, "error");
-        break;
-    }
-  });
-  emitMessage(ComMessage.new(ComType.CLIENT_READY, Date.now()));
-  // const ctheme = buildTheme();
+  _log("create pcap ui store");
 
   let httpCache: IVHttpConnection | null = null;
 
+  // emitMessage(ComMessage.new(ComType.CLIENT_READY, Date.now()));
+  fetch('/api/ready');
   return {
     // theme: ctheme,
     sendReady: () => {
-      emitMessage(ComMessage.new(ComType.CLIENT_READY, Date.now()));
+      console.log('ready');
+      // emitMessage(ComMessage.new(ComType.CLIENT_READY, Date.now()));
     },
     request: <F>(data: any): Promise<F> => {
       const req = new ComMessage(ComType.REQUEST, data);

@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host",
+    "dev:socket": "VITE_BUILD_SOCKET=true vite --host",
     "build": "rm -rf ../plugin/dist/web    && tsc -b && VITE_BUILD_VSCODE=true vite build --minify",
     "build:local": " rm -rf ../dist/web    && tsc -b && VITE_BUILD_ALL=true    vite build",
     "build:socket": "rm -rf ../dist/socket && tsc -b && VITE_BUILD_SOCKET=true vite build && mv ../dist/socket/ui.html ../dist/socket/index.html",

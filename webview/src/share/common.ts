@@ -9,8 +9,8 @@ export function deserialize<T>(content: string): T | undefined {
 
 export enum ComType {
   RESET = "RESET",
-  SERVER_REDAY = "ready",
-  CLIENT_REDAY = "_ready",
+  SERVER_READY = "ready",
+  CLIENT_READY = "_ready",
   TOUCH_FILE = "file_touch",
   PROCESS_DATA = "process_data",
   PRGRESS_STATUS = "progress",
