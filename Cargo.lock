@@ -1586,6 +1586,8 @@ dependencies = [
  "include_dir",
  "mime_guess",
  "pcap",
+ "serde",
+ "serde_json",
  "tokio",
  "util",
 ]

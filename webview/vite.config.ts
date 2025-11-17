@@ -19,7 +19,10 @@ export default defineConfig(({ command, mode }) => {
   const getEntries = () => {
     if (command === 'serve') {
       if (env.VITE_BUILD_SOCKET === 'true') {
-        return resolve(__dirname, 'ui.html');
+        console.log('serve socket');
+        return {
+          index: resolve(__dirname, 'ui.html'),
+        };
       }
       return allEntries;
     }

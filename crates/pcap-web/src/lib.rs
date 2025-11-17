@@ -1,3 +1,4 @@
 pub mod core;
 pub mod web;
-mod control;
+pub mod control;
+pub mod routes;

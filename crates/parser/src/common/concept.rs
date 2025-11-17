@@ -5,7 +5,7 @@
 
 use std::hash::Hash;
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 use crate::{
     common::{connection::Connection, enum_def::Protocol, util::date_str, FastHashMap, Instance, NString},
@@ -23,6 +23,7 @@ pub type ConversationKey = (u64, u64);
 
 pub type Timestamp = u64;
 
+#[derive(Deserialize, Serialize)]
 pub struct Criteria {
     pub size: usize,
     pub start: usize,

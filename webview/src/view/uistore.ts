@@ -6,17 +6,14 @@ import {
   ComMessage,
   ComType,
   DataResponse,
-  deserialize,
-  IFrameSelect,
   IHttpDetail,
   ITLSConnect,
   ITLSInfo,
-  PcapFile,
   PcapState,
   StatRequest,
   VRange,
 } from "../share/common";
-import { IListResult, IProgressStatus, IVConnection, IVConversation, IVHttpConnection, IUDPConversation, IDNSResponse, IDNSRecord } from "../share/gen";
+import { IListResult, IVConnection, IVConversation, IVHttpConnection, IUDPConversation, IDNSResponse, IDNSRecord } from "../share/gen";
 import mitt from "mitt";
 
 
@@ -30,7 +27,7 @@ import mitt from "mitt";
 const emitter = mitt();
 
 const doRequest = <F>(data: ComMessage<any>): Promise<F> => {
-  emitMessage(data);
+  // emitMessage(data);
   const id = data.id;
   return new Promise<F>((resolve, reject) => {
     emitter.on(id, (event: any) => {
@@ -51,7 +48,10 @@ export const useStore = create<PcapState>()((set) => {
   let httpCache: IVHttpConnection | null = null;
 
   // emitMessage(ComMessage.new(ComType.CLIENT_READY, Date.now()));
-  fetch('/api/ready');
+  fetch('/api/ready').then(() => {
+    console.log('is ready');
+      set((state) => ({ ...state, progress: { total: 0, cursor: 0, count: 0, left: 0} }));
+  });
   return {
     // theme: ctheme,
     sendReady: () => {
@@ -59,8 +59,21 @@ export const useStore = create<PcapState>()((set) => {
       // emitMessage(ComMessage.new(ComType.CLIENT_READY, Date.now()));
     },
     request: <F>(data: any): Promise<F> => {
-      const req = new ComMessage(ComType.REQUEST, data);
-      return doRequest<F>(req);
+      console.log('req', data);
+      switch (data.type) {
+        case 'list':
+          {
+            if(data.catelog === 'frame'){
+              const { param } = data;
+              return fetch(`/api/frames?start=${param.start}&size=${param.size}`).then((response) => response.json());
+            }
+            // const req = new ComMessage(data.type, data.payload);
+            // return doRequest<F>(req);
+          }
+      }
+      return Promise.resolve({} as F);
+      // const req = new ComMessage(ComType.REQUEST, data);
+      // return doRequest<F>(req);
       // return Promise.resolve(frameMock);
     },
     requestData: (data: VRange): Promise<DataResponse> => {

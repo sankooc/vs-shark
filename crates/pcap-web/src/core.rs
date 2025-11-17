@@ -1,15 +1,20 @@
 use std::{
-    ops::Range, path::Path, thread::{self}, time::Duration
+    ops::Range,
+    path::Path,
+    thread::{self},
+    time::Duration,
 };
 
-use pcap::common::{Instance, ResourceLoader};
+use anyhow::bail;
+use pcap::common::{Instance, ResourceLoader, concept::{Criteria, FrameInfo, ListResult}};
 use tokio::sync::{mpsc, oneshot};
-use util::{file_seek, file_seeks};
+use util::{file_seek, file_seeks, FileBatchReader};
 
 pub enum UICommand {
     Quit,
     None,
-    OpenFile(oneshot::Sender<String>, String),
+    OpenFile(oneshot::Sender<Result<(), String>>, String),
+    Frames(oneshot::Sender<ListResult<FrameInfo>>, Criteria),
     List(oneshot::Sender<String>, String),
 }
 
@@ -46,10 +51,29 @@ impl LocalResource {
     }
 }
 
-fn create_instance(fname: String) -> Instance<LocalResource> {
-    let batch_size = 1024 * 1024 * 4;
+fn create_instance(fname: String, batch_size: usize) -> Instance<LocalResource> {
     let loader = LocalResource::new(fname);
-    Instance::new(batch_size as usize, loader)
+    Instance::new(batch_size, loader)
+}
+
+fn readfile(filepath: String) -> anyhow::Result<Instance<LocalResource>> {
+    let path = Path::new(&filepath);
+    if !path.exists() {
+        bail!("no file")
+    }
+    let batch_size = 1024 * 1024 * 4;
+    let mut ins = create_instance(filepath.clone(), batch_size);
+    let mut batcher = FileBatchReader::new(filepath.to_string(), batch_size as u64);
+    let mut finish = false;
+    while !finish {
+        finish = if let Ok((left, data)) = batcher.read() {
+            ins.update(data)?;
+            left == 0
+        } else {
+            true
+        }
+    }
+    Ok(ins)
 }
 
 pub struct Engine {
@@ -76,13 +100,23 @@ impl Engine {
             }
             UICommand::OpenFile(tx, filepath) => {
                 println!("Open file command received for file: {}", filepath);
-                let path = Path::new(&filepath);
-                if !path.exists() {
-                let _ = tx.send(format!("No File {} ", filepath));
-                    return;
+                if let Ok(ins) = readfile(filepath.clone()) {
+                    self.ins = Some(ins);
+                    println!("File {} opened successfully.", filepath);
+                    let _ = tx.send(Ok(()));
+                } else {
+                    self.ins = None;
+                    let _ = tx.send(Err("load failed".to_string()));
                 }
-                self.ins = Some(create_instance(filepath.clone()));
-                let _ = tx.send(format!("File {} opened successfully.", filepath));
+            }
+            UICommand::Frames(tx, cri) => {
+                let _ = if let Some(instance) = &self.ins {
+                    let rs = instance.frames_by(cri);
+                    tx.send(rs)
+                } else {
+                    tx.send(ListResult::empty())
+                };
+                return;
             }
             UICommand::List(tx, session_id) => {
                 println!("List command received for session: {}", session_id);
@@ -119,17 +153,18 @@ impl UIEngine {
     pub fn new(gui_tx: mpsc::Sender<UICommand>, rx: mpsc::Receiver<EngineCommand>) -> Self {
         UIEngine { gui_tx, rx }
     }
-    pub async fn open_file(&self, filepath: String) -> String {
+    pub async fn open_file(&self, filepath: String) -> Result<(), String> {
         let (tx, rx) = oneshot::channel();
-
         let _ = self.gui_tx.send(UICommand::OpenFile(tx, filepath)).await;
-        match rx.await {
-            Ok(result) => result,
-            Err(_) => String::new(),
-        }
+        rx.await.map_err(|e| e.to_string())?
     }
     pub async fn get_list(&self) -> String {
         "list".to_string()
+    }
+    pub async fn frames(&self, cri: Criteria) -> ListResult<FrameInfo> {
+        let (tx, rx) = oneshot::channel();
+        let _ = self.gui_tx.send(UICommand::Frames(tx, cri)).await;
+        rx.await.unwrap()
     }
     pub async fn run(&mut self) {
         loop {

@@ -1,22 +1,17 @@
 use actix::ActorContext;
 use actix::{Actor, StreamHandler};
-use actix_web::http::StatusCode;
-use actix_web::{web, App, Error, HttpRequest, HttpResponse, HttpServer, Responder};
+use actix_web::{web, Error, HttpRequest, HttpResponse, Responder};
 use actix_web_actors::ws;
 use include_dir::Dir;
 use mime_guess;
-use std::future::Future;
 use std::net::IpAddr;
-use std::sync::Arc;
-
-use crate::control;
 use crate::core::{UIEngine};
 
 pub struct WebApplication {
     pub dir: Dir<'static>,
     pub ip: IpAddr,
     pub port: u16,
-    target: Option<String>,
+    pub target: Option<String>,
     engine: UIEngine,
 }
 
@@ -25,14 +20,32 @@ impl WebApplication {
     pub fn new(dir: Dir<'static>, ip: IpAddr, port: u16, engine: UIEngine) -> Self {
         Self { dir, ip, port, engine, target: None }
     }
-    pub async fn get_info(&self) -> impl Responder {
-        let res = self.engine.get_list().await;
-        res.customize().with_status(StatusCode::OK)
+    pub async fn open(&mut self, target: Option<String>){
+        self.target = target;
+        //
     }
-    pub async fn ready(&self) -> impl Responder{
-        let filepath = "//".to_string();
-        self.engine.open_file(filepath).await
+    pub fn engine(&self) -> &UIEngine {
+        &self.engine
     }
+    // pub async fn get_info(&self) -> String {
+    //     self.engine.get_list().await
+    //     // res.customize().with_status(StatusCode::OK)
+    // }
+    // pub async fn frames(&self) -> impl Responder {
+    //     let res = self.engine.get_list().await;
+    //     res.customize().with_status(StatusCode::OK)
+    // }
+    // pub async fn ready(&self) -> impl Responder{
+    //     if let Some(fname) = &self.target {
+    //         match self.engine.open_file(fname.into()).await {
+    //             Ok(_) => HttpResponse::Ok().content_type("text/plain").body("File opened"),
+    //             Err(e) => HttpResponse::InternalServerError().body(format!("Failed to open file: {}", e)),
+    //         }
+    //     } else {
+    //         todo!()
+    //         // todo close
+    //     }
+    // }
     pub async fn index(&self) -> impl Responder {
         let file = self.dir.get_file("index.html").unwrap();
         HttpResponse::Ok().content_type("text/html").body(file.contents())
@@ -53,21 +66,23 @@ impl WebApplication {
         }
     }
 
-    pub async fn listen(self: Arc<Self>) -> std::io::Result<()> {
-        let app = self.clone();
-        HttpServer::new(move || {
-            App::new()
-                .app_data(web::Data::new(app.clone()))
-                .route("/api/ready", web::get().to(control::ready))
-                .route("/api/info", web::get().to(control::get_info))
-                .route("/", web::get().to(control::index))
-                .route("/ws/", web::get().to(websocket))
-                .route("/{path:.*}", web::get().to(control::get_static_file))
-        })
-        .bind((self.ip, self.port))?
-        .run()
-        .await
-    }
+    // pub async fn listen(self: Arc<Self>) -> std::io::Result<()> {
+    //     let app = self.clone();
+    //     HttpServer::new(move || {
+    //         App::new()
+    //             .app_data(web::Data::new(app.clone()))
+    //             // .configure(init_routes) 
+    //             // .route("/api/ready", web::get().to(control::ready))
+    //             // .route("/api/info", web::get().to(control::get_info))
+    //             // .route("/api/frames", web::get().to(control::get_frames))
+    //             .route("/", web::get().to(control::index))
+    //             .route("/ws/", web::get().to(websocket))
+    //             .route("/{path:.*}", web::get().to(control::get_static_file))
+    //     })
+    //     .bind((self.ip, self.port))?
+    //     .run()
+    //     .await
+    // }
 }
 
 struct PWebSocket;
@@ -95,7 +110,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for PWebSocket {
     }
 }
 
-async fn websocket(req: HttpRequest, stream: web::Payload) -> Result<HttpResponse, Error> {
+pub async fn websocket(req: HttpRequest, stream: web::Payload) -> Result<HttpResponse, Error> {
     let res = ws::start(PWebSocket {}, &req, stream);
     println!("WebSocket connection attempt: {:?}", res);
     res
