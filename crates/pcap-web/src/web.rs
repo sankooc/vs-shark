@@ -22,30 +22,13 @@ impl WebApplication {
     }
     pub async fn open(&mut self, target: Option<String>){
         self.target = target;
-        //
+        if let Some(fname) = &self.target{
+            let _ = self.engine.open_file(fname.into()).await;
+        }
     }
     pub fn engine(&self) -> &UIEngine {
         &self.engine
     }
-    // pub async fn get_info(&self) -> String {
-    //     self.engine.get_list().await
-    //     // res.customize().with_status(StatusCode::OK)
-    // }
-    // pub async fn frames(&self) -> impl Responder {
-    //     let res = self.engine.get_list().await;
-    //     res.customize().with_status(StatusCode::OK)
-    // }
-    // pub async fn ready(&self) -> impl Responder{
-    //     if let Some(fname) = &self.target {
-    //         match self.engine.open_file(fname.into()).await {
-    //             Ok(_) => HttpResponse::Ok().content_type("text/plain").body("File opened"),
-    //             Err(e) => HttpResponse::InternalServerError().body(format!("Failed to open file: {}", e)),
-    //         }
-    //     } else {
-    //         todo!()
-    //         // todo close
-    //     }
-    // }
     pub async fn index(&self) -> impl Responder {
         let file = self.dir.get_file("index.html").unwrap();
         HttpResponse::Ok().content_type("text/html").body(file.contents())
@@ -66,23 +49,6 @@ impl WebApplication {
         }
     }
 
-    // pub async fn listen(self: Arc<Self>) -> std::io::Result<()> {
-    //     let app = self.clone();
-    //     HttpServer::new(move || {
-    //         App::new()
-    //             .app_data(web::Data::new(app.clone()))
-    //             // .configure(init_routes) 
-    //             // .route("/api/ready", web::get().to(control::ready))
-    //             // .route("/api/info", web::get().to(control::get_info))
-    //             // .route("/api/frames", web::get().to(control::get_frames))
-    //             .route("/", web::get().to(control::index))
-    //             .route("/ws/", web::get().to(websocket))
-    //             .route("/{path:.*}", web::get().to(control::get_static_file))
-    //     })
-    //     .bind((self.ip, self.port))?
-    //     .run()
-    //     .await
-    // }
 }
 
 struct PWebSocket;

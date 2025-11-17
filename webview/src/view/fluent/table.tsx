@@ -84,11 +84,6 @@ function Component<T>(props: GridProps<T>) {
         const _props: any = {
             resizableColumns: true,
             columnSizingOptions,
-            // sortable: true,
-            // sortState : {sortColumn: 'time', sortDirection: 'ascending'}
-            // onSortChange={(e, item) => {
-            //     console.log('sort', item);
-            // }}
             items: result.items,
             columns: props.columns,
             sortable: false,

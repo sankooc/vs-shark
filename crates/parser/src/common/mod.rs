@@ -729,7 +729,7 @@ where
                 }
             }
         }
-        let mut rs: Vec<UDPConversation> = map.into_iter().map(|(_, v)| v).collect();
+        let mut rs: Vec<UDPConversation> = map.into_values().collect();
         let compare = |a: &UDPConversation, b: &UDPConversation| {
             let rs = a.ts.cmp(&b.ts);
             if asc {

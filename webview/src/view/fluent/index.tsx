@@ -4,9 +4,9 @@ import "primeflex/primeflex.css";
 import './index.scss';
 import Application from './app';
 
-import { teamsDarkTheme } from "@fluentui/react-components";
+import { webDarkTheme } from "@fluentui/react-components";
 const UI = () => {
-  return <FluentProvider theme={teamsDarkTheme} className="h-full">
+  return <FluentProvider theme={webDarkTheme} className="h-full">
     <Application/>
   </FluentProvider>
 }

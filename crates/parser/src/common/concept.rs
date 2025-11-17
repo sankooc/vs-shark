@@ -202,7 +202,7 @@ impl HttpHeadContinue {
     }
 }
 
-#[derive(Default, Clone, Serialize)]
+#[derive(Default, Clone, Serialize, Deserialize)]
 pub struct Field {
     // #[serde(skip)]
     // pub extra_data: Option<Vec<u8>>,
@@ -518,7 +518,7 @@ impl DNSResponse {
         rs.latency = period(rs.res_ts, rs._latency);
 
         if let Some(index) = item.request {
-            if let Some(frame) = instance.frame(index as usize) {
+            if let Some(frame) = instance.frame(index) {
                 // start = frame.info.time;
                 // rs.ts = start;
                 // rs.ts_str = date_str(rs.res_ts);
@@ -531,7 +531,7 @@ impl DNSResponse {
         }
 
         if let Some(index) = item.response {
-            if let Some(frame) = instance.frame(index as usize) {
+            if let Some(frame) = instance.frame(index) {
                 if let Some((ip, _)) = frame.addresses(instance.context()) {
                     rs.target = ip;
                 }

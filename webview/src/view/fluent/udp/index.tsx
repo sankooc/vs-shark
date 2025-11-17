@@ -21,13 +21,6 @@ const headIcon = (item: IUDPConversation) => {
 
 function Component() {
     const conversations = usePcapStore((state) => state.udpList);
-    // const tableFeature = useTableSort({});
-
-    // const [sortState, setSortState] = useState<TableSortState<IUDPConversation>>({
-    //     sortColumn: "time",
-    //     sortDirection: "ascending",
-    // });
-    // const navigate = useNavigate();
     const [sortState, setSortState] = useState<SortState>({
         sortColumn: 'time',
         sortDirection: 'ascending'
@@ -123,7 +116,7 @@ function Component() {
             type: "list",
             param: { ...compute(page, pageSize), ip: _ip, asc },
         };
-        return conversations(data);;
+        return conversations(data);
     }
 
     const breads = [

@@ -6,7 +6,12 @@ use std::{
 };
 
 use anyhow::bail;
-use pcap::common::{Instance, ResourceLoader, concept::{Criteria, FrameInfo, ListResult}};
+use pcap::common::{
+    concept::{ConversationCriteria, Criteria, Field, FrameIndex, FrameInfo, ListResult, UDPConversation, VConnection, VConversation},
+    io::DataSource,
+    Instance, ResourceLoader,
+};
+use serde::{Deserialize, Serialize};
 use tokio::sync::{mpsc, oneshot};
 use util::{file_seek, file_seeks, FileBatchReader};
 
@@ -15,7 +20,12 @@ pub enum UICommand {
     None,
     OpenFile(oneshot::Sender<Result<(), String>>, String),
     Frames(oneshot::Sender<ListResult<FrameInfo>>, Criteria),
+    Frame(oneshot::Sender<FrameResult>, FrameIndex),
     List(oneshot::Sender<String>, String),
+    Stat(oneshot::Sender<String>, String),
+    TCPList(oneshot::Sender<ListResult<VConversation>>, Criteria, ConversationCriteria),
+    TCPConvList(oneshot::Sender<ListResult<VConnection>>, usize, Criteria),
+    UDPList(oneshot::Sender<ListResult<UDPConversation>>, Criteria, Option<String>, bool),
 }
 
 pub enum EngineCommand {
@@ -30,6 +40,24 @@ pub enum ResourceCommand {
     Close(String),
     Error(String),
     Data(Vec<u8>),
+}
+
+#[derive(Deserialize, Serialize)]
+pub struct FrameResult {
+    pub fields: Vec<Field>,
+    pub datasource: Vec<DataSource>,
+}
+
+impl FrameResult {
+    pub fn new(fields: Vec<Field>, datasource: Vec<DataSource>) -> Self {
+        FrameResult { fields, datasource }
+    }
+    pub fn empty() -> Self {
+        FrameResult {
+            fields: vec![],
+            datasource: vec![],
+        }
+    }
 }
 
 pub struct LocalResource {
@@ -76,6 +104,34 @@ fn readfile(filepath: String) -> anyhow::Result<Instance<LocalResource>> {
     Ok(ins)
 }
 
+fn jsonlize<T>(data: &T) -> Option<String>
+where
+    T: Serialize,
+{
+    serde_json::to_string(&data).ok()
+}
+
+fn stat_str(tp: &str, instance: &Instance<LocalResource>) -> Option<String> {
+    let items = match tp {
+        "http_host" => instance.stat_http_host(),
+        "ip4" => instance.stat_ip4(),
+        "ip6" => instance.stat_ip6(),
+        "http_data" => {
+            let rs = instance.stat_http();
+            return jsonlize(&rs);
+        }
+        "frame" => {
+            let rs = instance.stat_frame();
+            return jsonlize(&rs);
+        }
+        "ip_address" => instance.stat_ipaddress_distribute(),
+        _ => {
+            return None;
+        }
+    };
+    jsonlize(&items)
+}
+
 pub struct Engine {
     ins: Option<Instance<LocalResource>>,
     gui_rx: mpsc::Receiver<UICommand>,
@@ -90,40 +146,66 @@ impl Engine {
 
 impl Engine {
     async fn handle_gui(&mut self, cmd: UICommand) {
-        println!("Handling GUI command:");
-        match cmd {
-            UICommand::Quit => {
-                println!("Quit command received.");
+        if let Some(instance) = &self.ins {
+            match cmd {
+                UICommand::Frames(tx, cri) => {
+                    let rs = instance.frames_by(cri);
+                    let _ = tx.send(rs);
+                }
+                UICommand::Frame(tx, index) => {
+                    let _ = if let Some((list, datasource)) = instance.select_frame(index as usize) {
+                        let rs = FrameResult::new(list, datasource);
+                        tx.send(rs)
+                    } else {
+                        tx.send(FrameResult::empty())
+                    };
+                }
+                UICommand::Stat(tx, tp) => {
+                    let _ = if let Some(str) = stat_str(&tp, instance) {
+                        tx.send(str)
+                    } else {
+                        tx.send("[]".to_string())
+                    };
+                }
+                UICommand::TCPList(tx, criteria, filter) => {
+                    let rs = instance.conversations(criteria, filter);
+                    let _ = tx.send(rs);
+                }
+                UICommand::TCPConvList(tx, index, criteria) => {
+                    let rs = instance.connections(index, criteria);
+                    let _ = tx.send(rs);
+                }
+                UICommand::UDPList(tx, cri, filter, asc) => {
+                    let rs = instance.udp_conversations(cri, filter, asc);
+                    let _ = tx.send(rs);
+                }
+                _ => {}
             }
-            UICommand::None => {
-                println!("No operation command received.");
-            }
-            UICommand::OpenFile(tx, filepath) => {
-                println!("Open file command received for file: {}", filepath);
-                if let Ok(ins) = readfile(filepath.clone()) {
-                    self.ins = Some(ins);
-                    println!("File {} opened successfully.", filepath);
-                    let _ = tx.send(Ok(()));
-                } else {
-                    self.ins = None;
-                    let _ = tx.send(Err("load failed".to_string()));
+        } else {
+            match cmd {
+                UICommand::Quit => {
+                    println!("Quit command received.");
+                }
+                UICommand::None => {
+                    println!("No operation command received.");
+                }
+
+                UICommand::OpenFile(tx, filepath) => {
+                    println!("Open file command received for file: {}", filepath);
+                    if let Ok(ins) = readfile(filepath.clone()) {
+                        self.ins = Some(ins);
+                        println!("File {} opened successfully.", filepath);
+                        let _ = tx.send(Ok(()));
+                    } else {
+                        self.ins = None;
+                        let _ = tx.send(Err("load failed".to_string()));
+                    }
+                }
+                _ => {
+                    println!("No instance loaded. Command cannot be processed.");
                 }
             }
-            UICommand::Frames(tx, cri) => {
-                let _ = if let Some(instance) = &self.ins {
-                    let rs = instance.frames_by(cri);
-                    tx.send(rs)
-                } else {
-                    tx.send(ListResult::empty())
-                };
-                return;
-            }
-            UICommand::List(tx, session_id) => {
-                println!("List command received for session: {}", session_id);
-                // Here you would add logic to get the list and send back a response
-                let _ = tx.send(format!("List for session {}.", session_id));
-            }
-        }
+        };
     }
     async fn _handle_resource(_cmd: &ResourceCommand) {}
     // todo!();
@@ -164,6 +246,32 @@ impl UIEngine {
     pub async fn frames(&self, cri: Criteria) -> ListResult<FrameInfo> {
         let (tx, rx) = oneshot::channel();
         let _ = self.gui_tx.send(UICommand::Frames(tx, cri)).await;
+        rx.await.unwrap()
+    }
+    pub async fn frame(&self, index: FrameIndex) -> FrameResult {
+        let (tx, rx) = oneshot::channel();
+        let _ = self.gui_tx.send(UICommand::Frame(tx, index)).await;
+        rx.await.unwrap()
+    }
+    pub async fn stat(&self, tp: String) -> String {
+        let (tx, rx) = oneshot::channel();
+        let _ = self.gui_tx.send(UICommand::Stat(tx, tp)).await;
+        rx.await.unwrap()
+    }
+    pub async fn conversations(&self, cri: Criteria, filter: ConversationCriteria) -> ListResult<VConversation> {
+        let (tx, rx) = oneshot::channel();
+        let _ = self.gui_tx.send(UICommand::TCPList(tx, cri, filter)).await;
+        rx.await.unwrap()
+    }
+    pub async fn connections(&self, index: usize, cri: Criteria) -> ListResult<VConnection> {
+        let (tx, rx) = oneshot::channel();
+        let _ = self.gui_tx.send(UICommand::TCPConvList(tx, index, cri)).await;
+        rx.await.unwrap()
+    }
+
+    pub async fn udp_list(&self, cri: Criteria, filter: Option<String>, asc: bool) -> ListResult<UDPConversation> {
+        let (tx, rx) = oneshot::channel();
+        let _ = self.gui_tx.send(UICommand::UDPList(tx, cri, filter, asc)).await;
         rx.await.unwrap()
     }
     pub async fn run(&mut self) {

@@ -28,7 +28,7 @@ $code-width: 10px;
       flex-shrink: 0;
       flex-grow: 0;
       // min-height: 100%;
-      background-color: var(--vscode-statusBarItem-remoteBackground);
+      background-color: common.$c-blue;
       pre {
         margin: 0 8px;
         padding: 0;
@@ -70,7 +70,7 @@ $code-width: 10px;
       overflow: hidden;
       white-space: break-spaces;
       word-break: break-all;
-      background-color: var(--vscode-tab-selectedForeground);
+      background-color: common.$c-blue;
       flex-grow: 1;
       .asc {
         font-family: common.$base-family;
@@ -102,13 +102,13 @@ $code-width: 10px;
       cursor: pointer;
       font-family: common.$base-family;
       background-color: inherit;
-      color: var(--vscode-button-secondaryForeground);
+      color: common.$c-fg-0;
       &:hover {
         color: var(--vscode-list-focusOutline);
         background-color: var(--vscode-list-focusForeground);
       }
       &.active {
-        background-color: var(--vscode-editorHoverWidget-background);
+        background-color: common.$w-blue;
         color: var(--vscode-editorHoverWidget-foreground);
         font-weight: bold;
       }
