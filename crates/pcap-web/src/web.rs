@@ -4,8 +4,8 @@ use actix_web::{web, Error, HttpRequest, HttpResponse, Responder};
 use actix_web_actors::ws;
 use include_dir::Dir;
 use mime_guess;
-use util::core::UIEngine;
 use std::net::IpAddr;
+use util::core::UIEngine;
 
 pub struct WebApplication {
     pub dir: Dir<'static>,
@@ -15,16 +15,19 @@ pub struct WebApplication {
     engine: UIEngine,
 }
 
-
 impl WebApplication {
     pub fn new(dir: Dir<'static>, ip: IpAddr, port: u16, engine: UIEngine) -> Self {
-        Self { dir, ip, port, engine, target: None }
-    }
-    pub async fn open(&mut self, target: Option<String>){
-        self.target = target;
-        if let Some(fname) = &self.target{
-            let _ = self.engine.open_file(fname.into()).await;
+        Self {
+            dir,
+            ip,
+            port,
+            engine,
+            target: None,
         }
+    }
+    pub async fn open(&mut self, target: String) -> Result<(), String>{
+        self.target = Some(target.clone());
+        self.engine.open_file(target).await
     }
     pub fn engine(&self) -> &UIEngine {
         &self.engine
@@ -48,7 +51,6 @@ impl WebApplication {
             },
         }
     }
-
 }
 
 struct PWebSocket;
@@ -62,12 +64,10 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for PWebSocket {
         match msg {
             Ok(ws::Message::Ping(msg)) => ctx.pong(&msg),
             Ok(ws::Message::Text(text)) => {
-                println!("Received: {}", text);
                 ctx.text(format!("Echo: {}", text));
             }
             Ok(ws::Message::Binary(bin)) => ctx.binary(bin),
             Ok(ws::Message::Close(reason)) => {
-                println!("WebSocket closed: {:?}", reason);
                 ctx.close(reason);
                 ctx.stop();
             }
@@ -78,6 +78,5 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for PWebSocket {
 
 pub async fn websocket(req: HttpRequest, stream: web::Payload) -> Result<HttpResponse, Error> {
     let res = ws::start(PWebSocket {}, &req, stream);
-    println!("WebSocket connection attempt: {:?}", res);
     res
 }

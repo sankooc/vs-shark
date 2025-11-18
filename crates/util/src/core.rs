@@ -214,10 +214,8 @@ impl Engine {
         } else {
             match cmd {
                 UICommand::OpenFile(tx, filepath) => {
-                    println!("Open file command received for file: {}", filepath);
                     if let Ok(ins) = readfile(filepath.clone()) {
                         self.ins = Some(ins);
-                        println!("File {} opened successfully.", filepath);
                         let _ = tx.send(Ok(()));
                     } else {
                         self.ins = None;
@@ -225,7 +223,7 @@ impl Engine {
                     }
                 }
                 _ => {
-                    println!("No instance loaded. Command cannot be processed.");
+                    // println!("No instance loaded. Command cannot be processed.");
                 }
             }
         };
