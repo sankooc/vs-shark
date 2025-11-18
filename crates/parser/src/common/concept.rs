@@ -599,6 +599,7 @@ pub enum HttpEncoding {
     Zstd,
 }
 
+#[derive(Serialize)]
 pub struct HttpMessageDetail {
     pub is_request: bool,
     pub headers: Vec<String>,

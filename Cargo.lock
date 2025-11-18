@@ -1583,6 +1583,7 @@ dependencies = [
  "actix-web",
  "actix-web-actors",
  "anyhow",
+ "clap",
  "include_dir",
  "mime_guess",
  "pcap",
@@ -2371,6 +2372,10 @@ name = "util"
 version = "0.4.6"
 dependencies = [
  "anyhow",
+ "pcap",
+ "serde",
+ "serde_json",
+ "tokio",
 ]
 
 [[package]]

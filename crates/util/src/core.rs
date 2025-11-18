@@ -7,13 +7,12 @@ use std::{
 
 use anyhow::bail;
 use pcap::common::{
-    concept::{ConversationCriteria, Criteria, Field, FrameIndex, FrameInfo, ListResult, UDPConversation, VConnection, VConversation},
-    io::DataSource,
-    Instance, ResourceLoader,
+    Instance, ResourceLoader, concept::{ConversationCriteria, Criteria, DNSRecord, DNSResponse, Field, FrameIndex, FrameInfo, HttpCriteria, HttpMessageDetail, ListResult, TLSConversation, TLSItem, UDPConversation, VConnection, VConversation, VHttpConnection}, io::DataSource
 };
 use serde::{Deserialize, Serialize};
 use tokio::sync::{mpsc, oneshot};
-use util::{file_seek, file_seeks, FileBatchReader};
+
+use crate::{FileBatchReader, file_seek, file_seeks};
 
 pub enum UICommand {
     Quit,
@@ -26,6 +25,12 @@ pub enum UICommand {
     TCPList(oneshot::Sender<ListResult<VConversation>>, Criteria, ConversationCriteria),
     TCPConvList(oneshot::Sender<ListResult<VConnection>>, usize, Criteria),
     UDPList(oneshot::Sender<ListResult<UDPConversation>>, Criteria, Option<String>, bool),
+    TLSList(oneshot::Sender<ListResult<TLSConversation>>, Criteria),
+    TLSDetail(oneshot::Sender<ListResult<TLSItem>>, usize, Criteria),
+    DNSRecors(oneshot::Sender<ListResult<DNSResponse>>, Criteria, bool),
+    DNSRecord(oneshot::Sender<ListResult<DNSRecord>>, usize, Criteria),
+    HTTPList(oneshot::Sender<ListResult<VHttpConnection>>, Criteria, Option<HttpCriteria>, bool),
+    HTTPDetail(oneshot::Sender<Option<Vec<HttpMessageDetail>>>, usize),
 }
 
 pub enum EngineCommand {
@@ -179,17 +184,35 @@ impl Engine {
                     let rs = instance.udp_conversations(cri, filter, asc);
                     let _ = tx.send(rs);
                 }
+                UICommand::TLSList(tx, cri) => {
+                    let rs = instance.tls_connections(cri);
+                    let _ = tx.send(rs);
+                }
+                UICommand::TLSDetail(tx, index, criteria) => {
+                    let rs = instance.tls_conv_list(index, criteria);
+                    let _ = tx.send(rs);
+                }
+                UICommand::DNSRecors(tx, cri, asc) => {
+                    let rs = instance.dns_records(cri, asc);
+                    let _ = tx.send(rs);
+                }
+                UICommand::DNSRecord(tx, index, cri) => {
+                    let rs = instance.dns_record(index, cri);
+                    let _ = tx.send(rs);
+                }
+                UICommand::HTTPList(tx, cri, filter, asc) => {
+                    let rs = instance.http_connections(cri, filter, asc);
+                    let _ = tx.send(rs);
+                }
+                UICommand::HTTPDetail(tx, index) => {
+                    let rs = instance.http_detail(index);
+                    let _ = tx.send(rs);
+                }
+
                 _ => {}
             }
         } else {
             match cmd {
-                UICommand::Quit => {
-                    println!("Quit command received.");
-                }
-                UICommand::None => {
-                    println!("No operation command received.");
-                }
-
                 UICommand::OpenFile(tx, filepath) => {
                     println!("Open file command received for file: {}", filepath);
                     if let Ok(ins) = readfile(filepath.clone()) {
@@ -274,6 +297,43 @@ impl UIEngine {
         let _ = self.gui_tx.send(UICommand::UDPList(tx, cri, filter, asc)).await;
         rx.await.unwrap()
     }
+
+    pub async fn tls_list(&self, cri: Criteria) -> ListResult<TLSConversation> {
+        let (tx, rx) = oneshot::channel();
+        let _ = self.gui_tx.send(UICommand::TLSList(tx, cri)).await;
+        rx.await.unwrap()
+    }
+
+    pub async fn tls_detail(&self, index: usize, cri: Criteria) -> ListResult<TLSItem> {
+        let (tx, rx) = oneshot::channel();
+        let _ = self.gui_tx.send(UICommand::TLSDetail(tx, index, cri)).await;
+        rx.await.unwrap()
+    }
+
+    pub async fn dns_records(&self, cri: Criteria, asc: bool) -> ListResult<DNSResponse> {
+        let (tx, rx) = oneshot::channel();
+        let _ = self.gui_tx.send(UICommand::DNSRecors(tx, cri, asc)).await;
+        rx.await.unwrap()
+    }
+
+    pub async fn dns_record(&self, index: usize, cri: Criteria) -> ListResult<DNSRecord> {
+        let (tx, rx) = oneshot::channel();
+        let _ = self.gui_tx.send(UICommand::DNSRecord(tx, index, cri)).await;
+        rx.await.unwrap()
+    }
+
+    pub async fn http_list(&self, cri: Criteria, filter: Option<HttpCriteria>, asc: bool) -> ListResult<VHttpConnection> {
+        let (tx, rx) = oneshot::channel();
+        let _ = self.gui_tx.send(UICommand::HTTPList(tx, cri, filter, asc)).await;
+        rx.await.unwrap()
+    }
+
+    pub async fn http_detail(&self, index: usize) -> Option<Vec<HttpMessageDetail>> {
+        let (tx, rx) = oneshot::channel();
+        let _ = self.gui_tx.send(UICommand::HTTPDetail(tx, index)).await;
+        rx.await.unwrap()
+    }
+
     pub async fn run(&mut self) {
         loop {
             if let Some(msg) = self.rx.recv().await {
@@ -295,6 +355,5 @@ pub fn build_engine() -> (UIEngine, Engine) {
     let (_e_tx, erx) = mpsc::channel::<EngineCommand>(10);
     let ui_engine = UIEngine::new(gui_tx.clone(), erx);
     let engine = Engine::new(grx);
-
     (ui_engine, engine)
 }

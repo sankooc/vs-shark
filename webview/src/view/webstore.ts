@@ -5,7 +5,6 @@ import { _log } from "./util";
 import {
   ComMessage,
   ComType,
-  DataResponse,
   deserialize,
   IFrameSelect,
   IHttpDetail,
@@ -14,7 +13,6 @@ import {
   PcapFile,
   PcapState,
   StatRequest,
-  VRange,
 } from "../share/common";
 import { IListResult, IProgressStatus, IVConnection, IVConversation, IVHttpConnection, IUDPConversation, IDNSResponse, IDNSRecord } from "../share/gen";
 import mitt from "mitt";
@@ -121,10 +119,10 @@ export const useStore = create<PcapState>()((set) => {
       return doRequest<F>(req);
       // return Promise.resolve(frameMock);
     },
-    requestData: (data: VRange): Promise<DataResponse> => {
-      const req = new ComMessage(ComType.DATA, data);
-      return doRequest<DataResponse>(req);
-    },
+    // requestData: (data: VRange): Promise<DataResponse> => {
+    //   const req = new ComMessage(ComType.DATA, data);
+    //   return doRequest<DataResponse>(req);
+    // },
     conversationList: (data: any): Promise<IListResult<IVConversation>> => {
       const req = new ComMessage(ComType.REQUEST, data);
       return doRequest<IListResult<IVConversation>>(req);

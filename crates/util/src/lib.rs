@@ -4,6 +4,7 @@ use std::{
     ops::Range,
 };
 
+pub mod core;
 pub struct FileBatchReader {
     file: File,
     file_size: u64,

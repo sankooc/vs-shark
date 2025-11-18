@@ -274,7 +274,7 @@ export interface PcapState {
   frameSelect?: string;
   sendReady: () => void;
   request: <F>(data: any) => Promise<F>;
-  requestData: (data: VRange) => Promise<DataResponse>;
+  // requestData: (data: VRange) => Promise<DataResponse>;
   conversationList: (data: any) => Promise<IListResult<IVConversation>>;
   udpList: (data: any) => Promise<IListResult<IUDPConversation>>;
   dnsList: (data: any) => Promise<IListResult<IDNSResponse>>;
