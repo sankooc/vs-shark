@@ -4,12 +4,14 @@
   "version": "0.4.7",
   "identifier": "com.sankooc.gui",
   "build": {
-    "frontendDist": "../../webview/dist"
+
+    "devUrl": "http://localhost:5173/gui.html",
+    "frontendDist": "../../dist/socket"
   },
   "app": {
     "windows": [
       {
-        "title": "gui",
+        "title": "Pcap Viewer GUI",
         "width": 800,
         "height": 600
       }

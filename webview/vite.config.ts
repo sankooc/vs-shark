@@ -8,7 +8,7 @@ export default defineConfig(({ command, mode }) => {
   const env = loadEnv(mode, process.cwd())
 
   const allEntries = {
-    main: resolve(__dirname, 'index.html'),
+    // main: resolve(__dirname, 'index.html'),
     app: resolve(__dirname, 'app.html'),
   }
 
@@ -19,9 +19,13 @@ export default defineConfig(({ command, mode }) => {
   const getEntries = () => {
     if (command === 'serve') {
       if (env.VITE_BUILD_SOCKET === 'true') {
-        console.log('serve socket');
         return {
           index: resolve(__dirname, 'ui.html'),
+        };
+      }
+      if (env.VITE_BUILD_GUI === 'true') {
+        return {
+          index: resolve(__dirname, 'gui.html'),
         };
       }
       return allEntries;
