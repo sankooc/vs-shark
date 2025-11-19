@@ -11,9 +11,11 @@ use std::thread;
 use tauri::menu::{MenuBuilder, MenuItemBuilder, SubmenuBuilder};
 use tauri::{AppHandle, Emitter, Manager, State};
 use tauri_plugin_dialog::{DialogExt, MessageDialogKind};
-use util::core::{build_engine, UIEngine};
+use util::core::UIEngine;
+
+use crate::command::api::*;
 mod command;
-mod core;
+// mod core;
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct RecentFile {
     path: String,
@@ -83,13 +85,11 @@ async fn open_file_dialog(app_handle: AppHandle) -> Result<Option<String>, Strin
     match file_path {
         Some(path) => {
             let path_str = path.to_string();
-            println!("Selected file: {}", path_str);
             let _ = context.engine().open_file(path_str.clone()).await;
             app_handle.emit("file_opened", &path_str).unwrap();
             let recent_files: State<RecentFiles> = app_handle.state();
             recent_files.add_file(path_str.clone());
             rebuild_menu(&app_handle).map_err(|e| e.to_string())?;
-
             Ok(Some(path_str))
         }
         None => Ok(None),
@@ -153,6 +153,9 @@ pub fn run() {
     });
     let context = GUIContext::new(ui);
     
+    use command::api::ready;
+
+    // let cmds = tauri::generate_handler![ready, frames, open_file_dialog, open_recent_file];
     tauri::Builder::default()
         .manage(context)
         .setup(|app| {
@@ -164,17 +167,7 @@ pub fn run() {
             "open" => {
                 let app_handle = app.clone();
                 tauri::async_runtime::spawn(async move {
-                    match open_file_dialog(app_handle).await {
-                        Ok(Some(path)) => {
-                            println!("Selected file: {}", path);
-                        }
-                        Ok(None) => {
-                            println!("No file selected");
-                        }
-                        Err(e) => {
-                            eprintln!("Error opening file dialog: {}", e);
-                        }
-                    }
+                    open_file_dialog(app_handle).await
                 });
             }
             id if id.starts_with("recent_") => {
@@ -203,7 +196,7 @@ pub fn run() {
         })
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
-        .invoke_handler(tauri::generate_handler![command::api::ready, open_file_dialog, open_recent_file])
+        .invoke_handler(tauri::generate_handler![ready, frames, frame, stat, tcp_list, tcp_conv_list, udp_list, http_list, http_detail, dns_records, dns_record, tls_list, tls_conv_list, open_file_dialog, open_recent_file])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

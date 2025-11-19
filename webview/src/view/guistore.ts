@@ -1,6 +1,5 @@
 // userStore.ts
 import { create } from "zustand";
-// import { onMessage, emitMessage } from "../common/connect";
 import { _log } from "./util";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from '@tauri-apps/api/event';
@@ -11,12 +10,10 @@ import {
 } from "../share/common";
 import { IListResult, IVConnection, IVConversation, IVHttpConnection, IUDPConversation, IDNSResponse, IDNSRecord } from "../share/gen";
 
-const makeUrl = (base: string, params: Record<string, string>): string => {
-  return `${base}?start=${params.start}&size=${params.size}`
-}
-
 const httpdetail_convert = (data: any): IHttpDetail => {
   const { headers, raw, plaintext, content_type } = data;
+  console.log(headers);
+  console.log(raw);
   let _raw = undefined;
   if (raw && raw.length) {
     _raw = Uint8Array.from(raw);
@@ -27,24 +24,11 @@ const httpdetail_convert = (data: any): IHttpDetail => {
 export const useStore = create<PcapState>()((set) => {
   _log("create gui store");
 
-  let httpCache: IVHttpConnection | null = null;
-
-  // fetch('/api/ready').then((rs) => {
-  //   console.log('is ready');
-  //   if (rs && rs.ok) {
-  //     set((state) => ({ ...state, progress: { total: 0, cursor: 0, count: 0, left: 0 } }));
-  //   }
-  // });
   listen<string>('file_opened', (event) => {
-    console.log( `file opened ${event.payload}`);
+    _log(`file opened ${event.payload}`);
     set((state) => ({ ...state, progress: { total: 0, cursor: 0, count: 0, left: 0 } }));
   });
-  invoke("ready", { name }).then((rs) => {
-    console.log('--');
-    console.log(rs);
-  })
   return {
-    // theme: ctheme,
     sendReady: () => {
       console.log('ready');
       // emitMessage(ComMessage.new(ComType.CLIENT_READY, Date.now()));
@@ -54,7 +38,7 @@ export const useStore = create<PcapState>()((set) => {
         case 'select': {
           if (data.catelog === 'frame') {
             const { index } = data.param;
-            return fetch(`/api/frame/${index}`).then((response) => response.json());
+            return invoke("frame", { index });
           }
 
           break;
@@ -63,70 +47,46 @@ export const useStore = create<PcapState>()((set) => {
           {
             if (data.catelog === 'frame') {
               const { param } = data;
-              return fetch(`/api/frames?start=${param.start}&size=${param.size}`).then((response) => response.json());
+              return invoke("frames", { start: param.start, size: param.size });
             }
           }
       }
       return Promise.resolve({} as F);
     },
     conversationList: async (data: any): Promise<IListResult<IVConversation>> => {
-      const { start, size } = data.param;
-      let url = `/api/tcp/list?start=${start}&size=${size}`
-      if (data.param.ip) {
-        url += `&ip=${data.param.ip}`
-      }
-      return fetch(url).then((response) => response.json());
+      const { start, size, ip } = data.param;
+      return invoke("tcp_list", { start, size, ip: ip ? ip : undefined });
     },
     udpList: (data: any): Promise<IListResult<IUDPConversation>> => {
-      let url = `/api/udp/list?start=${data.param.start}&size=${data.param.size}&asc=${data.param.asc}`;
-      if (data.param.ip) {
-        url += `&ip=${data.param.ip}`
-      }
-      //asc
-      return fetch(url).then((response) => response.json()).then((rs) => { console.log(rs); return rs });
+      const { start, size, asc, ip } = data.param;
+      console.log(data.param);
+      return invoke("udp_list", { start, size, asc, ip: ip ? ip : undefined });
     },
     dnsList: (data: any): Promise<IListResult<IDNSResponse>> => {
-      const url = `/api/dns/list?start=${data.param.start}&size=${data.param.size}&asc=${data.param.asc}`;
-      return fetch(url).then((response) => response.json());
+      return invoke("dns_records", { start: data.param.start, size: data.param.size, asc: data.param.asc } );
     },
     dnsRecords: (data: any): Promise<IListResult<IDNSRecord>> => {
-      const url = `/api/dns/detail/${data.param.index}?start=${data.param.start}&size=${data.param.size}`;
-      return fetch(url).then((response) => response.json());
+      return invoke("dns_record", { index: parseInt(data.param.index), start: data.param.start, size: data.param.size } );
     },
     tlsList: (data: any) => {
-      const url = makeUrl('/api/tls/list', data.param);
-      return fetch(url).then((response) => response.json());
+      return invoke("tls_list", { start: data.param.start, size: data.param.size } );
     },
     tlsConvList: (data: any) => {
-      const url = makeUrl(`/api/tls/detail/${data.param.index}`, data.param);
-      return fetch(url).then((response) => response.json());
+      return invoke("tls_conv_list", { index: parseInt(data.param.index), start: data.param.start, size: data.param.size } );
     },
     connectionList: (data: any): Promise<IListResult<IVConnection>> => {
       const { start, size, conversionIndex } = data.param;
-      const url = `/api/tcp/conv/${conversionIndex}/list?start=${start}&size=${size}`;
-      return fetch(url).then((response) => response.json());
+      return invoke("tcp_conv_list", { start, size, index: parseInt(conversionIndex) } );
     },
     httpList: (data: any): Promise<IListResult<IVHttpConnection>> => {
-      let url = makeUrl('/api/http/list', data.param);
-      if (data.param.host) {
-        url += `&host=${data.param.host}`;
-      }
-      url += `&asc=${data.param.asc}`;
-      return fetch(url).then((response) => response.json());
+      return invoke("http_list", { start: data.param.start, size: data.param.size, host: data.param.host, asc: data.param.asc } );
     },
     httpDetail: (index: number): Promise<IHttpDetail[]> => {
-      const url = `/api/http/detail/${index}`;
-      return fetch(url).then((response) => response.json()).then((rs) => { return rs.map(httpdetail_convert); });
-    },
-    cachehttp: (conn: IVHttpConnection | null) => {
-      httpCache = conn;
-    },
-    getHttpCache: () => {
-      return httpCache;
+      return invoke("http_detail", { index }).then((rs) => { return (rs as any[]).map(httpdetail_convert); })
     },
     stat: (request: StatRequest): Promise<any[]> => {
       const { field } = request;
-      return fetch(`/api/stat/${field}`).then((response) => response.json());
+      return invoke("stat", { field }).then((rs) => (JSON.parse(rs as string) as any[]));
     },
   };
 });

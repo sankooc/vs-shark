@@ -105,9 +105,6 @@ export const useStore = create<PcapState>()((set) => {
     }
   });
   emitMessage(ComMessage.new(ComType.CLIENT_READY, Date.now()));
-  // const ctheme = buildTheme();
-
-  let httpCache: IVHttpConnection | null = null;
 
   return {
     // theme: ctheme,
@@ -119,10 +116,6 @@ export const useStore = create<PcapState>()((set) => {
       return doRequest<F>(req);
       // return Promise.resolve(frameMock);
     },
-    // requestData: (data: VRange): Promise<DataResponse> => {
-    //   const req = new ComMessage(ComType.DATA, data);
-    //   return doRequest<DataResponse>(req);
-    // },
     conversationList: (data: any): Promise<IListResult<IVConversation>> => {
       const req = new ComMessage(ComType.REQUEST, data);
       return doRequest<IListResult<IVConversation>>(req);
@@ -159,12 +152,6 @@ export const useStore = create<PcapState>()((set) => {
     httpDetail: (index: number): Promise<IHttpDetail[]> => {
       const req = new ComMessage(ComType.HTTP_DETAIL_REQ, {index});
       return doRequest<IHttpDetail[]>(req);
-    },
-    cachehttp: (conn: IVHttpConnection | null) => {
-      httpCache = conn;
-    },
-    getHttpCache: () => {
-      return httpCache;
     },
     stat: (request: StatRequest): Promise<any[]> => {
       const req = new ComMessage(ComType.STAT_REQ, request);

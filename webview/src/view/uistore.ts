@@ -25,8 +25,6 @@ const httpdetail_convert = (data: any): IHttpDetail => {
 export const useStore = create<PcapState>()((set) => {
   _log("create pcap ui store");
 
-  let httpCache: IVHttpConnection | null = null;
-
   fetch('/api/ready').then((rs) => {
     console.log('is ready');
     if (rs && rs.ok) {
@@ -107,12 +105,6 @@ export const useStore = create<PcapState>()((set) => {
     httpDetail: (index: number): Promise<IHttpDetail[]> => {
       const url = `/api/http/detail/${index}`;
       return fetch(url).then((response) => response.json()).then((rs) => { return rs.map(httpdetail_convert); });
-    },
-    cachehttp: (conn: IVHttpConnection | null) => {
-      httpCache = conn;
-    },
-    getHttpCache: () => {
-      return httpCache;
     },
     stat: (request: StatRequest): Promise<any[]> => {
       const { field } = request;

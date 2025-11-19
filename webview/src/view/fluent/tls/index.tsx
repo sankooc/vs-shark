@@ -28,7 +28,6 @@ function Component() {
   const navigate = useNavigate();
   const ipMap = new Map();
   const onClick = (item: ITLSConnect) => {
-    // cachehttp(item);
     const index = item.index;
     if (undefined != index) {
       navigate('/tls/' + index);

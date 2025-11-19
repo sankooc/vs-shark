@@ -193,7 +193,6 @@ function Component() {
         }),
     ];
     const onClick = (item: IVHttpConnection) => {
-        // cachehttp(item);
         const index = item.index;
         const title = item.hostname || 'detail';
         if (index >=0 ){

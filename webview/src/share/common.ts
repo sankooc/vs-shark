@@ -284,7 +284,5 @@ export interface PcapState {
   connectionList: (data: any) => Promise<IListResult<IVConnection>>;
   httpList: (data: any) => Promise<IListResult<IVHttpConnection>>;
   httpDetail: (index: number) => Promise<IHttpDetail[]>
-  cachehttp: (conn: IVHttpConnection | null) => void;
-  getHttpCache: () => IVHttpConnection | null;
   stat: (request: StatRequest) => Promise<any> ;
 }
