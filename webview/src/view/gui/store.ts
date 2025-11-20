@@ -1,19 +1,17 @@
 // userStore.ts
 import { create } from "zustand";
-import { _log } from "./util";
+import { _log } from "../util";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from '@tauri-apps/api/event';
 import {
   IHttpDetail,
   PcapState,
   StatRequest,
-} from "../share/common";
-import { IListResult, IVConnection, IVConversation, IVHttpConnection, IUDPConversation, IDNSResponse, IDNSRecord } from "../share/gen";
+} from "../../share/common";
+import { IListResult, IVConnection, IVConversation, IVHttpConnection, IUDPConversation, IDNSResponse, IDNSRecord } from "../../share/gen";
 
 const httpdetail_convert = (data: any): IHttpDetail => {
   const { headers, raw, plaintext, content_type } = data;
-  console.log(headers);
-  console.log(raw);
   let _raw = undefined;
   if (raw && raw.length) {
     _raw = Uint8Array.from(raw);
@@ -34,7 +32,6 @@ export const useStore = create<PcapState>()((set) => {
   });
   return {
     sendReady: () => {
-      console.log('ready');
       // emitMessage(ComMessage.new(ComType.CLIENT_READY, Date.now()));
     },
     request: <F>(data: any): Promise<F> => {
@@ -63,7 +60,6 @@ export const useStore = create<PcapState>()((set) => {
     },
     udpList: (data: any): Promise<IListResult<IUDPConversation>> => {
       const { start, size, asc, ip } = data.param;
-      console.log(data.param);
       return invoke("udp_list", { start, size, asc, ip: ip ? ip : undefined });
     },
     dnsList: (data: any): Promise<IListResult<IDNSResponse>> => {

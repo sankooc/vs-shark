@@ -1,7 +1,7 @@
 // userStore.ts
 import { create } from "zustand";
-import { onMessage, emitMessage } from "../common/connect";
-import { _log } from "./util";
+import { onMessage, emitMessage } from "../../common/connect";
+import { _log } from "../util";
 import {
   ComMessage,
   ComType,
@@ -13,8 +13,8 @@ import {
   PcapFile,
   PcapState,
   StatRequest,
-} from "../share/common";
-import { IListResult, IProgressStatus, IVConnection, IVConversation, IVHttpConnection, IUDPConversation, IDNSResponse, IDNSRecord } from "../share/gen";
+} from "../../share/common";
+import { IListResult, IProgressStatus, IVConnection, IVConversation, IVHttpConnection, IUDPConversation, IDNSResponse, IDNSRecord } from "../../share/gen";
 import mitt from "mitt";
 
 

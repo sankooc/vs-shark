@@ -25,7 +25,6 @@ function Component() {
     items: [],
   });
   const [select, setSelect] = useState<IFrameInfo | undefined>(undefined);
-
   const size = frame_size;
   useEffect(() => {
     const data: ComRequest = {

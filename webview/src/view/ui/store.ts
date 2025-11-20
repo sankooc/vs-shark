@@ -1,13 +1,13 @@
 // userStore.ts
 import { create } from "zustand";
 // import { onMessage, emitMessage } from "../common/connect";
-import { _log } from "./util";
+import { _log } from "../util";
 import {
   IHttpDetail,
   PcapState,
   StatRequest,
-} from "../share/common";
-import { IListResult, IVConnection, IVConversation, IVHttpConnection, IUDPConversation, IDNSResponse, IDNSRecord } from "../share/gen";
+} from "../../share/common";
+import { IListResult, IVConnection, IVConversation, IVHttpConnection, IUDPConversation, IDNSResponse, IDNSRecord } from "../../share/gen";
 
 const makeUrl = (base: string, params: Record<string, string>): string => {
   return `${base}?start=${params.start}&size=${params.size}`
@@ -26,15 +26,12 @@ export const useStore = create<PcapState>()((set) => {
   _log("create pcap ui store");
 
   fetch('/api/ready').then((rs) => {
-    console.log('is ready');
     if (rs && rs.ok) {
-      set((state) => ({ ...state, progress: { total: 0, cursor: 0, count: 0, left: 0 } }));
+      set((state: any) => ({ ...state, progress: { total: 0, cursor: 0, count: 0, left: 0 } }));
     }
   });
   return {
-    // theme: ctheme,
     sendReady: () => {
-      console.log('ready');
       // emitMessage(ComMessage.new(ComType.CLIENT_READY, Date.now()));
     },
     request: <F>(data: any): Promise<F> => {
@@ -71,7 +68,7 @@ export const useStore = create<PcapState>()((set) => {
         url += `&ip=${data.param.ip}`
       }
       //asc
-      return fetch(url).then((response) => response.json()).then((rs) => { console.log(rs); return rs });
+      return fetch(url).then((response) => response.json());
     },
     dnsList: (data: any): Promise<IListResult<IDNSResponse>> => {
       const url = `/api/dns/list?start=${data.param.start}&size=${data.param.size}&asc=${data.param.asc}`;

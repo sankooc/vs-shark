@@ -1,0 +1,40 @@
+.flex {
+    display: flex;
+}
+.flex-row {
+  flex-direction: row;
+}
+.flex-column {
+  flex-direction: column;
+}
+.h-full{
+    height: 100% !important;
+}
+.w-full{
+    width: 100% !important;
+}
+.align-items-center {
+  align-items: center;
+}
+.align-items-stretch {
+  align-items: stretch;
+}
+.justify-content-center {
+  justify-content: center;
+}
+.justify-content-between {
+  justify-content: space-between;
+}
+.flex-grow-1 {
+  flex-grow: 1;
+}
+.flex-grow-0 {
+  flex-grow: 0;
+}
+
+.flex-1{
+    flex: 1 1 0%;
+}
+.gap-1 {
+    gap: 0.25rem;
+}
