@@ -1,5 +1,3 @@
-// userStore.ts
-
 import { create } from "zustand";
 import { onMessage } from "../common/connect";
 import { ComMessage, ComType } from "../share/common";

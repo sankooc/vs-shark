@@ -132,21 +132,6 @@ const Nav = () => {
           }
         </NavSubItemGroup>
       </NavCategory>
-      {/* {
-        components.map((item) => (
-          <NavItem
-            onClick={() => {
-              setSelect(item.name);
-              navigate('/' + item.path)
-            }}
-            icon={<item.icon />}
-            value={item.name}
-            key={item.name}
-          >
-            {item.name}
-          </NavItem>
-        ))
-      } */}
     </NavDrawerBody>
   </NavDrawer>
 }
@@ -158,6 +143,7 @@ const Basic = () => {
   if (!progress) {
     return <LoadingComponent info={info} progress={progress} />
   }
+  
   return (
     <BrowserRouter>
       <div className="flex flex-row h-full w-full">
@@ -165,7 +151,6 @@ const Basic = () => {
         <div className="flex-1 flex flex-column main-content">
           <Routes>
             <Route path="/" index element={<FrameComponent />} />
-            {/* <Route path="/frames" element={<FrameComponent />} /> */}
             <Route path="/overview" element={<OverviewComponent />} />
             <Route path="/conversations" element={<ConversationComponent />} />
             <Route path="/conversation/:conversationIndex" element={<ConversationDetailComponent />} />
