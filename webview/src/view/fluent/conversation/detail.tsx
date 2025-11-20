@@ -111,12 +111,20 @@ export default function Component() {
         { name: title },
     ]
 
+    const columnSizingOptions = {
+        protocol: {
+            minWidth: 80,
+            idealWidth: 80,
+        },
+        host: {
+            minWidth: 250,
+            idealWidth: 250,
+        }
+
+    };
     const gridProps = {
         size: SIZE,
-        columns, pageSize, load, breads
+        columns, pageSize, load, breads, columnSizingOptions    
     };
     return <Grid {...gridProps} />;
-    // return <div className="flex flex-column h-full" style={{ overflowX: "hidden", overflowY: "auto" }}>
-    //     <Grid size="small" columns={columns} onClick={onClick} pageSize={pageSize} load={load} breads={breads} />
-    // </div>
 }
