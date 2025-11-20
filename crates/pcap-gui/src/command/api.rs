@@ -77,7 +77,7 @@ pub async fn udp_list(state: tauri::State<'_, GUIContext>, start: usize, size: u
 pub async fn http_list(state: tauri::State<'_, GUIContext>, start: usize, size: usize, host: String, asc: bool) -> Result<ListResult<VHttpConnection>, String> {
     let context = state.inner();
     let cri = Criteria { start, size };
-    let filter = host.is_empty().then(|| None).unwrap_or(Some(HttpCriteria { hostname: Some(host) }));
+    let filter = if host.is_empty() { None } else { Some(HttpCriteria { hostname: Some(host) }) };
     Ok(context.engine().http_list(cri, filter, asc).await)
 }
 

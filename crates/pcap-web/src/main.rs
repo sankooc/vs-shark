@@ -67,12 +67,7 @@ const DEFAULT_PORT: u16 = 6400;
 fn get_port() -> Option<u16> {
     let start = DEFAULT_PORT;
     let end = start + 15;
-    for port in start..end {
-        if !is_port_in_use(port) {
-            return Some(port);
-        }
-    }
-    None
+    (start..end).find(|&port| !is_port_in_use(port))
 }
 
 fn get_host(args: &Args) -> IpAddr {

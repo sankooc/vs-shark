@@ -6,12 +6,13 @@
   "build": {
 
     "devUrl": "http://localhost:5173/gui.html",
-    "frontendDist": "../../dist/socket"
+    "frontendDist": "../../dist/gui"
   },
   "app": {
     "windows": [
       {
         "title": "Pcap Viewer GUI",
+        "fullscreen": false,
         "width": 800,
         "height": 600
       }

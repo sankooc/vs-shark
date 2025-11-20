@@ -64,7 +64,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for PWebSocket {
         match msg {
             Ok(ws::Message::Ping(msg)) => ctx.pong(&msg),
             Ok(ws::Message::Text(text)) => {
-                ctx.text(format!("Echo: {}", text));
+                ctx.text(format!("Echo: {text}"));
             }
             Ok(ws::Message::Binary(bin)) => ctx.binary(bin),
             Ok(ws::Message::Close(reason)) => {
@@ -77,6 +77,5 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for PWebSocket {
 }
 
 pub async fn websocket(req: HttpRequest, stream: web::Payload) -> Result<HttpResponse, Error> {
-    let res = ws::start(PWebSocket {}, &req, stream);
-    res
+    ws::start(PWebSocket {}, &req, stream)
 }

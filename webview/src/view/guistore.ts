@@ -28,6 +28,10 @@ export const useStore = create<PcapState>()((set) => {
     _log(`file opened ${event.payload}`);
     set((state) => ({ ...state, progress: { total: 0, cursor: 0, count: 0, left: 0 } }));
   });
+  listen<string>('file_close', () => {
+    _log('file closed');
+    set((state) => ({ ...state, progress: undefined }));
+  });
   return {
     sendReady: () => {
       console.log('ready');

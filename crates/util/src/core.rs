@@ -18,6 +18,7 @@ pub enum UICommand {
     Quit,
     None,
     OpenFile(oneshot::Sender<Result<(), String>>, String),
+    CloseFile(oneshot::Sender<Result<(), String>>),
     Frames(oneshot::Sender<ListResult<FrameInfo>>, Criteria),
     Frame(oneshot::Sender<FrameResult>, FrameIndex),
     List(oneshot::Sender<String>, String),
@@ -153,6 +154,10 @@ impl Engine {
     async fn handle_gui(&mut self, cmd: UICommand) {
         if let Some(instance) = &self.ins {
             match cmd {
+                UICommand::CloseFile(tx) => {
+                    self.ins = None;
+                    let _ = tx.send(Ok(()));
+                }
                 UICommand::Frames(tx, cri) => {
                     let rs = instance.frames_by(cri);
                     let _ = tx.send(rs);
@@ -260,6 +265,11 @@ impl UIEngine {
         let (tx, rx) = oneshot::channel();
         let _ = self.gui_tx.send(UICommand::OpenFile(tx, filepath)).await;
         rx.await.map_err(|e| e.to_string())?
+    }
+    pub async fn close_file(&self) -> Result<(), String> {
+        let (tx, rx) = oneshot::channel();
+        let _ = self.gui_tx.send(UICommand::CloseFile(tx)).await;
+        rx.await.unwrap()
     }
     pub async fn get_list(&self) -> String {
         "list".to_string()
