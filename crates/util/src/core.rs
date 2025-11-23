@@ -80,7 +80,7 @@ impl ResourceLoader for LocalResource {
 }
 
 impl LocalResource {
-    fn new(filepath: String) -> Self {
+   pub fn new(filepath: String) -> Self {
         LocalResource { filepath }
     }
 }

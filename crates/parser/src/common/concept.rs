@@ -112,7 +112,7 @@ impl CounterItem {
     }
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Debug)]
 pub struct ProgressStatus {
     pub total: usize,
     pub cursor: usize,

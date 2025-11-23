@@ -21,6 +21,10 @@ jobs:
         cargo --version
         rustc -vV
         echo "version ${GITHUB_REF#refs/heads/release/}"
+    - name: Install tarpaulin
+      run: cargo install cargo-tarpaulin
+    - name: Coverage
+      run: make coverage
     - name: document
       run: |
         cd doc && npm install && npm run docs:build

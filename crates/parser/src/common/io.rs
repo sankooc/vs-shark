@@ -77,7 +77,7 @@ impl IO {
 #[derive(Deserialize, Serialize)]
 pub struct DataSource {
     pub data: Vec<u8>,
-    range: Range<usize>,
+    pub range: Range<usize>,
     // pub config: InstanceConfig,
 }
 #[allow(clippy::len_without_is_empty)]

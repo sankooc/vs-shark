@@ -9,7 +9,7 @@ extension/media/
 /target
 /release
 simulator.rs
-
+coverage
 # Added by cargo
 #
 # already existing elements were commented out

@@ -262,8 +262,8 @@ pub struct Context {
     pub ipv6map: FastHashMap<u64, (u8, Ipv6Addr, Ipv6Addr)>,
     pub string_map: FastHashMap<u64, NString>,
 
-    pub stat_ip4: FastHashMap<Ipv4Addr, u16>,
-    pub stat_ip6: FastHashMap<Ipv6Addr, u16>,
+    pub stat_ip4: FastHashMap<Ipv4Addr, usize>,
+    pub stat_ip6: FastHashMap<Ipv6Addr, usize>,
 }
 
 impl Context {
