@@ -34,6 +34,7 @@ class Client extends PCAPClient {
     this.emitMessage(ComMessage.new(ComType.PRGRESS_STATUS, undefined));
     this.touchFile(undefined);
     this.data = new Uint8Array();
+    this.ctx?.free();
   }
 }
 const self_ = self as any;
@@ -76,20 +77,21 @@ self_.wasm_log = (str: string) => {
 ready.then((rs) => {
   _log("wasm loaded", rs);
 
-  const client = new Client();
+  let client = new Client();
   g_map.current = client;
   ctx.addEventListener("message", (event: MessageEvent<any>) => {
     const id = event.data?.id;
     const type = event.data?.type;
     if (type == ComType.RESET) {
+      if (client) {
         client.clear();
-        return;
+      }
+      client = new Client();
+      g_map.current = client;
+      return;
     }
 
     if (type == ComType.PROCESS_DATA) {
-      if (null != client) {
-        client.clear();
-      }
       const body = event.data.body;
       const data = body.data as Uint8Array;
       client.data = data;

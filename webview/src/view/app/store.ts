@@ -60,6 +60,7 @@ export const useStore = create<PcapState>()((set) => {
       case ComType.FILEINFO:
         {
           const fileinfo = body as PcapFile;
+          console.log('set fileinfo', fileinfo);
           set((state) => ({ ...state, fileinfo: fileinfo }));
           break;
         }

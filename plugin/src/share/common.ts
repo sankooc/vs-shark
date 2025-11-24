@@ -92,8 +92,6 @@ export class ComLog {
 export interface PcapFile {
   name: string;
   size: number;
-  start: number;
-  state?: number;
 }
 
 export interface IField {

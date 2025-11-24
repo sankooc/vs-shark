@@ -47,8 +47,14 @@ export abstract class PCAPClient {
       try {
         const rs = await this.ctx.update(data);
         if (rs) {
-          this.emitMessage(ComMessage.new(ComType.PRGRESS_STATUS, rs));
-          return rs;
+          return new Promise<string>((resolve) => {
+            setTimeout(() => {
+            this.emitMessage(ComMessage.new(ComType.PRGRESS_STATUS, rs));
+            resolve(rs);
+          // return rs;
+
+            }, 5000)
+          })
         }
       } catch (e) {
         console.error(e);
@@ -65,7 +71,8 @@ export abstract class PCAPClient {
 
   protected touchFile(fileInfo: PcapFile | undefined): void {
     this.info = fileInfo;
-    this.emitMessage(ComMessage.new(ComType.FILEINFO, fileInfo));
+    console.log('touch file', fileInfo);
+    this.emitMessage(ComMessage.new(ComType.FILEINFO, this.info));
   }
   private list(
     requestId: string,

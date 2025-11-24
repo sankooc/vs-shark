@@ -6,13 +6,17 @@ import {
     BreadcrumbButton,
     Slot,
     Label,
-    Select
+    Select,
+    Combobox,
+    Option    
 } from "@fluentui/react-components";
 import { BookGlobe20Filled, BookGlobe20Regular, bundleIcon, CallInboundRegular, CallOutboundRegular, ChartMultiple20Filled, ChartMultiple20Regular, CheckmarkSquareRegular, ClipboardBulletListRtlFilled, ClipboardBulletListRtlRegular, ClockRegular, DocumentBulletList20Filled, DocumentBulletList20Regular, DocumentGlobeRegular, DocumentOnePageRegular, FormSparkle20Filled, FormSparkle20Regular, GlobeColor, InfoRegular, LockClosedKeyRegular, MailTemplate20Filled, MailTemplate20Regular, MoreHorizontalFilled, PanelTopContractRegular, PanelTopExpandRegular, PlugConnected20Filled, PlugConnected20Regular, QuestionFilled, ShieldLock20Filled, ShieldLock20Regular, ShieldQuestionRegular, TextboxRotate9020Filled, TextboxRotate9020Regular, TriangleLeft20Filled, TriangleLeft20Regular, TriangleRight20Filled, TriangleRight20Regular, WarningRegular } from "@fluentui/react-icons";
-import React, { JSX, useEffect, useId, useState } from "react";
+import React, { FormEvent, JSX, useEffect, useId, useState } from "react";
 
 import { useNavigate } from "react-router";
 import { usePcapStore } from "../../share/context";
+import { PcapFile } from "../../share/common";
+import { IProgressStatus } from "../../share/gen";
 
 interface ConnectProp {
     items: {
@@ -92,6 +96,7 @@ const NoneOption = "ANY";
 const IPV4Option = "ipv4";
 const IPV6Option = "ipv6";
 
+// ...existing code...
 export function IPSelector(props: SelectorProps) {
     const selectId = useId();
     const stat = usePcapStore((state) => state.stat);
@@ -100,9 +105,15 @@ export function IPSelector(props: SelectorProps) {
     const [ip6s, setIp6s] = useState<string[]>([]);
     const [types, setTypes] = useState<string[]>([NoneOption]);
     const [type, setType] = useState<string>(NoneOption);
+
+    const [query, setQuery] = useState<string>("");
+
+    const source = type === IPV4Option ? ip4s : (type === IPV6Option ? ip6s : []);
+    const [suggestions, setSuggestions] = useState<string[]>([]);
     useEffect(() => {
         props.onSelect && props.onSelect(NoneOption);
     }, [type]);
+
     useEffect(() => {
         stat({ field: 'ip4' }).then((rs) => {
             if (rs.length) {
@@ -123,6 +134,11 @@ export function IPSelector(props: SelectorProps) {
             }
         });
     }, []);
+    useEffect(() => {
+        setQuery("");
+        setSuggestions(source.slice(0, 100));
+    }, [type]);
+
     const opt1 = {
         disabled: ip4s.length === 0 && ip6s.length === 0,
     }
@@ -132,37 +148,37 @@ export function IPSelector(props: SelectorProps) {
         id: selectId,
     }
 
-    let options: JSX.Element[] = [];
-    switch (type) {
-        case IPV6Option: {
-            options = ip6s.map((h) => {
-                return <option key={h}>{h}</option>
-            });
-            break;
-        }
-        case IPV4Option: {
-            options = ip4s.map((h) => {
-                return <option key={h}>{h}</option>
-            });
-            break;
-        }
-    }
     return <>
         <Label size="small" htmlFor={selectId} style={{ paddingInlineEnd: "5px" }}>IP</Label>
         <Select size='small' {...opt1} onChange={(_: any, val: any) => { setType(val.value) }} value={type} >
-            {
-                types.map((t) => {
-                    return <option key={t}>{t}</option>
-                })
-            }
+            {types.map((t) => <option key={t}>{t}</option>)}
         </Select>
-        {/* <Combobox size="small" placeholder="Select IP Address">
-  <Option value="12" disabled>Option 12</Option>
-</Combobox> */}
-        <Select size="small" {...opt2} onChange={(_: any, val: any) => { props.onSelect && props.onSelect(val.value) }} >
-            <option>{NoneOption}</option>
-            {options}
-        </Select>
+        <Combobox
+            size="small"
+            placeholder="Input IPAddress"
+            {...opt2}
+            value={query}
+            onInput={(data: FormEvent<any>) => {
+                let v = (data.target as HTMLInputElement).value;
+                setQuery(v);
+                if (v && v.length > 2 && type !== NoneOption) {
+                    const list = source.filter(ip => ip.includes(v)).slice(0, 50);
+                    setSuggestions(list.slice(0, 100));
+                } else {
+                    const data = source.slice(0, 100);
+                    setSuggestions(data);
+                }
+            }}
+            onOptionSelect={(_, data) => {
+                const v = data.optionValue;
+                setQuery(v || '');
+                if(v) {
+                    props.onSelect && props.onSelect(v);
+                }
+            }}
+        >
+            {suggestions.map(s => <Option key={s} value={s}>{s}</Option>)}
+        </Combobox>
     </>;
 }
 
@@ -182,4 +198,13 @@ export function infoLevel(level: string): [string, JSX.Element] {
         }
     }
     // return ['', <ShieldQuestionRegular />]
+}
+
+
+type StatusBarProps = {
+    info?: PcapFile,
+    status?: IProgressStatus
+}
+export function StatusBar(props: StatusBarProps){
+    return <div className="status-bar" style={{ height: '20px', backgroundColor: 'green'}}></div>
 }

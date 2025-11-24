@@ -159,7 +159,13 @@ pub fn run() {
         .manage(context)
         .setup(|app| {
             app.manage(RecentFiles::default());
-            rebuild_menu(app.handle(), None)?;
+            let args: Vec<String> = std::env::args().collect();
+            let mut option = None;
+            if args.len() > 1 {
+                let file_path = args[1].clone();
+                option = Some(file_path);
+            }
+            rebuild_menu(app.handle(), option)?;
             Ok(())
         })
         .on_menu_event(|app, event| match event.id().as_ref() {
