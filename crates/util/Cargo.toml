@@ -1,7 +1,13 @@
 [package]
 name = "util"
-version = "0.1.0"
-edition = "2024"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
 
 [dependencies]
+pcap = { path = "../parser" }
 anyhow.workspace = true
+tokio = { version = "1.48.0", features = ["macros", "rt-multi-thread", "sync", "time"] }
+serde = { workspace = true, features = ["derive"]}
+serde_json.workspace = true

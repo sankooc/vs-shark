@@ -69,20 +69,25 @@ pub fn std_string(data: &[u8]) -> Result<&str, std::str::Utf8Error> {
     std::str::from_utf8(data)
 }
 pub fn trim_data(data: &[u8]) -> &[u8] {
-    let size = data.len();
-    let mut start = 0;
-    let mut end = size;
-    for (inx, data) in data.iter().enumerate().take(size) {
-        if *data != b' ' {
-            start = inx;
-            break;
-        }
+    if data.is_empty() {
+        return data;
     }
-    for (inx, data) in data.iter().enumerate().take(start).skip(size) {
-        if *data != b' ' {
-            end = inx;
-            break;
-        }
+    fn is_ws(b: u8) -> bool {
+        matches!(b, b' ' | b'\t' | b'\n' | b'\r' | 0x0B | 0x0C)
+    }
+    
+    let mut start = 0usize;
+    let mut end = data.len();
+    
+    while start < end && is_ws(data[start]) {
+        start += 1;
+    }
+    while end > start && is_ws(data[end - 1]) {
+        end -= 1;
+    }
+    
+    if start == end {
+        return data;
     }
     &data[start..end]
 }
@@ -274,7 +279,7 @@ pub struct Instance<T> {
     loader: T,
     ds: DataSource,
     file_type: FileType,
-    ctx: Context,
+    pub ctx: Context,
     last: usize,
 }
 
@@ -729,7 +734,7 @@ where
                 }
             }
         }
-        let mut rs: Vec<UDPConversation> = map.into_iter().map(|(_, v)| v).collect();
+        let mut rs: Vec<UDPConversation> = map.into_values().collect();
         let compare = |a: &UDPConversation, b: &UDPConversation| {
             let rs = a.ts.cmp(&b.ts);
             if asc {

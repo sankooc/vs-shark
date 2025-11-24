@@ -1,6 +1,10 @@
 name: Build_TUI
 
 on:
+  workflow_run:
+    workflows: ["Build_Website"]
+    types:
+      - completed
   push:
     branches: [ "release/*" ]
 
@@ -23,12 +27,13 @@ jobs:
         echo "version ${GITHUB_REF#refs/heads/release/}"
     - run: echo "brc=$(echo ${GITHUB_REF#refs/heads/release/})" >> $GITHUB_ENV
     - name: Build
-      run: cargo build --release --target ${{ matrix.target }} --verbose
+      run: cargo build --release -p pcaps --target ${{ matrix.target }} --verbose
     - run: mkdir release
     - run: mv target/${{ matrix.target }}/release/pcaps release/pcaps-${{ matrix.target }}
     - name: Release TUI
       uses: softprops/action-gh-release@v2.1.0
       with:
+        allow_updates: true
         tag_name: ${{ env.brc }}
         files: |
           release/pcaps-${{ matrix.target }}

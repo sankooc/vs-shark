@@ -220,7 +220,7 @@ export abstract class PCAPClient {
     }
     try {
       switch (type) {
-        case ComType.CLIENT_REDAY:
+        case ComType.CLIENT_READY:
           if (!this.ready) {
             this.ready = true;
             try {

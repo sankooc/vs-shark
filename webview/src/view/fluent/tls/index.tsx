@@ -1,4 +1,4 @@
-import { useStore } from "../../store";
+import { usePcapStore } from "../../../share/context";
 import { createTableColumn, TableCellLayout, TableColumnDefinition, Toolbar, ToolbarButton } from "@fluentui/react-components";
 import { compute, ComRequest, ITLSConnect } from "../../../share/common";
 import Grid from "../table";
@@ -24,11 +24,10 @@ const getLevel = (item: ITLSConnect) => {
 }
 
 function Component() {
-  const tlsList = useStore((state) => state.tlsList);
+  const tlsList = usePcapStore((state) => state.tlsList);
   const navigate = useNavigate();
   const ipMap = new Map();
   const onClick = (item: ITLSConnect) => {
-    // cachehttp(item);
     const index = item.index;
     if (undefined != index) {
       navigate('/tls/' + index);

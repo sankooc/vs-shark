@@ -1,0 +1,21 @@
+[package]
+name = "pcap-web"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[dependencies]
+actix = "0.13.5"
+actix-web = "4.11.0"
+actix-web-actors = "4.3.1"
+include_dir = "0.7.4"
+mime_guess = "2.0.5"
+clap = { workspace = true, features = ["derive"] }
+pcap = { path = "../parser" }
+util = { path = "../util" }
+tokio = { workspace = true, features = ["macros", "rt-multi-thread", "sync", "time"] }
+serde = { workspace = true, features = ["derive"]}
+serde_json.workspace = true
+anyhow.workspace = true
+colored = "3.0.0"

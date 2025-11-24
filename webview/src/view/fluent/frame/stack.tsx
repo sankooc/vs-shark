@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Cursor, IField, IFrameSelect } from "../../../share/common";
-import { useStore } from "../../store";
+import { usePcapStore } from "../../../share/context";
 import { makeStyles, Tree, TreeItem, TreeItemLayout } from "@fluentui/react-components";
 import AutoSizer from "react-virtualized-auto-sizer";
 import HexView from './hex';
@@ -31,7 +31,7 @@ export default function Stack(props: StackProps) {
   const [data, setData] = useState<IFrameSelect>({ fields: [], datasource: [] });
   const [select, setSelect] = useState<string>("");
   const [cursor, setCursor] = useState<Cursor | undefined>();
-  const _request = useStore((state) => state.request);
+  const _request = usePcapStore((state) => state.request);
   useEffect(() => {
     if (props.select < 0) {
       return;

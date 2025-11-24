@@ -1,3 +1,5 @@
+import { IDNSRecord, IDNSResponse, IFrameInfo, IListResult, IProgressStatus, IUDPConversation, IVConnection, IVConversation, IVHttpConnection } from "./gen";
+
 export function deserialize<T>(content: string): T | undefined {
   if(!content){
     return;
@@ -7,8 +9,8 @@ export function deserialize<T>(content: string): T | undefined {
 
 export enum ComType {
   RESET = "RESET",
-  SERVER_REDAY = "ready",
-  CLIENT_REDAY = "_ready",
+  SERVER_READY = "ready",
+  CLIENT_READY = "_ready",
   TOUCH_FILE = "file_touch",
   PROCESS_DATA = "process_data",
   PRGRESS_STATUS = "progress",
@@ -262,4 +264,25 @@ export const formatMicroseconds = (sample: number, _time: number): string => {
   }
 
   return `${time}μs`;
+}
+
+
+export interface PcapState {
+  fileinfo?: PcapFile;
+  progress?: IProgressStatus;
+  frameResult?: IListResult<IFrameInfo>;
+  frameSelect?: string;
+  sendReady: () => void;
+  request: <F>(data: any) => Promise<F>;
+  // requestData: (data: VRange) => Promise<DataResponse>;
+  conversationList: (data: any) => Promise<IListResult<IVConversation>>;
+  udpList: (data: any) => Promise<IListResult<IUDPConversation>>;
+  dnsList: (data: any) => Promise<IListResult<IDNSResponse>>;
+  dnsRecords: (data: any) => Promise<IListResult<IDNSRecord>>;
+  tlsList: (data: any) => Promise<IListResult<ITLSConnect>>;
+  tlsConvList: (data: any) => Promise<IListResult<ITLSInfo>>;
+  connectionList: (data: any) => Promise<IListResult<IVConnection>>;
+  httpList: (data: any) => Promise<IListResult<IVHttpConnection>>;
+  httpDetail: (index: number) => Promise<IHttpDetail[]>
+  stat: (request: StatRequest) => Promise<any> ;
 }

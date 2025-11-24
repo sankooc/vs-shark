@@ -21,6 +21,10 @@ jobs:
         cargo --version
         rustc -vV
         echo "version ${GITHUB_REF#refs/heads/release/}"
+    - name: Install tarpaulin
+      run: cargo install cargo-tarpaulin
+    - name: Coverage
+      run: make coverage
     - name: document
       run: |
         cd doc && npm install && npm run docs:build
@@ -35,7 +39,7 @@ jobs:
         mkdir -p deploy
         cp -r doc/.vitepress/dist/* deploy/
         mkdir -p deploy/app
-        cp -r webview/dist/* deploy/app/
+        cp -r dist/web/* deploy/app/
     - name: Upload GitHub Pages artifact
       uses: actions/upload-pages-artifact@v3
       with:

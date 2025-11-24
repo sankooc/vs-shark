@@ -4,9 +4,9 @@ import { resolve } from 'path'
 import wasm from "vite-plugin-wasm";
 import topLevelAwait from "vite-plugin-top-level-await";
 
-export default defineConfig(({ command, mode }) => {
+export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd())
-  
+
   const allEntries = {
     main: resolve(__dirname, 'index.html'),
     app: resolve(__dirname, 'app.html'),
@@ -16,15 +16,36 @@ export default defineConfig(({ command, mode }) => {
     main: resolve(__dirname, 'app.html'),
   }
 
-  const getEntries = () => {
-    if (command === 'serve') return allEntries
+  const getEntry = () => {
     if (env.VITE_BUILD_ALL === 'true') return allEntries
-    return mainEntry
+    if (env.VITE_BUILD_SOCKET === 'true') {
+      return {
+        index: resolve(__dirname, 'ui.html'),
+      };
+    }
+    if (env.VITE_BUILD_GUI === 'true') {
+      return {
+        index: resolve(__dirname, 'gui.html'),
+      };
+    }
+    if (env.VITE_BUILD_VSCODE === 'true') {
+      return mainEntry;
+    }
+    return allEntries;
   }
 
   const getOutput = () => {
-    if (env.VITE_BUILD_ALL === 'true') return './dist'
-    return './../plugin/dist/web'
+    if (env.VITE_BUILD_ALL === 'true') return '../dist/web'
+    if (env.VITE_BUILD_VSCODE === 'true') {
+      return './../plugin/dist/web';
+    }
+    if (env.VITE_BUILD_GUI === 'true') {
+      return './../dist/gui';
+    }
+    if (env.VITE_BUILD_SOCKET == 'true') {
+      return './../dist/socket';
+    }
+    return './dist';
   }
 
   return {
@@ -39,23 +60,24 @@ export default defineConfig(({ command, mode }) => {
         '@assets': resolve(__dirname, 'src/assets')
       },
     },
+    server: {
+      proxy: {
+        '/api': {
+          target: 'http://127.0.0.1:3000',
+          changeOrigin: true,
+        },
+      }
+    },
     optimizeDeps: {
       exclude: ['rshark']
     },
     base: '',
-    // css: {
-    //   preprocessorOptions: {
-    //     scss: {
-    //       additionalData: `@import "src/scss/var.scss";`
-    //     }
-    //   }
-    // },
     assetsInclude: ['**/*.ttf'],
     build: {
       outDir: getOutput(),
       emptyOutDir: true,
       rollupOptions: {
-        input: getEntries(),
+        input: getEntry(),
         output: {
           entryFileNames: 'js/[name].js',
           chunkFileNames: 'js/[name]-chunk.js',

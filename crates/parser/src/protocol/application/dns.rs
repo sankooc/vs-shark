@@ -282,7 +282,7 @@ impl Visitor {
                         let _ttl = reader.read32(true)?;
                         let data_len =  reader.read16(true)? as usize;
                         let finish = reader.cursor + data_len;
-                        let _record_data = match record_type {
+                        match record_type {
                             1 => {
                                 // A record
                                 if data_len == 4 {
@@ -341,7 +341,7 @@ impl Visitor {
                                 }
                             }
                             _ => {}
-                        };
+                        }
                         reader.set(finish);
                     }
                 }

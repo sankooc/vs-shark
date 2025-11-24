@@ -3,8 +3,14 @@ resolver = "2"
 members = [
 "crates/wasm",
 "crates/tui",
-"crates/parser", "crates/util"]
+"crates/parser", "crates/util"
+, "crates/pcap-web", "crates/pcap-gui"]
 
+[workspace.package]
+version = "0.4.6"
+edition = "2021"
+authors = ["sankooc <sankooc@163.com>"]
+license = "MIT"
 
 [profile.release]
 panic = "unwind"
@@ -33,6 +39,7 @@ prettytable-rs = "^0.10"
 instant = "0.1.13"
 rustc-hash = "1.1"
 memchr = "2.7.4"
+tokio = "1.48.0"
 
 flate2 = "1.0"
 brotli = "3.3"

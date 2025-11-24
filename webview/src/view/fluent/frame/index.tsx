@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useStore } from "../../store";
+import { usePcapStore } from "../../../share/context";
 import { compute, ComRequest } from "../../../share/common";
 import { IFrameInfo, IListResult } from "../../../share/gen";
 // import { makeStyles } from "@fluentui/react-components";
@@ -17,7 +17,7 @@ function Empty() {
 
 
 function Component() {
-  const _request = useStore((state) => state.request);
+  const _request = usePcapStore((state) => state.request);
   const [page, setPage] = useState<number>(1);
   const [result, setResult] = useState<IListResult<IFrameInfo>>({
     start: 0,
@@ -25,7 +25,6 @@ function Component() {
     items: [],
   });
   const [select, setSelect] = useState<IFrameInfo | undefined>(undefined);
-
   const size = frame_size;
   useEffect(() => {
     const data: ComRequest = {

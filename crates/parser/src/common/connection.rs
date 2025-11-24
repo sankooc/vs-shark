@@ -319,7 +319,7 @@ impl Endpoint {
                 self._seq = sequence;
                 // self.status = TCPConnectStatus::SYN_SENT;
             } else {
-                self._seq = sequence - 1;
+                self._seq = sequence.saturating_sub(1);
             }
             // self._seq = sequence;
             self.seq = sequence;

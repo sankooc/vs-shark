@@ -1,4 +1,5 @@
-import { useStore } from "../../store";
+
+import { usePcapStore } from "../../../share/context";
 import { IDNSRecord } from "../../../share/gen";
 import { createTableColumn, TableCellLayout, TableColumnDefinition } from "@fluentui/react-components";
 import { compute, ComRequest } from "../../../share/common";
@@ -7,7 +8,7 @@ import Grid from "../table";
 import { DNSIcon } from "../common";
 import { useParams } from "react-router";
 function Component() {
-    const request = useStore((state) => state.dnsRecords);
+    const request = usePcapStore((state) => state.dnsRecords);
     const { index } = useParams();
     const columns: TableColumnDefinition<IDNSRecord>[] = [
         createTableColumn<IDNSRecord>({

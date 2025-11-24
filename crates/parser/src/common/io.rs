@@ -15,6 +15,7 @@ use crate::common::enum_def::DataError;
 use ahash::AHasher;
 use anyhow::{bail, Ok, Result};
 use memchr::memchr_iter;
+use serde::{Deserialize, Serialize};
 
 use super::{concept::ProgressStatus, NString};
 
@@ -72,9 +73,11 @@ impl IO {
 
 //     None
 // }
+
+#[derive(Deserialize, Serialize)]
 pub struct DataSource {
     pub data: Vec<u8>,
-    range: Range<usize>,
+    pub range: Range<usize>,
     // pub config: InstanceConfig,
 }
 #[allow(clippy::len_without_is_empty)]

@@ -1,7 +1,7 @@
 
 import { Card } from '@fluentui/react-components';
 import ReactECharts from 'echarts-for-react';
-import { useStore } from '../../store';
+import { usePcapStore } from "../../../share/context";
 import { useEffect, useState } from 'react';
 import { ILineData } from '../../../share/gen';
 import dayjs from 'dayjs';
@@ -9,7 +9,7 @@ import { format_bytes_single_unit } from '../../../share/common';
 
 
 export default function Component() {
-    const stat = useStore((state) => state.stat);
+    const stat = usePcapStore((state) => state.stat);
     const [line, setLineData] = useState<ILineData | null>(null);
     useEffect(() => {
         stat({ field: 'frame' }).then((rs) => { setLineData(rs as ILineData) });

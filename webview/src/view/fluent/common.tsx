@@ -6,13 +6,13 @@ import {
     BreadcrumbButton,
     Slot,
     Label,
-    Select,
+    Select
 } from "@fluentui/react-components";
 import { BookGlobe20Filled, BookGlobe20Regular, bundleIcon, CallInboundRegular, CallOutboundRegular, ChartMultiple20Filled, ChartMultiple20Regular, CheckmarkSquareRegular, ClipboardBulletListRtlFilled, ClipboardBulletListRtlRegular, ClockRegular, DocumentBulletList20Filled, DocumentBulletList20Regular, DocumentGlobeRegular, DocumentOnePageRegular, FormSparkle20Filled, FormSparkle20Regular, GlobeColor, InfoRegular, LockClosedKeyRegular, MailTemplate20Filled, MailTemplate20Regular, MoreHorizontalFilled, PanelTopContractRegular, PanelTopExpandRegular, PlugConnected20Filled, PlugConnected20Regular, QuestionFilled, ShieldLock20Filled, ShieldLock20Regular, ShieldQuestionRegular, TextboxRotate9020Filled, TextboxRotate9020Regular, TriangleLeft20Filled, TriangleLeft20Regular, TriangleRight20Filled, TriangleRight20Regular, WarningRegular } from "@fluentui/react-icons";
 import React, { JSX, useEffect, useId, useState } from "react";
 
 import { useNavigate } from "react-router";
-import { useStore } from "../store";
+import { usePcapStore } from "../../share/context";
 
 interface ConnectProp {
     items: {
@@ -94,7 +94,7 @@ const IPV6Option = "ipv6";
 
 export function IPSelector(props: SelectorProps) {
     const selectId = useId();
-    const stat = useStore((state) => state.stat);
+    const stat = usePcapStore((state) => state.stat);
 
     const [ip4s, setIp4s] = useState<string[]>([]);
     const [ip6s, setIp6s] = useState<string[]>([]);
@@ -156,6 +156,9 @@ export function IPSelector(props: SelectorProps) {
                 })
             }
         </Select>
+        {/* <Combobox size="small" placeholder="Select IP Address">
+  <Option value="12" disabled>Option 12</Option>
+</Combobox> */}
         <Select size="small" {...opt2} onChange={(_: any, val: any) => { props.onSelect && props.onSelect(val.value) }} >
             <option>{NoneOption}</option>
             {options}

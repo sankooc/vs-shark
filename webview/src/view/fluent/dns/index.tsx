@@ -1,4 +1,5 @@
-import { useStore } from "../../store";
+
+import { usePcapStore } from "../../../share/context";
 import { IDNSResponse } from "../../../share/gen";
 import { createTableColumn, TableCellLayout, TableColumnDefinition, Toolbar, ToolbarButton } from "@fluentui/react-components";
 import { compute, ComRequest } from "../../../share/common";
@@ -8,7 +9,7 @@ import { ActionInfoIcon, ActionMoreIcon, DNSIcon, TimeIcon } from "../common";
 import { useNavigate } from "react-router";
 import { useState } from "react";
 function Component() {
-    const dnsList = useStore((state) => state.dnsList);
+    const dnsList = usePcapStore((state) => state.dnsList);
     const navigate = useNavigate();
     const [sortState, setSortState] = useState<SortState>({
         sortColumn: 'latency',

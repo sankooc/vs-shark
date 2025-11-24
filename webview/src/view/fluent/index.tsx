@@ -1,14 +1,12 @@
 
 import { FluentProvider } from '@fluentui/react-components';
+import '../../scss/flex.scss'
 import './index.scss';
-// import '../../scss/var.scss';
 import Application from './app';
-import { useStore } from '../store';
 
-
+import { webDarkTheme } from "@fluentui/react-components";
 const UI = () => {
-  const theme = useStore((state) => state.theme);
-  return <FluentProvider theme={theme} className="h-full">
+  return <FluentProvider theme={webDarkTheme} style={{contain: 'content', height: '100%'}}>
     <Application/>
   </FluentProvider>
 }

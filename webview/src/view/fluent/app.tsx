@@ -25,9 +25,10 @@ import DNSRecordComponent from './dns/sub';
 import TLSHostList from './tls';
 import TLSConvList from './tls/sub';
 
-import { useStore } from "../store";
+import { usePcapStore } from "../../share/context";
 import LoadingComponent from './loading';
 import { ConversationIcon, DNSIcon, FrameIcon, HttpIcon, OverviewIcon, StatisticTabIcon, TLSIcon, UDPTabIcon } from "./common";
+import { PcapState } from "../../share/common";
 
 const useCSS = makeStyles({
   nav: {
@@ -131,32 +132,18 @@ const Nav = () => {
           }
         </NavSubItemGroup>
       </NavCategory>
-      {/* {
-        components.map((item) => (
-          <NavItem
-            onClick={() => {
-              setSelect(item.name);
-              navigate('/' + item.path)
-            }}
-            icon={<item.icon />}
-            value={item.name}
-            key={item.name}
-          >
-            {item.name}
-          </NavItem>
-        ))
-      } */}
     </NavDrawerBody>
   </NavDrawer>
 }
 
 
 const Basic = () => {
-  const info = useStore((state) => state.fileinfo);
-  const progress = useStore((state) => state.progress);
+  const info = usePcapStore((state: PcapState) => state.fileinfo);
+  const progress = usePcapStore((state: PcapState) => state.progress);
   if (!progress) {
     return <LoadingComponent info={info} progress={progress} />
   }
+  
   return (
     <BrowserRouter>
       <div className="flex flex-row h-full w-full">
@@ -164,7 +151,6 @@ const Basic = () => {
         <div className="flex-1 flex flex-column main-content">
           <Routes>
             <Route path="/" index element={<FrameComponent />} />
-            {/* <Route path="/frames" element={<FrameComponent />} /> */}
             <Route path="/overview" element={<OverviewComponent />} />
             <Route path="/conversations" element={<ConversationComponent />} />
             <Route path="/conversation/:conversationIndex" element={<ConversationDetailComponent />} />

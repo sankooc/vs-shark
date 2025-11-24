@@ -45,9 +45,10 @@ export default defineConfig({
           link: '/pages/CHANGELOG'
         },
         {
-          text: '📊 Benchmark',
+          text: '📊 Test',
           items: [
-            { text: '0.3.11', link: '/pages/benchmark_0.3.1' },
+            { text: 'Coverage', link: '/coverage/tarpaulin-report.html' },
+            { text: 'Benchmark', link: '/pages/benchmark_0.3.1' },
           ]
         }
       ]
