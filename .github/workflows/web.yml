@@ -76,7 +76,7 @@ jobs:
       - name: Prepare release folder
         run: |
           mkdir -p release
-          mv target/${{ matrix.target }}/release/pcaps release/pcap-web-${{ matrix.target }}
+          mv target/${{ matrix.target }}/release/pcap-web release/pcap-web-${{ matrix.target }}
 
       - run: echo "brc=$(echo ${GITHUB_REF#refs/heads/release/})" >> $GITHUB_ENV
       - name: Create GitHub Release
