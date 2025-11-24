@@ -5,8 +5,9 @@
 
 use serde::{Deserialize, Serialize};
 use std::collections::VecDeque;
+use std::path::Path;
 use std::sync::Mutex;
-use std::thread;
+use std::{fs, thread};
 use tauri::menu::{MenuBuilder, MenuItemBuilder, SubmenuBuilder};
 use tauri::{AppHandle, Emitter, Manager, State};
 use tauri_plugin_dialog::DialogExt;
@@ -70,6 +71,24 @@ impl RecentFiles {
     }
 }
 
+#[derive(Serialize)]
+struct PFile{
+    pub name: String,
+    pub size: u64,
+}
+
+impl PFile {
+    pub fn new(filepath: &str) -> Option<Self> {
+        let path = Path::new(filepath);
+        if let Ok(meta) = fs::metadata(path) {
+            let size = meta.len();
+            Some(Self{size, name: filepath.to_string()})
+        } else {
+            None
+        }
+    }
+}
+
 #[tauri::command]
 async fn open_file_dialog(app_handle: AppHandle) -> Result<Option<String>, String> {
     let file_path = app_handle.dialog().file().add_filter("PCAP Files", &["pcap", "pcapng", "cap"]).blocking_pick_file();
@@ -78,12 +97,17 @@ async fn open_file_dialog(app_handle: AppHandle) -> Result<Option<String>, Strin
     match file_path {
         Some(path) => {
             let path_str = path.to_string();
-            let _ = context.engine().open_file(path_str.clone()).await;
-            app_handle.emit("file_opened", &path_str).unwrap();
-            let recent_files: State<RecentFiles> = app_handle.state();
-            recent_files.add_file(path_str.clone());
-            rebuild_menu(&app_handle, Some(path_str.clone())).map_err(|e| e.to_string())?;
-            Ok(Some(path_str))
+            if let Some(pf) = PFile::new(&path_str) {
+                app_handle.emit("file_touch", &pf).unwrap();
+            }
+            if let Ok(_) = context.engine().open_file(path_str.clone()).await {
+                let recent_files: State<RecentFiles> = app_handle.state();
+                recent_files.add_file(path_str.clone());
+                rebuild_menu(&app_handle, Some(path_str.clone())).map_err(|e| e.to_string())?;
+                Ok(Some(path_str))
+            } else {
+                Ok(None)
+            }
         }
         None => Ok(None),
     }

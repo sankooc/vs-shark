@@ -65,7 +65,7 @@ let counter = 0;
 const getMessageId = (type: string) => {
   const cc = counter++;
   return `${cc}_${type}_${Date.now()}`;
-}
+};
 
 export class ComMessage<T> {
   type: ComType;
@@ -222,7 +222,7 @@ export const format_bytes_single_unit = (bytes: number): string => {
   }
 
   return `${size}.${low} ${UNITS[unit_index]}`;
-}
+};
 
 
 const timeunits = [
@@ -234,11 +234,11 @@ const timeunits = [
   { name: 'ns', value: 1 }
 ];
 export const formatMicroseconds = (sample: number, _time: number): string => {
-  let time = _time
+  let time = _time;
   if (typeof time !== 'number' || time < 0 || !isFinite(time)) {
     return '0';
   }
-  if (time == 0) {
+  if (time === 0) {
     return '0';
   }
   const len = (sample + '').length;
@@ -262,7 +262,7 @@ export const formatMicroseconds = (sample: number, _time: number): string => {
   }
 
   return `${time}μs`;
-}
+};
 
 
 export interface PcapState {

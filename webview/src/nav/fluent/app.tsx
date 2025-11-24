@@ -1,7 +1,7 @@
 import React, { useRef, useState, useCallback } from "react";
 import { IframeWithPlaceholder } from "../components/IframeWithPlaceholder";
-import { PFile, useStore } from "../store";
-import { ComMessage, ComType, PcapFile } from "../../share/common";
+import { useStore } from "../store";
+import { PcapFile } from "../../share/common";
 import {
     Button,
     Toolbar,

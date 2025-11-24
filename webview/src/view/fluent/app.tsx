@@ -25,7 +25,7 @@ import DNSRecordComponent from './dns/sub';
 import TLSHostList from './tls';
 import TLSConvList from './tls/sub';
 
-import { usePcapStore } from "../../share/context";
+import { usePcapStore } from "../context";
 import LoadingComponent from './loading';
 import { ConversationIcon, DNSIcon, FrameIcon, HttpIcon, OverviewIcon, StatisticTabIcon, StatusBar, TLSIcon, UDPTabIcon } from "./common";
 import { PcapState } from "../../share/common";
@@ -149,8 +149,8 @@ const Basic = () => {
     <BrowserRouter>
       <div className="flex flex-row h-full w-full">
         <Nav />
-        <div className="flex-1 flex flex-column">
-          <div className="flex-1 flex flex-column main-content">
+        <div className="flex-1 flex flex-column main-content">
+          <div className="flex-1 flex flex-column intern">
             <Routes>
               <Route path="/" index element={<FrameComponent />} />
               <Route path="/overview" element={<OverviewComponent />} />
@@ -166,7 +166,7 @@ const Basic = () => {
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </div>
-          <StatusBar info={info} status={progress} />
+          <StatusBar/>
         </div>
       </div>
     </BrowserRouter>

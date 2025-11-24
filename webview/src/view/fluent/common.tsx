@@ -8,15 +8,15 @@ import {
     Label,
     Select,
     Combobox,
-    Option    
+    Option,    
+    ProgressBar
 } from "@fluentui/react-components";
 import { BookGlobe20Filled, BookGlobe20Regular, bundleIcon, CallInboundRegular, CallOutboundRegular, ChartMultiple20Filled, ChartMultiple20Regular, CheckmarkSquareRegular, ClipboardBulletListRtlFilled, ClipboardBulletListRtlRegular, ClockRegular, DocumentBulletList20Filled, DocumentBulletList20Regular, DocumentGlobeRegular, DocumentOnePageRegular, FormSparkle20Filled, FormSparkle20Regular, GlobeColor, InfoRegular, LockClosedKeyRegular, MailTemplate20Filled, MailTemplate20Regular, MoreHorizontalFilled, PanelTopContractRegular, PanelTopExpandRegular, PlugConnected20Filled, PlugConnected20Regular, QuestionFilled, ShieldLock20Filled, ShieldLock20Regular, ShieldQuestionRegular, TextboxRotate9020Filled, TextboxRotate9020Regular, TriangleLeft20Filled, TriangleLeft20Regular, TriangleRight20Filled, TriangleRight20Regular, WarningRegular } from "@fluentui/react-icons";
 import React, { FormEvent, JSX, useEffect, useId, useState } from "react";
 
 import { useNavigate } from "react-router";
-import { usePcapStore } from "../../share/context";
-import { PcapFile } from "../../share/common";
-import { IProgressStatus } from "../../share/gen";
+import { usePcapStore } from "../context";
+import { format_bytes_single_unit, PcapState } from "../../share/common";
 
 interface ConnectProp {
     items: {
@@ -159,7 +159,7 @@ export function IPSelector(props: SelectorProps) {
             {...opt2}
             value={query}
             onInput={(data: FormEvent<any>) => {
-                let v = (data.target as HTMLInputElement).value;
+                const v = (data.target as HTMLInputElement).value;
                 setQuery(v);
                 if (v && v.length > 2 && type !== NoneOption) {
                     const list = source.filter(ip => ip.includes(v)).slice(0, 50);
@@ -201,10 +201,36 @@ export function infoLevel(level: string): [string, JSX.Element] {
 }
 
 
-type StatusBarProps = {
-    info?: PcapFile,
-    status?: IProgressStatus
-}
-export function StatusBar(props: StatusBarProps){
-    return <div className="status-bar" style={{ height: '20px', backgroundColor: 'green'}}></div>
+// type StatusBarProps = {
+//     info?: PcapFile,
+//     status?: IProgressStatus
+// }
+export function StatusBar(){
+    const info = usePcapStore((state: PcapState) => state.fileinfo);
+    const progress = usePcapStore((state: PcapState) => state.progress);
+    let filename = "Unknown";
+    if (info){
+        filename = info.name;
+    }
+    const getPorgress = () => {
+        let total = 0;
+        if (info){
+            total = info.size;
+            if (total > 0){
+                const bys = format_bytes_single_unit(total);
+                filename = `${bys} [${filename}]`;
+                if(progress){
+                    const percent = progress.total / total;
+                    if (percent < 0.99) {
+                        return <ProgressBar value={percent} thickness="large"/>
+                    }
+                }
+            }
+        }
+        return <></>
+    }
+    return <div className="status-bar flex flex-column page-status">
+         {getPorgress()}
+        <span style={{paddingLeft: '10px'}}>{filename}</span> 
+    </div>
 }

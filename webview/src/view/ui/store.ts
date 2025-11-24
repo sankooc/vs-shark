@@ -4,6 +4,7 @@ import { create } from "zustand";
 import { _log } from "../util";
 import {
   IHttpDetail,
+  PcapFile,
   PcapState,
   StatRequest,
 } from "../../share/common";
@@ -27,8 +28,14 @@ export const useStore = create<PcapState>()((set) => {
 
   fetch('/api/ready').then((rs) => {
     if (rs && rs.ok) {
-      set((state: any) => ({ ...state, progress: { total: 0, cursor: 0, count: 0, left: 0 } }));
+      return rs.json()
     }
+    return Promise.reject();
+  }).then((data) => {
+    const total = data.size;
+    const fileinfo = data as PcapFile;
+    const progress = { total, cursor: total, count: 0, left: 0 };
+    set((state: any) => ({ ...state, fileinfo, progress }));
   });
   return {
     sendReady: () => {

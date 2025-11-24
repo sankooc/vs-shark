@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Cursor, IField, IFrameSelect } from "../../../share/common";
-import { usePcapStore } from "../../../share/context";
+import { usePcapStore } from "../../context";
 import { makeStyles, Tree, TreeItem, TreeItemLayout } from "@fluentui/react-components";
 import AutoSizer from "react-virtualized-auto-sizer";
 import HexView from './hex';

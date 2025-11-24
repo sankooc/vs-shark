@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { usePcapStore } from "../../../share/context";
+import { usePcapStore } from "../../context";
 import { compute, ComRequest } from "../../../share/common";
 import { IFrameInfo, IListResult } from "../../../share/gen";
 // import { makeStyles } from "@fluentui/react-components";

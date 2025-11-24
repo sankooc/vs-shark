@@ -1,6 +1,6 @@
 import { Card } from "@fluentui/react-components";
 import ReactECharts from 'echarts-for-react';
-import { usePcapStore } from "../../../share/context";
+import { usePcapStore } from "../../context";
 import { useEffect, useState } from "react";
 import { ICounterItem } from "../../../share/gen";
 

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { usePcapStore } from "../../../share/context";
+import { usePcapStore } from "../../context";
 import { SelectTabData, SelectTabEvent, Tab, TabList, TabValue, Tree, TreeItem, TreeItemLayout } from "@fluentui/react-components";
 import { IHttpDetail } from "../../../share/common";
 import indexCss from './index.module.scss';

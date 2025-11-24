@@ -65,7 +65,7 @@ export abstract class PCAPClient {
 
   protected touchFile(fileInfo: PcapFile | undefined): void {
     this.info = fileInfo;
-    this.emitMessage(ComMessage.new(ComType.FILEINFO, fileInfo));
+    this.emitMessage(ComMessage.new(ComType.FILEINFO, this.info));
   }
   private list(
     requestId: string,

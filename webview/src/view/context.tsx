@@ -1,6 +1,6 @@
 import { createContext, useContext, ReactNode } from 'react';
 import { StoreApi, useStore } from 'zustand';
-import { PcapState } from './common';
+import { PcapState } from '../share/common';
 
 type StoreContextType = StoreApi<PcapState> | null;
 

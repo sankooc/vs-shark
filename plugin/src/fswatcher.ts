@@ -1,5 +1,6 @@
 import * as fs from "fs";
 import { Range } from "rshark";
+import { PcapFile } from "./share/common";
 
 interface FileTailWatcherOptions {
   chunkSize?: number;
@@ -21,6 +22,11 @@ export class FileTailWatcher {
     this.filePath = filePath;
     this.chunkSize = options.chunkSize ?? 1024 * 1024;
     this.intervalMs = options.intervalMs ?? 1000;
+  }
+
+  info(): PcapFile {
+    const state = fs.statSync(this.filePath);
+    return { name: this.filePath, size: state.size };
   }
 
   async start(onData: OnDataCallback): Promise<void> {
@@ -110,7 +116,7 @@ export class FileTailWatcher {
         const position = range.start;
         const len = range.end - position;
         return this.readRandomAccessSync(fd, position, len);
-      })
+      });
       return Buffer.concat(list);
     } catch (e) {
       console.error(e);

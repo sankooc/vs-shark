@@ -7,7 +7,7 @@ use std::{
 
 use anyhow::bail;
 use pcap::common::{
-    Instance, ResourceLoader, concept::{ConversationCriteria, Criteria, DNSRecord, DNSResponse, Field, FrameIndex, FrameInfo, HttpCriteria, HttpMessageDetail, ListResult, TLSConversation, TLSItem, UDPConversation, VConnection, VConversation, VHttpConnection}, io::DataSource
+    Instance, ResourceLoader, concept::{ConversationCriteria, Criteria, DNSRecord, DNSResponse, Field, FrameIndex, FrameInfo, HttpCriteria, HttpMessageDetail, ListResult, ProgressStatus, TLSConversation, TLSItem, UDPConversation, VConnection, VConversation, VHttpConnection}, io::DataSource
 };
 use serde::{Deserialize, Serialize};
 use tokio::sync::{mpsc, oneshot};
@@ -37,7 +37,7 @@ pub enum UICommand {
 pub enum EngineCommand {
     Quit,
     None,
-    FileInfo(String),
+    Progress(ProgressStatus),
 }
 
 pub enum ResourceCommand {
@@ -348,7 +348,7 @@ impl UIEngine {
                 match msg {
                     EngineCommand::Quit => break,
                     EngineCommand::None => {}
-                    EngineCommand::FileInfo(_) => {}
+                    EngineCommand::Progress(_) => {}
                 }
             } else {
                 thread::sleep(Duration::from_millis(50));
@@ -359,7 +359,7 @@ impl UIEngine {
 
 pub fn build_engine() -> (UIEngine, Engine) {
     let (gui_tx, grx) = mpsc::channel::<UICommand>(10);
-    let (_rui_tx, _rrx) = mpsc::channel::<ResourceCommand>(10);
+    // let (_rui_tx, _rrx) = mpsc::channel::<ResourceCommand>(10);
     let (_e_tx, erx) = mpsc::channel::<EngineCommand>(10);
     let ui_engine = UIEngine::new(gui_tx.clone(), erx);
     let engine = Engine::new(grx);

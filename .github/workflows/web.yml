@@ -58,10 +58,6 @@ jobs:
 
       - name: pnpm install
         run: npm install -g pnpm
-      - name: wasm-pack install
-        run:  curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
-      - name: wasm-web
-        run: make wasm
       - name: build dist
         run: cd webview && pnpm install && npm run build:socket
         
