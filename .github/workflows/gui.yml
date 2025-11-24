@@ -1,6 +1,10 @@
-name: Build GUI_App
+name: Build Tauri
 
 on:
+  workflow_run:
+    workflows: ["Build_TUI"]
+    types:
+      - completed
   push:
     branches:
       - "release/*"
@@ -17,10 +21,13 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          # Linux
           - os: ubuntu-22.04
             target: x86_64-unknown-linux-gnu
+          # macOS
           - os: macos-latest
             target: x86_64-apple-darwin
+          # Windows
           - os: windows-latest
             target: x86_64-pc-windows-msvc
 
@@ -30,23 +37,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # -------------------------
-      # Caching (Rust + pnpm)
-      # -------------------------
-      - uses: actions/setup-node@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'pnpm'
 
-      - uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: rust-${{ matrix.os }}-${{ matrix.target }}-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            rust-${{ matrix.os }}-
 
       # -------------------------
       # Platform Dependencies
@@ -74,64 +69,53 @@ jobs:
       - name: Install Tauri CLI
         run: cargo install tauri-cli --force
 
-      - name: Add Rust target
+      - name: Install Tauri target
         run: rustup target add ${{ matrix.target }}
 
-      # -------------------------
-      # Build Web Frontend
-      # -------------------------
-      - name: Install pnpm
+      - name: Show versions
+        run: |
+          node -v
+          npm -v
+          rustc -V
+          cargo -V
+          cargo tauri -V
+      - name: pnpm install
         run: npm install -g pnpm
-
-      - name: Install wasm-pack
-        run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
-
-      - name: Build WASM
+      - name: wasm-pack install
+        run:  curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+      - name: wasm-web
         run: make wasm
-
-      - name: Build web GUI
-        run: cd webview && pnpm install && pnpm build:gui
-
-      # -------------------------
-      # Build Tauri App
-      # -------------------------
+      - name: build dist
+        run: cd webview && pnpm install && npm run build:gui
       - name: Build Tauri App
-        run: cargo tauri build --target ${{ matrix.target }}
+        run: |
+          cargo tauri build --target ${{ matrix.target }}
 
-      # -------------------------
-      # Collect Artifacts
-      # -------------------------
       - name: Prepare release artifacts
         run: |
           mkdir -p release
+          # Linux
           if [[ "${{ matrix.os }}" == "ubuntu-22.04" ]]; then
-            cp target/${{ matrix.target }}/release/bundle/deb/*.deb release/
-            cp target/${{ matrix.target }}/release/bundle/rpm/*.rpm release/
+            cp target/${{ matrix.target }}/release/bundle/deb/pcapviewer_gui_*_amd64.deb release/
+            cp target/${{ matrix.target }}/release/bundle/rpm/pcapviewer_gui-*.x86_64.rpm release/
           fi
+          # macOS
           if [[ "${{ matrix.os }}" == "macos-latest" ]]; then
             cp -r target/${{ matrix.target }}/release/bundle/dmg/*.dmg release/ 2>/dev/null || true
+            cp -r target/${{ matrix.target }}/release/bundle/macos/*.app release/ 2>/dev/null || true
           fi
+          # Windows
           if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
             cp target/${{ matrix.target }}/release/bundle/msi/*.msi release/ 2>NUL || true
             cp target/${{ matrix.target }}/release/bundle/nsis/*.exe release/ 2>NUL || true
           fi
 
-      # -------------------------
-      # Extract dynamic tag name
-      # "release/v1.2.3" → "v1.2.3"
-      # -------------------------
-      - run: echo "TAG=${GITHUB_REF#refs/heads/release/}" >> $GITHUB_ENV
-      # -------------------------
-      # Upload Release
-      # -------------------------
+      - run: echo "brc=$(echo ${GITHUB_REF#refs/heads/release/})" >> $GITHUB_ENV
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2.1.0
         with:
-          tag_name: ${{ env.TAG }}
-          body_path: release_notes.md
+          tag_name: ${{ env.brc }}
           files: release/*
-          draft: false
-          prerelease: false
           allow_updates: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
