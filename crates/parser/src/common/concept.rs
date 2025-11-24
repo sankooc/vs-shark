@@ -410,7 +410,7 @@ pub struct VEndpoint {
     pub statistic: TCPStatistic,
 }
 
-#[derive(Serialize, Default, Clone)]
+#[derive(Serialize, Default, Clone, Debug)]
 pub struct VHttpConnection {
     pub index: usize,
     pub request: Option<String>,
@@ -599,7 +599,7 @@ pub enum HttpEncoding {
     Zstd,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Debug)]
 pub struct HttpMessageDetail {
     pub is_request: bool,
     pub headers: Vec<String>,
