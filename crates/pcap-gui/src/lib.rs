@@ -103,9 +103,11 @@ async fn open_file_dialog(app_handle: AppHandle) -> Result<Option<String>, Strin
             if let Ok(_) = context.engine().open_file(path_str.clone()).await {
                 let recent_files: State<RecentFiles> = app_handle.state();
                 recent_files.add_file(path_str.clone());
+                app_handle.emit("parse_complete", true).unwrap();
                 rebuild_menu(&app_handle, Some(path_str.clone())).map_err(|e| e.to_string())?;
                 Ok(Some(path_str))
             } else {
+                app_handle.emit("parse_complete", false).unwrap();
                 Ok(None)
             }
         }

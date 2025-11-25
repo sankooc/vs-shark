@@ -17,6 +17,21 @@ gui-demo:
 	done
 re-intall:
 	rm $(which wasm-pack) && curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+clear:
+	cargo clean && rm -rf dist webview/dist webview/node_modules crates/wasm/build plugin/node_modules plugin/dist doc/node_modules doc/.vitepress/dist
+check-website: clear
+	make coverage
+	cd doc && npm install && npm run docs:build
+	make web-demo
+check-tui: clear
+	cargo build --release -p pcaps
+check-web: clear
+	cd webview && pnpm install && npm run build:socket
+	cargo build --release -p pcap-web
+check-gui: clear
+	cd webview && pnpm install && npm run build:gui
+	cargo tauri build
+check: check-website check-tui check-web check-gui
 gui-uninstall:
 	sudo dpkg -r pcapviewer-gui 
 .PHONY: wasm
