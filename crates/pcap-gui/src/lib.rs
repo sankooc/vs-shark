@@ -4,15 +4,15 @@
 // Licensed under the MIT License - see https://opensource.org/licenses/MIT
 
 use serde::{Deserialize, Serialize};
-use std::collections::VecDeque;
-use std::path::Path;
-use std::sync::Mutex;
-use std::{fs, thread};
+use std::thread;
+use std::time::Duration;
 use tauri::menu::{MenuBuilder, MenuItemBuilder, SubmenuBuilder};
 use tauri::{AppHandle, Emitter, Manager, State};
 use tauri_plugin_dialog::DialogExt;
 use tokio::runtime::Runtime;
-use util::core::UIEngine;
+use tokio::sync::Mutex;
+use util::core::{EngineCommand, UIEngine};
+use util::PFile;
 
 use crate::command::api::*;
 mod command;
@@ -34,75 +34,63 @@ impl GUIContext {
     pub fn engine(&self) -> &UIEngine {
         &self.ui
     }
+    // pub fn has_file(&self) -> bool {
+    //     self.file.is_some()
+    // }
+    // pub fn set_file(&mut self, file: Option<String>) {
+    //     self.file = file;
+    // }
 }
 
-#[derive(Debug, Default)]
-pub struct RecentFiles {
-    files: Mutex<VecDeque<RecentFile>>,
-    max_count: usize,
-}
+// #[derive(Debug, Default)]
+// pub struct RecentFiles {
+//     files: Mutex<VecDeque<RecentFile>>,
+//     max_count: usize,
+// }
 
-impl RecentFiles {
-    pub fn add_file(&self, file_path: String) {
-        let mut files = self.files.lock().unwrap();
+// impl RecentFiles {
+//     pub fn add_file(&self, file_path: String) {
+//         let mut files = self.files.lock().unwrap();
 
-        let file_name = std::path::Path::new(&file_path)
-            .file_name()
-            .and_then(|name| name.to_str())
-            .unwrap_or(&file_path)
-            .to_string();
+//         let file_name = std::path::Path::new(&file_path)
+//             .file_name()
+//             .and_then(|name| name.to_str())
+//             .unwrap_or(&file_path)
+//             .to_string();
 
-        let recent_file = RecentFile {
-            path: file_path.clone(),
-            name: file_name,
-        };
+//         let recent_file = RecentFile {
+//             path: file_path.clone(),
+//             name: file_name,
+//         };
 
-        files.retain(|f| f.path != file_path);
+//         files.retain(|f| f.path != file_path);
 
-        files.push_front(recent_file);
+//         files.push_front(recent_file);
 
-        while files.len() > self.max_count {
-            files.pop_back();
-        }
-    }
+//         while files.len() > self.max_count {
+//             files.pop_back();
+//         }
+//     }
 
-    pub fn get_files(&self) -> Vec<RecentFile> {
-        self.files.lock().unwrap().iter().cloned().collect()
-    }
-}
-
-#[derive(Serialize)]
-struct PFile{
-    pub name: String,
-    pub size: u64,
-}
-
-impl PFile {
-    pub fn new(filepath: &str) -> Option<Self> {
-        let path = Path::new(filepath);
-        if let Ok(meta) = fs::metadata(path) {
-            let size = meta.len();
-            Some(Self{size, name: filepath.to_string()})
-        } else {
-            None
-        }
-    }
-}
+//     pub fn get_files(&self) -> Vec<RecentFile> {
+//         self.files.lock().unwrap().iter().cloned().collect()
+//     }
+// }
 
 #[tauri::command]
 async fn open_file_dialog(app_handle: AppHandle) -> Result<Option<String>, String> {
+    println!("open_file_dialog called");
     let file_path = app_handle.dialog().file().add_filter("PCAP Files", &["pcap", "pcapng", "cap"]).blocking_pick_file();
-
-    let context: State<GUIContext> = app_handle.state();
+    let ctx: State<Mutex<GUIContext>> = app_handle.state();
+    let context = ctx.lock().await;
     match file_path {
         Some(path) => {
             let path_str = path.to_string();
+            println!("print : {path_str}");
             if let Some(pf) = PFile::new(&path_str) {
                 app_handle.emit("file_touch", &pf).unwrap();
             }
             if let Ok(_) = context.engine().open_file(path_str.clone()).await {
-                let recent_files: State<RecentFiles> = app_handle.state();
-                recent_files.add_file(path_str.clone());
                 app_handle.emit("parse_complete", true).unwrap();
                 rebuild_menu(&app_handle, Some(path_str.clone())).map_err(|e| e.to_string())?;
                 Ok(Some(path_str))
@@ -169,7 +157,7 @@ fn rebuild_menu(app_handle: &AppHandle, pcap_file: Option<String>) -> tauri::Res
 }
 
 pub fn run() {
-    let (ui, mut engine) = util::core::build_engine();
+    let (ui, mut engine, mut rx) = util::core::build_engine();
     thread::spawn(move || {
         let rt = Runtime::new().unwrap();
         rt.block_on(async {
@@ -182,9 +170,9 @@ pub fn run() {
 
     // let cmds = tauri::generate_handler![ready, frames, open_file_dialog, open_recent_file];
     tauri::Builder::default()
-        .manage(context)
+        .manage(Mutex::new(context))
         .setup(|app| {
-            app.manage(RecentFiles::default());
+            // app.manage(RecentFiles::default());
             let args: Vec<String> = std::env::args().collect();
             let mut option = None;
             if args.len() > 1 {
@@ -192,6 +180,23 @@ pub fn run() {
                 option = Some(file_path);
             }
             rebuild_menu(app.handle(), option)?;
+            let app_handle = app.handle().clone();
+            tauri::async_runtime::spawn(async move {
+                loop {
+                    if let Some(msg) = rx.recv().await {
+                        match msg {
+                            EngineCommand::Quit => break,
+                            EngineCommand::None => {}
+                            EngineCommand::Progress(progress) => {
+                                app_handle.emit("progress", &progress).unwrap();
+                            }
+                        }
+                    } else {
+                        println!("waiting next");
+                        thread::sleep(Duration::from_millis(500));
+                    }
+                }
+            });
             Ok(())
         })
         .on_menu_event(|app, event| match event.id().as_ref() {
@@ -202,7 +207,8 @@ pub fn run() {
             "close" => {
                 let app_handle = app.clone();
                 tauri::async_runtime::spawn(async move {
-                    let context: State<GUIContext> = app_handle.state();
+                    let ctx: State<Mutex<GUIContext>> = app_handle.state();
+                    let context = ctx.lock().await;
                     let _ = context.engine().close_file().await;
                     app_handle.emit("file_close", ()).unwrap();
                     rebuild_menu(&app_handle, None).unwrap();

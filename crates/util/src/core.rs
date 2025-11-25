@@ -254,12 +254,12 @@ impl Engine {
 
 pub struct UIEngine {
     gui_tx: mpsc::Sender<UICommand>,
-    rx: mpsc::Receiver<EngineCommand>,
+    // rx: mpsc::Receiver<EngineCommand>,
 }
 
 impl UIEngine {
-    pub fn new(gui_tx: mpsc::Sender<UICommand>, rx: mpsc::Receiver<EngineCommand>) -> Self {
-        UIEngine { gui_tx, rx }
+    pub fn new(gui_tx: mpsc::Sender<UICommand>) -> Self {
+        UIEngine { gui_tx }
     }
     pub async fn open_file(&self, filepath: String) -> Result<(), String> {
         let (tx, rx) = oneshot::channel();
@@ -342,26 +342,27 @@ impl UIEngine {
         rx.await.unwrap()
     }
 
-    pub async fn run(&mut self) {
-        loop {
-            if let Some(msg) = self.rx.recv().await {
-                match msg {
-                    EngineCommand::Quit => break,
-                    EngineCommand::None => {}
-                    EngineCommand::Progress(_) => {}
-                }
-            } else {
-                thread::sleep(Duration::from_millis(50));
-            }
-        }
-    }
+    // pub async fn run(&mut self) {
+    //     loop {
+    //         if let Some(msg) = self.rx.recv().await {
+    //             match msg {
+    //                 EngineCommand::Quit => break,
+    //                 EngineCommand::None => {}
+    //                 EngineCommand::Progress(_) => {}
+    //             }
+    //         } else {
+    //             println!("waiting next");
+    //             thread::sleep(Duration::from_millis(500));
+    //         }
+    //     }
+    // }
 }
 
-pub fn build_engine() -> (UIEngine, Engine) {
+pub fn build_engine() -> (UIEngine, Engine, mpsc::Receiver<EngineCommand>) {
     let (gui_tx, grx) = mpsc::channel::<UICommand>(10);
     // let (_rui_tx, _rrx) = mpsc::channel::<ResourceCommand>(10);
     let (_e_tx, erx) = mpsc::channel::<EngineCommand>(10);
-    let ui_engine = UIEngine::new(gui_tx.clone(), erx);
+    let ui_engine = UIEngine::new(gui_tx.clone());
     let engine = Engine::new(grx);
-    (ui_engine, engine)
+    (ui_engine, engine, erx)
 }
