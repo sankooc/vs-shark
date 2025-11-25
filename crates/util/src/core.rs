@@ -1,18 +1,20 @@
 use std::{
-    ops::Range,
-    path::Path,
-    thread::{self},
-    time::Duration,
+    ops::Range, path::Path, sync::Arc, thread::{self}, time::Duration
 };
 
 use anyhow::bail;
 use pcap::common::{
-    Instance, ResourceLoader, concept::{ConversationCriteria, Criteria, DNSRecord, DNSResponse, Field, FrameIndex, FrameInfo, HttpCriteria, HttpMessageDetail, ListResult, ProgressStatus, TLSConversation, TLSItem, UDPConversation, VConnection, VConversation, VHttpConnection}, io::DataSource
+    concept::{
+        ConversationCriteria, Criteria, DNSRecord, DNSResponse, Field, FrameIndex, FrameInfo, HttpCriteria, HttpMessageDetail, ListResult, ProgressStatus, TLSConversation,
+        TLSItem, UDPConversation, VConnection, VConversation, VHttpConnection,
+    },
+    io::DataSource,
+    Instance, ResourceLoader,
 };
 use serde::{Deserialize, Serialize};
-use tokio::sync::{mpsc, oneshot};
+use tokio::{sync::{Mutex, mpsc, oneshot}, task::JoinHandle};
 
-use crate::{FileBatchReader, file_seek, file_seeks};
+use crate::{file_seek, file_seeks, FileBatchReader};
 
 pub enum UICommand {
     Quit,
@@ -80,34 +82,15 @@ impl ResourceLoader for LocalResource {
 }
 
 impl LocalResource {
-   pub fn new(filepath: String) -> Self {
+    pub fn new(filepath: String) -> Self {
         LocalResource { filepath }
     }
 }
 
-fn create_instance(fname: String, batch_size: usize) -> Instance<LocalResource> {
+fn create_instance(fname: String, batch_size: usize) ->Arc<Mutex<Instance<LocalResource>>> {
     let loader = LocalResource::new(fname);
-    Instance::new(batch_size, loader)
-}
-
-fn readfile(filepath: String) -> anyhow::Result<Instance<LocalResource>> {
-    let path = Path::new(&filepath);
-    if !path.exists() {
-        bail!("no file")
-    }
-    let batch_size = 1024 * 1024 * 4;
-    let mut ins = create_instance(filepath.clone(), batch_size);
-    let mut batcher = FileBatchReader::new(filepath.to_string(), batch_size as u64);
-    let mut finish = false;
-    while !finish {
-        finish = if let Ok((left, data)) = batcher.read() {
-            ins.update(data)?;
-            left == 0
-        } else {
-            true
-        }
-    }
-    Ok(ins)
+    let ins = Instance::new(batch_size, loader);
+    Arc::new(Mutex::new(ins))
 }
 
 fn jsonlize<T>(data: &T) -> Option<String>
@@ -141,16 +124,102 @@ fn stat_str(tp: &str, instance: &Instance<LocalResource>) -> Option<String> {
 pub struct Engine {
     ins: Option<Instance<LocalResource>>,
     gui_rx: mpsc::Receiver<UICommand>,
-    // rr_rx: mpsc::Receiver<ResourceCommand>,
+    engine_tx: mpsc::Sender<EngineCommand>,
+    handler: Option<JoinHandle<()>>
 }
 
 impl Engine {
-    pub fn new(gui_rx: mpsc::Receiver<UICommand>) -> Self {
-        Engine { gui_rx, ins: None }
+    pub fn new(gui_rx: mpsc::Receiver<UICommand>, engine_tx: mpsc::Sender<EngineCommand>) -> Self {
+        Engine { gui_rx, engine_tx, ins: None, handler: None }
     }
 }
 
 impl Engine {
+    async fn start_read(&mut self, filepath: &str) -> anyhow::Result<()> {
+        let path = Path::new(filepath);
+        if !path.exists() {
+            bail!("no file")
+        }
+        if self.ins.is_some() {
+            bail!("instance exists")
+        }
+        let batch_size = 1024 * 1024 * 4;
+        // let ins = create_instance(filepath.to_string(), batch_size);
+        // self.ins = Some(ins);
+        // self.ins = Some(ins);
+        // aa.clone();
+        let instance = create_instance(filepath.to_string(), 4 * 1024 * 1024);
+
+        let engine_tx = self.engine_tx.clone();
+        let instance_clone = instance.clone();
+
+        let handle = tokio::spawn(async move {
+            let mut file = match tokio::fs::File::open(&path).await {
+                Ok(f) => f,
+                Err(e) => {
+                    //ERROR
+                    // let _ = engine_tx.send(EngineCommand::Error(e.to_string())).await;
+                    return;
+                }
+            };
+
+            let mut buffer = vec![0u8; 4 * 1024 * 1024]; // 4MB buffer
+            let mut pos: u64 = 0;
+            let mut last_reported = std::time::Instant::now();
+
+            loop {
+                match file.seek(SeekFrom::Start(pos)).await {
+                    Ok(_) => {}
+                    Err(e) => {
+                        let _ = engine_tx.send(EngineCommand::Error(e.to_string())).await;
+                        break;
+                    }
+                }
+
+                match file.read(&mut buffer).await {
+                    Ok(0) => {
+                        // 文件没增长，稍等再试（尾随模式）
+                        sleep(Duration::from_millis(200)).await;
+                        
+                        // 每 2 秒上报一次心跳，防止 UI 认为卡死
+                        if last_reported.elapsed().as_secs() >= 2 {
+                            let _ = engine_tx.send(EngineCommand::Progress(ProgressStatus {
+                                read_bytes: pos,
+                                total_bytes: None,
+                                packet_count: {
+                                    let ins = instance_clone.lock().await;
+                                    ins.packet_count() // 你需要在 Instance 加这个方法
+                                },
+                            })).await;
+                            last_reported = std::time::Instant::now();
+                        }
+                        continue;
+                    }
+                    Ok(n) => {
+                        pos += n as u64;
+
+                        // 关键：把新数据交给 Instance 解析
+                        let mut ins = instance_clone.lock().await;
+                        let progress = ins.update(&buffer[..n]); // 假设 update 返回 ProgressStatus
+
+                        // 上报进度
+                        let _ = engine_tx.send(EngineCommand::Progress(ProgressStatus {
+                            read_bytes: pos,
+                            total_bytes: file.metadata().await.ok().map(|m| m.len()),
+                            packet_count: ins.packet_count(),
+                        })).await;
+                    }
+                    Err(e) => {
+                        let _ = engine_tx.send(EngineCommand::Error(e.to_string())).await;
+                        break;
+                    }
+                }
+            }
+        });
+
+        self.handler = Some(handle);
+        Ok(())
+    }
     async fn handle_gui(&mut self, cmd: UICommand) {
         if let Some(instance) = &self.ins {
             match cmd {
@@ -219,11 +288,14 @@ impl Engine {
         } else {
             match cmd {
                 UICommand::OpenFile(tx, filepath) => {
-                    if let Ok(ins) = readfile(filepath.clone()) {
-                        self.ins = Some(ins);
+                    if let Ok(_) = self.start_read(filepath.as_str()).await {
                         let _ = tx.send(Ok(()));
-                    } else {
+                    } else { 
                         self.ins = None;
+                        if let Some(handle) = self.handler.take() {
+                            handle.abort();
+                            let _ = handle.await;
+                        }
                         let _ = tx.send(Err("load failed".to_string()));
                     }
                 }
@@ -242,11 +314,6 @@ impl Engine {
                 Some(msg) = self.gui_rx.recv() => {
                     let _response = self.handle_gui(msg).await;
                 }
-                // Some(msg) = self.rr_rx.recv() => {
-                //     let response = Self::handle_resource(&msg).await;
-                // }
-
-                else => thread::sleep(Duration::from_millis(50)),
             }
         }
     }
@@ -254,7 +321,6 @@ impl Engine {
 
 pub struct UIEngine {
     gui_tx: mpsc::Sender<UICommand>,
-    // rx: mpsc::Receiver<EngineCommand>,
 }
 
 impl UIEngine {
@@ -360,9 +426,8 @@ impl UIEngine {
 
 pub fn build_engine() -> (UIEngine, Engine, mpsc::Receiver<EngineCommand>) {
     let (gui_tx, grx) = mpsc::channel::<UICommand>(10);
-    // let (_rui_tx, _rrx) = mpsc::channel::<ResourceCommand>(10);
-    let (_e_tx, erx) = mpsc::channel::<EngineCommand>(10);
-    let ui_engine = UIEngine::new(gui_tx.clone());
-    let engine = Engine::new(grx);
+    let (etx, erx) = mpsc::channel::<EngineCommand>(10);
+    let ui_engine = UIEngine::new(gui_tx);
+    let engine = Engine::new(grx, etx);
     (ui_engine, engine, erx)
 }

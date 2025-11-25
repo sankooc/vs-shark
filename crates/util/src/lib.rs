@@ -87,7 +87,6 @@ pub struct PFile {
     pub name: String,
     pub size: u64,
 }
-
 impl PFile {
     pub fn new(filepath: &str) -> Option<Self> {
         let path = Path::new(filepath);
