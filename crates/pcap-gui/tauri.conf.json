@@ -12,6 +12,7 @@
       {
         "title": "Pcap Viewer GUI",
         "label": "main",
+        "url": "/gui.html",
         "fullscreen": false,
         "width": 1000,
         "height": 800,

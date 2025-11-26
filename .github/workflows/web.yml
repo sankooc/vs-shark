@@ -33,8 +33,6 @@ jobs:
           # Windows
           - os: windows-latest
             target: x86_64-pc-windows-msvc
-          - os: windows-latest
-            target: x86_64-pc-windows-gnu
 
     runs-on: ${{ matrix.os }}
 
