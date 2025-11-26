@@ -2,7 +2,7 @@
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "pcapviewer_gui",
   "version": "0.4.7",
-  "identifier": "com.sankooc.gui",
+  "identifier": "com.pcapviewer.sankooc",
   "build": {
     "devUrl": "http://localhost:5173/gui.html",
     "frontendDist": "../../dist/gui"
@@ -11,20 +11,30 @@
     "windows": [
       {
         "title": "Pcap Viewer GUI",
+        "label": "main",
         "fullscreen": false,
-        "width": 800,
-        "height": 600
+        "width": 1000,
+        "height": 800,
+        "center": true,
+        "visible": false
+      },
+      {
+        "label": "splashscreen",
+        "url": "/loading.html",
+        "width": 1000,
+        "height": 800,
+        "center": true,
+        "visible": true
       }
     ],
     "security": {
       "csp": null
     }
   },
-  
   "bundle": {
     "active": true,
     "targets": [
-      "deb"
+      "deb", "rpm", "msi", "dmg", "appimage", "nsis", "app"
     ],
     "icon": [
       "../../assets/icon32.png",

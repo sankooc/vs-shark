@@ -1,13 +1,14 @@
 import * as fs from "fs";
 import { Range } from "rshark";
 import { PcapFile } from "./share/common";
+import { IProgressStatus } from "./share/gen";
 
 interface FileTailWatcherOptions {
   chunkSize?: number;
   intervalMs?: number;
 }
 
-type OnDataCallback = (data: Buffer) => void;
+type OnDataCallback = (data: Buffer, progress: IProgressStatus) => void;
 
 export class FileTailWatcher {
   public filePath: string;
@@ -52,7 +53,7 @@ export class FileTailWatcher {
       this.position += bytesRead;
 
       if (bytesRead > 0) {
-        onData(buffer.subarray(0, bytesRead));
+        onData(buffer.subarray(0, bytesRead), {total: totalSize, cursor: this.position});
       }
     }
 
@@ -77,7 +78,7 @@ export class FileTailWatcher {
           this.position += bytesRead;
 
           if (bytesRead > 0) {
-            onData(buffer.subarray(0, bytesRead));
+            onData(buffer.subarray(0, bytesRead), {total: newSize, cursor: this.position});
           }
         }
       } catch (err) {

@@ -94,13 +94,17 @@ ready.then((rs) => {
     if (type == ComType.PROCESS_DATA) {
       const body = event.data.body;
       const data = body.data as Uint8Array;
+      const total = data.length; //IProgressStatus;
+      const progress = { total, cursor: 0 };
       client.data = data;
       if (data.length <= BATCH_SIZE) {
+        event.data.progress = progress;
         client.handle(event.data);
       } else {
         for (let i = 0; i < data.length; i += BATCH_SIZE) {
           const _data = data.subarray(i, i + BATCH_SIZE);
-          const e = { id, type, body: { data: _data } };
+          progress.cursor = Math.min(i + BATCH_SIZE, total);
+          const e = { id, type, body: { data: _data, progress: {...progress} } };
           client.handle(e);
         }
       }

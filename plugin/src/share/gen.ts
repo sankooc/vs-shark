@@ -1,8 +1,6 @@
 export interface IProgressStatus {
     total: number;
     cursor: number;
-    count: number;
-    left: number;
 }
 export interface IListResult<T> {
     items: T[];

@@ -64,7 +64,7 @@ export const useStore = create<PcapState>()((set) => {
           break;
         }
       case ComType.PRGRESS_STATUS: {
-        const progress = deserialize(body) as IProgressStatus;
+        const progress = body as IProgressStatus;
         set((state) => ({ ...state, progress }));
         break;
       }
