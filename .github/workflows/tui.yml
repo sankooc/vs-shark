@@ -36,7 +36,7 @@ jobs:
         allow_updates: true
         tag_name: ${{ env.brc }}
         files: |
-          release/pcaps-${{ matrix.target }}
+          release/pcapviewer-tui-${{ matrix.target }}
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     
