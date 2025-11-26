@@ -37,6 +37,7 @@
     "targets": [
       "deb", "rpm", "msi", "dmg", "app"
     ],
+    "icon": ["icons/icon.ico", "icons/icon.png", "icons/icon.icns"],
     "fileAssociations": [
       {
         "ext": [
