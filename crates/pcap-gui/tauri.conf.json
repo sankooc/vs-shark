@@ -26,10 +26,6 @@
     "targets": [
       "deb"
     ],
-    "icon": [
-      "../../assets/icon32.png",
-      "../../assets/icon128.png"
-    ],
     "fileAssociations": [
       {
         "ext": [
