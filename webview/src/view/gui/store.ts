@@ -9,7 +9,7 @@ import {
   PcapState,
   StatRequest,
 } from "../../share/common";
-import { IListResult, IVConnection, IVConversation, IVHttpConnection, IUDPConversation, IDNSResponse, IDNSRecord } from "../../share/gen";
+import { IListResult, IVConnection, IVConversation, IVHttpConnection, IUDPConversation, IDNSResponse, IDNSRecord, IProgressStatus } from "../../share/gen";
 
 const httpdetail_convert = (data: any): IHttpDetail => {
   const { headers, raw, plaintext, content_type } = data;
@@ -24,18 +24,21 @@ export const useStore = create<PcapState>()((set) => {
   _log("create gui store");
 
   listen<PcapFile>('file_touch', (event) => {
-    // _log(`file_touch ${event.payload}`);
-    // let pf = event.payload;
     const fileinfo = event.payload;
     set((state) => ({ ...state, fileinfo}));
   });
 
   listen<boolean>('parse_complete', (event) => {
     if (event.payload) {
-      set((state) => ({ ...state, progress: { total: 0, cursor: 0, count: 0, left: 0 } }));
+      // set((state) => ({ ...state, progress: { total: 0, cursor: 0, count: 0, left: 0 } }));
     } else {
       _log('file closed');
       set((state) => ({ ...state, fileinfo: undefined, progress: undefined }));
+    }
+  });
+  listen<IProgressStatus>('progress', (event) => {
+    if (event.payload) {
+      set((state) => ({ ...state, progress: event.payload }));
     }
   });
   listen<string>('file_close', () => {

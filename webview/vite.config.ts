@@ -26,6 +26,7 @@ export default defineConfig(({ mode }) => {
     if (env.VITE_BUILD_GUI === 'true') {
       return {
         index: resolve(__dirname, 'gui.html'),
+        gate: resolve(__dirname, 'loading.html'),
       };
     }
     if (env.VITE_BUILD_VSCODE === 'true') {

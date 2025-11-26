@@ -8,7 +8,7 @@ import {
     Label,
     Select,
     Combobox,
-    Option,    
+    Option,
     ProgressBar
 } from "@fluentui/react-components";
 import { BookGlobe20Filled, BookGlobe20Regular, bundleIcon, CallInboundRegular, CallOutboundRegular, ChartMultiple20Filled, ChartMultiple20Regular, CheckmarkSquareRegular, ClipboardBulletListRtlFilled, ClipboardBulletListRtlRegular, ClockRegular, DocumentBulletList20Filled, DocumentBulletList20Regular, DocumentGlobeRegular, DocumentOnePageRegular, FormSparkle20Filled, FormSparkle20Regular, GlobeColor, InfoRegular, LockClosedKeyRegular, MailTemplate20Filled, MailTemplate20Regular, MoreHorizontalFilled, PanelTopContractRegular, PanelTopExpandRegular, PlugConnected20Filled, PlugConnected20Regular, QuestionFilled, ShieldLock20Filled, ShieldLock20Regular, ShieldQuestionRegular, TextboxRotate9020Filled, TextboxRotate9020Regular, TriangleLeft20Filled, TriangleLeft20Regular, TriangleRight20Filled, TriangleRight20Regular, WarningRegular } from "@fluentui/react-icons";
@@ -172,7 +172,7 @@ export function IPSelector(props: SelectorProps) {
             onOptionSelect={(_, data) => {
                 const v = data.optionValue;
                 setQuery(v || '');
-                if(v) {
+                if (v) {
                     props.onSelect && props.onSelect(v);
                 }
             }}
@@ -205,32 +205,44 @@ export function infoLevel(level: string): [string, JSX.Element] {
 //     info?: PcapFile,
 //     status?: IProgressStatus
 // }
-export function StatusBar(){
+export function StatusBar() {
     const info = usePcapStore((state: PcapState) => state.fileinfo);
     const progress = usePcapStore((state: PcapState) => state.progress);
+    let text = '';
     let filename = "Unknown";
-    if (info){
-        filename = info.name;
-    }
-    const getPorgress = () => {
-        let total = 0;
-        if (info){
+    let total = 0;
+    let cursor = 0;
+    let percent = 1;
+    try {
+        if (info) {
+            filename = info.name;
             total = info.size;
-            if (total > 0){
-                const bys = format_bytes_single_unit(total);
-                filename = `${bys} [${filename}]`;
-                if(progress){
-                    const percent = progress.total / total;
-                    if (percent < 0.99) {
-                        return <ProgressBar value={percent} thickness="large"/>
-                    }
-                }
+        }
+        if (progress) {
+            total = Math.max(total, progress.total);
+            cursor = progress.cursor;
+        }
+        text = `${format_bytes_single_unit(total)} [${filename}]`;
+        if (total > 0 ){
+            percent = cursor / total;
+        }
+    } catch (e) {
+        console.error(e);
+    }
+
+    const getPorgress = (percent:  number) => {
+        try {
+            if (percent < 0.99) {
+                return <ProgressBar value={percent} thickness="large" />
             }
+        } catch (e) {
+            console.error(e);
         }
         return <></>
     }
-    return <div className="status-bar flex flex-column page-status">
-         {getPorgress()}
-        <span style={{paddingLeft: '10px'}}>{filename}</span> 
+    const backgroundColor = percent < 0.99 ? '#689d6a' : '#458588';
+    return <div className="status-bar flex flex-column page-status" style={{backgroundColor}}>
+        {getPorgress(percent)}
+        <span style={{ paddingLeft: '10px' }}>{text}</span>
     </div>
 }

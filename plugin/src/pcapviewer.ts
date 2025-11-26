@@ -4,6 +4,7 @@ import { ComLog, ComMessage, ComType, PcapFile } from "./share/common";
 import { FileTailWatcher } from "./fswatcher";
 import { BATCH_SIZE, PCAPClient } from "./share/client";
 import { Range } from "rshark";
+import { IProgressStatus } from "./share/gen";
 
 function getNonce() {
   let text = "";
@@ -91,8 +92,8 @@ export class Client extends PCAPClient {
     }
     const info = this.watcher.info();
     this.handle(ComMessage.new(ComType.TOUCH_FILE, info));
-    this.watcher.start((buffer: Buffer) => {
-      this.handle(ComMessage.new(ComType.PROCESS_DATA, { data: bufferToUint8Array(buffer) }));
+    this.watcher.start((buffer: Buffer, progress: IProgressStatus) => {
+      this.handle(ComMessage.new(ComType.PROCESS_DATA, { data: bufferToUint8Array(buffer), progress }));
     });
   }
   async pickData(start: number, end: number): Promise<Uint8Array> {

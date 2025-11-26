@@ -40,6 +40,13 @@ impl GUIContext {
     //     self.file = file;
     // }
 }
+#[tauri::command]
+fn frontend_ready(app: AppHandle) {
+    let splash = app.get_webview_window("splashscreen").unwrap();
+    let main = app.get_webview_window("main").unwrap();
+    splash.close().unwrap();
+    main.show().unwrap();
+}
 
 #[tauri::command]
 async fn open_file_dialog(app_handle: AppHandle) -> Result<Option<String>, String> {
@@ -52,7 +59,7 @@ async fn open_file_dialog(app_handle: AppHandle) -> Result<Option<String>, Strin
             if let Some(pf) = PFile::new(&path_str) {
                 app_handle.emit("file_touch", &pf).unwrap();
             }
-            if let Ok(_) = context.engine().open_file(path_str.clone()).await {
+            if context.engine().open_file(path_str.clone()).await.is_ok() {
                 app_handle.emit("parse_complete", true).unwrap();
                 rebuild_menu(&app_handle, Some(path_str.clone())).map_err(|e| e.to_string())?;
                 Ok(Some(path_str))
@@ -99,6 +106,7 @@ pub fn run() {
     tauri::Builder::default()
         .manage(context)
         .setup(|app| {
+            
             // app.manage(RecentFiles::default());
             let args: Vec<String> = std::env::args().collect();
             let mut option = None;
@@ -114,6 +122,9 @@ pub fn run() {
                         match msg {
                             EngineCommand::Quit => break,
                             EngineCommand::None => {}
+                            EngineCommand::Error(err) => {
+                                app_handle.emit("error", &err).unwrap();
+                            }
                             EngineCommand::Progress(progress) => {
                                 app_handle.emit("progress", &progress).unwrap();
                             }
@@ -145,6 +156,7 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .invoke_handler(tauri::generate_handler![
+            frontend_ready,
             ready,
             frames,
             frame,
