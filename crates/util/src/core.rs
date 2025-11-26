@@ -1,4 +1,4 @@
-use std::{ops::Range, os::unix::fs::MetadataExt, path::Path, sync::Arc, time::Duration};
+use std::{ops::Range, path::Path, sync::Arc, time::Duration};
 
 use anyhow::bail;
 use pcap::common::{
@@ -151,41 +151,49 @@ impl Engine {
         let engine_tx = self.engine_tx.clone();
         let path = Path::new(filepath);
         if !path.exists() {
-            let _ = engine_tx.send(EngineCommand::Error(format!("file not exist"))).await;
+            let _ = engine_tx.send(EngineCommand::Error("file not exist".to_string())).await;
             bail!("no file")
         }
         if self.ins.is_some() {
-            let _ = engine_tx.send(EngineCommand::Error(format!("file already opened"))).await;
+            let _ = engine_tx.send(EngineCommand::Error("file already opened".to_string())).await;
             bail!("instance exists")
         }
-        println!("start parse");
+        // println!("start parse");
         let instance = create_instance(filepath.to_string(), buf_size);
         let instance_clone = Arc::downgrade(&instance);
         self.ins = Some(instance);
         let watch = self.watch;
         let fname = filepath.to_string();
         let handle = tokio::spawn(async move {
-            println!("start thread");
+            // println!("start thread");
             let path = Path::new(&fname);
             if !path.exists() {
-                let _ = engine_tx.send(EngineCommand::Error(format!("file not exist"))).await;
+                let _ = engine_tx.send(EngineCommand::Error("file not exist".to_string())).await;
                 bail!("no file")
             }
             let mut file = match tokio::fs::File::open(&path).await {
                 Ok(f) => f,
                 Err(_e) => {
-                    let _ = engine_tx.send(EngineCommand::Error(format!("failed to open file"))).await;
+                    let _ = engine_tx.send(EngineCommand::Error("failed to open file".to_string())).await;
                     bail!("failed to open file")
                 }
             };
 
             let mut cursor = 0;
             let mut last_modify = 0;
-            println!("start load");
+            // println!("start load");
             loop {
                 if let Some(ins_arc) = instance_clone.upgrade() {
                     let (total, _last_modify) = if let Ok(metadata) = file.metadata().await {
-                        (metadata.len(), metadata.mtime())
+                        if let Ok(modi) = metadata.modified() {
+                            if let Ok(duration) = modi.duration_since(std::time::UNIX_EPOCH) {
+                                (metadata.len(), duration.as_secs())
+                            } else {
+                                break;
+                            }
+                        } else {
+                            break;
+                        }
                     } else {
                         break;
                     };
@@ -210,7 +218,7 @@ impl Engine {
                             }
                             continue;
                         } else {
-                            println!("read finished");
+                            // println!("read finished");
                             last_modify = _last_modify;
                             if watch {
                                 sleep(Duration::from_millis(1000)).await;
