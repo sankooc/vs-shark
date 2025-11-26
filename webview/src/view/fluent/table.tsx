@@ -1,4 +1,4 @@
-import { Button, Card, DataGrid, DataGridBody, DataGridCell, DataGridHeader, DataGridHeaderCell, DataGridRow, Slot, TableColumnDefinition, TableColumnSizingOptions, useFluent, useScrollbarWidth } from "@fluentui/react-components";
+import { Button, Card, DataGrid, DataGridBody, DataGridCell, DataGridHeader, DataGridHeaderCell, DataGridRow, Slot, TableColumnDefinition, TableColumnSizingOptions, useFluent, useScrollbarWidth} from "@fluentui/react-components";
 
 // import { UseTableFeaturesOptions } from "@fluentui/react-table";
 

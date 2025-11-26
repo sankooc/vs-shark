@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { usePcapStore } from "../../../share/context";
-import { compute, ComRequest } from "../../../share/common";
+import { usePcapStore } from "../../context";
+import { compute, ComRequest, PcapState } from "../../../share/common";
 import { IFrameInfo, IListResult } from "../../../share/gen";
 // import { makeStyles } from "@fluentui/react-components";
 import AutoSizer from "react-virtualized-auto-sizer";
@@ -18,6 +18,8 @@ function Empty() {
 
 function Component() {
   const _request = usePcapStore((state) => state.request);
+  const progress = usePcapStore((state: PcapState) => state.progress);
+
   const [page, setPage] = useState<number>(1);
   const [result, setResult] = useState<IListResult<IFrameInfo>>({
     start: 0,
@@ -26,6 +28,7 @@ function Component() {
   });
   const [select, setSelect] = useState<IFrameInfo | undefined>(undefined);
   const size = frame_size;
+  const persist = `${page} ${JSON.stringify(progress || {})}`
   useEffect(() => {
     const data: ComRequest = {
       catelog: "frame",
@@ -35,7 +38,7 @@ function Component() {
     _request<IListResult<IFrameInfo>>(data).then((rs) => {
       setResult(rs);
     });
-  }, [page]);
+  }, [persist]);
   return <AutoSizer>
     {({ height, width }) => {
       if(height < 370){

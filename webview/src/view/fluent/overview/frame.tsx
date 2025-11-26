@@ -1,7 +1,7 @@
 
 import { Card } from '@fluentui/react-components';
 import ReactECharts from 'echarts-for-react';
-import { usePcapStore } from "../../../share/context";
+import { usePcapStore } from "../../context";
 import { useEffect, useState } from 'react';
 import { ILineData } from '../../../share/gen';
 import dayjs from 'dayjs';

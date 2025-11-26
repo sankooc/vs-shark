@@ -7,10 +7,10 @@
     "dev": "       cross-env VITE_BUILD_ALL=true    vite --host",
     "dev:socket": "cross-env VITE_BUILD_SOCKET=true vite --host",
     "dev:gui": "   cross-env VITE_BUILD_GUI=true    vite --host",
-    "build": "       tsc -b && cross-env VITE_BUILD_VSCODE=true vite build --minify",
-    "build:local": " tsc -b && cross-env VITE_BUILD_ALL=true    vite build --minify",
-    "build:socket": "tsc -b && cross-env VITE_BUILD_SOCKET=true vite build --minify && mv ../dist/socket/ui.html ../dist/socket/index.html",
-    "build:gui": "   tsc -b && cross-env VITE_BUILD_GUI=true    vite build --minify && mv ../dist/gui/gui.html   ../dist/gui/index.html",
+    "build": "       cross-env VITE_BUILD_VSCODE=true vite build --minify",
+    "build:local": " cross-env VITE_BUILD_ALL=true    vite build --minify",
+    "build:socket": "cross-env VITE_BUILD_SOCKET=true vite build --minify && mv ../dist/socket/ui.html ../dist/socket/index.html",
+    "build:gui": "   cross-env VITE_BUILD_GUI=true    vite build --minify",
     "report": "vite build --report",
     "lint": "eslint .",
     "format": "prettier -w ./src",
@@ -38,6 +38,9 @@
     "rshark": "file:../crates/wasm/build/browser",
     "tinycolor2": "^1.6.0",
     "zustand": "^5.0.3"
+  },
+  "optionalDependencies": {
+    "rshark": "file:../crates/wasm/build/browser"
   },
   "devDependencies": {
     "@eslint/js": "^9.22.0",

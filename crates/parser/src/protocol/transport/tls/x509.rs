@@ -89,33 +89,33 @@ pub trait Sequence {
 pub struct Certificate;
 pub struct SignedCertificate;
 
-pub struct CollectionOnly {
-    text: Option<String>,
-    list: Vec<Rc<dyn Sequence>>,
-    cb: Option<fn(usize) -> String>,
-}
+// pub struct CollectionOnly {
+//     text: Option<String>,
+//     list: Vec<Rc<dyn Sequence>>,
+//     cb: Option<fn(usize) -> String>,
+// }
 
-impl Sequence for CollectionOnly {
-    fn collection(&self, index: usize) -> Option<Rc<dyn Sequence>> {
-        self.list.get(index).cloned()
-    }
-    fn val(&self, _: usize, _: BerType) -> Option<String> {
-        None
-    }
-    fn text(&self) -> String {
-        if let Some(text) = &self.text {
-            return text.clone();
-        }
-        if let Some(func) = &self.cb {
-            return func(self.list.len());
-        }
-        "".to_string()
-    }
+// impl Sequence for CollectionOnly {
+//     fn collection(&self, index: usize) -> Option<Rc<dyn Sequence>> {
+//         self.list.get(index).cloned()
+//     }
+//     fn val(&self, _: usize, _: BerType) -> Option<String> {
+//         None
+//     }
+//     fn text(&self) -> String {
+//         if let Some(text) = &self.text {
+//             return text.clone();
+//         }
+//         if let Some(func) = &self.cb {
+//             return func(self.list.len());
+//         }
+//         "".to_string()
+//     }
     
-    fn unknown(&self, _: usize, _: &mut Reader) -> Option<String> {
-        None
-    }
-}
+//     fn unknown(&self, _: usize, _: &mut Reader) -> Option<String> {
+//         None
+//     }
+// }
 
 pub trait ContructMono {
     fn collection(&self, index: usize) -> Option<Rc<dyn Sequence>>;

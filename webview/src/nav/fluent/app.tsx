@@ -1,7 +1,7 @@
 import React, { useRef, useState, useCallback } from "react";
 import { IframeWithPlaceholder } from "../components/IframeWithPlaceholder";
 import { useStore } from "../store";
-import { ComMessage, ComType, PcapFile } from "../../share/common";
+import { PcapFile } from "../../share/common";
 import {
     Button,
     Toolbar,
@@ -10,12 +10,6 @@ import {
 import { AddRegular, DeleteRegular } from "@fluentui/react-icons";
 
 import '../app.scss'
-
-// import { getTheme } from '@fluentui/react';
-class PFile {
-    name!: string;
-    size!: number;
-}
 
 const Loading = () => {
     return <div className="nav-loader">
@@ -28,10 +22,10 @@ const Loading = () => {
 export default function CommandDemo() {
     const loadIFrame = useStore((state) => state.loadIFrame);
     const [isLoading, setIsLoading] = useState<boolean>(true);
-    const send = useStore((state) => state.send);
+    // const send = useStore((state) => state.send);
     const loadData = useStore((state) => state.loadData);
     const reset = useStore((state) => state.reset);
-    const [pFile, setPFile] = useState<PFile | undefined>(undefined);
+    const [pFile, setPFile] = useState<PcapFile | undefined>(undefined);
     const inputRef = useRef<HTMLInputElement>(null);
     const iframeRef = useRef<HTMLIFrameElement>(null);
     const [blocked, setBlocked] = useState<boolean>(false);
@@ -49,10 +43,11 @@ export default function CommandDemo() {
                 const arrayBuffer: ArrayBuffer = this.result as ArrayBuffer;
                 const array = new Uint8Array(arrayBuffer);
                 const size = array.length;
-                setPFile({ name, size });
-                const fd: PcapFile = { name, size, start: Date.now() };
-                send(ComMessage.new(ComType.TOUCH_FILE, fd));
-                loadData(array).then(() => {
+                const pdata = { name, size }; 
+                setPFile(pdata);
+                // const fd: PcapFile = { name, size };
+                // send(ComMessage.new(ComType.TOUCH_FILE, fd));
+                loadData(pdata, array).then(() => {
                     setBlocked(false);
                 });
             };

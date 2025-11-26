@@ -1,7 +1,8 @@
-use std::sync::Arc;
+use std::{fs, path::Path, sync::Arc};
 
 use actix_web::{get, web, HttpResponse};
 use pcap::common::concept::{Criteria, FrameIndex};
+use serde::Serialize;
 
 use crate::web::WebApplication;
 
@@ -27,16 +28,31 @@ async fn frame(app: web::Data<Arc<WebApplication>>, path: web::Path<String>) -> 
     }
 }
 
+#[derive(Serialize)]
+struct PFile{
+    pub name: String,
+    pub size: u64,
+}
+
+impl PFile {
+    pub fn new(filepath: &str) -> Option<Self> {
+        let path = Path::new(filepath);
+        if let Ok(meta) = fs::metadata(path) {
+            let size = meta.len();
+            Some(Self{size, name: filepath.to_string()})
+        } else {
+            None
+        }
+    }
+}
 
 #[get("/ready")]
-async fn ready(_app: web::Data<Arc<WebApplication>>) -> HttpResponse {
-    HttpResponse::Ok().body("ok")
-    // if let Some(filepath) = &app.target {
-    //     let _ = app.engine().open_file(filepath.into()).await;
-    //     HttpResponse::Ok().body("ok")
-    // } else {
-    //     HttpResponse::Ok().body("error")
-    // }
+async fn ready(app: web::Data<Arc<WebApplication>>) -> HttpResponse {
+    if let Some(pf) = app.target.clone().map(|f| PFile::new(f.as_str())).flatten() {
+        HttpResponse::Ok().json(&pf)
+    } else {
+        HttpResponse::BadRequest().finish()
+    }
 }
 
 pub fn init(cfg: &mut web::ServiceConfig) {

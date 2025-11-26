@@ -1,4 +1,4 @@
-import { usePcapStore } from "../../../share/context";
+import { usePcapStore } from "../../context";
 import { createTableColumn, TableCellLayout, TableColumnDefinition } from "@fluentui/react-components";
 import { compute, ComRequest, ITLSInfo } from "../../../share/common";
 import Grid from "../table";

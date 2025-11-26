@@ -1,3 +1,5 @@
+import { IDNSRecord, IDNSResponse, IFrameInfo, IListResult, IProgressStatus, IUDPConversation, IVConnection, IVConversation, IVHttpConnection } from "./gen";
+
 export function deserialize<T>(content: string): T | undefined {
   if(!content){
     return;
@@ -63,7 +65,7 @@ let counter = 0;
 const getMessageId = (type: string) => {
   const cc = counter++;
   return `${cc}_${type}_${Date.now()}`;
-}
+};
 
 export class ComMessage<T> {
   type: ComType;
@@ -92,8 +94,6 @@ export class ComLog {
 export interface PcapFile {
   name: string;
   size: number;
-  start: number;
-  state?: number;
 }
 
 export interface IField {
@@ -222,7 +222,7 @@ export const format_bytes_single_unit = (bytes: number): string => {
   }
 
   return `${size}.${low} ${UNITS[unit_index]}`;
-}
+};
 
 
 const timeunits = [
@@ -234,11 +234,11 @@ const timeunits = [
   { name: 'ns', value: 1 }
 ];
 export const formatMicroseconds = (sample: number, _time: number): string => {
-  let time = _time
+  let time = _time;
   if (typeof time !== 'number' || time < 0 || !isFinite(time)) {
     return '0';
   }
-  if (time == 0) {
+  if (time === 0) {
     return '0';
   }
   const len = (sample + '').length;
@@ -262,4 +262,25 @@ export const formatMicroseconds = (sample: number, _time: number): string => {
   }
 
   return `${time}μs`;
+};
+
+
+export interface PcapState {
+  fileinfo?: PcapFile;
+  progress?: IProgressStatus;
+  frameResult?: IListResult<IFrameInfo>;
+  frameSelect?: string;
+  sendReady: () => void;
+  request: <F>(data: any) => Promise<F>;
+  // requestData: (data: VRange) => Promise<DataResponse>;
+  conversationList: (data: any) => Promise<IListResult<IVConversation>>;
+  udpList: (data: any) => Promise<IListResult<IUDPConversation>>;
+  dnsList: (data: any) => Promise<IListResult<IDNSResponse>>;
+  dnsRecords: (data: any) => Promise<IListResult<IDNSRecord>>;
+  tlsList: (data: any) => Promise<IListResult<ITLSConnect>>;
+  tlsConvList: (data: any) => Promise<IListResult<ITLSInfo>>;
+  connectionList: (data: any) => Promise<IListResult<IVConnection>>;
+  httpList: (data: any) => Promise<IListResult<IVHttpConnection>>;
+  httpDetail: (index: number) => Promise<IHttpDetail[]>
+  stat: (request: StatRequest) => Promise<any> ;
 }

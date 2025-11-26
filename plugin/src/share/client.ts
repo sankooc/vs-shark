@@ -1,6 +1,7 @@
 import { load, WContext, Conf, FrameResult, HttpDetail } from "rshark";
 import { ComLog, ComMessage, ComRequest, ComType, IHttpDetail, PcapFile, StatRequest, VRange } from "./common";
 import mitt, { Emitter } from "mitt";
+import { IProgressStatus } from "./gen";
 
 export const BATCH_SIZE = 1024 * 1024 * 1;
 
@@ -39,7 +40,7 @@ export abstract class PCAPClient {
       this.ctx = load(Conf.new(this.resourceId, false, BATCH_SIZE));
     }
   }
-  private async update(data: Uint8Array): Promise<string> {
+  private async update(data: Uint8Array, progress: IProgressStatus): Promise<string> {
     if (!this.ctx) {
       this.init();
     }
@@ -47,7 +48,15 @@ export abstract class PCAPClient {
       try {
         const rs = await this.ctx.update(data);
         if (rs) {
-          this.emitMessage(ComMessage.new(ComType.PRGRESS_STATUS, rs));
+          try {
+            const rt = JSON.parse(rs);
+            if (rt && rt.total && rt.cursor) {
+              progress.cursor -= (rt.total - rt.cursor);
+            }
+          } catch(e) {
+            console.error(e);
+          }
+          this.emitMessage(ComMessage.new(ComType.PRGRESS_STATUS, progress));
           return rs;
         }
       } catch (e) {
@@ -65,7 +74,7 @@ export abstract class PCAPClient {
 
   protected touchFile(fileInfo: PcapFile | undefined): void {
     this.info = fileInfo;
-    this.emitMessage(ComMessage.new(ComType.FILEINFO, fileInfo));
+    this.emitMessage(ComMessage.new(ComType.FILEINFO, this.info));
   }
   private list(
     requestId: string,
@@ -242,7 +251,8 @@ export abstract class PCAPClient {
         case ComType.PROCESS_DATA:
           {
             const data = body.data as Uint8Array;
-            await this.update(data);
+            const progress = body.progress || {total: 0, cursor: 0};
+            await this.update(data, progress);
           }
           // this.emitMessage(ComMessage.new(ComType.PRGRESS_STATUS, rs));
           break;

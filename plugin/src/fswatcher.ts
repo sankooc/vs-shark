@@ -1,12 +1,14 @@
 import * as fs from "fs";
 import { Range } from "rshark";
+import { PcapFile } from "./share/common";
+import { IProgressStatus } from "./share/gen";
 
 interface FileTailWatcherOptions {
   chunkSize?: number;
   intervalMs?: number;
 }
 
-type OnDataCallback = (data: Buffer) => void;
+type OnDataCallback = (data: Buffer, progress: IProgressStatus) => void;
 
 export class FileTailWatcher {
   public filePath: string;
@@ -21,6 +23,11 @@ export class FileTailWatcher {
     this.filePath = filePath;
     this.chunkSize = options.chunkSize ?? 1024 * 1024;
     this.intervalMs = options.intervalMs ?? 1000;
+  }
+
+  info(): PcapFile {
+    const state = fs.statSync(this.filePath);
+    return { name: this.filePath, size: state.size };
   }
 
   async start(onData: OnDataCallback): Promise<void> {
@@ -46,7 +53,7 @@ export class FileTailWatcher {
       this.position += bytesRead;
 
       if (bytesRead > 0) {
-        onData(buffer.subarray(0, bytesRead));
+        onData(buffer.subarray(0, bytesRead), {total: totalSize, cursor: this.position});
       }
     }
 
@@ -71,7 +78,7 @@ export class FileTailWatcher {
           this.position += bytesRead;
 
           if (bytesRead > 0) {
-            onData(buffer.subarray(0, bytesRead));
+            onData(buffer.subarray(0, bytesRead), {total: newSize, cursor: this.position});
           }
         }
       } catch (err) {
@@ -110,7 +117,7 @@ export class FileTailWatcher {
         const position = range.start;
         const len = range.end - position;
         return this.readRandomAccessSync(fd, position, len);
-      })
+      });
       return Buffer.concat(list);
     } catch (e) {
       console.error(e);

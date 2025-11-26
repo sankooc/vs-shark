@@ -1,6 +1,7 @@
 import { makeStyles } from "@fluentui/react-components";
 import { PcapFile } from "../../share/common";
 import { IProgressStatus } from "../../share/gen";
+import Empty from "./http/content/empty";
 
 const useCSS = makeStyles({
     root: {
@@ -18,7 +19,7 @@ function Component(props: LoadingProps) {
         if (window["acquireVsCodeApi"]) {
             return <div className={styles.root}>Loading</div>
         } else {
-            return <div className={styles.root}>No Selected file</div>
+            return <Empty content="Please choose a PCAP file to get started."/>
         }
     }
     return <div className={styles.root}>Loading</div>

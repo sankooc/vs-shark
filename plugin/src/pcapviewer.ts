@@ -4,6 +4,7 @@ import { ComLog, ComMessage, ComType, PcapFile } from "./share/common";
 import { FileTailWatcher } from "./fswatcher";
 import { BATCH_SIZE, PCAPClient } from "./share/client";
 import { Range } from "rshark";
+import { IProgressStatus } from "./share/gen";
 
 function getNonce() {
   let text = "";
@@ -20,7 +21,7 @@ const ENTRY = "app.js";
 const createWebviewHtml = (
   context: vscode.ExtensionContext,
   webview: vscode.Webview,
-  file: string,
+  _file: string,
 ): string => {
   const scriptUri = webview.asWebviewUri(
     vscode.Uri.joinPath(context.extensionUri, 'dist', 'web', 'js', 'main.js'),
@@ -89,10 +90,10 @@ export class Client extends PCAPClient {
     if(this.resourceId){
       resoruceMap[this.resourceId] = this.watcher;
     }
-    const info: PcapFile = { name: this.watcher.filePath, size: 0, start: 0 };
+    const info = this.watcher.info();
     this.handle(ComMessage.new(ComType.TOUCH_FILE, info));
-    this.watcher.start((buffer: Buffer) => {
-      this.handle(ComMessage.new(ComType.PROCESS_DATA, { data: bufferToUint8Array(buffer) }));
+    this.watcher.start((buffer: Buffer, progress: IProgressStatus) => {
+      this.handle(ComMessage.new(ComType.PROCESS_DATA, { data: bufferToUint8Array(buffer), progress }));
     });
   }
   async pickData(start: number, end: number): Promise<Uint8Array> {

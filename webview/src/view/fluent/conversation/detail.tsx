@@ -1,5 +1,5 @@
 
-import { usePcapStore } from "../../../share/context";
+import { usePcapStore } from "../../context";
 import { IVConnection} from "../../../share/gen";
 import { createTableColumn, TableCellLayout, TableColumnDefinition } from "@fluentui/react-components";
 import { compute, ComRequest, format_bytes_single_unit } from "../../../share/common";

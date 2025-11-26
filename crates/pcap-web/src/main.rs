@@ -13,7 +13,7 @@ use tokio::runtime::Runtime;
 
 async fn start(address: IpAddr, port: u16, target: String) -> std::io::Result<()> {
     let folder = include_dir::include_dir!("dist/socket");
-    let (ui, mut engine) = util::core::build_engine();
+    let (ui, mut engine, _) = util::core::build_engine();
     thread::spawn(move || {
         let rt = Runtime::new().unwrap();
         rt.block_on(async {

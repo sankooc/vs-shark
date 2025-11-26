@@ -17,6 +17,7 @@ body {
     margin: 0;
     padding: 0;
     height: 100%;
+
     #app {
         height: 100%;
         overflow-x: hidden;
@@ -24,6 +25,7 @@ body {
         //     font-family: '0xProto Nerd Font', 'Segoe UI', 'Segoe UI Web (West European)', -apple-system, BlinkMacSystemFont, Roboto, 'Helvetica Neue', sans-serif !important;
         // }
     }
+
     overflow-x: hidden;
 }
 
@@ -36,13 +38,21 @@ $page-space: 5px;
 .main-content {
     background-color: common.$c-bg-1;
     overflow: hidden;
-    padding: $page-space;
+    padding: 0;
     margin: 0;
-    gap: $page-space;
-    height: calc(100% - $page-space - $page-space);
-
+    gap: 0;
+    height: 100%;
+    justify-content: space-between;
+    .intern{
+        flex-grow: 1;
+        flex-shrink: 1;
+        overflow-y: auto;
+    }
     .page-card-item {
         background-color: common.$background;
+    }.page-status {
+        max-height: 30px;
+        background-color: #777;
     }
 }
 
@@ -74,6 +84,7 @@ div[role=tablist] {
         }
     }
 }
+
 // div[role=gridcell] {
 //     min-height: unset !important;
 // }

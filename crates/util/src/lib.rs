@@ -1,8 +1,10 @@
 use std::{
-    fs::File,
+    fs::{self, File},
     io::{ErrorKind, Read, Seek, SeekFrom},
-    ops::Range,
+    ops::Range, path::Path,
 };
+
+use serde::Serialize;
 
 pub mod core;
 pub struct FileBatchReader {
@@ -78,12 +80,30 @@ pub fn file_seeks(fname: &str, ranges: &[Range<usize>]) -> anyhow::Result<Vec<u8
     Ok(rs)
 }
 
+
+
+#[derive(Serialize)]
+pub struct PFile {
+    pub name: String,
+    pub size: u64,
+}
+impl PFile {
+    pub fn new(filepath: &str) -> Option<Self> {
+        let path = Path::new(filepath);
+        if let Ok(meta) = fs::metadata(path) {
+            let size = meta.len();
+            Some(Self { size, name: filepath.to_string() })
+        } else {
+            None
+        }
+    }
+}
 // #[cfg(test)]
 // mod tests {
 //     use super::*;
 
 //     #[test]
-//     fn it_works() {
+//     fn it_works() {erx
 //         let result = add(2, 2);
 //         assert_eq!(result, 4);
 //     }

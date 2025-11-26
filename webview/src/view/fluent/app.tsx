@@ -25,13 +25,14 @@ import DNSRecordComponent from './dns/sub';
 import TLSHostList from './tls';
 import TLSConvList from './tls/sub';
 
-import { usePcapStore } from "../../share/context";
+import { usePcapStore } from "../context";
 import LoadingComponent from './loading';
-import { ConversationIcon, DNSIcon, FrameIcon, HttpIcon, OverviewIcon, StatisticTabIcon, TLSIcon, UDPTabIcon } from "./common";
+import { ConversationIcon, DNSIcon, FrameIcon, HttpIcon, OverviewIcon, StatisticTabIcon, StatusBar, TLSIcon, UDPTabIcon } from "./common";
 import { PcapState } from "../../share/common";
 
 const useCSS = makeStyles({
   nav: {
+    "flex-shrink": 0,
     "& button[aria-current=page]": {
       color: 'rgb(71, 158, 245)'
     }
@@ -143,26 +144,29 @@ const Basic = () => {
   if (!progress) {
     return <LoadingComponent info={info} progress={progress} />
   }
-  
+
   return (
     <BrowserRouter>
       <div className="flex flex-row h-full w-full">
         <Nav />
         <div className="flex-1 flex flex-column main-content">
-          <Routes>
-            <Route path="/" index element={<FrameComponent />} />
-            <Route path="/overview" element={<OverviewComponent />} />
-            <Route path="/conversations" element={<ConversationComponent />} />
-            <Route path="/conversation/:conversationIndex" element={<ConversationDetailComponent />} />
-            <Route path="/https" element={<HttpComponent />} />
-            <Route path="/http/detail/:httpIndex" element={<HttpDetailComponent />} />
-            <Route path="/tlslist" element={<TLSHostList />} />
-            <Route path="/tls/:index" element={<TLSConvList/>}/>
-            <Route path="/udp" element={<UDPComponent />} />
-            <Route path="/dns" element={<DNSComponent />} />
-            <Route path="/dns/:index" element={<DNSRecordComponent />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
+          <div className="flex-1 flex flex-column intern">
+            <Routes>
+              <Route path="/" index element={<FrameComponent />} />
+              <Route path="/overview" element={<OverviewComponent />} />
+              <Route path="/conversations" element={<ConversationComponent />} />
+              <Route path="/conversation/:conversationIndex" element={<ConversationDetailComponent />} />
+              <Route path="/https" element={<HttpComponent />} />
+              <Route path="/http/detail/:httpIndex" element={<HttpDetailComponent />} />
+              <Route path="/tlslist" element={<TLSHostList />} />
+              <Route path="/tls/:index" element={<TLSConvList />} />
+              <Route path="/udp" element={<UDPComponent />} />
+              <Route path="/dns" element={<DNSComponent />} />
+              <Route path="/dns/:index" element={<DNSRecordComponent />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </div>
+          <StatusBar/>
         </div>
       </div>
     </BrowserRouter>

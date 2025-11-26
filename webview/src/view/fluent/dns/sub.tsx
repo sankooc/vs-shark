@@ -1,5 +1,5 @@
 
-import { usePcapStore } from "../../../share/context";
+import { usePcapStore } from "../../context";
 import { IDNSRecord } from "../../../share/gen";
 import { createTableColumn, TableCellLayout, TableColumnDefinition } from "@fluentui/react-components";
 import { compute, ComRequest } from "../../../share/common";
