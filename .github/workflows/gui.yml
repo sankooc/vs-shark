@@ -115,7 +115,7 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2.1.0
         with:
-          tag_name: $brc
+          tag_name: ${{ env.brc }}
           files: release/*
           allow_updates: true
         env:
