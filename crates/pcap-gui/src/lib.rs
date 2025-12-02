@@ -3,6 +3,7 @@
 // This file is part of the pcapview project.
 // Licensed under the MIT License - see https://opensource.org/licenses/MIT
 
+use pcap::common::core::Context;
 use serde::{Deserialize, Serialize};
 use std::thread;
 use std::time::Duration;
@@ -73,7 +74,6 @@ async fn open_file_dialog(app_handle: AppHandle) -> Result<Option<String>, Strin
 }
 
 fn rebuild_menu(app_handle: &AppHandle, pcap_file: Option<String>) -> tauri::Result<()> {
-
     let mut file = SubmenuBuilder::new(app_handle, "File");
     if pcap_file.is_some() {
         let open_item = MenuItemBuilder::new("Close").id("close").build(app_handle)?;
@@ -102,17 +102,23 @@ pub fn run() {
     let context = GUIContext::new(ui);
 
     use command::api::ready;
-    
+
     tauri::Builder::default()
         .manage(context)
         .setup(|app| {
-            
             // app.manage(RecentFiles::default());
             let args: Vec<String> = std::env::args().collect();
             let mut option = None;
             if args.len() > 1 {
                 let file_path = args[1].clone();
+                let filepath = args[1].clone();
                 option = Some(file_path);
+                let handle = app.handle().clone();
+
+                tauri::async_runtime::spawn(async move {
+                    let ctx = handle.state::<GUIContext>();
+                    let _ = ctx.inner().engine().open_file(filepath).await;
+                });
             }
             rebuild_menu(app.handle(), option)?;
             let app_handle = app.handle().clone();
