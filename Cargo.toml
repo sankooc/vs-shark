@@ -7,7 +7,7 @@ members = [
 , "crates/pcap-web", "crates/pcap-gui"]
 
 [workspace.package]
-version = "0.4.6"
+version = "0.4.9"
 edition = "2021"
 authors = ["sankooc <sankooc@163.com>"]
 license = "MIT"

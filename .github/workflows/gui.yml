@@ -95,8 +95,8 @@ jobs:
           mkdir -p release
           # Linux
           if [[ "${{ matrix.os }}" == "ubuntu-22.04" ]]; then
-            cp target/${{ matrix.target }}/release/bundle/deb/pcapviewer_gui_*_amd64.deb release/
-            cp target/${{ matrix.target }}/release/bundle/rpm/pcapviewer_gui-*.x86_64.rpm release/
+            cp target/${{ matrix.target }}/release/bundle/deb/*.deb release/
+            cp target/${{ matrix.target }}/release/bundle/rpm/*.rpm release/
           fi
           # macOS
           if [[ "${{ matrix.os }}" == "macos-latest" ]]; then
