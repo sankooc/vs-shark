@@ -5880,7 +5880,7 @@ dependencies = [
 
 [[package]]
 name = "wasm-pcps"
-version = "0.4.7"
+version = "0.4.9"
 dependencies = [
  "anyhow",
  "env_logger",

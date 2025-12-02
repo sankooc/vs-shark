@@ -3,7 +3,6 @@
 // This file is part of the pcapview project.
 // Licensed under the MIT License - see https://opensource.org/licenses/MIT
 
-use pcap::common::core::Context;
 use serde::{Deserialize, Serialize};
 use std::thread;
 use std::time::Duration;
