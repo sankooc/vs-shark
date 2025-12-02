@@ -76,12 +76,13 @@ jobs:
           mv target/${{ matrix.target }}/release/pcap-web release/pcap-web-${{ matrix.target }}
 
       - name: Set release version
-        run: echo "brc=${GITHUB_REF##refs/heads/release/}" >> $GITHUB_ENV
+        run: echo "brc=$(echo ${GITHUB_REF#refs/heads/release/})" >> $GITHUB_ENV
         shell: bash
+        
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2.1.0
         with:
-          tag_name: ${{ env.brc }}
+          tag_name: $brc
           files: release/pcap-web-${{ matrix.target }}
           allow_updates: true
         env:

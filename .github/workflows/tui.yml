@@ -34,7 +34,7 @@ jobs:
       uses: softprops/action-gh-release@v2.1.0
       with:
         allow_updates: true
-        tag_name: ${{ env.brc }}
+        tag_name: $brc
         files: |
           release/pcaps-${{ matrix.target }}
       env:
