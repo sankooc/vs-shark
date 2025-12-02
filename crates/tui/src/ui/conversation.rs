@@ -11,6 +11,7 @@ use crate::{
     engine::{PcapEvent, PcapUICommand}, ui::{loading, render_table, ControlState, CustomTableState, TableStyle}
 };
 
+#[derive(Default)]
 pub struct Conversation {
     state: CustomTableState<VConversation>,
     detail: Option<(usize, String, CustomTableState<VConnection>)>,
@@ -126,15 +127,6 @@ impl TableStyle<VConnection> for ConnectionStyle {
     }
 }
 
-impl Conversation {
-    pub fn new() -> Self {
-        Self {
-            state: CustomTableState::default(),
-            detail: None,
-        }
-    }
-}
-
 impl Widget for &mut Conversation {
     fn render(self, area: Rect, buf: &mut Buffer) {
         if self.state.loading {
@@ -166,7 +158,7 @@ impl ControlState for Conversation {
                     self.detail = None;
                 }
                 KeyCode::Down => {
-                    state.next();
+                    state.to_next();
                 }
                 KeyCode::Up => {
                     state.previous();
@@ -210,7 +202,7 @@ impl ControlState for Conversation {
                 }
             }
             KeyCode::Down => {
-                self.state.next();
+                self.state.to_next();
             }
             KeyCode::Up => {
                 self.state.previous();

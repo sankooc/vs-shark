@@ -2,15 +2,16 @@ use crate::{
     engine::{PcapEvent, PcapUICommand},
     theme::{get_frame_color, get_header_style, get_select},
     ui::{
-        block::content_border_low, loading::{self}, render_table, stack::StackView, ControlState, CustomTableState, TableStyle
+        block::content_border_low,
+        loading::{self},
+        render_table,
+        stack::StackView,
+        ControlState, CustomTableState, TableStyle,
     },
 };
 
 use crossterm::event::{KeyCode, KeyEvent};
-use pcap::common::{
-    concept::FrameInfo,
-    util::date_sim_str,
-};
+use pcap::common::{concept::FrameInfo, util::date_sim_str};
 use ratatui::{
     buffer::Buffer,
     layout::{Alignment, Constraint, Layout, Rect},
@@ -70,38 +71,32 @@ impl TableStyle<FrameInfo> for FrameStyle {
     }
 }
 
-#[derive(Debug, Eq, PartialEq, Clone, Copy)]
+#[derive(Default, Debug, Eq, PartialEq, Clone, Copy)]
 pub enum SelectPanel {
+    #[default]
     List,
     Stack,
 }
 
+#[derive(Default)]
 pub struct App {
     state: CustomTableState<FrameInfo>,
     cursor: SelectPanel,
-    // select: usize,
     view: StackView,
 }
 
 impl App {
-    pub fn new() -> Self {
-        Self {
-            cursor: SelectPanel::List,
-            state: CustomTableState::default(),
-            view: StackView::default(),
-        }
-    }
     fn render_loading(&self, area: Rect, buf: &mut Buffer) {
         loading::line(area, buf);
     }
     pub fn next(&mut self) -> usize {
-        self.state.next()
+        self.state.to_next()
     }
     pub fn previous(&mut self) -> usize {
         self.state.previous()
     }
     fn render_table(&mut self, buf: &mut Buffer, area: Rect) {
-        render_table(FrameStyle, &self.state, area, buf,0);
+        render_table(FrameStyle, &self.state, area, buf, 0);
     }
 }
 

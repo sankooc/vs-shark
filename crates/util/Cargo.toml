@@ -8,6 +8,6 @@ authors.workspace = true
 [dependencies]
 pcap = { path = "../parser" }
 anyhow.workspace = true
-tokio = { version = "1.48.0", features = ["full"] }
+tokio = { workspace = true, features = ["full"] }
 serde = { workspace = true, features = ["derive"]}
 serde_json.workspace = true
