@@ -1,28 +1,20 @@
 import React, { useRef, useState, useCallback } from "react";
-import { IframeWithPlaceholder } from "../components/IframeWithPlaceholder";
+import { IframeWithPlaceholder } from "./iframe";
 import { useStore } from "../store";
 import { PcapFile } from "../../share/common";
-import {
-    Button,
-    Toolbar,
-    Text,
-} from "@fluentui/react-components";
-import { AddRegular, DeleteRegular } from "@fluentui/react-icons";
+import Loading from "./loading";
+import Header from './menu/MenuBar';
 
-import '../app.scss'
-
-const Loading = () => {
-    return <div className="nav-loader">
-        <div className="inner one"></div>
-        <div className="inner two"></div>
-        <div className="inner three"></div>
-    </div>;
+export interface HeaderProps {
+    pFile: PcapFile | undefined;
+    blocked: boolean;
+    triggerNewFile: () => void;
+    triggerReset: () => void;
 }
 
 export default function CommandDemo() {
     const loadIFrame = useStore((state) => state.loadIFrame);
     const [isLoading, setIsLoading] = useState<boolean>(true);
-    // const send = useStore((state) => state.send);
     const loadData = useStore((state) => state.loadData);
     const reset = useStore((state) => state.reset);
     const [pFile, setPFile] = useState<PcapFile | undefined>(undefined);
@@ -43,7 +35,7 @@ export default function CommandDemo() {
                 const arrayBuffer: ArrayBuffer = this.result as ArrayBuffer;
                 const array = new Uint8Array(arrayBuffer);
                 const size = array.length;
-                const pdata = { name, size }; 
+                const pdata = { name, size };
                 setPFile(pdata);
                 // const fd: PcapFile = { name, size };
                 // send(ComMessage.new(ComType.TOUCH_FILE, fd));
@@ -57,32 +49,23 @@ export default function CommandDemo() {
     const handleIframeLoad = useCallback(() => {
         setIsLoading(false);
     }, []);
-    return (
-        <>
-            {isLoading ? null : (<div style={{ padding: "5px", borderBottom: 'solid 1px #ddd' }} className="flex flex-row justify-content-between">
-                <div>
-                    <Toolbar aria-label="Default" size="small">
-                        {pFile && <Text style={{ marginRight: "10px" }}>{pFile.name}</Text>}
-                        {pFile ?
-                            <Button
-                                disabled={blocked}
-                                size="small"
-                                onClick={() => {
-                                    setPFile(undefined);
-                                    if (inputRef.current) {
-                                        inputRef.current.value = '';
-                                    }
-                                    reset();
-                                }} icon={<DeleteRegular />}
-                            >Reset</Button> : <Button
-                                disabled={blocked}
-                                size="small"
-                                onClick={() => inputRef.current?.click()} icon={<AddRegular />}
-                            >Select PCAP File</Button>}
+    const headerProps = {
+        pFile,
+        blocked,
+        triggerNewFile: () => inputRef.current?.click(),
+        triggerReset: () => {
+            setPFile(undefined);
+            if (inputRef.current) {
+                inputRef.current.value = '';
+            }
+            reset();
+        }
+    }
 
-                    </Toolbar>
-                </div>
-            </div>)}
+
+    return (
+        <div className="flex flex-column h-full">
+            {isLoading ? null : <Header {...headerProps}/>}
             <input
                 type="file"
                 ref={inputRef}
@@ -95,9 +78,9 @@ export default function CommandDemo() {
                 frameref={iframeRef}
                 onLoad={handleIframeLoad}
                 placeholderContent={
-                    <Loading/>
+                    <Loading />
                 }
             />
-        </>
+        </div>
     );
 }
