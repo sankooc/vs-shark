@@ -1,8 +1,5 @@
 use crossterm::event::{KeyCode, KeyEvent};
-use pcap::common::{
-    concept::{VHttpConnection},
-    util::format_bytes_single_unit_int,
-};
+use pcap::common::{concept::VHttpConnection, util::format_bytes_single_unit_int};
 use ratatui::{
     buffer::Buffer,
     layout::{Constraint, Rect},
@@ -14,9 +11,15 @@ use tui_tree_widget::{Tree, TreeItem, TreeState};
 use crate::{
     engine::{HttpMessageWrap, PcapEvent, PcapUICommand},
     theme::get_active_tab_color,
-    ui::{block::{content_border_low, content_border_right}, code::CodeView, loading::{self}, render_table, ControlState, CustomTableState, TableStyle},
+    ui::{
+        block::{content_border_low, content_border_right},
+        code::CodeView,
+        loading::{self},
+        render_table, ControlState, CustomTableState, TableStyle,
+    },
 };
 
+#[derive(Default)]
 pub struct Page {
     state: CustomTableState<VHttpConnection>,
     detail: Option<HttpHeadersView>,
@@ -30,7 +33,7 @@ impl TableStyle<VHttpConnection> for ConversationStyle {
     fn get_row_style(&self, _: &VHttpConnection, status: usize) -> ratatui::prelude::Style {
         match status {
             1 => crate::theme::BLANK_FROZEN,
-            _ => crate::theme::DNS_BG.into()
+            _ => crate::theme::DNS_BG.into(),
         }
     }
 
@@ -70,15 +73,6 @@ impl TableStyle<VHttpConnection> for ConversationStyle {
     }
 }
 
-impl Default for Page {
-    fn default() -> Self {
-        Self {
-            state: CustomTableState::default(),
-            detail: None,
-        }
-    }
-}
-
 impl Widget for &mut Page {
     fn render(self, area: Rect, buf: &mut Buffer) {
         if self.state.loading {
@@ -109,8 +103,8 @@ impl ControlState for Page {
                     self.detail = None;
                     return PcapUICommand::Refresh;
                 }
-                _ => view.control(false, event)
-            }
+                _ => view.control(false, event),
+            };
         }
 
         match event.code {
@@ -122,7 +116,7 @@ impl ControlState for Page {
                 }
             }
             KeyCode::Down => {
-                self.state.next();
+                self.state.to_next();
             }
             KeyCode::Up => {
                 self.state.previous();
@@ -236,7 +230,10 @@ impl HttpHeadersView {
 
             if let Some(content) = &item.parsed_content {
                 if !content.is_empty() {
-                    child.push(TreeItem::new_leaf(HeaderKey::Content(index), format!("Entity: {}", format_bytes_single_unit_int(content.len()))));
+                    child.push(TreeItem::new_leaf(
+                        HeaderKey::Content(index),
+                        format!("Entity: {}", format_bytes_single_unit_int(content.len())),
+                    ));
                 }
             }
             let it = TreeItem::new(HeaderKey::Message(index), item.headers.first().unwrap().clone(), child).expect("need unique id");
@@ -267,24 +264,19 @@ impl Widget for &mut HttpHeadersView {
 
         let selected = state.selected();
         if selected.len() > 1 {
-            if let Some(_sel) = selected.last() {
-                match _sel {
-                    HeaderKey::Content(index) => {
-                        if let Some(item) = self.items.get(*index) {
-                            let content = item.parsed_content.clone().unwrap_or("".into());
-                            let codeview = CodeView::new(content, item.mime);
-                            
-                            let ch: [Rect; 2] = ratatui::layout::Layout::horizontal([Constraint::Min(5), Constraint::Min(5)]).areas(area);
-                            
-                            StatefulWidget::render(_top, ch[0], buf, state);
-                            let block = content_border_right();
-                            let in_area = block.inner(ch[1]);
-                            block.render(ch[1], buf);
-                            codeview.render(in_area, buf);
-                            return;
-                        }
-                    }
-                    _ => {}
+            if let Some(HeaderKey::Content(index)) = selected.last() {
+                if let Some(item) = self.items.get(*index) {
+                    let content = item.parsed_content.clone().unwrap_or("".into());
+                    let codeview = CodeView::new(content, item.mime);
+
+                    let ch: [Rect; 2] = ratatui::layout::Layout::horizontal([Constraint::Min(5), Constraint::Min(5)]).areas(area);
+
+                    StatefulWidget::render(_top, ch[0], buf, state);
+                    let block = content_border_right();
+                    let in_area = block.inner(ch[1]);
+                    block.render(ch[1], buf);
+                    codeview.render(in_area, buf);
+                    return;
                 }
             };
         }

@@ -48,7 +48,7 @@ impl PFile {
 
 #[get("/ready")]
 async fn ready(app: web::Data<Arc<WebApplication>>) -> HttpResponse {
-    if let Some(pf) = app.target.clone().map(|f| PFile::new(f.as_str())).flatten() {
+    if let Some(pf) = app.target.clone().and_then(|f| PFile::new(f.as_str())) {
         HttpResponse::Ok().json(&pf)
     } else {
         HttpResponse::BadRequest().finish()

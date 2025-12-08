@@ -58,7 +58,7 @@ impl Widget for &mut StackView {
 
         let selected = self.tree_state.selected();
         if !selected.is_empty() {
-            let (_, start, size, source) = selected.last().unwrap().clone();
+            let (_, start, size, source) = *selected.last().unwrap();
             if let Some(datasource) = self.datasources.get(source as usize) {
                 let offset = start.saturating_sub(datasource.range().start);
                 let state = HexState::new(offset, size, &datasource.data);

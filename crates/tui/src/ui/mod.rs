@@ -40,20 +40,17 @@ pub struct UI {
 
 fn try_handle_event(app: &mut MainUI) -> PcapUICommand {
     if event::poll(Duration::from_millis(10)).unwrap() {
-        if let Ok(event) = event::read() {
-            if let Event::Key(key) = event {
-                let shift_pressed = key.modifiers.contains(KeyModifiers::SHIFT);
-                match key.kind {
-                    KeyEventKind::Press => match key.code {
-                        KeyCode::Char('q') | KeyCode::Esc => {
-                            return PcapUICommand::Quit;
-                        }
-                        _ => {}
-                    },
+        if let Ok(Event::Key(key)) = event::read() {
+            let shift_pressed = key.modifiers.contains(KeyModifiers::SHIFT);
+            if key.kind == KeyEventKind::Press {
+                match key.code {
+                    KeyCode::Char('q') | KeyCode::Esc => {
+                        return PcapUICommand::Quit;
+                    }
                     _ => {}
                 }
-                return app.control(shift_pressed, key);
             }
+            return app.control(shift_pressed, key);
         }
     }
     PcapUICommand::None
@@ -129,23 +126,33 @@ impl UI {
                 }
             }
         }
-        while quiting {
-            if event::poll(Duration::from_millis(10)).unwrap() {
-                if let Ok(Event::Key(key)) = event::read() {
-                    match key.kind {
-                        KeyEventKind::Press => match key.code {
-                            _ => {
-                                let _ = self.sender.send(PcapUICommand::Quit);
-                                break;
-                            }
-                        },
-                        _ => {}
+        if quiting {
+            loop {
+                if event::poll(Duration::from_millis(10)).unwrap() {
+                    if let Ok(Event::Key(key)) = event::read() {
+                        if let KeyEventKind::Press = key.kind {
+                            let _ = self.sender.send(PcapUICommand::Quit);
+                            break;
+                        }
                     }
                 }
+                let modal = popup::Modal::default();
+                terminal.draw(|f| f.render_widget(modal, f.area())).unwrap();
+
             }
-            let modal = popup::Modal::default();
-            terminal.draw(|f| f.render_widget(modal, f.area())).unwrap();
         }
+        // while quiting {
+        //     if event::poll(Duration::from_millis(10)).unwrap() {
+        //         if let Ok(Event::Key(key)) = event::read() {
+        //             if let KeyEventKind::Press = key.kind {
+        //                 let _ = self.sender.send(PcapUICommand::Quit);
+        //                 break;
+        //             }
+        //         }
+        //     }
+        //     let modal = popup::Modal::default();
+        //     terminal.draw(|f| f.render_widget(modal, f.area())).unwrap();
+        // }
         ratatui::restore();
         Ok(())
     }
@@ -167,7 +174,6 @@ impl<T> Default for CustomTableState<T> {
         }
     }
 }
-
 impl<T> CustomTableState<T> {
     pub fn update(&mut self, list: ListResult<T>) {
         self.list = list;
@@ -181,7 +187,7 @@ impl<T> CustomTableState<T> {
         let ss = ScrollbarState::new(self.list.items.len() * ITEM_HEIGHT);
         ss.position(self.select * ITEM_HEIGHT)
     }
-    pub fn next(&mut self) -> usize {
+    pub fn to_next(&mut self) -> usize {
         if !self.list.items.is_empty() && self.select < self.list.items.len() - 1 {
             self.select += 1;
         }

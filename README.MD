@@ -32,7 +32,9 @@
 
 ## Overview
 
-**PcapViewer** is an open-source packet analysis tool designed to efficiently handle PCAP/PCAPNG (Packet Capture) files. It enables users to dive into network traffic and inspect various protocol layers, from the Ethernet layer to the application layer, providing a streamlined alternative to full-scale tools like Wireshark. With its lightweight nature, it’s ideal for developers, network administrators, and engineers who need quick insights into network packets.
+**PcapViewer** is a powerful, multi-platform tool that simplifies network traffic analysis, bringing essential PCAP/PCAPNG file inspection capabilities directly into your preferred environment: **Visual Studio Code, Terminal UI,  a standalone Desktop Application, or a dedicated Web Service.**
+
+It enables users to dive into network traffic and inspect various protocol layers, from the Ethernet layer to the application layer, providing a streamlined alternative to full-scale tools like Wireshark. With its lightweight nature, it’s ideal for developers, network administrators, and engineers who need quick insights into network packets.
 
 
 ### 🌟 Features
@@ -100,42 +102,58 @@ Try out [PcapViewer](https://sankooc.github.io/vs-shark/app/) in your browser.
   <img src="assets/tls.png" width="80%"/>
 </details>
 
-### 🛠️ VS Code Extension
+
+### 💻 Installation & Usage
+
+#### 1\. VS Code Extension
 
 Install the **PcapViewer** extension from the [VSCode Marketplace](https://marketplace.visualstudio.com/items?itemName=sankooc.pcapviewer) for seamless integration into your Visual Studio Code environment.
 
 
 
-### 🛠️ ZED Extension
-
-> Coming soon...
-
-
-### 🛠️ TUI 
+#### 2\. TUI 
 
 ![](https://i.ibb.co/WVPTzP1/tui3.gif)
 
-#### Install
 
-Download from [Releases](https://github.com/sankooc/vs-shark/releases)
+* **Installation:** Download from [Releases](https://github.com/sankooc/vs-shark/releases)
 
-#### Usage
-
+* **Execution:** Run the executable with the `--file` argument pointing to your file:
 `pcaps -f <filepath>`
 
-`pcaps --help`
+
+#### 3\. Desktop Application (Standalone GUI)
+
+For users who prefer a dedicated, cross-platform graphical application.
+
+  * **Installation:** Download the installer/binary for your operating system (Windows, macOS, Linux) from the [Releases page](https://github.com/sankooc/vs-shark/releases).
+  * **Usage:** Launch the application and use the file dialog to open your PCAP file for analysis.
+
+#### 4\. Web Service (Browser Access)
+
+Launch a local web server to analyze a specific PCAP file and access the UI through your web browser. This is ideal for remote access or containerized environments.
+
+1.  **Execution:** Run the executable with the `--file` argument pointing to your file:
+    ```bash
+    pcap-web -f /path/to/your/traffic.pcap -p 8080
+    ```
+    (Note: Command name may vary based on your build. Check the executable output for the exact command.)
+2.  **Access:** Open your web browser and navigate to the address displayed in the console (typically `http://127.0.0.1:8080` or similar).
 
 
-### 🌐 Contribution
+### 🤝 Contributing
 
-We welcome contributions! If you'd like to contribute, please check out the guidelines (coming soon) and open a pull request or issue.
+We welcome all community involvement and appreciate your interest in making **`PcapViewer`** better\!
+
+Please take a moment to review our official guidelines before contributing:
+
+  * **Contribution Guidelines:** For details on submitting Pull Requests, reporting bugs, and suggesting new features, please see the **[`CONTRIBUTING.md`](./CONTRIBUTING.md)** file.
+  * **Code of Conduct:** To ensure a welcoming and inclusive community for everyone, all participants are expected to adhere to our **[`CODE_OF_CONDUCT.md`](./CODE_OF_CONDUCT.md)**.
 
 
+### 📜 License
 
-### 📝 Contact
-
-For any inquiries or suggestions, feel free to reach out to us (details coming soon).
-
+This project is licensed under the [MIT License](./LICENSE).
 
 
 

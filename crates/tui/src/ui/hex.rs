@@ -53,10 +53,8 @@ impl Widget for &mut HexView<'_> {
             let size: usize = cmp::min(8, len - _cursor);
             // let _data_range = _cursor.._cursor + size;
             let _data = &data[_cursor.._cursor + size];
-            if  (_cursor.._cursor + 16).contains(&range.start){
-                if let None = &head {
-                    head = Some(inx);
-                }
+            if  (_cursor.._cursor + 16).contains(&range.start) && head.is_none() {
+                head = Some(inx);
             }
 
             // let mut hex_style = get_protocol_color("tls");

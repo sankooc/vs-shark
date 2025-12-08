@@ -17,5 +17,3 @@ tui-tree-widget.workspace = true
 enum_dispatch.workspace = true
 
 syntect.workspace = true
-
-# tokio = { version = "1", features = ["full"] }

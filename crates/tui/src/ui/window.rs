@@ -45,7 +45,7 @@ fn create_tab_title(title: impl Display) -> Line<'static> {
 impl MainUI {
     pub fn new() -> Self {
         Self {
-            container: TabContainer::Frame(frames::App::new()),
+            container: TabContainer::Frame(frames::App::default()),
             active_tab: 0,
             progress: None,
         }
@@ -105,17 +105,16 @@ impl MainUI {
         right_paragraph.render(right_area, buf);
     }
 
-
     fn tab_select(&mut self, active_tab: usize) -> PcapUICommand {
         match active_tab {
             0 => {
                 self.active_tab = active_tab;
-                self.container = TabContainer::Frame(frames::App::new());
+                self.container = TabContainer::Frame(frames::App::default());
                 self.container.update(PcapEvent::Init)
             }
             1 => {
                 self.active_tab = active_tab;
-                self.container = TabContainer::Conversation(conversation::Conversation::new());
+                self.container = TabContainer::Conversation(conversation::Conversation::default());
                 self.container.update(PcapEvent::Init)
             }
             2 => {
@@ -125,6 +124,12 @@ impl MainUI {
             }
             _ => PcapUICommand::None,
         }
+    }
+}
+
+impl Default for MainUI {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
