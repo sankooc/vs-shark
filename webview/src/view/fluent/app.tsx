@@ -12,6 +12,7 @@ import {
   NavSubItemGroup,
 } from "@fluentui/react-components";
 import { BrowserRouter, useNavigate, Route, Routes, Navigate } from "react-router";
+import Header from './menu';
 
 import FrameComponent from "./frame";
 import ConversationComponent from "./conversation";
@@ -147,8 +148,9 @@ const Basic = () => {
 
   return (
     <BrowserRouter>
-      <div className="flex flex-row h-full w-full">
-        <Nav />
+      <div className="flex flex-column h-full w-full">
+        {/* <Nav /> */}
+        <Header />
         <div className="flex-1 flex flex-column main-content">
           <div className="flex-1 flex flex-column intern">
             <Routes>

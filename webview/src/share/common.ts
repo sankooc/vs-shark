@@ -8,6 +8,8 @@ export function deserialize<T>(content: string): T | undefined {
 }
 
 export enum ComType {
+  CLOSE_FILE = 'CLOSE_FILE',
+  OPEN_FILE = 'OPEN_FILE',
   RESET = "RESET",
   SERVER_READY = "ready",
   CLIENT_READY = "_ready",
@@ -283,4 +285,6 @@ export interface PcapState {
   httpList: (data: any) => Promise<IListResult<IVHttpConnection>>;
   httpDetail: (index: number) => Promise<IHttpDetail[]>
   stat: (request: StatRequest) => Promise<any> ;
+  selectFile: () => Promise<void>;
+  closeFile: () => Promise<void>;
 }

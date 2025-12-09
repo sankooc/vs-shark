@@ -157,5 +157,13 @@ export const useStore = create<PcapState>()((set) => {
       const req = new ComMessage(ComType.STAT_REQ, request);
       return doRequest<any[]>(req);
     },
+    selectFile: () => {
+      // const req = new ComMessage(ComType.SELECT_FILE, {});
+      // return doRequest<void>(req);
+    },
+    closeFile: () => {
+      const req = new ComMessage(ComType.CLOSE_FILE, {});
+      doRequest<void>(req);
+    }
   };
 });
