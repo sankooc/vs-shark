@@ -285,6 +285,6 @@ export interface PcapState {
   httpList: (data: any) => Promise<IListResult<IVHttpConnection>>;
   httpDetail: (index: number) => Promise<IHttpDetail[]>
   stat: (request: StatRequest) => Promise<any> ;
-  selectFile: () => Promise<void>;
+  openFile: () => Promise<void>;
   closeFile: () => Promise<void>;
 }

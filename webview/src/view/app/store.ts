@@ -157,13 +157,14 @@ export const useStore = create<PcapState>()((set) => {
       const req = new ComMessage(ComType.STAT_REQ, request);
       return doRequest<any[]>(req);
     },
-    selectFile: () => {
-      // const req = new ComMessage(ComType.SELECT_FILE, {});
-      // return doRequest<void>(req);
+    openFile: async () => {
+      const req = new ComMessage(ComType.OPEN_FILE, {});
+      emitMessage(req);
     },
-    closeFile: () => {
-      const req = new ComMessage(ComType.CLOSE_FILE, {});
-      doRequest<void>(req);
+    closeFile: async () => {
+      const req = new ComMessage(ComType.RESET, {});
+      emitMessage(req);
+      // doRequest<void>(req);
     }
   };
 });

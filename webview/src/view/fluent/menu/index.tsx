@@ -1,4 +1,3 @@
-import * as React from "react";
 import type { JSXElement } from "@fluentui/react-components";
 import {
     MenuList,
@@ -9,52 +8,126 @@ import {
     Button,
 } from "@fluentui/react-components";
 import {
-    EditRegular,
-    EditFilled,
     bundleIcon,
-    CutRegular,
-    CutFilled,
-    ClipboardPasteRegular,
-    ClipboardPasteFilled,
-    DeleteFilled,
-    DeleteRegular,
     FolderOpenRegular,
+    DocumentRegular,
+    DocumentFilled,
+    FolderOpenFilled,
+    ArrowExitRegular,
+    ArrowExitFilled,
+    DataPieFilled,
+    DataPieRegular,
+    ContentViewFilled,
+    ContentViewRegular,
 } from "@fluentui/react-icons";
+import { usePcapStore } from "../../context";
+import { PcapState } from "../../../share/common";
+import { ConversationIcon, DNSIcon, FrameIcon, HttpIcon, OverviewIcon, TLSIcon, UDPTabIcon } from "../common";
+import { useNavigate } from "react-router";
 
-const EditIcon = bundleIcon(EditFilled, EditRegular);
-const CutIcon = bundleIcon(CutFilled, CutRegular);
-const PasteIcon = bundleIcon(ClipboardPasteFilled, ClipboardPasteRegular);
-const DeleteIcon = bundleIcon(DeleteFilled, DeleteRegular);
+const DocIcon = bundleIcon(DocumentFilled, DocumentRegular)
+const OpenIcon = bundleIcon(FolderOpenFilled, FolderOpenRegular);
+const CloseIcon = bundleIcon(ArrowExitFilled, ArrowExitRegular);
+
+const ViewIcon = bundleIcon(ContentViewFilled, ContentViewRegular);
+
+const StaIcon = bundleIcon(DataPieFilled, DataPieRegular);
 
 export default function MultilineItems(): JSXElement {
-    if (import.meta.env.DEV) {
-        console.log(import.meta.env.VITE_BUILD_ALL);
+    const navigate = useNavigate();
+    const info = usePcapStore((state: PcapState) => state.fileinfo);
+    let canSelectFile = false;
+    if (import.meta.env) {
+        canSelectFile = import.meta.env.VITE_BUILD_ALL === 'true' || import.meta.env.VITE_BUILD_GUI === 'true';
     }
+    const toRoute = (path: string) => {
+        return () => {
+            navigate(path);
+        }
+    }
+    const closeFile = usePcapStore((state: PcapState) => state.closeFile);
+    const openFile = usePcapStore((state: PcapState) => state.openFile);
+    
+    if(!info){
+        if(!canSelectFile){
+            return <></>
+        }
+        return (
+            <div className="flex flex-row items-center" style={{ borderBottom: '1px solid #FFD' }}>
+                <Menu>
+                    <MenuTrigger>
+                        <Button shape="square" size="small" appearance="transparent" icon={<DocIcon />}>File</Button>
+                    </MenuTrigger>
+                    <MenuPopover>
+                        <MenuList>
+                            <MenuItem subText="Select pcap file" icon={<OpenIcon />} onClick={openFile}>
+                                Open
+                            </MenuItem>
+                        </MenuList>
+                    </MenuPopover>
+                </Menu>
+            </div>
+        );
+    }
+
     return (
-        <div className="flex flex-row items-center">
-            {/* <img src="icon32.png" alt="File menu" /> */}
-        <Menu>
-            <MenuTrigger>
-                <Button shape="square" size="medium" appearance="transparent" icon={<FolderOpenRegular />}>File</Button>
-            </MenuTrigger>
-            <MenuPopover>
-                <MenuList>
-                    <MenuItem subText="Open File" icon={<CutIcon />}>
-                        Open
-                    </MenuItem>
-                    <MenuItem subText="Close File" icon={<PasteIcon />}>
-                        Close
-                    </MenuItem>
-                    <MenuItem subText="Edit file" icon={<EditIcon />} disabled>
-                        Edit
-                    </MenuItem>
-                    <MenuItem subText="Delete file" icon={<DeleteIcon />}>
-                        Delete
-                    </MenuItem>
-                </MenuList>
-            </MenuPopover>
-        </Menu>
-            
+        <div className="flex flex-row items-center" style={{ borderBottom: '1px solid #FFD' }}>
+            {canSelectFile?<Menu>
+                <MenuTrigger>
+                    <Button shape="square" size="small" appearance="transparent" icon={<DocIcon />}>File</Button>
+                </MenuTrigger>
+                <MenuPopover>
+                    <MenuList>
+                        <MenuItem subText="Select pcap file" icon={<OpenIcon />} onClick={openFile} disabled>
+                            Open
+                        </MenuItem>
+                        <MenuItem subText="Close File" icon={<CloseIcon />} onClick={closeFile}>
+                            Close
+                        </MenuItem>
+                    </MenuList>
+                </MenuPopover>
+            </Menu> : null
+            }
+            <Menu>
+                <MenuTrigger>
+                    <Button shape="square" size="small" appearance="transparent" icon={<ViewIcon />}>View</Button>
+                </MenuTrigger>
+                <MenuPopover>
+                    <MenuList>
+                        <MenuItem icon={<OverviewIcon />} onClick={toRoute('/overview')}>
+                            Overview
+                        </MenuItem>
+                        <MenuItem icon={<FrameIcon />} onClick={toRoute('/')}>
+                            Frames
+                        </MenuItem>
+                    </MenuList>
+                </MenuPopover>
+            </Menu>
+            <Menu>
+                <MenuTrigger>
+                    <Button shape="square" size="small" appearance="transparent" icon={<StaIcon />}>Statistic</Button>
+                </MenuTrigger>
+                <MenuPopover>
+                    <MenuList>
+                        <MenuItem icon={<ConversationIcon />} onClick={toRoute('/conversations')}>
+                            TCP
+                        </MenuItem>
+                        <MenuItem icon={<UDPTabIcon />} onClick={toRoute('/udp')}>
+                            UDP
+                        </MenuItem>
+                        <MenuItem icon={<HttpIcon />} onClick={toRoute('/https')}>
+                            HTTP
+                        </MenuItem>
+                        <MenuItem icon={<TLSIcon />} onClick={toRoute('/tlslist')}>
+                            TLS
+                        </MenuItem>
+                        <MenuItem icon={<DNSIcon />} onClick={toRoute('/dns')}>
+                            DNS
+                        </MenuItem>
+                    </MenuList>
+                </MenuPopover>
+            </Menu>
+
         </div>
     );
 };

@@ -114,5 +114,9 @@ export const useStore = create<PcapState>()((set) => {
       const { field } = request;
       return fetch(`/api/stat/${field}`).then((response) => response.json());
     },
+    openFile: async () => {
+    },
+    closeFile: async () => {
+    }
   };
 });
