@@ -19,10 +19,7 @@ use crate::{
         concept::{
             ConversationCriteria, CounterItem, DNSRecord, DNSResponse, FrameIndex, HttpCriteria, HttpMessageDetail, IndexHashMap, LineChartData, NameService, TLSConversation,
             TLSItem, UDPConversation, VConnection, VConversation, VHttpConnection,
-        },
-        connection::{TcpFlagField, TlsData},
-        core::HttpConntect,
-        util::date_str,
+        }, connection::{TcpFlagField, TlsData}, core::HttpConntect, file::FileMetadata, util::date_str
     },
     files::{pcap::PCAP, pcapng::PCAPNG},
     protocol::{application::dns, detail, parse, summary},
@@ -287,6 +284,9 @@ impl<T> Instance<T> {
     pub fn context(&self) -> &Context {
         &self.ctx
     }
+    pub fn metadata(&self) -> &FileMetadata{
+        &self.ctx.metadata
+    }
 
     pub fn frame(&self, index: usize) -> Option<&Frame> {
         self.ctx.list.get(index)
@@ -327,11 +327,9 @@ where
                     reader.forward(8);
                     let snaplen = reader.read32(false)?;
                     let link_type = reader.read32(false)?;
-                    self.ctx.metadata = file::FileMetadata::init_pcap(major, minor, snaplen, link_type)
+                    self.ctx.metadata = file::FileMetadata::init_pcap(major, minor, snaplen, link_type, &mut reader)
                 }
                 "a0d0d0a" => {
-                    // self.file_type = FileType::PCAPNG;
-                    // self.ctx.file_type = FileType::PCAPNG;
                     self.ctx.metadata = file::FileMetadata::init_pcapng();
                 }
                 _ => bail!(DataError::UnsupportFileType),

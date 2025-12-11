@@ -33,7 +33,7 @@ impl PCAP {
         f.range = Some(reader.cursor..reader.cursor + captured as usize);
 
         if let FileMetadata::Pcap(meta) = &ctx.metadata {
-            Ok((captured as usize + reader.cursor, Some(f), meta.protocol(reader)))
+            Ok((captured as usize + reader.cursor, Some(f), meta.protocol))
         } else {
             Ok((captured as usize + reader.cursor, Some(f), Protocol::ETHERNET))
         }

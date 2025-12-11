@@ -54,7 +54,7 @@ export default function MultilineItems(): JSXElement {
         }
         return (
             <div className="flex flex-row items-center" style={{ borderBottom: '1px solid #FFD' }}>
-                <Menu>
+                <Menu openOnHover>
                     <MenuTrigger>
                         <Button shape="square" size="small" appearance="transparent" icon={<DocIcon />}>File</Button>
                     </MenuTrigger>
@@ -123,6 +123,18 @@ export default function MultilineItems(): JSXElement {
                         </MenuItem>
                         <MenuItem icon={<DNSIcon />} onClick={toRoute('/dns')}>
                             DNS
+                        </MenuItem>
+                    </MenuList>
+                </MenuPopover>
+            </Menu>
+            <Menu openOnHover>
+                <MenuTrigger>
+                    <Button shape="square" size="small" appearance="transparent" icon={<ViewIcon />}>Help</Button>
+                </MenuTrigger>
+                <MenuPopover>
+                    <MenuList>
+                        <MenuItem icon={<OverviewIcon />}>
+                            Properties
                         </MenuItem>
                     </MenuList>
                 </MenuPopover>

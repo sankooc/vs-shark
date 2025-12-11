@@ -4,6 +4,7 @@ import { _log } from "../util";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from '@tauri-apps/api/event';
 import {
+  FileMetadata,
   IHttpDetail,
   PcapFile,
   PcapState,
@@ -106,6 +107,9 @@ export const useStore = create<PcapState>()((set) => {
     openFile: async () => {
     },
     closeFile: async () => {
+    },
+    metadata: (): Promise<FileMetadata> => {
+      throw new Error();
     }
   };
 });

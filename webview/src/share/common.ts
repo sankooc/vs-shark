@@ -10,6 +10,8 @@ export function deserialize<T>(content: string): T | undefined {
 export enum ComType {
   CLOSE_FILE = 'CLOSE_FILE',
   OPEN_FILE = 'OPEN_FILE',
+  METADATA_REQ = 'METADATA_REQ',
+  METADATA_RES = 'METADATA_RES',
   RESET = "RESET",
   SERVER_READY = "ready",
   CLIENT_READY = "_ready",
@@ -198,6 +200,10 @@ export interface IHttpDetail {
   content_type?: string,
 }
 
+export interface FileMetadata {
+  major: number;
+}
+
 export const compute = (page: number, size: number): Pagination => {
   if (page < 1) {
     return { start: 0, size: size };
@@ -287,4 +293,5 @@ export interface PcapState {
   stat: (request: StatRequest) => Promise<any> ;
   openFile: () => Promise<void>;
   closeFile: () => Promise<void>;
+  metadata: () => Promise<FileMetadata>;
 }

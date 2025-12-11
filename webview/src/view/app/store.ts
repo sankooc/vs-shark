@@ -6,6 +6,7 @@ import {
   ComMessage,
   ComType,
   deserialize,
+  FileMetadata,
   IFrameSelect,
   IHttpDetail,
   ITLSConnect,
@@ -90,6 +91,7 @@ export const useStore = create<PcapState>()((set) => {
       case ComType.DNS_RCD_CONNECTIONS:
       case ComType.TLS_CONNECTIONS:
       case ComType.TLS_CONVERSATION_ITEMS:
+      case ComType.METADATA_RES:
         emitter.emit(id, deserialize(body));
         break;
       case ComType.FRAME_SCOPE_RES:
@@ -164,7 +166,10 @@ export const useStore = create<PcapState>()((set) => {
     closeFile: async () => {
       const req = new ComMessage(ComType.RESET, {});
       emitMessage(req);
-      // doRequest<void>(req);
+    },
+    metadata: (): Promise<FileMetadata> => {
+      const req = new ComMessage(ComType.METADATA_REQ, {});
+      return doRequest<FileMetadata>(req);
     }
   };
 });

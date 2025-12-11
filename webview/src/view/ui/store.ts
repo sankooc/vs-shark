@@ -3,6 +3,7 @@ import { create } from "zustand";
 // import { onMessage, emitMessage } from "../common/connect";
 import { _log } from "../util";
 import {
+  FileMetadata,
   IHttpDetail,
   PcapFile,
   PcapState,
@@ -117,6 +118,9 @@ export const useStore = create<PcapState>()((set) => {
     openFile: async () => {
     },
     closeFile: async () => {
+    },
+    metadata: (): Promise<FileMetadata> => {
+      throw new Error();
     }
   };
 });

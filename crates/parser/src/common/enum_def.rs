@@ -6,6 +6,7 @@
 use std::net::Ipv4Addr;
 
 
+use serde::Serialize;
 use strum_macros::{Display, EnumString};
 use thiserror::Error;
 
@@ -59,7 +60,7 @@ pub enum FileType {
     NONE,
 }
 
-#[derive(Default, Display, Debug, Clone, Copy)]
+#[derive(Default, Display, Debug, Clone, Copy, Serialize)]
 pub enum Protocol {
     #[default]
     None,
