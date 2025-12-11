@@ -1,9 +1,7 @@
-use std::ops::Range;
 #[cfg(test)]
 use std::{fs, str::from_utf8};
 
-use pcap::common::{ResourceLoader, concept::Field};
-use util::{file_seek, file_seeks};
+use pcap::common::{concept::Field};
 
 // use shark::common::{base::PacketContext, concept::Field};
 
@@ -40,25 +38,25 @@ pub fn print_fields(field: &[Field]) {
     }
 }
 
-#[cfg(test)]
-pub struct LocalResource {
-    filepath: String,
-}
-#[cfg(test)]
-impl LocalResource {
-    pub fn new(filepath: &str) -> Self {
-        Self {
-            filepath: filepath.to_string(),
-        }
-    }
-}
-#[cfg(test)]
-impl ResourceLoader for LocalResource {
-    fn load(&self, range: &Range<usize>) -> anyhow::Result<Vec<u8>> {
-        file_seek(&self.filepath, range)
-    }
+// #[cfg(test)]
+// pub struct LocalResource {
+//     filepath: String,
+// }
+// #[cfg(test)]
+// impl LocalResource {
+//     pub fn new(filepath: &str) -> Self {
+//         Self {
+//             filepath: filepath.to_string(),
+//         }
+//     }
+// }
+// #[cfg(test)]
+// impl ResourceLoader for LocalResource {
+//     fn load(&self, range: &Range<usize>) -> anyhow::Result<Vec<u8>> {
+//         file_seek(&self.filepath, range)
+//     }
 
-    fn loads(&self, ranges: &[Range<usize>]) -> anyhow::Result<Vec<u8>> {
-        file_seeks(&self.filepath, ranges)
-    }
-}
+//     fn loads(&self, ranges: &[Range<usize>]) -> anyhow::Result<Vec<u8>> {
+//         file_seeks(&self.filepath, ranges)
+//     }
+// }

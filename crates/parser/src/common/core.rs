@@ -12,18 +12,14 @@ use std::{
 use anyhow::{bail, Result};
 
 use crate::common::{
-    concept::{
+    ResourceLoader, concept::{
         ConnectionIndex, Conversation, ConversationKey, CounterItem, FrameIndex, HttpConnectIndex, HttpCriteria, HttpMessageDetail, LineChartData, MessageIndex, Timestamp,
         VHttpConnection,
-    },
-    enum_def::{AddressField, Protocol},
-    util::date_str,
-    ResourceLoader,
+    }, enum_def::{AddressField, Protocol}, file::FileMetadata, util::date_str
 };
 
 use super::{
     connection::{ConnectState, Connection, Endpoint, TCPStat, TmpConnection},
-    enum_def::FileType,
     io::DataSource,
     quick_hash, EthernetCache, FastHashMap, Frame, NString,
 };
@@ -241,8 +237,9 @@ impl HttpConntect {
 
 #[derive(Default)]
 pub struct Context {
-    pub file_type: FileType,
-    pub link_type: u32,
+    // pub file_type: FileType,
+    // pub link_type: u32,
+    pub metadata: FileMetadata,
     pub list: Vec<Frame>,
     pub counter: FrameIndex,
     // tcp

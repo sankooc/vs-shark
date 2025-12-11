@@ -72,7 +72,7 @@ export default function MultilineItems(): JSXElement {
 
     return (
         <div className="flex flex-row items-center" style={{ borderBottom: '1px solid #FFD' }}>
-            {canSelectFile?<Menu>
+            {canSelectFile?<Menu openOnHover>
                 <MenuTrigger>
                     <Button shape="square" size="small" appearance="transparent" icon={<DocIcon />}>File</Button>
                 </MenuTrigger>
@@ -88,7 +88,7 @@ export default function MultilineItems(): JSXElement {
                 </MenuPopover>
             </Menu> : null
             }
-            <Menu>
+            <Menu openOnHover>
                 <MenuTrigger>
                     <Button shape="square" size="small" appearance="transparent" icon={<ViewIcon />}>View</Button>
                 </MenuTrigger>
@@ -103,7 +103,7 @@ export default function MultilineItems(): JSXElement {
                     </MenuList>
                 </MenuPopover>
             </Menu>
-            <Menu>
+            <Menu openOnHover>
                 <MenuTrigger>
                     <Button shape="square" size="small" appearance="transparent" icon={<StaIcon />}>Statistic</Button>
                 </MenuTrigger>

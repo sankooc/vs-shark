@@ -1,10 +1,24 @@
-import { defineConfig, loadEnv } from 'vite'
+import { defineConfig, loadEnv, type ConfigEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 import { resolve } from 'path'
 import wasm from "vite-plugin-wasm";
 import topLevelAwait from "vite-plugin-top-level-await";
+import fs from 'fs';
+import path from 'path';
 
-export default defineConfig(({ mode }) => {
+const getPackageVersion = (): string => {
+  const packageJsonPath = path.resolve(process.cwd(), 'package.json');
+  try {
+    if (fs.existsSync(packageJsonPath)) {
+      const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
+      return JSON.stringify(packageJson.version);
+    }
+  } catch { }
+  return '0.0.0';
+}
+
+export default defineConfig((props: ConfigEnv) => {
+  const { mode } = props;
   const env = loadEnv(mode, process.cwd())
 
   const allEntries = {
@@ -16,7 +30,7 @@ export default defineConfig(({ mode }) => {
     main: resolve(__dirname, 'app.html'),
   }
 
-  const getEntry = () => {
+  const getEntry = (): Record<string, string> => {
     if (env.VITE_BUILD_ALL === 'true') return allEntries
     if (env.VITE_BUILD_SOCKET === 'true') {
       return {
@@ -35,7 +49,7 @@ export default defineConfig(({ mode }) => {
     return allEntries;
   }
 
-  const getOutput = () => {
+  const getOutput = (): string => {
     if (env.VITE_BUILD_ALL === 'true') return '../dist/web'
     if (env.VITE_BUILD_VSCODE === 'true') {
       return './../plugin/dist/web';
@@ -48,8 +62,11 @@ export default defineConfig(({ mode }) => {
     }
     return './dist';
   }
-
+  
   return {
+    define: {
+      'import.meta.env.VITE_APP_VERSION': getPackageVersion(),
+    },
     plugins: [
       react(),
       wasm(),

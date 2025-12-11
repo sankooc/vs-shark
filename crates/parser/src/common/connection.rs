@@ -343,7 +343,7 @@ impl Endpoint {
             }
             self.next = sequence + _tcp_len;
             statistic.clean_throughput = statistic.throughput;
-            return (TCPDetail::NEXT, statistic);
+            (TCPDetail::NEXT, statistic)
         } else {
             if sequence == self.next - 1 && (_tcp_len == 1 || _tcp_len == 0) && stat.state.exact_match(TCPFLAG::ACK) {
                 self._checksum = stat.crc;
@@ -354,7 +354,7 @@ impl Endpoint {
                 return (TCPDetail::RETRANSMISSION, statistic);
             }
             statistic.invalid = 1;
-            return (TCPDetail::DUMP, statistic);
+            (TCPDetail::DUMP, statistic)
         }
     }
 

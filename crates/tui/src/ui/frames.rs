@@ -53,7 +53,7 @@ impl TableStyle<FrameInfo> for FrameStyle {
         rs.push(data.info.clone());
         rs
     }
-    fn get_block(&self) -> Option<Block> {
+    fn get_block(&self) -> Option<Block<'_>> {
         None
     }
 
