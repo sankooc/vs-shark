@@ -15,13 +15,14 @@ use tokio::{
     time::sleep,
 };
 
-use crate::{file_seek, file_seeks};
+use crate::{PFile, file_seek, file_seeks};
 
 pub enum UICommand {
     Quit,
     None,
     OpenFile(oneshot::Sender<Result<(), String>>, String),
     CloseFile(oneshot::Sender<Result<(), String>>),
+    TouchFile(oneshot::Sender<Option<(PFile, ProgressStatus)>>),
     Metadata(oneshot::Sender<Option<Metadata>>),
     Frames(oneshot::Sender<ListResult<FrameInfo>>, Criteria),
     Frame(oneshot::Sender<FrameResult>, FrameIndex),
@@ -157,14 +158,12 @@ impl Engine {
             let _ = engine_tx.send(EngineCommand::Error("file already opened".to_string())).await;
             bail!("instance exists")
         }
-        // println!("start parse");
         let instance = create_instance(filepath.to_string(), buf_size);
         let instance_clone = Arc::downgrade(&instance);
         self.ins = Some(instance);
         let watch = self.watch;
         let fname = filepath.to_string();
         let handle = tokio::spawn(async move {
-            // println!("start thread");
             let path = Path::new(&fname);
             if !path.exists() {
                 let _ = engine_tx.send(EngineCommand::Error("file not exist".to_string())).await;
@@ -180,7 +179,6 @@ impl Engine {
 
             let mut cursor = 0;
             let mut last_modify = 0;
-            // println!("start load");
             loop {
                 if let Some(ins_arc) = instance_clone.upgrade() {
                     let (total, _last_modify) = if let Ok(metadata) = file.metadata().await {
@@ -212,7 +210,6 @@ impl Engine {
                             if let Some(mut prog) = pf {
                                 prog.total = total as usize;
                                 prog.cursor = cursor;
-                                println!("get instance start read from {prog:?}");
                                 let _ = engine_tx.send(EngineCommand::Progress(prog)).await;
                             }
                             continue;
@@ -249,9 +246,20 @@ impl Engine {
                     }
                     let _ = tx.send(Ok(()));
                 }
+                UICommand::TouchFile(tx) => {
+                    if let Some(intance) = &self.ins {
+                        let filepath = intance.lock().await.loader().filepath.clone();
+                        let pf = PFile::new(filepath.as_str());
+                        let progress = instance.lock().await.progress();
+                        let _ = tx.send(pf.map(|f| (f, progress)));
+                    } else {
+                        let _ = tx.send(None);
+                    }
+                }
+                
                 UICommand::Metadata(tx) => {
                     let rs = instance.lock().await.context().get_metadata();
-                    tx.send(rs);
+                    let _ = tx.send(rs);
                 }
                 UICommand::Frames(tx, cri) => {
                     let rs = instance.lock().await.frames_by(cri);
@@ -354,6 +362,11 @@ impl UIEngine {
         let _ = self.gui_tx.send(UICommand::OpenFile(tx, filepath)).await;
         rx.await.map_err(|e| e.to_string())?
     }
+    pub async fn touch_file(&self) -> Option<(PFile, ProgressStatus)> {
+        let (tx, rx) = oneshot::channel();
+        let _ = self.gui_tx.send(UICommand::TouchFile(tx)).await;
+        rx.await.ok().flatten()
+    }
     pub async fn close_file(&self) -> Result<(), String> {
         let (tx, rx) = oneshot::channel();
         let _ = self.gui_tx.send(UICommand::CloseFile(tx)).await;
@@ -363,7 +376,7 @@ impl UIEngine {
     pub async fn metadata(&self) -> Option<Metadata> {
         let (tx, rx) = oneshot::channel();
         let _ = self.gui_tx.send(UICommand::Metadata(tx)).await;
-        rx.await.unwrap()
+        rx.await.ok().flatten()
     }
 
     pub async fn get_list(&self) -> String {
@@ -436,21 +449,6 @@ impl UIEngine {
         let _ = self.gui_tx.send(UICommand::HTTPDetail(tx, index)).await;
         rx.await.unwrap()
     }
-
-    // pub async fn run(&mut self) {
-    //     loop {
-    //         if let Some(msg) = self.rx.recv().await {
-    //             match msg {
-    //                 EngineCommand::Quit => break,
-    //                 EngineCommand::None => {}
-    //                 EngineCommand::Progress(_) => {}
-    //             }
-    //         } else {
-    //             println!("waiting next");
-    //             thread::sleep(Duration::from_millis(500));
-    //         }
-    //     }
-    // }
 }
 
 pub fn build_engine() -> (UIEngine, Engine, mpsc::Receiver<EngineCommand>) {

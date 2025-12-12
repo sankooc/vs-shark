@@ -12,7 +12,7 @@ use pcap_web::{control, routes::init_routes, web::WebApplication};
 use tokio::runtime::Runtime;
 
 async fn start(address: IpAddr, port: u16, target: String) -> std::io::Result<()> {
-    let folder = include_dir::include_dir!("dist/socket");
+    let folder = include_dir::include_dir!("dist/socket"); 
     let (ui, mut engine, _) = util::core::build_engine();
     thread::spawn(move || {
         let rt = Runtime::new().unwrap();

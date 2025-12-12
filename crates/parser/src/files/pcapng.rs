@@ -105,10 +105,9 @@ impl PCAPNG {
             "0x00000005" => {
                 // pcapng statistics block
                 let mut reader2 = reader.slice_as_reader(packet_size)?;
-                let interface_id = reader2.read32(false)?;
-                let ts_high = reader2.read32(false)?;
-                let ts_low = reader2.read32(false)?;
-                println!("Statistics Block - Interface ID: {}, Timestamp: {}", interface_id, (ts_high as u64) << 32 | (ts_low as u64));
+                let _interface_id = reader2.read32(false)?;
+                let _ts_high = reader2.read32(false)?;
+                let _ts_low = reader2.read32(false)?;
                 let mut data = FileStatistics::default();
                 option_reader(&mut reader2, &mut data);
                 if let FileMetadata::PcapNg(meta) = &mut ctx.metadata {

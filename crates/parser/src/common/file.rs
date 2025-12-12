@@ -211,7 +211,6 @@ pub struct FileStatistics {
 }
 impl OptionParser for FileStatistics {
     fn parse_option(&mut self, option_code: u16, data: &[u8]) {
-        // println!("option code: {}, content: [{}]", option_code, data.len());
         match option_code {
             2 => {
                 self.isb_starttime = parse_ts(data);

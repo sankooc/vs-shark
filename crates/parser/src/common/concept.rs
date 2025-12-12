@@ -80,19 +80,13 @@ impl CounterItem {
     }
 }
 
-#[derive(Serialize, Debug)]
+#[derive(Serialize, Debug, Clone, Default)]
 pub struct ProgressStatus {
     pub total: usize,
     pub cursor: usize,
     pub count: usize,
     pub left: usize,
 }
-
-// impl ProgressStatus {
-//     pub fn to_json(&self) -> String {
-//         serde_json::to_string(self).unwrap()
-//     }
-// }
 
 #[derive(Serialize)]
 pub struct ListResult<T> {

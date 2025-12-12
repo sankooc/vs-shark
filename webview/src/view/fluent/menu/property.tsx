@@ -102,7 +102,11 @@ export default function Component(props: Props) {
     const metadata = usePcapStore(state => state.metadata)
     useEffect(() => {
         if (props.open) {
-            metadata().then(setState);
+            metadata().then((rs) => {
+                console.log('metadata');
+                console.log(rs);
+                return rs;
+            }).then(setState);
         }
     }, [props.open])
     if (!state) {

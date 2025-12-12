@@ -23,10 +23,9 @@ const httpdetail_convert = (data: any): IHttpDetail => {
 
 export const useStore = create<PcapState>()((set) => {
   _log("create gui store");
-
   listen<PcapFile>('file_touch', (event) => {
     const fileinfo = event.payload;
-    set((state) => ({ ...state, fileinfo}));
+    set((state) => ({ ...state, fileinfo }));
   });
 
   listen<boolean>('parse_complete', (event) => {
@@ -44,8 +43,19 @@ export const useStore = create<PcapState>()((set) => {
   });
   listen<string>('file_close', () => {
     _log('file closed');
-    set((state) => ({ ...state, progress: undefined }));
+    set((state) => ({ ...state, progress: undefined, fileinfo: undefined }));
   });
+  try {
+    invoke("touch").then((rs) => {
+      let arr = rs as any[];
+      if (arr && arr.length > 1) {
+        const [fileinfo, progress] = arr;
+        set((state) => ({ ...state, fileinfo, progress }));
+      }
+    })
+  } catch (e) {
+    console.error(e);
+  }
   return {
     sendReady: () => {
       // emitMessage(ComMessage.new(ComType.CLIENT_READY, Date.now()));
@@ -105,11 +115,17 @@ export const useStore = create<PcapState>()((set) => {
       return invoke("stat", { field }).then((rs) => (JSON.parse(rs as string) as any[]));
     },
     openFile: async () => {
+      return invoke("open_file_dialog");
     },
     closeFile: async () => {
+      return invoke("close_file_dialog");
     },
     metadata: (): Promise<FileMetadata> => {
-      throw new Error();
+      return invoke("metadata").then((rs) => {
+        console.log(rs);
+        return rs as FileMetadata;
+      });
+      // throw new Error();
     }
   };
 });

@@ -278,6 +278,7 @@ pub struct Instance<T> {
     ds: DataSource,
     pub ctx: Context,
     last: usize,
+    progress: ProgressStatus,
 }
 
 impl<T> Instance<T> {
@@ -287,9 +288,11 @@ impl<T> Instance<T> {
     pub fn metadata(&self) -> &FileMetadata{
         &self.ctx.metadata
     }
-
     pub fn frame(&self, index: usize) -> Option<&Frame> {
         self.ctx.list.get(index)
+    }
+    pub fn progress(&self) -> ProgressStatus {
+        self.progress.clone()
     }
 }
 
@@ -306,10 +309,11 @@ where
             // file_type: FileType::NONE,
             ctx: Context::new(),
             last: 0,
+            progress: ProgressStatus::default(),
         }
     }
 
-    pub fn loader(&self) -> &dyn ResourceLoader {
+    pub fn loader(&self) -> &T {
         &self.loader
     }
 
@@ -376,6 +380,7 @@ where
         let _cursor = self.last;
         let datasource = &mut self.ds;
         datasource.trim(_cursor)?;
+        self.progress = rs.clone();
         Ok(rs)
     }
     pub fn parse_packet(ctx: &mut Context, mut frame: Frame, ds: &DataSource, proto: Protocol) {
@@ -418,7 +423,7 @@ where
         self.ds.destroy();
         self.ctx = Context::new();
         self.last = 0;
-        // self.file_type = FileType::NONE;
+        self.progress = ProgressStatus::default();
         true
     }
 }
