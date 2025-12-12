@@ -34,13 +34,20 @@ impl FileMetadata {
             FileMetadata::PcapNg(_) => FileType::PCAPNG,
         }
     }
-    pub fn to_json(&self) -> Option<String> {
+    pub fn get(&self) -> Option<Metadata> {
         match self {
             FileMetadata::None => None,
-            FileMetadata::Pcap(meta) => serde_json::to_string(&Metadata::from(meta)).ok(),
-            FileMetadata::PcapNg(meta) => serde_json::to_string(&Metadata::from(meta)).ok(),
+            FileMetadata::Pcap(meta) => Some(Metadata::from(meta)),
+            FileMetadata::PcapNg(meta) => Some(Metadata::from(meta))
         }
     }
+    // pub fn to_json(&self) -> Option<String> {
+    //     match self {
+    //         FileMetadata::None => None,
+    //         FileMetadata::Pcap(meta) => serde_json::to_string(&Metadata::from(meta)).ok(),
+    //         FileMetadata::PcapNg(meta) => serde_json::to_string(&Metadata::from(meta)).ok(),
+    //     }
+    // }
 }
 
 impl FileMetadata {
@@ -57,7 +64,7 @@ impl FileMetadata {
 pub struct PcapNg {
     pub major: u16,
     pub minor: u16,
-    pub captrue: Option<CaptureInterface>,
+    pub capture: Option<CaptureInterface>,
     pub interfaces: Vec<InterfaceDescription>,
     pub statistics: Option<FileStatistics>,
 }
@@ -232,12 +239,15 @@ impl OptionParser for FileStatistics {
 
 
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Default, Serialize)]
 pub struct Metadata {
     pub major: u16,
     pub minor: u16,
+    pub start: Option<String>,
+    pub end: Option<String>,
+    pub elapsed: Option<String>,
     pub file_type: String,
-    pub captrue: Option<CaptureInterface>,
+    pub capture: Option<CaptureInterface>,
     pub interfaces: Vec<InterfaceDescription>,
 }
 
@@ -247,8 +257,9 @@ impl From<&PcapNg> for Metadata {
             file_type: "PCAPNG".to_string(),
             major: pcapng.major,
             minor: pcapng.minor,
-            captrue: pcapng.captrue.clone(),
+            capture: pcapng.capture.clone(),
             interfaces: pcapng.interfaces.clone(),
+            ..Default::default()
         }
     }
 }
@@ -262,8 +273,9 @@ impl From<&Pcap> for Metadata {
             file_type: "PCAP".to_string(),
             major: pcap.major,
             minor: pcap.minor,
-            captrue: None,
+            capture: None,
             interfaces: vec![inter],
+            ..Default::default()
         }
     }
 }

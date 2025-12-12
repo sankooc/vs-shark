@@ -42,7 +42,6 @@ export const useStore = create<PcapState>()((set, get) => {
   };
   return {
     loadData: async (pfile: PcapFile, data: Uint8Array) => {
-      _log('loadData', pfile);
       {
         const message = ComMessage.new(ComType.TOUCH_FILE, pfile);
         worker.postMessage(message);

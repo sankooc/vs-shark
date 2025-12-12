@@ -19,11 +19,17 @@ import {
     DataPieRegular,
     ContentViewFilled,
     ContentViewRegular,
+    AppsListDetailFilled,
+    AppsListDetailRegular,
 } from "@fluentui/react-icons";
 import { usePcapStore } from "../../context";
 import { PcapState } from "../../../share/common";
 import { ConversationIcon, DNSIcon, FrameIcon, HttpIcon, OverviewIcon, TLSIcon, UDPTabIcon } from "../common";
 import { useNavigate } from "react-router";
+import { useState } from "react";
+import Property from './property';
+import { StatusBar } from "../common";
+import './index.scss'
 
 const DocIcon = bundleIcon(DocumentFilled, DocumentRegular)
 const OpenIcon = bundleIcon(FolderOpenFilled, FolderOpenRegular);
@@ -32,9 +38,11 @@ const CloseIcon = bundleIcon(ArrowExitFilled, ArrowExitRegular);
 const ViewIcon = bundleIcon(ContentViewFilled, ContentViewRegular);
 
 const StaIcon = bundleIcon(DataPieFilled, DataPieRegular);
+const PropertyIcon = bundleIcon(AppsListDetailFilled, AppsListDetailRegular)
 
 export default function MultilineItems(): JSXElement {
     const navigate = useNavigate();
+    const [open, setOpen] = useState<boolean>(false)
     const info = usePcapStore((state: PcapState) => state.fileinfo);
     let canSelectFile = false;
     if (import.meta.env) {
@@ -53,8 +61,8 @@ export default function MultilineItems(): JSXElement {
             return <></>
         }
         return (
-            <div className="flex flex-row items-center" style={{ borderBottom: '1px solid #FFD' }}>
-                <Menu openOnHover>
+            <div className="flex flex-row items-center" style={{ borderBottom: '1px solid #FFD', padding: '3px 2px'}}>
+                <Menu openOnHover hoverDelay={0}>
                     <MenuTrigger>
                         <Button shape="square" size="small" appearance="transparent" icon={<DocIcon />}>File</Button>
                     </MenuTrigger>
@@ -70,9 +78,9 @@ export default function MultilineItems(): JSXElement {
         );
     }
 
-    return (
-        <div className="flex flex-row items-center" style={{ borderBottom: '1px solid #FFD' }}>
-            {canSelectFile?<Menu openOnHover>
+    return (<>
+        <div className="flex flex-row items-center" style={{ borderBottom: '1px solid #FFD', padding: '3px 5px' }}>
+            {canSelectFile?<Menu openOnHover hoverDelay={0}>
                 <MenuTrigger>
                     <Button shape="square" size="small" appearance="transparent" icon={<DocIcon />}>File</Button>
                 </MenuTrigger>
@@ -88,7 +96,7 @@ export default function MultilineItems(): JSXElement {
                 </MenuPopover>
             </Menu> : null
             }
-            <Menu openOnHover>
+            <Menu openOnHover hoverDelay={0}>
                 <MenuTrigger>
                     <Button shape="square" size="small" appearance="transparent" icon={<ViewIcon />}>View</Button>
                 </MenuTrigger>
@@ -103,12 +111,15 @@ export default function MultilineItems(): JSXElement {
                     </MenuList>
                 </MenuPopover>
             </Menu>
-            <Menu openOnHover>
+            <Menu openOnHover hoverDelay={0}>
                 <MenuTrigger>
                     <Button shape="square" size="small" appearance="transparent" icon={<StaIcon />}>Statistic</Button>
                 </MenuTrigger>
                 <MenuPopover>
                     <MenuList>
+                        <MenuItem icon={<PropertyIcon />} onClick={() => {setOpen(true)}}>
+                            Properties
+                        </MenuItem>
                         <MenuItem icon={<ConversationIcon />} onClick={toRoute('/conversations')}>
                             TCP
                         </MenuItem>
@@ -127,19 +138,10 @@ export default function MultilineItems(): JSXElement {
                     </MenuList>
                 </MenuPopover>
             </Menu>
-            <Menu openOnHover>
-                <MenuTrigger>
-                    <Button shape="square" size="small" appearance="transparent" icon={<ViewIcon />}>Help</Button>
-                </MenuTrigger>
-                <MenuPopover>
-                    <MenuList>
-                        <MenuItem icon={<OverviewIcon />}>
-                            Properties
-                        </MenuItem>
-                    </MenuList>
-                </MenuPopover>
-            </Menu>
-
+            <StatusBar/>
+            {/* <div style={{marginLeft: 'auto', alignSelf: 'center'}}>1123</div> */}
         </div>
+        <Property open={open} setOpen={setOpen}/>
+        </>
     );
 };

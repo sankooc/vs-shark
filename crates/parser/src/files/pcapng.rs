@@ -55,12 +55,12 @@ impl PCAPNG {
                     if section_len == 0xFFFFFFFFFFFFFFFF {
                         let mut cap = CaptureInterface::default();
                         option_reader(&mut reader2, &mut cap);
-                        meta.captrue = Some(cap);
+                        meta.capture = Some(cap);
                     } else if section_len > reader2.left() as u64 {
                     } else {
                         let mut cap = CaptureInterface::default();
                         option_reader(&mut reader2, &mut cap);
-                        meta.captrue = Some(cap);
+                        meta.capture = Some(cap);
                     }
 
                 }

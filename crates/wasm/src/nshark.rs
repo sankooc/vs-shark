@@ -57,7 +57,8 @@ impl WContext {
 
     #[wasm_bindgen]
     pub fn metadata(&self) -> Option<String> {
-        self.ctx.metadata().to_json()
+        let meta = self.ctx.context().get_metadata();
+        meta.and_then(|f| jsonlize(&f))
     }
 
     #[wasm_bindgen]

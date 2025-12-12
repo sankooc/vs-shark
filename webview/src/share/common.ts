@@ -201,7 +201,14 @@ export interface IHttpDetail {
 }
 
 export interface FileMetadata {
-  major: number;
+  major: number,
+  minor: number,
+  file_type: string,
+  start: string,
+  end: string,
+  elapsed: string,
+  capture: {application: string, os: string, hardware: string},
+  interfaces: {name: string, description: string, filter: string, protocol: string, os: string}[]
 }
 
 export const compute = (page: number, size: number): Pagination => {

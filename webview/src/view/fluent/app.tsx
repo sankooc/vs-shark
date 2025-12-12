@@ -15,7 +15,6 @@ import TLSConvList from './tls/sub';
 
 import { usePcapStore } from "../context";
 import LoadingComponent from './loading';
-import { StatusBar } from "./common";
 import { PcapState } from "../../share/common";
 
 // const useCSS = makeStyles({
@@ -41,8 +40,8 @@ const Basic = () => {
     <BrowserRouter>
       <div className="flex flex-column h-full w-full">
         <Header />
-        <div className="flex-1 flex flex-column main-content">
-          <div className="flex-1 flex flex-column intern">
+        {/* <div className="flex-1 flex flex-column main-content"> */}
+          <div className="flex-1 flex flex-column  main-content">
             <Routes>
               <Route path="/" index element={<FrameComponent />} />
               <Route path="/overview" element={<OverviewComponent />} />
@@ -58,8 +57,8 @@ const Basic = () => {
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </div>
-          <StatusBar />
-        </div>
+          {/* <StatusBar /> */}
+        {/* </div> */}
       </div>
     </BrowserRouter>
   );

@@ -14,8 +14,8 @@ use anyhow::{bail, Result};
 use crate::common::{
     ResourceLoader, concept::{
         ConnectionIndex, Conversation, ConversationKey, CounterItem, FrameIndex, HttpConnectIndex, HttpCriteria, HttpMessageDetail, LineChartData, MessageIndex, Timestamp,
-        VHttpConnection,
-    }, enum_def::{AddressField, Protocol}, file::FileMetadata, util::date_str
+        VHttpConnection, period,
+    }, enum_def::{AddressField, Protocol}, file::{FileMetadata, Metadata}, util::date_str
 };
 
 use super::{
@@ -264,6 +264,23 @@ pub struct Context {
 }
 
 impl Context {
+    pub fn get_metadata(&self) -> Option<Metadata> {
+        if let Some (mut meta) = self.metadata.get() {
+            if self.list.len() == 0 {
+                return Some(meta);
+            }
+            let _start = self.list.first().unwrap().info.time;
+            let _end = self.list.last().unwrap().info.time;
+            meta.start = Some(date_str(_start));
+            meta.end = Some(date_str(_end));
+            if _end > _start {
+                let p = period(_start, _end - _start);
+                meta.elapsed = Some(format!("{} {}", p.0, p.1));
+            }
+            return Some(meta);
+        }
+        None
+    }
     pub fn cache_str(&mut self, s: String) -> NString {
         let key = quick_hash(&s);
         if let Some(rs) = self.string_map.get(&key) {

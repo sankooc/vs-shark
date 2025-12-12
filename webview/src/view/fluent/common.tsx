@@ -9,9 +9,10 @@ import {
     Select,
     Combobox,
     Option,
-    ProgressBar
+    ProgressBar,
+    Tooltip
 } from "@fluentui/react-components";
-import { BookGlobe20Filled, BookGlobe20Regular, bundleIcon, CallInboundRegular, CallOutboundRegular, ChartMultiple20Filled, ChartMultiple20Regular, CheckmarkSquareRegular, ClipboardBulletListRtlFilled, ClipboardBulletListRtlRegular, ClockRegular, DocumentBulletList20Filled, DocumentBulletList20Regular, DocumentGlobeRegular, DocumentOnePageRegular, FormSparkle20Filled, FormSparkle20Regular, GlobeColor, InfoRegular, LockClosedKeyRegular, MailTemplate20Filled, MailTemplate20Regular, MoreHorizontalFilled, PanelTopContractRegular, PanelTopExpandRegular, PlugConnected20Filled, PlugConnected20Regular, QuestionFilled, ShieldLock20Filled, ShieldLock20Regular, ShieldQuestionRegular, TextboxRotate9020Filled, TextboxRotate9020Regular, TriangleLeft20Filled, TriangleLeft20Regular, TriangleRight20Filled, TriangleRight20Regular, WarningRegular } from "@fluentui/react-icons";
+import { BookGlobe20Filled, BookGlobe20Regular, bundleIcon, CallInboundRegular, CallOutboundRegular, ChartMultiple20Filled, ChartMultiple20Regular, CheckmarkSquareRegular, ClipboardBulletListRtlFilled, ClipboardBulletListRtlRegular, ClockRegular, DocumentBulletList20Filled, DocumentBulletList20Regular, DocumentGlobeRegular, DocumentOnePageRegular, FormSparkle20Filled, FormSparkle20Regular, GlobeColor, InfoRegular, LockClosedKeyRegular, MailTemplate20Filled, MailTemplate20Regular, MoreHorizontalFilled, PanelTopContractRegular, PanelTopExpandRegular, PlugConnected20Filled, PlugConnected20Regular, PresenceAvailableFilled, QuestionFilled, RecordStopFilled, ShieldLock20Filled, ShieldLock20Regular, ShieldQuestionRegular, SpinnerIosFilled, SpinnerIosRegular, TextboxRotate9020Filled, TextboxRotate9020Regular, TriangleLeft20Filled, TriangleLeft20Regular, TriangleRight20Filled, TriangleRight20Regular, WarningRegular } from "@fluentui/react-icons";
 import React, { FormEvent, JSX, useEffect, useId, useState } from "react";
 
 import { useNavigate } from "react-router";
@@ -28,7 +29,7 @@ interface ConnectProp {
 
 export function BreadItem(props: ConnectProp) {
     const navigate = useNavigate();
-    return (<Breadcrumb aria-label="Breadcrumb" style={{ padding: "5px 0px", margin: 0 }}>
+    return (<Breadcrumb aria-label="Breadcrumb" style={{ padding: "1px 0px", margin: 0 }}>
         {
             props.items.map((item, index) => {
                 return <React.Fragment key={"bi" + index}>
@@ -55,6 +56,8 @@ export const TLSIcon = bundleIcon(ShieldLock20Filled, ShieldLock20Regular)
 export const DNSIcon = bundleIcon(BookGlobe20Filled, BookGlobe20Regular)
 export const NextIcon = bundleIcon(TriangleRight20Filled, TriangleRight20Regular);
 export const PrevIcon = bundleIcon(TriangleLeft20Filled, TriangleLeft20Regular);
+
+export const SpinIcon = bundleIcon(SpinnerIosFilled, SpinnerIosRegular)
 
 export const DetailIcon = bundleIcon(ClipboardBulletListRtlFilled, ClipboardBulletListRtlRegular);
 
@@ -197,52 +200,67 @@ export function infoLevel(level: string): [string, JSX.Element] {
             return ['#fabd2f', <ShieldQuestionRegular />];
         }
     }
-    // return ['', <ShieldQuestionRegular />]
 }
-
-
-// type StatusBarProps = {
-//     info?: PcapFile,
-//     status?: IProgressStatus
-// }
+function getFileName(path: string) {
+    if (!path) {
+        return '';
+    }
+    const normalizedPath = path.replace(/\\/g, '/');
+    const lastSlashIndex = normalizedPath.lastIndexOf('/');
+    const fileName = normalizedPath.substring(lastSlashIndex + 1);
+    return fileName;
+}
 export function StatusBar() {
     const info = usePcapStore((state: PcapState) => state.fileinfo);
     const progress = usePcapStore((state: PcapState) => state.progress);
-    let text = '';
-    let filename = "Unknown";
+    let filename = "";
+    let filepath = '';
     let total = 0;
+    let _total = '';
     let cursor = 0;
     let percent = 1;
     try {
         if (info) {
-            filename = info.name;
+            filepath = info.name;
+            // filepath = '/shue/acd/pdc.png';
             total = info.size;
+            filename = getFileName(filepath);
         }
         if (progress) {
             total = Math.max(total, progress.total);
             cursor = progress.cursor;
         }
-        text = `${format_bytes_single_unit(total)} [${filename}]`;
-        if (total > 0 ){
+        if (total > 0) {
+            _total = format_bytes_single_unit(total);
             percent = cursor / total;
         }
     } catch (e) {
         console.error(e);
     }
 
-    const getPorgress = (percent:  number) => {
-        try {
-            if (percent < 0.99) {
-                return <ProgressBar value={percent} thickness="large" />
-            }
-        } catch (e) {
-            console.error(e);
+    const style = {
+        marginLeft: 'auto',
+        alignSelf: 'center',
+    };
+
+    const color = percent < 0.99 ? '#689d6a' : '#458588';
+    const preIcon = () => {
+        if (percent < 0.99) {
+            return <RecordStopFilled style={{ color }} />
+        } else {
+            return <PresenceAvailableFilled style={{ color }} />
         }
-        return <></>
     }
-    const backgroundColor = percent < 0.99 ? '#689d6a' : '#458588';
-    return <div className="status-bar flex flex-column page-status" style={{backgroundColor}}>
-        {getPorgress(percent)}
-        <span style={{ paddingLeft: '10px' }}>{text}</span>
+    return <div className="status-bar flex flex-row align-items-center page-status" style={style}>
+        {preIcon()}
+        {
+            filename ? <Tooltip content={filepath} relationship="label">
+                <span style={{ fontWeight: 'bold',color, padding: '0 5px', maxWidth: '400px', textWrap: 'wrap' }}> {filename}</span>
+            </Tooltip> : null
+        }
+        {
+            _total? <span>({_total})</span> : null
+        }
+        
     </div>
 }
