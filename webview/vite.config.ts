@@ -13,7 +13,7 @@ const getPackageVersion = (): string => {
       const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
       return JSON.stringify(packageJson.version);
     }
-  } catch { }
+  } catch { /* empty */ }
   return '0.0.0';
 }
 

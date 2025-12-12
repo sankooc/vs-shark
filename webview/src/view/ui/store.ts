@@ -120,7 +120,8 @@ export const useStore = create<PcapState>()((set) => {
     closeFile: async () => {
     },
     metadata: (): Promise<FileMetadata> => {
-      throw new Error();
+      return fetch('/api/metadata').then((response) => response.json());
+      // throw new Error();
     }
   };
 });

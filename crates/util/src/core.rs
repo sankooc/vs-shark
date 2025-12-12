@@ -2,12 +2,10 @@ use std::{ops::Range, path::Path, sync::Arc, time::Duration};
 
 use anyhow::bail;
 use pcap::common::{
-    concept::{
+    Instance, ResourceLoader, concept::{
         ConversationCriteria, Criteria, DNSRecord, DNSResponse, Field, FrameIndex, FrameInfo, HttpCriteria, HttpMessageDetail, ListResult, ProgressStatus, TLSConversation,
         TLSItem, UDPConversation, VConnection, VConversation, VHttpConnection,
-    },
-    io::DataSource,
-    Instance, ResourceLoader,
+    }, file::Metadata, io::DataSource
 };
 use serde::{Deserialize, Serialize};
 use tokio::{
@@ -24,6 +22,7 @@ pub enum UICommand {
     None,
     OpenFile(oneshot::Sender<Result<(), String>>, String),
     CloseFile(oneshot::Sender<Result<(), String>>),
+    Metadata(oneshot::Sender<Option<Metadata>>),
     Frames(oneshot::Sender<ListResult<FrameInfo>>, Criteria),
     Frame(oneshot::Sender<FrameResult>, FrameIndex),
     List(oneshot::Sender<String>, String),
@@ -250,6 +249,10 @@ impl Engine {
                     }
                     let _ = tx.send(Ok(()));
                 }
+                UICommand::Metadata(tx) => {
+                    let rs = instance.lock().await.context().get_metadata();
+                    tx.send(rs);
+                }
                 UICommand::Frames(tx, cri) => {
                     let rs = instance.lock().await.frames_by(cri);
                     let _ = tx.send(rs);
@@ -356,6 +359,13 @@ impl UIEngine {
         let _ = self.gui_tx.send(UICommand::CloseFile(tx)).await;
         rx.await.unwrap()
     }
+
+    pub async fn metadata(&self) -> Option<Metadata> {
+        let (tx, rx) = oneshot::channel();
+        let _ = self.gui_tx.send(UICommand::Metadata(tx)).await;
+        rx.await.unwrap()
+    }
+
     pub async fn get_list(&self) -> String {
         "list".to_string()
     }
