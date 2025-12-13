@@ -10,7 +10,7 @@ export interface PFile {
   name: string;
   size: number;
 }
-const _log = console.log.bind(console);
+// const _log = console.log.bind(console);
 
 interface PcapState {
   iframe?: HTMLIFrameElement;

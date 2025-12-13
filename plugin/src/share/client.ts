@@ -3,7 +3,7 @@ import { ComLog, ComMessage, ComRequest, ComType, IHttpDetail, PcapFile, StatReq
 import mitt, { Emitter } from "mitt";
 import { IProgressStatus } from "./gen";
 
-export const BATCH_SIZE = 1024 * 1024 * 1;
+export const BATCH_SIZE = 1024 * 1024 * 8;
 
 function frameSelectConvert(frameSelect: FrameResult): any {
   // const rs = {};
@@ -51,7 +51,8 @@ export abstract class PCAPClient {
           try {
             const rt = JSON.parse(rs);
             if (rt && rt.total && rt.cursor) {
-              progress.cursor -= (rt.total - rt.cursor);
+              progress.total = Math.max(progress.total, rt.total);
+              progress.cursor = rt.cursor;
             }
           } catch(e) {
             console.error(e);

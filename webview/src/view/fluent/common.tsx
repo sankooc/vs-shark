@@ -9,7 +9,6 @@ import {
     Select,
     Combobox,
     Option,
-    ProgressBar,
     Tooltip
 } from "@fluentui/react-components";
 import { BookGlobe20Filled, BookGlobe20Regular, bundleIcon, CallInboundRegular, CallOutboundRegular, ChartMultiple20Filled, ChartMultiple20Regular, CheckmarkSquareRegular, ClipboardBulletListRtlFilled, ClipboardBulletListRtlRegular, ClockRegular, DocumentBulletList20Filled, DocumentBulletList20Regular, DocumentGlobeRegular, DocumentOnePageRegular, FormSparkle20Filled, FormSparkle20Regular, GlobeColor, InfoRegular, LockClosedKeyRegular, MailTemplate20Filled, MailTemplate20Regular, MoreHorizontalFilled, PanelTopContractRegular, PanelTopExpandRegular, PlugConnected20Filled, PlugConnected20Regular, PresenceAvailableFilled, QuestionFilled, RecordStopFilled, ShieldLock20Filled, ShieldLock20Regular, ShieldQuestionRegular, SpinnerIosFilled, SpinnerIosRegular, TextboxRotate9020Filled, TextboxRotate9020Regular, TriangleLeft20Filled, TriangleLeft20Regular, TriangleRight20Filled, TriangleRight20Regular, WarningRegular } from "@fluentui/react-icons";
@@ -201,6 +200,7 @@ export function infoLevel(level: string): [string, JSX.Element] {
         }
     }
 }
+
 function getFileName(path: string) {
     if (!path) {
         return '';
@@ -242,16 +242,22 @@ export function StatusBar() {
         marginLeft: 'auto',
         alignSelf: 'center',
     };
+    const incomplete = percent < 0.99
 
-    const color = percent < 0.99 ? '#689d6a' : '#458588';
+    const color = incomplete ? '#689d6a' : '#458588';
     const preIcon = () => {
-        if (percent < 0.99) {
+        if (incomplete) {
             return <RecordStopFilled style={{ color }} />
         } else {
             return <PresenceAvailableFilled style={{ color }} />
         }
     }
+
     return <div className="status-bar flex flex-row align-items-center page-status" style={style}>
+        
+        {
+            incomplete ? `${Math.round(percent * 100)}%` : null
+        }
         {preIcon()}
         {
             filename ? <Tooltip content={filepath} relationship="label">

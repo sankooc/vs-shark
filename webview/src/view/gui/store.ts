@@ -47,7 +47,7 @@ export const useStore = create<PcapState>()((set) => {
   });
   try {
     invoke("touch").then((rs) => {
-      let arr = rs as any[];
+      const arr = rs as any[];
       if (arr && arr.length > 1) {
         const [fileinfo, progress] = arr;
         set((state) => ({ ...state, fileinfo, progress }));
@@ -122,10 +122,8 @@ export const useStore = create<PcapState>()((set) => {
     },
     metadata: (): Promise<FileMetadata> => {
       return invoke("metadata").then((rs) => {
-        console.log(rs);
         return rs as FileMetadata;
       });
-      // throw new Error();
     }
   };
 });

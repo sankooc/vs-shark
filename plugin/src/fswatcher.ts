@@ -21,7 +21,7 @@ export class FileTailWatcher {
 
   constructor(filePath: string, options: FileTailWatcherOptions = {}) {
     this.filePath = filePath;
-    this.chunkSize = options.chunkSize ?? 1024 * 1024;
+    this.chunkSize = options.chunkSize ?? 1024 * 1024 * 4;
     this.intervalMs = options.intervalMs ?? 1000;
   }
 

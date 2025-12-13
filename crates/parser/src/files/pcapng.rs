@@ -3,31 +3,81 @@
 // This file is part of the pcapview project.
 // Licensed under the MIT License - see https://opensource.org/licenses/MIT
 use crate::common::{
-    Frame, LinkType, core::Context, enum_def::{DataError, Protocol}, file::{CaptureInterface, FileMetadata, FileStatistics, InterfaceDescription, OptionParser, PcapNg}, io::Reader
+    core::Context,
+    enum_def::{DataError, Protocol},
+    file::{CaptureInterface, FileMetadata, FileStatistics, InterfaceDescription, OptionParser, PcapNg},
+    io::Reader,
+    Frame, LinkType,
 };
 use anyhow::{bail, Result};
 
 pub struct PCAPNG;
 
-fn option_reader<T>(reader: &mut Reader, parser: &mut T)
+fn option_reader<T>(reader: &mut Reader, parser: &mut T) -> Result<()>
 where
     T: OptionParser,
 {
     loop {
-        let option_code = reader.read16(false).unwrap();
-        let option_len = reader.read16(false).unwrap();
+        if reader.left() < 4 {
+            return Ok(());
+        }
+        let option_code = reader.read16(false)?;
+        let option_len = reader.read16(false)?;
         if option_code == 0 || option_len == 0 {
-            return;
+            return Ok(());
         }
         if option_len as usize > reader.left() {
-            return;
+            return Ok(());
         }
-        let comment = reader.slice(option_len as usize, false).unwrap();
+        let comment = reader.slice(option_len as usize, false)?;
         parser.parse_option(option_code, comment);
         let ext = (4 - (option_len % 4)) % 4;
         reader.forward(option_len as usize + ext as usize);
     }
 }
+
+fn session_header_block(meta: &mut PcapNg, reader: &mut Reader) -> Result<()> {
+    let _magic = reader.read32(false)?;
+    let major = reader.read16(false)?;
+    let minor = reader.read16(false)?;
+    let section_len = reader.read64(true)?;
+    meta.major = major;
+    meta.minor = minor;
+    if section_len == 0xFFFFFFFFFFFFFFFF {
+        let mut cap = CaptureInterface::default();
+        option_reader(reader, &mut cap)?;
+        meta.capture = Some(cap);
+    } else if section_len > reader.left() as u64 {
+    } else {
+        let mut cap = CaptureInterface::default();
+        option_reader(reader, &mut cap)?;
+        meta.capture = Some(cap);
+    }
+    Ok(())
+}
+
+fn interface_description_block(meta: &mut PcapNg, reader: &mut Reader) -> Result<()> {
+    let lt = reader.read16(false)? as LinkType;
+    let protocol = PcapNg::_protocol(lt);
+    let mut id = InterfaceDescription::new(lt, protocol);
+    let _snap_len = reader.read32(false)?;
+    reader.forward(2);
+    option_reader(reader, &mut id)?;
+    meta.add_interface(id);
+    Ok(())
+}
+fn interface_statisic_block(meta: &mut PcapNg, reader: &mut Reader) -> Result<()> {
+    let _interface_id = reader.read32(false)?;
+    let _ts_high = reader.read32(false)?;
+    let _ts_low = reader.read32(false)?;
+    let mut data = FileStatistics::default();
+    option_reader(reader, &mut data)?;
+    meta.statistics = Some(data);
+    Ok(())
+}
+// fn session_header_block(meta: &mut PcapNg, reader: &mut Reader) -> Result<()> {
+//     Ok(())
+// }
 
 impl PCAPNG {
     pub fn next(ctx: &mut Context, reader: &mut Reader) -> Result<(usize, Option<Frame>, Protocol)> {
@@ -45,39 +95,14 @@ impl PCAPNG {
         match block_type.as_str() {
             "0x0a0d0d0a" => {
                 let mut reader2 = reader.slice_as_reader(packet_size)?;
-                let _magic = reader2.read32(false)?;
-                let major = reader2.read16(false)?;
-                let minor = reader2.read16(false)?;
-                let section_len = reader2.read64(true)?;
                 if let FileMetadata::PcapNg(meta) = &mut ctx.metadata {
-                    meta.major = major;
-                    meta.minor = minor;
-                    if section_len == 0xFFFFFFFFFFFFFFFF {
-                        let mut cap = CaptureInterface::default();
-                        option_reader(&mut reader2, &mut cap);
-                        meta.capture = Some(cap);
-                    } else if section_len > reader2.left() as u64 {
-                    } else {
-                        let mut cap = CaptureInterface::default();
-                        option_reader(&mut reader2, &mut cap);
-                        meta.capture = Some(cap);
-                    }
-
+                    session_header_block(meta, &mut reader2)?;
                 }
             }
             "0x00000001" => {
                 let mut reader2 = reader.slice_as_reader(packet_size)?;
-                {
-                    let lt = reader2.read16(false)? as LinkType;
-                    
-                    let protocol = PcapNg::_protocol(lt);
-                    let mut id = InterfaceDescription::new(lt, protocol);
-                    let _snap_len = reader2.read32(false)?;
-                    reader2.forward(2);
-                    option_reader(&mut reader2, &mut id);
-                    if let FileMetadata::PcapNg(meta) = &mut ctx.metadata {
-                        meta.add_interface(id);
-                    }
+                if let FileMetadata::PcapNg(meta) = &mut ctx.metadata {
+                    interface_description_block(meta, &mut reader2)?;
                 }
             }
             "0x00000006" => {
@@ -103,20 +128,13 @@ impl PCAPNG {
                 }
             }
             "0x00000005" => {
-                // pcapng statistics block
                 let mut reader2 = reader.slice_as_reader(packet_size)?;
-                let _interface_id = reader2.read32(false)?;
-                let _ts_high = reader2.read32(false)?;
-                let _ts_low = reader2.read32(false)?;
-                let mut data = FileStatistics::default();
-                option_reader(&mut reader2, &mut data);
                 if let FileMetadata::PcapNg(meta) = &mut ctx.metadata {
-                    meta.statistics = Some(data);
+                    interface_statisic_block(meta, &mut reader2)?;
                 }
             }
             _ => {
                 reader.slice((len - 12) as usize, true)?;
-                // let _len = reader.read32(false)?;
             }
         }
         let _len = reader.read32(false)?;

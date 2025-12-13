@@ -51,7 +51,8 @@ export abstract class PCAPClient {
           try {
             const rt = JSON.parse(rs);
             if (rt && rt.total && rt.cursor) {
-              progress.cursor -= (rt.total - rt.cursor);
+              progress.total = Math.max(progress.total, rt.total);
+              progress.cursor = rt.cursor;
             }
           } catch(e) {
             console.error(e);

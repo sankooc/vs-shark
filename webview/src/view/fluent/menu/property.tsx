@@ -10,19 +10,7 @@ import {
     Button,
     Divider
 } from "@fluentui/react-components";
-
-
 import {
-    FolderRegular,
-    EditRegular,
-    OpenRegular,
-    DocumentRegular,
-    PeopleRegular,
-    DocumentPdfRegular,
-    VideoRegular,
-} from "@fluentui/react-icons";
-import {
-    Avatar,
     TableBody,
     TableCell,
     TableRow,
@@ -102,11 +90,7 @@ export default function Component(props: Props) {
     const metadata = usePcapStore(state => state.metadata)
     useEffect(() => {
         if (props.open) {
-            metadata().then((rs) => {
-                console.log('metadata');
-                console.log(rs);
-                return rs;
-            }).then(setState);
+            metadata().then(setState);
         }
     }, [props.open])
     if (!state) {
@@ -136,7 +120,7 @@ export default function Component(props: Props) {
         head1.push(['end', state.end]);
         head1.push(['elapsed', state.elapsed]);
     }
-    let capture: [string, string][] = [];
+    const capture: [string, string][] = [];
     if (state.capture) {
         capture.push(['hardware', state.capture.hardware]);
         capture.push(['os', state.capture.os]);
