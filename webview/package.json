@@ -1,7 +1,7 @@
 {
   "name": "webview",
   "private": true,
-  "version": "0.4.6",
+  "version": "0.4.10",
   "type": "module",
   "scripts": {
     "dev": "       cross-env VITE_BUILD_ALL=true    vite --host",
