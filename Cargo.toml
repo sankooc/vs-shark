@@ -4,7 +4,7 @@ members = [
 "crates/wasm",
 "crates/tui",
 "crates/parser", "crates/util"
-, "crates/pcap-web", "crates/pcap-gui"]
+, "crates/web", "crates/gui"]
 
 [workspace.package]
 version = "0.4.10"

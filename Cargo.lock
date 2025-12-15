@@ -3448,7 +3448,7 @@ checksum = "df94ce210e5bc13cb6651479fa48d14f601d9858cfe0467f43ae157023b938d3"
 
 [[package]]
 name = "pcap"
-version = "0.4.9"
+version = "0.4.10"
 dependencies = [
  "ahash",
  "anyhow",
@@ -3471,7 +3471,7 @@ dependencies = [
 
 [[package]]
 name = "pcap-web"
-version = "0.4.9"
+version = "0.4.10"
 dependencies = [
  "actix",
  "actix-web",
@@ -3490,7 +3490,7 @@ dependencies = [
 
 [[package]]
 name = "pcap_gui"
-version = "0.4.9"
+version = "0.4.10"
 dependencies = [
  "anyhow",
  "pcap",
@@ -3506,7 +3506,7 @@ dependencies = [
 
 [[package]]
 name = "pcaps"
-version = "0.4.9"
+version = "0.4.10"
 dependencies = [
  "anyhow",
  "clap",
@@ -5714,7 +5714,7 @@ checksum = "06abde3611657adf66d383f00b093d7faecc7fa57071cce2578660c9f1010821"
 
 [[package]]
 name = "util"
-version = "0.4.9"
+version = "0.4.10"
 dependencies = [
  "anyhow",
  "pcap",
@@ -5880,7 +5880,7 @@ dependencies = [
 
 [[package]]
 name = "wasm-pcps"
-version = "0.4.9"
+version = "0.4.10"
 dependencies = [
  "anyhow",
  "env_logger",
