@@ -1,5 +1,5 @@
 [package]
-name = "pcap-web"
+name = "pcapviewer-web"
 version.workspace = true
 edition.workspace = true
 authors.workspace = true

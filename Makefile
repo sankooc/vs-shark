@@ -24,10 +24,10 @@ check-website: clear
 	cd doc && npm install && npm run docs:build
 	make web-demo
 check-tui: clear
-	cargo build --release -p pcaps
+	cargo build --release -p pcapviewer-tui
 check-web: clear
 	cd webview && pnpm install && npm run build:socket
-	cargo build --release -p pcap-web
+	cargo build --release -p pcapviewer-web
 check-gui: clear
 	cd webview && pnpm install && npm run build:gui
 	cargo tauri build

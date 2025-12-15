@@ -3470,25 +3470,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "pcap-web"
-version = "0.4.10"
-dependencies = [
- "actix",
- "actix-web",
- "actix-web-actors",
- "anyhow",
- "clap",
- "colored",
- "include_dir",
- "mime_guess",
- "pcap",
- "serde",
- "serde_json",
- "tokio",
- "util",
-]
-
-[[package]]
 name = "pcap_gui"
 version = "0.4.10"
 dependencies = [
@@ -3505,7 +3486,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "pcaps"
+name = "pcapviewer-tui"
 version = "0.4.10"
 dependencies = [
  "anyhow",
@@ -3517,6 +3498,25 @@ dependencies = [
  "ratatui",
  "syntect",
  "tui-tree-widget",
+ "util",
+]
+
+[[package]]
+name = "pcapviewer-web"
+version = "0.4.10"
+dependencies = [
+ "actix",
+ "actix-web",
+ "actix-web-actors",
+ "anyhow",
+ "clap",
+ "colored",
+ "include_dir",
+ "mime_guess",
+ "pcap",
+ "serde",
+ "serde_json",
+ "tokio",
  "util",
 ]
 
