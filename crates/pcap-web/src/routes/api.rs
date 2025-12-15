@@ -55,6 +55,16 @@ async fn ready(app: web::Data<Arc<WebApplication>>) -> HttpResponse {
     }
 }
 
+#[get("/metadata")]
+async fn metadata(app: web::Data<Arc<WebApplication>>) -> HttpResponse {
+    let rs = app.engine().metadata().await;
+    if let Some(metadata) = rs {
+        HttpResponse::Ok().json(&metadata)
+    } else {
+        HttpResponse::BadRequest().finish()
+    }
+}
+
 pub fn init(cfg: &mut web::ServiceConfig) {
-    cfg.service(web::scope("/api").service(frame).service(frames).service(ready));
+    cfg.service(web::scope("/api").service(frame).service(frames).service(ready).service(metadata));
 }

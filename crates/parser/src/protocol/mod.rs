@@ -6,7 +6,7 @@
 use anyhow::{bail, Result};
 
 use crate::common::{
-        Frame, Instance, ResourceLoader, concept::Field, core::Context, enum_def::{DataError, FileType, Protocol}, io::{DataSource, Reader}
+        Frame, Instance, LinkType, ResourceLoader, concept::Field, core::Context, enum_def::{DataError, FileType, Protocol}, io::{DataSource, Reader}
     };
 
 pub mod application;
@@ -105,7 +105,7 @@ pub fn summary(protocol: Protocol, ctx: &Context, frame: &Frame) -> Option<Strin
     }
 }
 
-pub fn link_type_map(file_type: &FileType, link_type: u32, reader: &mut Reader) -> Protocol {
+pub fn link_type_map(file_type: FileType, link_type: LinkType, reader: &mut Reader) -> Protocol {
     match link_type {
         0 => {
             if let FileType::PCAPNG = file_type {

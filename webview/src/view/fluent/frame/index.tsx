@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { usePcapStore } from "../../context";
 import { compute, ComRequest, PcapState } from "../../../share/common";
 import { IFrameInfo, IListResult } from "../../../share/gen";
-// import { makeStyles } from "@fluentui/react-components";
 import AutoSizer from "react-virtualized-auto-sizer";
 
 
@@ -10,23 +9,36 @@ import { VirtualizedDataGrid } from './data';
 import Stack from "./stack";
 import { frame_size } from "../../conf";
 import Paging from '../pagination2';
+import { useLocation, useNavigate } from "react-router";
 
 function Empty() {
-  return <></>
+  return <>No Selected</>
 }
 
 
 function Component() {
   const _request = usePcapStore((state) => state.request);
   const progress = usePcapStore((state: PcapState) => state.progress);
-
-  const [page, setPage] = useState<number>(1);
+  const location = useLocation();
+  const navigate = useNavigate();
   const [result, setResult] = useState<IListResult<IFrameInfo>>({
     start: 0,
     total: 0,
     items: [],
   });
-  const [select, setSelect] = useState<IFrameInfo | undefined>(undefined);
+  const select:number[] = [];
+  let page = 1;
+  let frame = null;
+  const _sel = parseInt(location.state?.index);
+  const _page = parseInt(location.state?.page);
+  if(_sel >= 0) {
+    select.push(_sel);
+    frame = result.items[_sel];
+  }
+  if(_page > 0){
+    page = _page;
+  }
+
   const size = frame_size;
   const persist = `${page} ${JSON.stringify(progress || {})}`
   useEffect(() => {
@@ -46,13 +58,14 @@ function Component() {
       }
       const bodyHeight = Math.ceil(height * 0.65);
       return <div className="flex flex-column frame-content" style={{ height: height + "px", width: width + "px" }}>
-        <VirtualizedDataGrid bodyHeight={bodyHeight} items={result.items} onSelect={setSelect} />
+        <VirtualizedDataGrid bodyHeight={bodyHeight} items={result.items} onSelect={(index) => {
+          navigate('/', { state: { index, page } });
+        }} select={select}/>
         <Paging page={page} total={result.total} pageSize={size} onPageChange={(page: number) => {
-          setPage(page);
-          setSelect(undefined);
+          navigate('/', { state: { page } });
         }} />
         <div className="flex-grow-1" style={{ borderTop: "var(--strokeWidthThin) solid var(--colorNeutralStroke2)" }}>
-          {select ? <Stack select={select.index} /> : <Empty />}
+          {frame ? <Stack select={frame.index} /> : <Empty />}
         </div>
       </div>
     }}

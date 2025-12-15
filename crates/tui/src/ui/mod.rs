@@ -201,6 +201,7 @@ impl<T> CustomTableState<T> {
     }
 }
 
+#[warn(clippy::mismatching_type_param_order)]
 pub trait TableStyle<T> {
     fn get_header_style(&self) -> Style;
     fn get_row_style(&self, data: &T, status: usize) -> Style;
@@ -208,7 +209,7 @@ pub trait TableStyle<T> {
     fn get_cols(&self) -> Vec<&str>;
     fn get_row(&self, data: &T, selected: bool) -> Vec<String>;
     fn get_row_width(&self) -> Vec<Constraint>;
-    fn get_block(&self) -> Option<Block>;
+    fn get_block(&self) -> Option<Block<'_>>;
 }
 pub fn render_table<T>(ts: impl TableStyle<T>, state: &CustomTableState<T>, area: Rect, buf: &mut Buffer, status: usize) {
     let header_style = ts.get_header_style();

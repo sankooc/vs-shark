@@ -12,18 +12,14 @@ use std::{
 use anyhow::{bail, Result};
 
 use crate::common::{
-    concept::{
+    ResourceLoader, concept::{
         ConnectionIndex, Conversation, ConversationKey, CounterItem, FrameIndex, HttpConnectIndex, HttpCriteria, HttpMessageDetail, LineChartData, MessageIndex, Timestamp,
-        VHttpConnection,
-    },
-    enum_def::{AddressField, Protocol},
-    util::date_str,
-    ResourceLoader,
+        VHttpConnection, period,
+    }, enum_def::{AddressField, Protocol}, file::{FileMetadata, Metadata}, util::date_str
 };
 
 use super::{
     connection::{ConnectState, Connection, Endpoint, TCPStat, TmpConnection},
-    enum_def::FileType,
     io::DataSource,
     quick_hash, EthernetCache, FastHashMap, Frame, NString,
 };
@@ -241,8 +237,9 @@ impl HttpConntect {
 
 #[derive(Default)]
 pub struct Context {
-    pub file_type: FileType,
-    pub link_type: u32,
+    // pub file_type: FileType,
+    // pub link_type: u32,
+    pub metadata: FileMetadata,
     pub list: Vec<Frame>,
     pub counter: FrameIndex,
     // tcp
@@ -267,6 +264,23 @@ pub struct Context {
 }
 
 impl Context {
+    pub fn get_metadata(&self) -> Option<Metadata> {
+        if let Some (mut meta) = self.metadata.get() {
+            if self.list.len() == 0 {
+                return Some(meta);
+            }
+            let _start = self.list.first().unwrap().info.time;
+            let _end = self.list.last().unwrap().info.time;
+            meta.start = Some(date_str(_start));
+            meta.end = Some(date_str(_end));
+            if _end > _start {
+                let p = period(_start, _end - _start);
+                meta.elapsed = Some(format!("{} {}", p.0, p.1));
+            }
+            return Some(meta);
+        }
+        None
+    }
     pub fn cache_str(&mut self, s: String) -> NString {
         let key = quick_hash(&s);
         if let Some(rs) = self.string_map.get(&key) {

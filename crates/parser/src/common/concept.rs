@@ -55,38 +55,6 @@ pub struct InstanceConfig {
     pub batch_size: usize,
 }
 
-// #[derive(Serialize)]
-// pub struct HttpHostRecord {
-//     pub host: String,
-//     pub count: usize,
-// }
-
-// impl HttpHostRecord {
-//     pub fn new(host: String, count: usize) -> Self {
-//         Self { host, count }
-//     }
-// }
-
-// pub struct HttpConnectInfo {
-//     host: String,
-//     method: String,
-//     status: String,
-//     content_type: String,
-// }
-
-// #[derive(Serialize)]
-// pub struct FrameStatData {
-//     pub time: u64,
-//     // pub tcp: [usize; 400],
-//     pub list: Vec<CounterItem>,
-// }
-
-// impl FrameStatData {
-//     pub fn new(time: u64, list: Vec<CounterItem>) -> Self {
-//         Self { time, list }
-//     }
-// }
-
 #[derive(Serialize, Default)]
 pub struct LineChartData {
     pub x_axis: Vec<u64>,
@@ -112,19 +80,13 @@ impl CounterItem {
     }
 }
 
-#[derive(Serialize, Debug)]
+#[derive(Serialize, Debug, Clone, Default)]
 pub struct ProgressStatus {
     pub total: usize,
     pub cursor: usize,
     pub count: usize,
     pub left: usize,
 }
-
-// impl ProgressStatus {
-//     pub fn to_json(&self) -> String {
-//         serde_json::to_string(self).unwrap()
-//     }
-// }
 
 #[derive(Serialize)]
 pub struct ListResult<T> {

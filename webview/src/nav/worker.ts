@@ -10,10 +10,6 @@ class Client extends PCAPClient {
   doReady(): void {
     this.init();
   }
-  // async pickData(start: number, end: number): Promise<Uint8Array> {
-  //   const _data = client.data!.slice(start, end);
-  //   return _data;
-  // }
   emitMessage(msg: ComMessage<any>): void {
     ctx.postMessage(msg);
   }
@@ -98,7 +94,7 @@ ready.then((rs) => {
       const progress = { total, cursor: 0 };
       client.data = data;
       if (data.length <= BATCH_SIZE) {
-        event.data.progress = progress;
+        event.data.body.progress = progress;
         client.handle(event.data);
       } else {
         for (let i = 0; i < data.length; i += BATCH_SIZE) {

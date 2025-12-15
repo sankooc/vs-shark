@@ -1,17 +1,5 @@
-import * as React from "react";
-import {
-  Hamburger,
-  makeStyles,
-  NavCategory,
-  NavCategoryItem,
-  NavDrawer,
-  NavDrawerBody,
-  NavDrawerHeader,
-  NavItem,
-  NavSubItem,
-  NavSubItemGroup,
-} from "@fluentui/react-components";
-import { BrowserRouter, useNavigate, Route, Routes, Navigate } from "react-router";
+import { BrowserRouter, Route, Routes, Navigate } from "react-router";
+import Header from './menu';
 
 import FrameComponent from "./frame";
 import ConversationComponent from "./conversation";
@@ -27,130 +15,33 @@ import TLSConvList from './tls/sub';
 
 import { usePcapStore } from "../context";
 import LoadingComponent from './loading';
-import { ConversationIcon, DNSIcon, FrameIcon, HttpIcon, OverviewIcon, StatisticTabIcon, StatusBar, TLSIcon, UDPTabIcon } from "./common";
 import { PcapState } from "../../share/common";
 
-const useCSS = makeStyles({
-  nav: {
-    "flex-shrink": 0,
-    "& button[aria-current=page]": {
-      color: 'rgb(71, 158, 245)'
-    }
-  }
-});
-
-
-
-const Nav = () => {
-  const navigate = useNavigate();
-  const [isOpen, setIsOpen] = React.useState(true);
-  const [select, setSelect] = React.useState<string>('Frames');
-
-  //OverviewIcon
-  const components = [{
-    name: 'TCP',
-    path: 'conversations',
-    icon: ConversationIcon,
-  }, {
-    name: 'UDP',
-    path: 'udp',
-    icon: UDPTabIcon
-  }, {
-    name: 'HTTP',
-    path: 'https',
-    icon: HttpIcon,
-  }, {
-    name: 'TLS',
-    path: 'tlslist',
-    icon: TLSIcon,
-  }, {
-    name: 'DNS',
-    path: 'dns',
-    icon: DNSIcon,
-  }];
-  const styles = useCSS();
-  if (!isOpen) {
-    return (<div style={{ borderRight: '1px solid #ddd', padding: '4px' }}>
-      <Hamburger onClick={() => setIsOpen(true)} />
-    </div>)
-  }
-  return <NavDrawer
-    defaultSelectedValue={select}
-    defaultSelectedCategoryValue=""
-    open={isOpen}
-    type="inline"
-    multiple={false}
-    className={styles.nav}
-    style={{ width: '12em' }}
-  >
-    <NavDrawerHeader>
-      <Hamburger onClick={() => setIsOpen(false)} />
-    </NavDrawerHeader>
-
-    <NavDrawerBody>
-      <NavItem
-        onClick={() => {
-          setSelect('Overview');
-          navigate('/overview');
-        }}
-        icon={<OverviewIcon />}
-        value={'Overview'}
-        key={'Overview'}
-      >
-        Overview
-      </NavItem>
-      {/* <NavSectionHeader>Statistic</NavSectionHeader> */}
-      <NavItem
-        onClick={() => {
-          setSelect('Frames');
-          navigate('/');
-        }}
-        icon={<FrameIcon />}
-        value={'Frames'}
-        key={'Frames'}
-      >
-        Frames
-      </NavItem>
-
-      <NavCategory value="static">
-        <NavCategoryItem icon={<StatisticTabIcon />}>
-          Stat
-        </NavCategoryItem>
-        <NavSubItemGroup>
-          {
-            components.map((item) => (
-              <NavSubItem
-                onClick={() => {
-                  setSelect(item.name);
-                  navigate('/' + item.path)
-                }}
-                value={item.name}
-                key={item.name}
-              >
-                {<item.icon />} {item.name}
-              </NavSubItem>
-            ))
-          }
-        </NavSubItemGroup>
-      </NavCategory>
-    </NavDrawerBody>
-  </NavDrawer>
-}
-
+// const useCSS = makeStyles({
+//   nav: {
+//     "flex-shrink": 0,
+//     "& button[aria-current=page]": {
+//       color: 'rgb(71, 158, 245)'
+//     }
+//   }
+// });
 
 const Basic = () => {
   const info = usePcapStore((state: PcapState) => state.fileinfo);
   const progress = usePcapStore((state: PcapState) => state.progress);
   if (!progress) {
-    return <LoadingComponent info={info} progress={progress} />
+    return <BrowserRouter>
+      <Header />
+      <LoadingComponent info={info} progress={progress} />
+    </BrowserRouter>
   }
 
   return (
     <BrowserRouter>
-      <div className="flex flex-row h-full w-full">
-        <Nav />
-        <div className="flex-1 flex flex-column main-content">
-          <div className="flex-1 flex flex-column intern">
+      <div className="flex flex-column h-full w-full">
+        <Header />
+        {/* <div className="flex-1 flex flex-column main-content"> */}
+          <div className="flex-1 flex flex-column  main-content">
             <Routes>
               <Route path="/" index element={<FrameComponent />} />
               <Route path="/overview" element={<OverviewComponent />} />
@@ -166,8 +57,8 @@ const Basic = () => {
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </div>
-          <StatusBar/>
-        </div>
+          {/* <StatusBar /> */}
+        {/* </div> */}
       </div>
     </BrowserRouter>
   );

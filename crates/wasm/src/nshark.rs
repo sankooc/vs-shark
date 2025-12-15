@@ -56,6 +56,12 @@ impl WContext {
     }
 
     #[wasm_bindgen]
+    pub fn metadata(&self) -> Option<String> {
+        let meta = self.ctx.context().get_metadata();
+        meta.and_then(|f| jsonlize(&f))
+    }
+
+    #[wasm_bindgen]
     pub fn select(&self, catelog: String, index: usize) -> Option<String> {
         match catelog.as_str() {
             "frame" => {

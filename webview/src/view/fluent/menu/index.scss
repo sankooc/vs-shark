@@ -1,0 +1,30 @@
+.about-property{
+    min-height: 200px;
+    max-height: 550px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-items: center;
+    .property {
+        // background-color: red;
+      overflow: hidden;
+      white-space: break-spaces;
+      word-break: break-all;
+        .label {
+            display: inline-block;
+            width: 100px;
+        }
+    }
+    .divider{
+        margin-top: 5px;
+        height: 25px;
+        display: flex;
+        justify-items: center;
+    }
+    .cell-data {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+}

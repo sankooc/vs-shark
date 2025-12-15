@@ -1,5 +1,5 @@
 import ReactDOM from "react-dom/client";
-import App from './fluent/index';
-import "../scss/flex.scss";
-
-ReactDOM.createRoot(document.getElementById("root")!).render(<App />);
+import './index.scss';
+import '../scss/flex.scss';
+import App from './components/app';
+ReactDOM.createRoot(document.getElementById("root")!).render(<App entry='app.html'/>);

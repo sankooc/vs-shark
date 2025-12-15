@@ -68,7 +68,7 @@ impl TableStyle<VHttpConnection> for ConversationStyle {
             Constraint::Max(14),
         ]
     }
-    fn get_block(&self) -> Option<Block> {
+    fn get_block(&self) -> Option<Block<'_>> {
         None
     }
 }
@@ -211,13 +211,13 @@ impl HttpHeadersView {
             tree_state: TreeState::default(),
         }
     }
-    pub fn add_header(key: HeaderKey, header: &str) -> TreeItem<HeaderKey> {
+    pub fn add_header(key: HeaderKey, header: &str) -> TreeItem<'_, HeaderKey> {
         TreeItem::new_leaf(key, header)
     }
     pub fn state(&mut self) -> &mut TreeState<HeaderKey> {
         &mut self.tree_state
     }
-    pub fn wrap(items: &[HttpMessageWrap]) -> Vec<TreeItem<HeaderKey>> {
+    pub fn wrap(items: &[HttpMessageWrap]) -> Vec<TreeItem<'_, HeaderKey>> {
         let mut rs = vec![];
         // let mut index = 0;
         for (index, item) in items.iter().enumerate() {

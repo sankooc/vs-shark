@@ -3,9 +3,9 @@ import DNSChart from './dns';
 import HTTPChart from './http';
 
 export default function Component() {
-    return <> 
+    return <div className="flex flex-column intern gap-1"> 
         <FrameChart />
         <HTTPChart />
         <DNSChart />
-    </>
+    </div>
 }

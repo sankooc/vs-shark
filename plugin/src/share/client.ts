@@ -3,7 +3,7 @@ import { ComLog, ComMessage, ComRequest, ComType, IHttpDetail, PcapFile, StatReq
 import mitt, { Emitter } from "mitt";
 import { IProgressStatus } from "./gen";
 
-export const BATCH_SIZE = 1024 * 1024 * 1;
+export const BATCH_SIZE = 1024 * 1024 * 8;
 
 function frameSelectConvert(frameSelect: FrameResult): any {
   // const rs = {};
@@ -51,7 +51,8 @@ export abstract class PCAPClient {
           try {
             const rt = JSON.parse(rs);
             if (rt && rt.total && rt.cursor) {
-              progress.cursor -= (rt.total - rt.cursor);
+              progress.total = Math.max(progress.total, rt.total);
+              progress.cursor = rt.cursor;
             }
           } catch(e) {
             console.error(e);
@@ -140,6 +141,11 @@ export abstract class PCAPClient {
     this.emitMessage(
       ComMessage.new(ComType.error, "failed", requestId),
     );
+  }
+
+  private metadata(requestId: string){
+    const rs = this.ctx?.metadata();
+    this.emitMessage(ComMessage.new(ComType.METADATA_RES, rs, requestId));
   }
   private async select(requestId: string, catelog: string, index: number): Promise<void> {
     if (this.ctx) {
@@ -248,6 +254,10 @@ export abstract class PCAPClient {
         //   const range = this.ctx!.frame_range(index)
         //   this.emitMessage(ComMessage.new(ComType.FRAME_SCOPE_RES, { start: range.start, end: range.end }));
         //   break;
+        case ComType.METADATA_REQ: {
+          this.metadata(id);
+          break;
+        }
         case ComType.PROCESS_DATA:
           {
             const data = body.data as Uint8Array;

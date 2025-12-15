@@ -70,7 +70,7 @@ impl TableStyle<VConversation> for ConversationStyle {
             Constraint::Min(12),
         ]
     }
-    fn get_block(&self) -> Option<Block> {
+    fn get_block(&self) -> Option<Block<'_>> {
         None
     }
 }
@@ -122,7 +122,7 @@ impl TableStyle<VConnection> for ConnectionStyle {
             Constraint::Min(12),
         ]
     }
-    fn get_block(&self) -> Option<ratatui::widgets::Block> {
+    fn get_block(&self) -> Option<ratatui::widgets::Block<'_>> {
         Some(super::block::content_border_low())
     }
 }

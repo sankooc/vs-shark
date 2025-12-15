@@ -4,6 +4,7 @@ import { _log } from "../util";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from '@tauri-apps/api/event';
 import {
+  FileMetadata,
   IHttpDetail,
   PcapFile,
   PcapState,
@@ -22,10 +23,9 @@ const httpdetail_convert = (data: any): IHttpDetail => {
 
 export const useStore = create<PcapState>()((set) => {
   _log("create gui store");
-
   listen<PcapFile>('file_touch', (event) => {
     const fileinfo = event.payload;
-    set((state) => ({ ...state, fileinfo}));
+    set((state) => ({ ...state, fileinfo }));
   });
 
   listen<boolean>('parse_complete', (event) => {
@@ -43,8 +43,19 @@ export const useStore = create<PcapState>()((set) => {
   });
   listen<string>('file_close', () => {
     _log('file closed');
-    set((state) => ({ ...state, progress: undefined }));
+    set((state) => ({ ...state, progress: undefined, fileinfo: undefined }));
   });
+  try {
+    invoke("touch").then((rs) => {
+      const arr = rs as any[];
+      if (arr && arr.length > 1) {
+        const [fileinfo, progress] = arr;
+        set((state) => ({ ...state, fileinfo, progress }));
+      }
+    })
+  } catch (e) {
+    console.error(e);
+  }
   return {
     sendReady: () => {
       // emitMessage(ComMessage.new(ComType.CLIENT_READY, Date.now()));
@@ -103,5 +114,16 @@ export const useStore = create<PcapState>()((set) => {
       const { field } = request;
       return invoke("stat", { field }).then((rs) => (JSON.parse(rs as string) as any[]));
     },
+    openFile: async () => {
+      return invoke("open_file_dialog");
+    },
+    closeFile: async () => {
+      return invoke("close_file_dialog");
+    },
+    metadata: (): Promise<FileMetadata> => {
+      return invoke("metadata").then((rs) => {
+        return rs as FileMetadata;
+      });
+    }
   };
 });

@@ -1,7 +1,6 @@
-use pcap::common::concept::{ConversationCriteria, Criteria, DNSRecord, DNSResponse, FrameIndex, FrameInfo, HttpCriteria, HttpMessageDetail, ListResult, TLSConversation, TLSItem, UDPConversation, VConnection, VConversation, VHttpConnection};
+use pcap::common::{concept::{ConversationCriteria, Criteria, DNSRecord, DNSResponse, FrameIndex, FrameInfo, HttpCriteria, HttpMessageDetail, ListResult, ProgressStatus, TLSConversation, TLSItem, UDPConversation, VConnection, VConversation, VHttpConnection}, file::Metadata};
 use serde::Serialize;
-use util::core::FrameResult;
-// use anyhow::Result;
+use util::{PFile, core::FrameResult};
 use crate::GUIContext;
 
 #[derive(Serialize)]
@@ -28,9 +27,16 @@ impl From<&HttpMessageDetail> for HttpD {
 }
 
 #[tauri::command]
-pub async fn ready(_ctx: tauri::State<'_, GUIContext>, _name: &str) -> Result<String, String> {
-    // let engine = ctx.inner();
-    Ok("text".to_string())
+pub async fn touch(ctx: tauri::State<'_, GUIContext>) -> Result<(PFile, ProgressStatus), ()> {
+    let ctx = ctx.inner();
+    let file = ctx.engine().touch_file().await;
+    file.ok_or(())
+}
+#[tauri::command]
+pub async fn metadata(ctx: tauri::State<'_, GUIContext>) -> Result<Metadata, String> {
+    let engine = ctx.inner();
+    let metadata = engine.engine().metadata().await;
+    metadata.ok_or("read_metadata_failed".to_string())
 }
 
 #[tauri::command]

@@ -19,13 +19,10 @@ use crate::{
         concept::{
             ConversationCriteria, CounterItem, DNSRecord, DNSResponse, FrameIndex, HttpCriteria, HttpMessageDetail, IndexHashMap, LineChartData, NameService, TLSConversation,
             TLSItem, UDPConversation, VConnection, VConversation, VHttpConnection,
-        },
-        connection::{TcpFlagField, TlsData},
-        core::HttpConntect,
-        util::date_str,
+        }, connection::{TcpFlagField, TlsData}, core::HttpConntect, file::FileMetadata, util::date_str
     },
     files::{pcap::PCAP, pcapng::PCAPNG},
-    protocol::{application::dns, detail, link_type_map, parse, summary},
+    protocol::{application::dns, detail, parse, summary},
 };
 use anyhow::{bail, Result};
 use concept::{Criteria, Field, FrameInfo, FrameInternInfo, ListResult, ProgressStatus};
@@ -37,6 +34,7 @@ use rustc_hash::FxHasher;
 pub type FastHashMap<K, V> = HashMap<K, V, BuildHasherDefault<FxHasher>>;
 
 pub type NString = &'static str;
+pub type LinkType = u32;
 
 // pub const EP: String = String::from("");
 
@@ -278,18 +276,23 @@ impl EthernetCache {
 pub struct Instance<T> {
     loader: T,
     ds: DataSource,
-    file_type: FileType,
     pub ctx: Context,
     last: usize,
+    progress: ProgressStatus,
 }
 
 impl<T> Instance<T> {
     pub fn context(&self) -> &Context {
         &self.ctx
     }
-
+    pub fn metadata(&self) -> &FileMetadata{
+        &self.ctx.metadata
+    }
     pub fn frame(&self, index: usize) -> Option<&Frame> {
         self.ctx.list.get(index)
+    }
+    pub fn progress(&self) -> ProgressStatus {
+        self.progress.clone()
     }
 }
 
@@ -303,54 +306,53 @@ where
         Self {
             loader,
             ds,
-            file_type: FileType::NONE,
+            // file_type: FileType::NONE,
             ctx: Context::new(),
             last: 0,
+            progress: ProgressStatus::default(),
         }
     }
 
-    pub fn loader(&self) -> &dyn ResourceLoader {
+    pub fn loader(&self) -> &T {
         &self.loader
     }
 
     pub fn parse(&mut self) -> Result<ProgressStatus> {
         let mut reader = Reader::new(&self.ds);
         reader.cursor = self.last;
-        if let FileType::NONE = self.file_type {
+        if let FileType::NONE = self.ctx.metadata.file_type() {
             let head: &[u8] = self.ds.slice(0..4)?;
             let head_str = format!("{:x}", IO::read32(head, false)?);
             match head_str.as_str() {
                 "a1b2c3d4" => {
                     let _ = reader.read32(true)?;
-                    let _major = reader.read16(false)?;
-                    let _minor = reader.read16(false)?;
+                    let major = reader.read16(false)?;
+                    let minor = reader.read16(false)?;
                     reader.forward(8);
-                    let _snap_len = reader.read32(false)?;
-                    self.ctx.link_type = reader.read32(false)?;
-                    self.file_type = FileType::PCAP;
-                    self.ctx.file_type = FileType::PCAP;
+                    let snaplen = reader.read32(false)?;
+                    let link_type = reader.read32(false)?;
+                    self.ctx.metadata = file::FileMetadata::init_pcap(major, minor, snaplen, link_type, &mut reader)
                 }
                 "a0d0d0a" => {
-                    self.file_type = FileType::PCAPNG;
-                    self.ctx.file_type = FileType::PCAPNG;
+                    self.ctx.metadata = file::FileMetadata::init_pcapng();
                 }
                 _ => bail!(DataError::UnsupportFileType),
             };
         }
         let ds = &self.ds;
-        let cxt = &mut self.ctx;
+        let ctx = &mut self.ctx;
         loop {
-            let rs = match self.file_type {
-                FileType::PCAP => PCAP::next(&mut reader).map(|(_next, frame)| (_next, Some(frame))),
-                FileType::PCAPNG => PCAPNG::next(cxt, &mut reader),
+            let rs = match ctx.metadata.file_type() {
+                FileType::PCAP => PCAP::next(ctx, &mut reader),
+                FileType::PCAPNG => PCAPNG::next(ctx, &mut reader),
                 _ => {
                     bail!(DataError::UnsupportFileType)
                 }
             };
             match rs {
-                Ok((next, _frame)) => {
+                Ok((next, _frame, protocol)) => {
                     if let Some(frame) = _frame {
-                        Instance::<T>::parse_packet(cxt, frame, ds);
+                        Instance::<T>::parse_packet(ctx, frame, ds, protocol);
                     }
                     reader.cursor = next;
                 }
@@ -378,12 +380,13 @@ where
         let _cursor = self.last;
         let datasource = &mut self.ds;
         datasource.trim(_cursor)?;
+        self.progress = rs.clone();
         Ok(rs)
     }
-    pub fn parse_packet(ctx: &mut Context, mut frame: Frame, ds: &DataSource) {
+    pub fn parse_packet(ctx: &mut Context, mut frame: Frame, ds: &DataSource, proto: Protocol) {
         if let Some(range) = &frame.range {
             let mut _reader = Reader::new_sub(ds, range.clone()).unwrap();
-            let proto: Protocol = link_type_map(&ctx.file_type, ctx.link_type, &mut _reader);
+            // let proto: Protocol = link_type_map(ctx.file_type, ctx.link_type, &mut _reader);
             frame.range = Some(range.clone());
             frame.head = proto;
             frame.tail = proto;
@@ -420,7 +423,7 @@ where
         self.ds.destroy();
         self.ctx = Context::new();
         self.last = 0;
-        self.file_type = FileType::NONE;
+        self.progress = ProgressStatus::default();
         true
     }
 }
@@ -587,19 +590,18 @@ where
         }
         let _index = frame.info.index + 1;
         let size = frame.info.len;
-        let interface_type = self.ctx.link_type;
+        // let interface_type = self.ctx.link_type;
         f.summary = format!(
-            "Frame {}: {} bytes on wire ({} bits), {} bytes captured ({} bits) on interface {}",
+            "Frame {}: {} bytes on wire ({} bits), {} bytes captured ({} bits)",
             _index,
             size,
             size * 8,
             size,
-            size * 8,
-            interface_type
+            size * 8
         );
         add_field_label_no_range!(f, format!("Frame number: {}", _index));
         add_field_label_no_range!(f, format!("Epoch Arrival Time: {}", date_str(frame.info.time)));
-        add_field_label_no_range!(f, format!("Interface id: {}", interface_type));
+        // add_field_label_no_range!(f, format!("Interface id: {}", interface_type));
         add_field_label_no_range!(f, format!("Frame length: {}", size));
         add_field_label_no_range!(f, format!("Capture length: {}", size));
         f
@@ -1047,3 +1049,4 @@ pub mod enum_def;
 pub mod io;
 pub mod macro_def;
 pub mod util;
+pub mod file;

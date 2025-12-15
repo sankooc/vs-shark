@@ -337,9 +337,6 @@ impl Reader<'_> {
     }
     pub fn read32(&mut self, endian: bool) -> Result<u32> {
         let len = 4;
-        // let data: &[u8] = self.slice(len, true)?;
-        // IO::read32(data, endian)
-
         if !self.forward(len) {
             bail!(DataError::BitSize)
         }

@@ -1,7 +1,7 @@
 {
   "name": "webview",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.4.10",
   "type": "module",
   "scripts": {
     "dev": "       cross-env VITE_BUILD_ALL=true    vite --host",
@@ -9,8 +9,8 @@
     "dev:gui": "   cross-env VITE_BUILD_GUI=true    vite --host",
     "build": "       cross-env VITE_BUILD_VSCODE=true vite build --minify",
     "build:local": " cross-env VITE_BUILD_ALL=true    vite build --minify",
-    "build:socket": "cross-env VITE_BUILD_SOCKET=true vite build --minify && mv ../dist/socket/ui.html ../dist/socket/index.html",
-    "build:gui": "   cross-env VITE_BUILD_GUI=true    vite build --minify",
+    "build:socket": "cross-env VITE_BUILD_SOCKET=true vite build --minify && shx mv ../dist/socket/ui.html ../dist/socket/index.html",
+    "build:gui": "   cross-env VITE_BUILD_GUI=true    vite build --minify && shx mv ../dist/gui/gui.html ../dist/gui/index.html",
     "report": "vite build --report",
     "lint": "eslint .",
     "format": "prettier -w ./src",
@@ -59,6 +59,7 @@
     "prettier": "^3.5.3",
     "rs2ts": "^0.0.5",
     "sass": "^1.87.0",
+    "shx": "^0.4.0",
     "typescript": "~5.7.2",
     "typescript-eslint": "^8.26.1",
     "vite": "^7.2.4",

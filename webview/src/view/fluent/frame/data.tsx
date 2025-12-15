@@ -18,7 +18,6 @@ import {
 } from '@fluentui-contrib/react-data-grid-react-window';
 import { IFrameInfo } from '../../../share/gen';
 import indexCss from './index.module.scss';
-import React from 'react';
 import { frameColor } from '../../colors';
 
 const columns: TableColumnDefinition<IFrameInfo>[] = [
@@ -98,7 +97,9 @@ const columns: TableColumnDefinition<IFrameInfo>[] = [
 interface Props<T> {
     bodyHeight: number;
     items: T[];
-    onSelect: (item: T) => void;
+    // onSelect: (item: T) => void;
+    select: number[];
+    onSelect: (index: number[]) => void;
 }
 const columnSizingOptions = {
     index: {
@@ -118,7 +119,6 @@ const useStyles = makeStyles({
 
 export const VirtualizedDataGrid = (props: Props<any>) => {
     const { targetDocument } = useFluent();
-    const [select, setSelect] = React.useState<number | undefined>(undefined);
     const scrollbarWidth = useScrollbarWidth({ targetDocument });
     const styles = useStyles();
     const renderRow: RowRenderer<any> = ({ item, rowId }, style) => {
@@ -142,11 +142,7 @@ export const VirtualizedDataGrid = (props: Props<any>) => {
     const onSelectionChange = (_event: any, data: OnSelectionChangeData) => {
         if (data.selectedItems.size > 0) {
             const selected = data.selectedItems.values().next().value as number;
-            if (selected != select) {
-                setSelect(selected);
-                const item = props.items[selected];
-                props.onSelect(item);
-            }
+            props.onSelect([selected]);
         }
     }
     return (
@@ -156,10 +152,10 @@ export const VirtualizedDataGrid = (props: Props<any>) => {
             columns={columns}
             columnSizingOptions={columnSizingOptions}
             selectionMode="single"
+            selectedItems={props.select}
             selectionAppearance="none"
             resizableColumns
-            focusMode="row_unstable"
-            // className={styles.hideSelectionColumn}
+            // focusMode="row_unstable"
             onSelectionChange={onSelectionChange}
         >
             <DataGridHeader style={{ paddingRight: scrollbarWidth }}>

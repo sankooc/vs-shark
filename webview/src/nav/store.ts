@@ -10,43 +10,37 @@ export interface PFile {
   name: string;
   size: number;
 }
-const _log = console.log.bind(console);
+// const _log = console.log.bind(console);
 
 interface PcapState {
-  // fileInfo?: PcapFile;
   iframe?: HTMLIFrameElement;
-  // loadFile: (file: PcapFile) => void;
-  // unloadFile: () => void;
-  send: (message: ComMessage<any>) => void;
+  input?: HTMLInputElement;
   reset: () => void;
   loadData: (pfile: PcapFile, data: Uint8Array) => Promise<void>;
-  loadIFrame: (iframe: HTMLIFrameElement | null) => void;
+  bindElement: (iframe: HTMLIFrameElement | undefined, input: HTMLInputElement | undefined) => void;
 }
 
 export const useStore = create<PcapState>()((set, get) => {
-  _log("create pcap  web server store");
+
+  // _log("ui store");
   onMessage("message", (e: MessageEvent) => {
     const data = e.data;
+    // _log('message', data);
     if (data.type) {
-      // _log("server accept", data.type);
+      if (data.type === ComType.OPEN_FILE) {
+        const input = get().input;
+        input?.click();
+        return;
+      }
       worker.postMessage(data);
     }
   });
 
   worker.onmessage = (e: MessageEvent<any>) => {
     const iframe = get().iframe;
-    if (iframe) {
-      iframe.contentWindow?.postMessage(e.data, "*");
-    }
+    iframe?.contentWindow?.postMessage(e.data, "*");
   };
   return {
-    // loading: false,
-    // status: "",
-    // init: false,
-    // client: new Client(),
-    send: (message: ComMessage<any>) => {
-      worker.postMessage(message);
-    },
     loadData: async (pfile: PcapFile, data: Uint8Array) => {
       {
         const message = ComMessage.new(ComType.TOUCH_FILE, pfile);
@@ -60,12 +54,13 @@ export const useStore = create<PcapState>()((set, get) => {
     reset: () => {
       const message = ComMessage.new(ComType.RESET, {});
       worker.postMessage(message);
-    },
-    loadIFrame: (iframe: HTMLIFrameElement | null) => {
-      const frame = get().iframe;
-      if (!frame && iframe) {
-        set((state) => ({ ...state, iframe }));
+      const inputEle = get().input;
+      if (inputEle) {
+        inputEle.value = '';
       }
+    },
+    bindElement: (iframe: HTMLIFrameElement | undefined, input: HTMLInputElement | undefined) => {
+      set((state) => ({ ...state, iframe, input }));
     },
   };
 });

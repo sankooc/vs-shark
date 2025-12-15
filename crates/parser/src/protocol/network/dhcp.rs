@@ -228,7 +228,7 @@ fn read_dhcp_option(reader: &mut Reader, field: &mut Field) -> Result<u8> {
             }
             format!("Router: {routers}")
         }
-        6 if option_len % 4 == 0 => {
+        6 if option_len.is_multiple_of(4) => {
             let mut dns_servers = String::new();
             for i in 0..(option_len / 4) {
                 let start = i * 4;
