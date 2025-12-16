@@ -17,15 +17,6 @@ import { usePcapStore } from "../context";
 import LoadingComponent from './loading';
 import { PcapState } from "../../share/common";
 
-// const useCSS = makeStyles({
-//   nav: {
-//     "flex-shrink": 0,
-//     "& button[aria-current=page]": {
-//       color: 'rgb(71, 158, 245)'
-//     }
-//   }
-// });
-
 const Basic = () => {
   const info = usePcapStore((state: PcapState) => state.fileinfo);
   const progress = usePcapStore((state: PcapState) => state.progress);

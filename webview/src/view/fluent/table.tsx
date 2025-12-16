@@ -101,7 +101,7 @@ function Component<T>(props: GridProps<T>) {
             // resizableColumnsOptions={{autoFitColumns: true}}
             // onSortChange={}
             {..._props}
-            className="h-full w-full" >
+            className="h-full w-full flex" >
             <DataGridHeader style={{ paddingRight: scrollbarWidth, backgroundColor: '#458588' }}>
                 <DataGridRow>
                     {({ renderHeaderCell }) => (

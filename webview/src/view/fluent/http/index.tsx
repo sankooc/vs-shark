@@ -8,7 +8,7 @@ import { useNavigate } from "react-router";
 import Grid from "../table";
 import { http_size } from "../../conf";
 import { ActionInfoIcon, ActionMoreIcon, HttpIcon } from "../common";
-import { BorderAllRegular, ClipboardCodeRegular, DesktopSignalRegular, ImageRegular, TextWordCountRegular, CodeBlockRegular, ContentViewRegular, WarningRegular, CheckmarkSquareRegular, ClockRegular } from "@fluentui/react-icons";
+import { BorderAllRegular, ClipboardCodeRegular, DesktopSignalRegular, ImageRegular, TextWordCountRegular, CodeBlockRegular, ContentViewRegular, WarningRegular, CheckmarkSquareRegular, ClockRegular, DocumentQuestionMarkRegular } from "@fluentui/react-icons";
 
 
 import { useId, Label } from "@fluentui/react-components";
@@ -82,7 +82,7 @@ function Component() {
             columnId: "status",
             renderHeaderCell: () => <><ClipboardCodeRegular /> Status</>,
             renderCell: (item) => {
-                let status = 'N/A';
+                let status = '';
                 if (item?.response) {
                     const ss = item.response.split(' ');
                     if (ss.length > 1) {
@@ -151,7 +151,7 @@ function Component() {
             columnId: "length",
             renderHeaderCell: () => <><TextWordCountRegular /> Length</>,
             renderCell: (item) => {
-                return format_bytes_single_unit(item.length);
+                return <TableCellLayout>{format_bytes_single_unit(item.length)}</TableCellLayout>;
             },
         }),
         createTableColumn<IVHttpConnection>({
@@ -168,7 +168,7 @@ function Component() {
                         {contentType}
                     </TableCellLayout>
                 }
-                return '';
+                return <TableCellLayout media={<DocumentQuestionMarkRegular />}></TableCellLayout>;
             },
         }),
         createTableColumn<IVHttpConnection>({

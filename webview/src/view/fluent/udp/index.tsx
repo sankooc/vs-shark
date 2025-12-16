@@ -6,7 +6,7 @@ import { useState } from "react";
 import Grid, { SortState } from "../table";
 
 import { IPSelector, TimeIcon, UDPTabIcon } from "../common";
-import { BoxRegular, DesktopMacRegular, DocumentMultipleRegular, DocumentRegular, DocumentTextRegular } from "@fluentui/react-icons";
+import { BoxRegular, ClockWarningRegular, DesktopMacRegular, DocumentMultipleRegular, DocumentRegular, DocumentTextRegular, WarningRegular } from "@fluentui/react-icons";
 import Spark from "../overview/spark";
 
 
@@ -87,7 +87,7 @@ function Component() {
                 } catch (e) {
                     console.error(e);
                 }
-                return <TableCellLayout>N/A</TableCellLayout>;
+                return <TableCellLayout media={<ClockWarningRegular />}></TableCellLayout>;
             },
         }),
         createTableColumn<IUDPConversation>({
@@ -102,7 +102,7 @@ function Component() {
                 } catch (e) {
                     console.error(e);
                 }
-                return <TableCellLayout>N/A</TableCellLayout>;
+                return <TableCellLayout media={<WarningRegular />}></TableCellLayout>;
 
             },
         }),

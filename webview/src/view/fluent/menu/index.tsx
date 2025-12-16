@@ -79,14 +79,14 @@ export default function MultilineItems(): JSXElement {
     }
 
     return (<>
-        <div className="flex flex-row items-center" style={{ borderBottom: '1px solid #FFD', padding: '3px 5px' }}>
+        <div className="flex flex-row items-center" style={{ borderBottom: '1px solid #FFD', padding: '3px 5px'}}>
             {canSelectFile?<Menu openOnHover hoverDelay={0}>
                 <MenuTrigger>
                     <Button shape="square" size="small" appearance="transparent" icon={<DocIcon />}>File</Button>
                 </MenuTrigger>
                 <MenuPopover>
                     <MenuList>
-                        <MenuItem subText="Select pcap file" icon={<OpenIcon />} onClick={openFile} disabled>
+                        <MenuItem subText="Select pcap file" icon={<OpenIcon />} onClick={openFile} disabled >
                             Open
                         </MenuItem>
                         <MenuItem subText="Close File" icon={<CloseIcon />} onClick={closeFile}>

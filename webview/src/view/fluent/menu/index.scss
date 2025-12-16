@@ -27,4 +27,10 @@
         overflow: hidden;
         text-overflow: ellipsis;
     }
+    .property-block{
+        padding: 10px;
+    }
+    .property-block:hover{
+        background-color: #333;
+    }
 }

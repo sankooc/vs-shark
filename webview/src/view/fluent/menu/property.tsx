@@ -98,7 +98,7 @@ export default function Component(props: Props) {
     }
 
     const buildBlock = (title: string, kv: [string, string][]) => {
-        return <>
+        return <div className="property-block">
             {title ? <div className="divider">
                 <Divider appearance="strong">{title}</Divider>
             </div> : null}
@@ -110,7 +110,7 @@ export default function Component(props: Props) {
                     </div>
                 })
             }
-        </>
+        </div>
     }
     const head1: [string, string][] = [];
     head1.push(['version', `${state.major}.${state.minor}`]);
