@@ -1,4 +1,4 @@
-import { Button, Card, DataGrid, DataGridBody, DataGridCell, DataGridHeader, DataGridHeaderCell, DataGridRow, Slot, TableColumnDefinition, TableColumnSizingOptions, useFluent, useScrollbarWidth} from "@fluentui/react-components";
+import { Button, Card, DataGrid, DataGridBody, DataGridCell, DataGridHeader, DataGridHeaderCell, DataGridRow, Slot, TableColumnDefinition, TableColumnSizingOptions} from "@fluentui/react-components";
 
 // import { UseTableFeaturesOptions } from "@fluentui/react-table";
 
@@ -53,8 +53,8 @@ export function PageFrame(props: PageProps) {
 }
 
 function Component<T>(props: GridProps<T>) {
-    const { targetDocument } = useFluent();
-    const scrollbarWidth = useScrollbarWidth({ targetDocument });
+    // const { targetDocument } = useFluent();
+    // const scrollbarWidth = useScrollbarWidth({ targetDocument });
     const [page, setPage] = useState<number>(1);
     const [result, setResult] = useState<IListResult<T>>({
         start: 0,
@@ -97,19 +97,19 @@ function Component<T>(props: GridProps<T>) {
         main = <>
         <DataGrid
             size='small'
-            style={{ minWidth: "auto", overflow: 'hidden auto' }}
+            style={{ minWidth: "auto", overflow: 'hidden auto', display: 'flex', flexDirection: 'column', flexGrow: 1 }}
             // resizableColumnsOptions={{autoFitColumns: true}}
             // onSortChange={}
             {..._props}
             className="h-full w-full flex" >
-            <DataGridHeader style={{ paddingRight: scrollbarWidth, backgroundColor: '#458588' }}>
+            <DataGridHeader style={{ backgroundColor: '#458588' }}>
                 <DataGridRow>
                     {({ renderHeaderCell }) => (
                         <DataGridHeaderCell>{renderHeaderCell()}</DataGridHeaderCell>
                     )}
                 </DataGridRow>
             </DataGridHeader>
-            <DataGridBody<T>>
+            <DataGridBody<T> style={{overflow: 'hidden auto', flexGrow: 1 }}>
                 {({ item, rowId }) => (
                     <DataGridRow key={rowId} onClick={() => {
                         // eslint-disable-next-line @typescript-eslint/no-unused-expressions

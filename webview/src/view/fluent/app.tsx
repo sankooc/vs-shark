@@ -12,6 +12,7 @@ import DNSComponent from './dns';
 import DNSRecordComponent from './dns/sub';
 import TLSHostList from './tls';
 import TLSConvList from './tls/sub';
+import DebugComponent from './debug';
 
 import { usePcapStore } from "../context";
 import LoadingComponent from './loading';
@@ -45,6 +46,7 @@ const Basic = () => {
               <Route path="/udp" element={<UDPComponent />} />
               <Route path="/dns" element={<DNSComponent />} />
               <Route path="/dns/:index" element={<DNSRecordComponent />} />
+              <Route path="/debug" element={<DebugComponent />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </div>

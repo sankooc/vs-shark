@@ -45,8 +45,10 @@ export default function MultilineItems(): JSXElement {
     const [open, setOpen] = useState<boolean>(false)
     const info = usePcapStore((state: PcapState) => state.fileinfo);
     let canSelectFile = false;
+    let debug = false;
     if (import.meta.env) {
         canSelectFile = import.meta.env.VITE_BUILD_ALL === 'true' || import.meta.env.VITE_BUILD_GUI === 'true';
+        debug = !!import.meta.env.DEV;
     }
     const toRoute = (path: string) => {
         return () => {
@@ -89,7 +91,10 @@ export default function MultilineItems(): JSXElement {
                         <MenuItem subText="Select pcap file" icon={<OpenIcon />} onClick={openFile} disabled >
                             Open
                         </MenuItem>
-                        <MenuItem subText="Close File" icon={<CloseIcon />} onClick={closeFile}>
+                        <MenuItem subText="Close File" icon={<CloseIcon />} onClick={() => {
+                            closeFile();
+                            navigate('/');
+                        }}>
                             Close
                         </MenuItem>
                     </MenuList>
@@ -135,6 +140,11 @@ export default function MultilineItems(): JSXElement {
                         <MenuItem icon={<DNSIcon />} onClick={toRoute('/dns')}>
                             DNS
                         </MenuItem>
+                        {
+                            debug? <MenuItem icon={<DNSIcon />} onClick={toRoute('/debug')}>
+                            DEBUG
+                        </MenuItem> : null
+                        }
                     </MenuList>
                 </MenuPopover>
             </Menu>
