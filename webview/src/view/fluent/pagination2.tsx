@@ -1,4 +1,4 @@
-import { makeStyles, ToolbarButton, ToolbarRadioButton, ToolbarRadioGroup } from "@fluentui/react-components";
+import { makeStyles, tokens, ToolbarButton, ToolbarRadioButton, ToolbarRadioGroup } from "@fluentui/react-components";
 
 
 import {
@@ -14,12 +14,17 @@ interface PageProps {
 }
 
 const useCSS = makeStyles({
+
   pagnation: {
-    textAlign: "right",
-    overflow: "hidden",
-    padding: "5px 10px",
-    fontSize: "0.5em",
-    flexShrink: 0,
+    backgroundColor: tokens.colorNeutralCardBackground,
+    display: 'flex',
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'end',
+  },
+  pagnationTool: {
+    padding: 0,
   },
   pageNum: {
     paddingLeft: 0,
@@ -54,9 +59,10 @@ function Component(props: PageProps) {
     for (let i = start; i <= end; i++) {
       pages.push(i);
     }
-    return <Toolbar
+    return <div className={styles.pagnation}>
+      <Toolbar
+      className={styles.pagnationTool}
       checkedValues={{pageNum: [props.page + '']}}
-      style={{ justifyContent: "right", alignSelf: "flex-end" }}
     >
       <ToolbarButton
         icon={<PrevIcon />}
@@ -81,7 +87,7 @@ function Component(props: PageProps) {
         value="underline"
         onClick={() => { props.onPageChange(props.page + 1) }}
       />
-    </Toolbar>
+    </Toolbar></div>
 
   } else {
     return <Toolbar style={{ justifyContent: "right" }} >

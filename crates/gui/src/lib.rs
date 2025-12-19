@@ -87,9 +87,7 @@ pub fn run() {
             let args: Vec<String> = std::env::args().collect();
             if args.len() > 1 {
                 let filepath = args[1].clone();
-                // let filepath = "C:\\Users\\Administrator\\Desktop\\pcap\\base.pcapng".to_string();
                 let handle = app.handle().clone();
-
                 tauri::async_runtime::spawn(async move {
                     let ctx = handle.state::<GUIContext>();
                     let _ = ctx.inner().engine().open_file(filepath).await;

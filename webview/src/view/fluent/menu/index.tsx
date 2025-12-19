@@ -6,6 +6,9 @@ import {
     MenuTrigger,
     Menu,
     Button,
+    makeStyles,
+    tokens,
+    MenuItemRadio,
 } from "@fluentui/react-components";
 import {
     bundleIcon,
@@ -21,11 +24,12 @@ import {
     ContentViewRegular,
     AppsListDetailFilled,
     AppsListDetailRegular,
+    BookInformationRegular,
 } from "@fluentui/react-icons";
 import { usePcapStore } from "../../context";
 import { PcapState } from "../../../share/common";
 import { ConversationIcon, DNSIcon, FrameIcon, HttpIcon, OverviewIcon, TLSIcon, UDPTabIcon } from "../common";
-import { useNavigate } from "react-router";
+import { useNavigate, useLocation } from "react-router";
 import { useState } from "react";
 import Property from './property';
 import { StatusBar } from "../common";
@@ -40,8 +44,30 @@ const ViewIcon = bundleIcon(ContentViewFilled, ContentViewRegular);
 const StaIcon = bundleIcon(DataPieFilled, DataPieRegular);
 const PropertyIcon = bundleIcon(AppsListDetailFilled, AppsListDetailRegular)
 
+
+const useStyles = makeStyles({
+    menuBar: {
+        backgroundColor: tokens.colorNeutralCardBackground,
+        padding: '3px 2px',
+    },
+});
+const getRoute = (loc: string): string => {
+    try {
+        const route = loc;
+        const tks = route.split('/');
+        if(tks && tks.length > 1) {
+            if(tks[1] === 'tls'){
+                return '/tlslist';
+            }
+            return tks.slice(0, 2).join('/')
+        }
+        return route;
+    }catch{/**/}
+    return '';
+};
 export default function MultilineItems(): JSXElement {
     const navigate = useNavigate();
+    const cus = useStyles();
     const [open, setOpen] = useState<boolean>(false)
     const info = usePcapStore((state: PcapState) => state.fileinfo);
     let canSelectFile = false;
@@ -57,13 +83,13 @@ export default function MultilineItems(): JSXElement {
     }
     const closeFile = usePcapStore((state: PcapState) => state.closeFile);
     const openFile = usePcapStore((state: PcapState) => state.openFile);
-    
-    if(!info){
-        if(!canSelectFile){
+    const route = getRoute(useLocation().pathname);
+    if (!info) {
+        if (!canSelectFile) {
             return <></>
         }
         return (
-            <div className="flex flex-row items-center" style={{ borderBottom: '1px solid #FFD', padding: '3px 2px'}}>
+            <div className={"flex flex-row items-center " + cus.menuBar}>
                 <Menu openOnHover hoverDelay={0}>
                     <MenuTrigger>
                         <Button shape="square" size="small" appearance="transparent" icon={<DocIcon />}>File</Button>
@@ -81,8 +107,8 @@ export default function MultilineItems(): JSXElement {
     }
 
     return (<>
-        <div className="flex flex-row items-center" style={{ borderBottom: '1px solid #FFD', padding: '3px 5px'}}>
-            {canSelectFile?<Menu openOnHover hoverDelay={0}>
+        <div className={"flex flex-row items-center " + cus.menuBar}>
+            {canSelectFile ? <Menu openOnHover hoverDelay={0}>
                 <MenuTrigger>
                     <Button shape="square" size="small" appearance="transparent" icon={<DocIcon />}>File</Button>
                 </MenuTrigger>
@@ -106,52 +132,62 @@ export default function MultilineItems(): JSXElement {
                     <Button shape="square" size="small" appearance="transparent" icon={<ViewIcon />}>View</Button>
                 </MenuTrigger>
                 <MenuPopover>
-                    <MenuList>
-                        <MenuItem icon={<OverviewIcon />} onClick={toRoute('/overview')}>
+                    <MenuList checkedValues={{ view: [route] }}>
+                        <MenuItemRadio icon={<OverviewIcon />} name="view" value="/overview" onClick={toRoute('/overview')}>
                             Overview
-                        </MenuItem>
-                        <MenuItem icon={<FrameIcon />} onClick={toRoute('/')}>
+                        </MenuItemRadio>
+
+                        <MenuItemRadio icon={<FrameIcon />} name="view" value="/" onClick={toRoute('/')}>
                             Frames
-                        </MenuItem>
+                        </MenuItemRadio>
                     </MenuList>
                 </MenuPopover>
             </Menu>
-            <Menu openOnHover hoverDelay={0}>
+            <Menu openOnHover hoverDelay={0} >
                 <MenuTrigger>
                     <Button shape="square" size="small" appearance="transparent" icon={<StaIcon />}>Statistic</Button>
                 </MenuTrigger>
                 <MenuPopover>
+                    <MenuList checkedValues={{ view: [route] }}>
+                        <MenuItemRadio icon={<ConversationIcon />} name="view" value="/conversation" onClick={toRoute('/conversation')}>
+                            TCP
+                        </MenuItemRadio>
+                        <MenuItemRadio icon={<UDPTabIcon />} name="view" value="/udp" onClick={toRoute('/udp')}>
+                            UDP
+                        </MenuItemRadio>
+                        <MenuItemRadio icon={<HttpIcon />} name="view" value="/https" onClick={toRoute('/https')}>
+                            HTTP
+                        </MenuItemRadio>
+                        <MenuItemRadio icon={<TLSIcon />} name="view" value="/tlslist" onClick={toRoute('/tlslist')}>
+                            TLS
+                        </MenuItemRadio>
+                        <MenuItemRadio icon={<DNSIcon />} name="view" value="/dns" onClick={toRoute('/dns')}>
+                            DNS
+                        </MenuItemRadio>
+                    </MenuList>
+                </MenuPopover>
+            </Menu>
+            <Menu openOnHover hoverDelay={0} >
+                <MenuTrigger>
+                    <Button shape="square" size="small" appearance="transparent" icon={<BookInformationRegular />}>About</Button>
+                </MenuTrigger>
+                <MenuPopover>
                     <MenuList>
-                        <MenuItem icon={<PropertyIcon />} onClick={() => {setOpen(true)}}>
+                        <MenuItem icon={<PropertyIcon />} onClick={() => { setOpen(true) }}>
                             Properties
                         </MenuItem>
-                        <MenuItem icon={<ConversationIcon />} onClick={toRoute('/conversations')}>
-                            TCP
-                        </MenuItem>
-                        <MenuItem icon={<UDPTabIcon />} onClick={toRoute('/udp')}>
-                            UDP
-                        </MenuItem>
-                        <MenuItem icon={<HttpIcon />} onClick={toRoute('/https')}>
-                            HTTP
-                        </MenuItem>
-                        <MenuItem icon={<TLSIcon />} onClick={toRoute('/tlslist')}>
-                            TLS
-                        </MenuItem>
-                        <MenuItem icon={<DNSIcon />} onClick={toRoute('/dns')}>
-                            DNS
-                        </MenuItem>
                         {
-                            debug? <MenuItem icon={<DNSIcon />} onClick={toRoute('/debug')}>
-                            DEBUG
-                        </MenuItem> : null
+                            debug ? <MenuItem icon={<DNSIcon />} onClick={toRoute('/debug')}>
+                                DEBUG
+                            </MenuItem> : null
                         }
                     </MenuList>
                 </MenuPopover>
             </Menu>
-            <StatusBar/>
+            <StatusBar />
             {/* <div style={{marginLeft: 'auto', alignSelf: 'center'}}>1123</div> */}
         </div>
-        <Property open={open} setOpen={setOpen}/>
-        </>
+        <Property open={open} setOpen={setOpen} />
+    </>
     );
 };

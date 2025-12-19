@@ -10,7 +10,7 @@ const useStyles = makeStyles({
   codeaction: {
     position: 'absolute',
     top: '2px',
-    right: '2px',
+    right: '20px',
     zIndex: 1,
   },
   codearea: {

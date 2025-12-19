@@ -93,7 +93,7 @@ function Component() {
     }
 
     const breads = [
-        { name: "Conversations", icon: <ConversationIcon />, path: "/conversations" }
+        { name: "Conversations", icon: <ConversationIcon />, path: "/conversation" }
     ]
     const columnSizingOptions = {
         sender: {
