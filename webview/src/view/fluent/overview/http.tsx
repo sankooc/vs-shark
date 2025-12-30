@@ -59,6 +59,9 @@ export default function Component() {
             text: 'HTTP Analysis',
             left: 'center'
         },
+        tooltip: {
+            trigger: 'item'
+        },
         legend: {
             show: false,
             left: 'center',
@@ -66,7 +69,7 @@ export default function Component() {
         },
         series
     };
-    return <Card className="trim-card" style={{ minHeight: '280px' }} orientation="horizontal">
+    return <Card className="trim-card" style={{ minHeight: '280px' }} orientation="vertical">
         <ReactECharts option={option} style={{ width: '100%' }} theme="dark" />
     </Card>
 }
