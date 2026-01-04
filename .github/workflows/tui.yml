@@ -6,7 +6,7 @@ on:
     types:
       - completed
   push:
-    branches: [ "release/*" ]
+    tags: [ "v*" ]
 
 env:
   CARGO_TERM_COLOR: always
@@ -25,18 +25,15 @@ jobs:
         cargo --version
         rustc -vV
         echo "version ${GITHUB_REF#refs/heads/release/}"
-    - run: echo "brc=$(echo ${GITHUB_REF#refs/heads/release/})" >> $GITHUB_ENV
     - name: Build
-      run: cargo build --release -p pcaps --target ${{ matrix.target }} --verbose
+      run: cargo build --release -p pcapviewer-tui --target ${{ matrix.target }} --verbose
     - run: mkdir release
-    - run: mv target/${{ matrix.target }}/release/pcaps release/pcaps-${{ matrix.target }}
+    - run: mv target/${{ matrix.target }}/release/pcapviewer-tui release/pcapviewer-tui-${{ matrix.target }}
     - name: Release TUI
       uses: softprops/action-gh-release@v2.1.0
       with:
-        allow_updates: true
-        tag_name: ${{ env.brc }}
         files: |
-          release/pcaps-${{ matrix.target }}
+          release/pcapviewer-tui-${{ matrix.target }}
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     

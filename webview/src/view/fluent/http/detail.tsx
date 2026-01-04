@@ -1,18 +1,26 @@
 import { useEffect, useState } from "react";
 import { usePcapStore } from "../../context";
-import { SelectTabData, SelectTabEvent, Tab, TabList, TabValue, Tree, TreeItem, TreeItemLayout } from "@fluentui/react-components";
+import { SelectTabData, SelectTabEvent, Tab, TabList, TabValue, Tree, TreeItem, TreeItemLayout, makeStyles, tokens } from "@fluentui/react-components";
 import { IHttpDetail } from "../../../share/common";
 import indexCss from './index.module.scss';
 import { HttpHeaderIcon, HttpIcon, TabHttpHead, TabHttpReq, TabHttpRequest, TabHttpRes, TabHttpResponse } from "../common";
-// import { AirplaneLandingRegular, AirplaneTakeOffRegular, DocumentGlobeRegular, DocumentOnePageRegular, PanelTopContractRegular, PanelTopExpandRegular } from "@fluentui/react-icons";
 import ContentComponent from './content';
 import Empty from "./content/empty";
 
 import { PageFrame } from '../table';
 import { useLocation, useParams } from "react-router";
 
+const useStyles = makeStyles({
+    httpContent: {
+        boxShadow: '1px 1px 5px '+tokens.colorNeutralStroke2+' inset',
+        border: 'none',
+        overflow: 'auto',
+        padding: tokens.spacingHorizontalS + ' ' + tokens.spacingHorizontalXS,
+        backgroundColor: tokens.colorNeutralCardBackgroundPressed
+    },
+});
 export default function ConnectionList() {
-
+    const cus = useStyles();
     const httpDetail = usePcapStore((state) => state.httpDetail);
     const [_list, setList] = useState<IHttpDetail[]>([]);
     const [select, setSelect] = useState<string>('');
@@ -30,7 +38,7 @@ export default function ConnectionList() {
     useEffect(() => {
         if (httpIndex) {
             const index = parseInt(httpIndex, 10);
-            if(index >=0) {
+            if (index >= 0) {
                 httpDetail(index).then(setList);
             }
         }
@@ -75,14 +83,14 @@ export default function ConnectionList() {
             case 'Payload': {
                 if (_list && _list.length) {
                     const hmw = _list[0];
-                    return <ContentComponent hmw={hmw} />
+                    return <ContentComponent hmw={hmw} key={Date.now()}/>
                 }
                 break;
             }
             case 'Response': {
                 if (_list && _list.length > 1) {
                     const hmw = _list[1];
-                    return <ContentComponent hmw={hmw} />
+                    return <ContentComponent hmw={hmw}  key={Date.now()}/>
                 }
                 break;
             }
@@ -102,7 +110,7 @@ export default function ConnectionList() {
                     Response
                 </Tab>
             </TabList>
-            <div className="flex-1" style={{ border: '1px solid #ddd', overflow: 'auto' }} >
+            <div className={cus.httpContent + ' flex-1'} >
                 {contentRender()}
             </div>
         </>

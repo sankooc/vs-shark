@@ -11,7 +11,7 @@ import {
     Option,
     Tooltip
 } from "@fluentui/react-components";
-import { BookGlobe20Filled, BookGlobe20Regular, bundleIcon, CallInboundRegular, CallOutboundRegular, ChartMultiple20Filled, ChartMultiple20Regular, CheckmarkSquareRegular, ClipboardBulletListRtlFilled, ClipboardBulletListRtlRegular, ClockRegular, DocumentBulletList20Filled, DocumentBulletList20Regular, DocumentGlobeRegular, DocumentOnePageRegular, FormSparkle20Filled, FormSparkle20Regular, GlobeColor, InfoRegular, LockClosedKeyRegular, MailTemplate20Filled, MailTemplate20Regular, MoreHorizontalFilled, PanelTopContractRegular, PanelTopExpandRegular, PlugConnected20Filled, PlugConnected20Regular, PresenceAvailableFilled, QuestionFilled, RecordStopFilled, ShieldLock20Filled, ShieldLock20Regular, ShieldQuestionRegular, SpinnerIosFilled, SpinnerIosRegular, TextboxRotate9020Filled, TextboxRotate9020Regular, TriangleLeft20Filled, TriangleLeft20Regular, TriangleRight20Filled, TriangleRight20Regular, WarningRegular } from "@fluentui/react-icons";
+import { BookGlobe20Filled, BookGlobe20Regular, bundleIcon, CallInboundRegular, CallOutboundRegular, ChartMultiple20Filled, ChartMultiple20Regular, CheckmarkSquareRegular, ClipboardBulletListRtlFilled, ClipboardBulletListRtlRegular, ClockRegular, DocumentBulletList20Filled, DocumentBulletList20Regular, DocumentGlobe20Regular, DocumentGlobeRegular, DocumentOnePageRegular, FormSparkle20Filled, FormSparkle20Regular, InfoRegular, LockClosedKey20Regular, MailTemplate20Filled, MailTemplate20Regular, MoreHorizontalFilled, PanelTopContractRegular, PanelTopExpandRegular, PlugConnected20Filled, PlugConnected20Regular, PresenceAvailableFilled, QuestionFilled, RecordStopFilled, ShieldLock20Filled, ShieldLock20Regular, ShieldQuestionRegular, SpinnerIosFilled, SpinnerIosRegular, TextboxRotate9020Filled, TextboxRotate9020Regular, TriangleLeft20Filled, TriangleLeft20Regular, TriangleRight20Filled, TriangleRight20Regular, WarningRegular } from "@fluentui/react-icons";
 import React, { FormEvent, JSX, useEffect, useId, useState } from "react";
 
 import { useNavigate } from "react-router";
@@ -61,7 +61,7 @@ export const SpinIcon = bundleIcon(SpinnerIosFilled, SpinnerIosRegular)
 export const DetailIcon = bundleIcon(ClipboardBulletListRtlFilled, ClipboardBulletListRtlRegular);
 
 export const HttpHeaderIcon = () => <DocumentOnePageRegular />
-export const TabHttpHead = () => <DocumentGlobeRegular />
+export const TabHttpHead = () => <DocumentGlobeRegular/>
 export const TabHttpReq = () => <PanelTopContractRegular />
 export const TabHttpRes = () => <PanelTopExpandRegular />
 
@@ -81,10 +81,10 @@ export function protocolText(text: string): React.ReactNode {
     const _text = text.trim();
     switch (_text) {
         case 'http': {
-            return <div className="flex align-items-center gap-1"><GlobeColor /> http</div>
+            return <div className="flex align-items-center gap-1"><DocumentGlobe20Regular /> http</div>
         }
         case 'tls': {
-            return <div className="flex align-items-center gap-1"><LockClosedKeyRegular /> tls</div>
+            return <div className="flex align-items-center gap-1"><LockClosedKey20Regular /> tls</div>
         }
     }
     return <>{text}</>

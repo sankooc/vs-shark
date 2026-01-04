@@ -48,6 +48,7 @@ $page-space: 5px;
         flex-shrink: 1;
         overflow-y: auto;
         height: 100%;
+        padding: 0 3px;
     }
     .page-card-item {
         background-color: common.$background;

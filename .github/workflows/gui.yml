@@ -6,8 +6,7 @@ on:
     types:
       - completed
   push:
-    branches:
-      - "release/*"
+    tags: [ "v*" ]
 
 env:
   CARGO_TERM_COLOR: always
@@ -108,15 +107,9 @@ jobs:
             cp target/${{ matrix.target }}/release/bundle/msi/*.msi release/ 2>NUL || true
             cp target/${{ matrix.target }}/release/bundle/nsis/*.exe release/ 2>NUL || true
           fi
-
-      - name: Set release version
-        shell: bash
-        run: echo "brc=$(echo ${GITHUB_REF#refs/heads/release/})" >> $GITHUB_ENV
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2.1.0
         with:
-          tag_name: ${{ env.brc }}
           files: release/*
-          allow_updates: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

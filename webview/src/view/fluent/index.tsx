@@ -4,9 +4,11 @@ import '../../scss/flex.scss'
 import './index.scss';
 import Application from './app';
 
-import { webDarkTheme } from "@fluentui/react-components";
+// import { webDarkTheme } from "@fluentui/react-components";
+import { customLightTheme } from './theme';
+
 const UI = () => {
-  return <FluentProvider theme={webDarkTheme} style={{contain: 'content', height: '100%'}}>
+  return <FluentProvider theme={customLightTheme} style={{contain: 'content', height: '100%'}}>
     <Application/>
   </FluentProvider>
 }

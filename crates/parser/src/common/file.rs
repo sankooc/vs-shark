@@ -60,7 +60,7 @@ impl FileMetadata {
     }
 }
 
-#[derive(Default, Serialize)]
+#[derive(Default, Serialize, Debug)]
 pub struct PcapNg {
     pub major: u16,
     pub minor: u16,

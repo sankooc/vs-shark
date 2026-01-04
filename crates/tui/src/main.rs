@@ -1,7 +1,7 @@
 use std::{fs::{self}, sync::mpsc};
 
 use clap::Parser;
-use pcaps::{engine::{PcapUICommand, PcapEvent, Service}, ui};
+use pcapviewer_tui::{engine::{PcapUICommand, PcapEvent, Service}, ui};
 
 
 

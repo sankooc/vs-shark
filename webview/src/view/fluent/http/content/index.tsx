@@ -3,7 +3,7 @@ import { IHttpDetail } from "../../../../share/common";
 import HexView from './hexview';
 import PlainText from './plain';
 import Empty from './empty';
-import { SelectTabData, SelectTabEvent, Tab, TabList, TabValue } from "@fluentui/react-components";
+import { makeStyles, SelectTabData, SelectTabEvent, Tab, TabList, TabValue, tokens } from "@fluentui/react-components";
 import { bundleIcon, CalendarAgendaFilled, CalendarAgendaRegular } from "@fluentui/react-icons";
 import { useState } from "react";
 import ImageView from "./image";
@@ -44,8 +44,21 @@ const parseMime = (headers: string[]): string => {
     return '';
 }
 
+const useStyles = makeStyles({
+    codeview_main: {
+        fontFamily: 'Consolas, "Courier New", monospace',
+        height: '100%',
+        width: '100%',
+        // padding: '4px 10px',
+        // padding: tokens.spacingVerticalS + ' ' + tokens.spacingHorizontalS,
+        backgroundColor: tokens.colorNeutralBackground3Selected,
+        position: 'relative',
+    },
+});
+
 
 export default function Component(props: ContentProps) {
+    const cus = useStyles();
     const { hmw } = props;
     const ds = hmw.plaintext ? 'preview' : 'raw';
     const [selectedValue, setSelectedValue] = useState<TabValue>(ds);
@@ -59,7 +72,7 @@ export default function Component(props: ContentProps) {
     const inContent = () => {
         if (selectedValue === 'preview') {
             if (detectText(_mime) && hmw!.plaintext) {
-                return <PlainText text={hmw!.plaintext!} mime={hmw.content_type || 'plaintext'} />
+                return <PlainText text={hmw!.plaintext!} mime={hmw.content_type || 'plaintext'}/>
             }
             if(detectImage(_mime) && hmw.raw?.length){
                 return <ImageView raw={hmw.raw} mime={_mime}/>
@@ -71,7 +84,7 @@ export default function Component(props: ContentProps) {
 
     }
     return <div className="flex flex-row h-full w-full">
-        <TabList vertical style={{ borderRight: '1px solid #ccc' }} selectedValue={selectedValue} onTabSelect={onTabSelect}>
+        <TabList vertical selectedValue={selectedValue} onTabSelect={onTabSelect}>
             <Tab id="preview" icon={<CalendarAgenda />} value="preview">
                 Preview
             </Tab>
@@ -79,6 +92,6 @@ export default function Component(props: ContentProps) {
                 Hex
             </Tab>
         </TabList>
-        {inContent()}
+        <div className={cus.codeview_main}>{inContent()}</div>
     </div>
 }

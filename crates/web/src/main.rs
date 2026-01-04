@@ -8,7 +8,7 @@ use std::{
 
 use actix_web::{web, App, HttpServer};
 use clap::Parser;
-use pcap_web::{control, routes::init_routes, web::WebApplication};
+use pcapviewer_web::{control, routes::init_routes, web::WebApplication};
 use tokio::runtime::Runtime;
 
 async fn start(address: IpAddr, port: u16, target: String) -> std::io::Result<()> {
