@@ -6,8 +6,7 @@ on:
     types:
       - completed
   push:
-    branches:
-      - "release/*"
+    tags: [ "v*" ]
 
 env:
   CARGO_TERM_COLOR: always
@@ -43,10 +42,6 @@ jobs:
         run: |
           rustc -Vv
           cargo -V
-
-      - name: Set release version
-        run: echo "brc=${GITHUB_REF##refs/heads/release/}" >> $GITHUB_ENV
-
       - name: Install Rust target
         run: rustup target add ${{ matrix.target }}
 
@@ -73,17 +68,10 @@ jobs:
         shell: bash
         run: |
           mkdir -p release
-          mv target/${{ matrix.target }}/release/web release/pcapviewer-web-${{ matrix.target }}
-
-      - name: Set release version
-        run: echo "brc=$(echo ${GITHUB_REF#refs/heads/release/})" >> $GITHUB_ENV
-        shell: bash
-        
+          mv target/${{ matrix.target }}/release/pcapviewer-web release/pcapviewer-web-${{ matrix.target }}
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2.1.0
         with:
-          tag_name: ${{ env.brc }}
           files: release/pcapviewer-web-${{ matrix.target }}
-          allow_updates: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

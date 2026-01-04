@@ -2,7 +2,7 @@ name: Build_Website
 
 on:
   push:
-    branches: [ "release/*" ]
+    tags: [ "v*" ]
 
 env:
   CARGO_TERM_COLOR: always
